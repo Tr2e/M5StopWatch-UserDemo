@@ -55,6 +55,11 @@ void AppSetup::onOpen()
                      _destroy_menu = true;
                      _worker       = std::make_unique<ButtonWorker>();
                  }},
+                {"Wi-Fi",
+                 [&]() {
+                     _destroy_menu = true;
+                     _worker       = std::make_unique<WifiWorker>();
+                 }},
             },
         },
         {
@@ -114,7 +119,12 @@ void AppSetup::onRunning()
     if (_worker) {
         _worker->update();
         if (_worker->isDone()) {
+            const bool exit_app = _worker->shouldExitApp();
             _worker.reset();
+            if (exit_app) {
+                close();
+                return;
+            }
             _menu_page = std::make_unique<view::SelectMenuPage>(_menu_sections);
         }
     }

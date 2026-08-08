@@ -28,10 +28,17 @@ public:
     void update(bool force = false);
 
 protected:
+    std::array<std::unique_ptr<uitk::lvgl_cpp::Label>, 5> date_labels;
     std::array<std::unique_ptr<uitk::lvgl_cpp::Label>, 5> labels;
+    std::unique_ptr<uitk::lvgl_cpp::Canvas> wifi_icon;
     uint32_t update_time_count = 0;
 
     void set_clock_to(const std::string_view text);
+    void set_date_to(const std::string_view text);
+    void layout_date();
+    void layout_clock();
+    void update_wifi_indicator();
+    void draw_wifi_indicator(int level);
 };
 
 }  // namespace view

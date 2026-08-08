@@ -32,6 +32,11 @@ public:
         return _is_done;
     }
 
+    virtual bool shouldExitApp() const
+    {
+        return false;
+    }
+
 protected:
     bool _is_done = false;
 };
@@ -136,6 +141,26 @@ private:
     int _progress                = 0;
     uint32_t _next_progress_tick = 0;
     int _pending_burst_steps     = 0;
+};
+
+class WifiWorker : public WorkerBase {
+public:
+    WifiWorker();
+    ~WifiWorker();
+    void update() override;
+    bool shouldExitApp() const override
+    {
+        return _exit_to_launcher;
+    }
+
+private:
+    class WifiView;
+
+    std::unique_ptr<WifiView> _view;
+    uint32_t _next_update_tick = 0;
+    bool _restore_station       = false;
+    bool _config_exit_seen      = false;
+    bool _exit_to_launcher      = false;
 };
 
 }  // namespace setup_workers
