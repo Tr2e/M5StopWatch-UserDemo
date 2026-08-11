@@ -17,17 +17,20 @@ static inline constexpr int tcU(int v)
 
 #define TC_BLACK      0x0000
 #define TC_WHITE      0xFFFF
-#define TC_BG_DEEP    0x0803   // #050e1c
-#define TC_OCEAN      0x0A15   // deep ocean fill
-#define TC_PANEL_BG   0x1084   // panel/card
-#define TC_TEXT       0xCE79   // primary text
-#define TC_TEXT_DIM   0x6B6D   // secondary labels
-#define TC_CYAN       0x4DFF   // accent #4dd0e1
-#define TC_CYAN_DIM   0x2A93
-#define TC_GREEN      0x07E0
-#define TC_YELLOW     0xFFE0
-#define TC_ORANGE     0xFD20
-#define TC_RED        0xF800
+// Muted nautical instrument palette.  The AMOLED panel makes saturated blues
+// appear much stronger than on a desktop preview, so information hierarchy is
+// carried by luminance and contrast rather than by neon colour.
+#define TC_BG_DEEP    0x0862   // near-black graphite navy
+#define TC_OCEAN      0x1105   // desaturated blue-grey sea
+#define TC_PANEL_BG   0x1906   // charcoal slate panel
+#define TC_TEXT       0xD6BA   // soft warm white
+#define TC_TEXT_DIM   0x7BEF   // neutral secondary text
+#define TC_CYAN       0x4CF4   // restrained instrument teal
+#define TC_CYAN_DIM   0x22EC   // dim teal / guides
+#define TC_GREEN      0x452F   // muted confirmation mint
+#define TC_YELLOW     0xD588   // amber advisory
+#define TC_ORANGE     0xE3A9   // storm warning orange
+#define TC_RED        0xCA48   // storm warning red
 
 /* Storm category colors (TD → SSTY) */
 #define TC_CAT_TD     0x6B6D
