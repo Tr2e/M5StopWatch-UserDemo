@@ -15,6 +15,7 @@ public:
     void close();
     void update();
     void applySnapshot(const TyphoonSnapshot& snapshot);
+    void setFetchState(FetchState state);
     LGFX_Sprite* legacySprite();
     // Scale for pushing virtual canvas → 466 round panel (1.0 = native).
     float presentScale() const;

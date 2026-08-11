@@ -124,6 +124,7 @@ static bool data_stale = true;
 static bool storms_are_live = false;  // false = demo seed; true = NMC
 static uint32_t data_fetch_ms = 0;
 static bool data_fetch_pending = false;
+static FetchState fetch_state = FetchState::Idle;
 #define DATA_REFRESH_MS (30UL * 60UL * 1000UL)
 
 static float distKm(float lat1, float lon1, float lat2, float lon2);
@@ -1252,7 +1253,11 @@ static void drawHUD() {
   G->setTextColor(TC_CYAN);     G->setCursor(x1, y1);
   snprintf(buf, sizeof(buf), "%.1fE", user_lon); G->print(buf);
   G->setTextColor(TC_TEXT_DIM); G->setCursor(x0, y2); G->print("SRC");
-  if (wifiIsConnected()) {
+  if (!storms_are_live) {
+    G->setTextColor(TC_YELLOW);
+    G->setCursor(x1, y2);
+    G->print("DEMO");
+  } else if (wifiIsConnected()) {
     G->setTextColor(data_stale ? C(TC_YELLOW) : C(TC_GREEN));
     G->setCursor(x1, y2);
     G->print(data_stale ? "STALE" : "NMC");
@@ -1568,73 +1573,101 @@ static void gotoPage(Page p) {
   beep(1400, 8);
 }
 
+// Loading globe uses the same orthographic projection as the map pages, but keeps
+// its camera local so it never disturbs the live-map camera.
+static void renderBootGlobe(LovyanGFX* s, int cx, int cy, int radius, float lon) {
+  const float cLat = 20.0f * DEG2RAD, cLon = lon * DEG2RAD;
+  const float sinLat0 = sinf(cLat), cosLat0 = cosf(cLat);
+  const float sinLon0 = sinf(cLon), cosLon0 = cosf(cLon);
+  // Rotate the projected sphere itself so the geographic poles follow its axis.
+  const float globeTilt = 24.0f * DEG2RAD;
+  const float tiltCos = cosf(globeTilt), tiltSin = sinf(globeTilt);
+  auto projectBoot = [&](float sinLat, float cosLat, float sinLon, float cosLon,
+                         int& x, int& y) -> bool {
+    const float cosDLon = cosLon * cosLon0 + sinLon * sinLon0;
+    const float sinDLon = sinLon * cosLon0 - cosLon * sinLon0;
+    const float front = sinLat0 * sinLat + cosLat0 * cosLat * cosDLon;
+    if (front < 0.0f) return false;
+    const float px = radius * cosLat * sinDLon;
+    const float py = -radius * (cosLat0 * sinLat - sinLat0 * cosLat * cosDLon);
+    x = cx + (int)(px * tiltCos - py * tiltSin);
+    y = cy + (int)(px * tiltSin + py * tiltCos);
+    return true;
+  };
+
+  s->fillCircle(cx, cy, radius, s->color565(5, 30, 48));
+  // Latitude / longitude lines give the rotating globe its quiet sense of depth.
+  const uint16_t grid = s->color565(12, 66, 82);
+  for (int lat = -60; lat <= 60; lat += 30) {
+    int px = 0, py = 0; bool prev = false;
+    for (int lo = -180; lo <= 180; lo += 4) {
+      const float lr = lat * DEG2RAD, orad = lo * DEG2RAD;
+      int x, y;
+      if (projectBoot(sinf(lr), cosf(lr), sinf(orad), cosf(orad), x, y)) {
+        if (prev) s->drawLine(px, py, x, y, grid);
+        px = x; py = y; prev = true;
+      } else prev = false;
+    }
+  }
+  for (int lo = -150; lo < 180; lo += 30) {
+    int px = 0, py = 0; bool prev = false;
+    for (int lat = -85; lat <= 85; lat += 3) {
+      const float lr = lat * DEG2RAD, orad = lo * DEG2RAD;
+      int x, y;
+      if (projectBoot(sinf(lr), cosf(lr), sinf(orad), cosf(orad), x, y)) {
+        if (prev) s->drawLine(px, py, x, y, grid);
+        px = x; py = y; prev = true;
+      } else prev = false;
+    }
+  }
+  // Only the two exterior portions of the tilted axis are visible; the globe
+  // correctly occludes the middle section instead of being crossed by a line.
+  const float tilt = -24.0f * DEG2RAD;
+  const float ux = sinf(tilt), uy = cosf(tilt);
+  const float outer = radius * 1.28f, inner = radius + 3.0f;
+  const uint16_t axis = TC_YELLOW;
+  s->drawLine(cx + (int)(ux * outer), cy + (int)(uy * outer),
+              cx + (int)(ux * inner), cy + (int)(uy * inner), axis);
+  s->drawLine(cx - (int)(ux * inner), cy - (int)(uy * inner),
+              cx - (int)(ux * outer), cy - (int)(uy * outer), axis);
+  s->drawCircle(cx, cy, radius, TC_CYAN_DIM);
+  s->drawCircle(cx, cy, radius + 2, s->color565(16, 74, 91));
+}
+
 static void renderBoot() {
+  const int cx = TC_SCREEN_W / 2, cy = TC_SCREEN_H / 2 - 2, radius = tcU(63);
   disp_->fillScreen(TC_BG_DEEP);
-  int cx = TC_SCREEN_W / 2, cy = TC_SCREEN_H / 2 - 4;
-  uint16_t rc = disp_->color565(30, 80, 90);
-  disp_->drawCircle(cx, cy, 50, rc);
-  disp_->drawCircle(cx, cy, 37, rc);
-  disp_->drawCircle(cx, cy, 25, rc);
-  disp_->drawCircle(cx, cy, 12, rc);
-  disp_->drawFastHLine(cx - 52, cy, 104, rc);
-  disp_->drawFastVLine(cx, cy - 52, 104, rc);
-  disp_->setTextColor(TC_CYAN);
-  disp_->setCursor(cx - 3, cy - 62); disp_->print("N");
-  disp_->setCursor(cx - 3, cy + 54); disp_->print("S");
-  disp_->setCursor(cx + 54, cy - 3); disp_->print("E");
-  disp_->setCursor(cx - 62, cy - 3); disp_->print("W");
-  for (int a = 0; a < 360; a += 22) {
-    float rad = a * DEG2RAD;
-    int x0 = cx + (int)(cosf(rad) * 50);
-    int y0 = cy + (int)(sinf(rad) * 50);
-    int x1 = cx + (int)(cosf(rad) * 53);
-    int y1 = cy + (int)(sinf(rad) * 53);
-    disp_->drawLine(x0, y0, x1, y1, (a % 90 == 0) ? TC_CYAN : rc);
+  // Sparse stars retain the app's map/radar atmosphere without becoming decoration.
+  for (int i = 0; i < 18; ++i) {
+    const int x = (i * 83 + 31) % TC_SCREEN_W;
+    const int y = (i * 47 + 19) % TC_SCREEN_H;
+    if ((x - cx) * (x - cx) + (y - cy) * (y - cy) > (radius + 22) * (radius + 22))
+      disp_->drawPixel(x, y, (i % 3 == 0) ? TC_CYAN_DIM : TC_TEXT_DIM);
   }
-  for (int a = 0; a < 14; a++) {
-    float rad = (boot_angle + a) * DEG2RAD;
-    uint8_t bright = (uint8_t)(180 - a * 10);
-    uint16_t c = disp_->color565(0, bright / 3, bright / 2);
-    disp_->drawLine(cx, cy, cx + (int)(cosf(rad) * 50), cy + (int)(sinf(rad) * 50), c);
-  }
-  disp_->fillRect(cx - 1, cy - 1, 3, 3, TC_CYAN);
+  renderBootGlobe(disp_, cx, cy, radius, 118.0f + boot_angle * 0.45f);
+
   disp_->setTextSize(TC_FONT_SIZE);
-  const char* title = "TYPHOON COMPASS";
-  const char* sub = "v1.0 MET RADAR";
-  int titleY = tcU(28);
+  const char* title = "TYPHOON";
+  const char* sub = "LIVE WEATHER INTELLIGENCE";
   disp_->setTextColor(TC_CYAN);
-  disp_->setCursor(cx - (int)strlen(title) * TC_CHAR_W / 2, titleY);
+  disp_->setCursor(cx - (int)strlen(title) * TC_CHAR_W / 2, tcU(25));
   disp_->print(title);
   disp_->setTextColor(TC_TEXT_DIM);
-  disp_->setCursor(cx - (int)strlen(sub) * TC_CHAR_W / 2, titleY + TC_CHAR_H + 2);
+  disp_->setCursor(cx - (int)strlen(sub) * TC_CHAR_W / 2, tcU(35));
   disp_->print(sub);
-  int sy = cy + tcU(58);
-  auto bootLine = [&](int y, const char* t, uint16_t col) {
-    disp_->setTextColor(col);
-    int x = circleSafeLeft(y);
-    int maxW = circleSafeRight(y) - x;
-    int tw = (int)strlen(t) * TC_CHAR_W;
-    if (tw > maxW) x = circleSafeLeft(y); // keep left-safe; clip long tails naturally
-    disp_->setCursor(x, y);
-    disp_->print(t);
-  };
-  bootLine(sy, "INIT SENSORS...", TC_TEXT_DIM);
-  bootLine(sy + TC_CHAR_H + 2, ">WIFI READY", TC_GREEN);
-  bootLine(sy + 2 * (TC_CHAR_H + 2),
-           boot_progress < 85 ? ">FETCH NMC DATA..." : ">FETCH NMC DATA OK",
-           boot_progress < 85 ? TC_CYAN : TC_GREEN);
-  bootLine(sy + 3 * (TC_CHAR_H + 2),
-           boot_progress < 95 ? " IMU CALIBRATION" : " IMU READY",
-           boot_progress < 95 ? TC_TEXT_DIM : TC_GREEN);
-  int bw = tcU(120), bx = (TC_SCREEN_W - bw) / 2, by = cy - tcU(70);
-  disp_->drawRect(bx, by, bw, 6, TC_CYAN);
-  disp_->fillRect(bx + 1, by + 1, (bw - 2) * boot_progress / 100, 4, TC_CYAN);
-  char pct[8]; snprintf(pct, sizeof(pct), "%d%%", boot_progress);
-  disp_->setTextColor(TC_CYAN);
-  disp_->setCursor(cx - (int)strlen(pct) * TC_CHAR_W / 2, by - TC_CHAR_H - 2);
-  disp_->print(pct);
-  G = nullptr;
-  drawKbar("K1+K2 SKIP", "");
+
+  const char* status = fetch_state == FetchState::Idle ? "PREPARING LIVE DATA" :
+                       fetch_state == FetchState::Loading ? "CONNECTING TO NMC" :
+                       "SYNCING LIVE DATA";
+  const int sy = cy + radius + tcU(17);
+  const int sw = (int)strlen(status) * TC_CHAR_W;
+  disp_->setTextColor(TC_TEXT);
+  disp_->setCursor(cx - sw / 2, sy);
+  disp_->print(status);
+  const int bw = tcU(88), bx = cx - bw / 2, by = sy + tcU(11);
+  disp_->fillRoundRect(bx, by, bw, tcU(2), tcU(1), disp_->color565(12, 46, 60));
+  const int sweep = tcU(18) + (boot_progress * (bw - tcU(18))) / 100;
+  disp_->fillRoundRect(bx, by, sweep, tcU(2), tcU(1), TC_CYAN);
 }
 
 // StickS3 + Lcd.setRotation(1): screen landscape, USB on the right (user photo)
@@ -2444,7 +2477,6 @@ static void render() {
 static void handleEvt(uint8_t id, BtnEvt ev) {
   noteInput();
   if (page == PAGE_BOOT) {
-    if (ev != EVT_NONE) { gotoPage(PAGE_MAIN); showEvent("BOOT SKIP", TC_CYAN); }
     return;
   }
   if (ev == EVT_COMBO) {
@@ -2762,7 +2794,7 @@ void Engine::open() {
   earth_pending = true;
   applyStorm(0);
   memset(btn, 0, sizeof(btn));
-  page = PAGE_MAIN;
+  page = PAGE_BOOT;
   ui_dirty = true;
   boot_progress = 100;
   last_frame = last_blink = GetHAL().millis();
@@ -2809,13 +2841,10 @@ void Engine::update() {
   }
 
   if (page == PAGE_BOOT) {
-    uint32_t elapsed = now - boot_start_ms;
-    if (elapsed < 1200) boot_progress = (uint8_t)(elapsed * 68 / 1200);
-    else if (elapsed < 2200) boot_progress = 68;
-    else if (elapsed < 3000) boot_progress = (uint8_t)(68 + (elapsed - 2200) * 32 / 800);
-    else { boot_progress = 100; gotoPage(PAGE_MAIN); showEvent("MAIN", TC_CYAN); }
-    if (now - last_frame >= 80) {
-      boot_angle = (boot_angle + 12) % 360;
+    boot_progress = (boot_progress + 2) % 100;
+    // The simplified latitude/longitude globe is cheap enough for smooth motion.
+    if (now - last_frame >= 100) {
+      boot_angle = (boot_angle + 4) % 360;
       last_frame = now;
       render();
     }
@@ -2920,9 +2949,21 @@ void Engine::applySnapshot(const TyphoonSnapshot& snap) {
     }
     if (multi_sel >= n) multi_sel = sel;
     applyStorm(sel);
+    if (page == PAGE_BOOT && snap.live) gotoPage(PAGE_MAIN);
     ui_dirty = true;
     ESP_LOGI("Typhoon", "[DATA] snapshot n=%u live=%d sel=%s (was %s)",
              n, (int)snap.live, typ_name, prevName[0] ? prevName : "-");
+}
+
+void Engine::setFetchState(FetchState state) {
+    if (fetch_state == state) return;
+    fetch_state = state;
+    if (state == FetchState::Failed && page == PAGE_BOOT) {
+        // Demo data is seeded internally, but is never drawn before a live fetch fails.
+        gotoPage(PAGE_MAIN);
+        showEvent("DEMO DATA", TC_YELLOW);
+    }
+    ui_dirty = true;
 }
 
 LGFX_Sprite* Engine::legacySprite() { return view_sprite; }
