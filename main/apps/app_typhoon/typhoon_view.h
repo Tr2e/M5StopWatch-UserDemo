@@ -17,6 +17,7 @@ public:
     void close();
     void update();
     void setSnapshot(const TyphoonSnapshot& snapshot);
+    void setFetchState(FetchState state);
 
 private:
     std::unique_ptr<Engine> _engine;

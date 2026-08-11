@@ -30,6 +30,7 @@ void AppTyphoon::onOpen()
     // (fetch only after WiFi/boot), avoids heap/stack pressure on open.
     _data = std::make_unique<typhoon::DataService>();
     _data_started = false;
+    _last_fetch_state = typhoon::FetchState::Idle;
     _open_ms = GetHAL().millis();
     _last_snap_ms = 0;
 }
@@ -50,6 +51,11 @@ void AppTyphoon::onRunning()
     }
 
     if (_data && _data_started) {
+        const auto fetch_state = _data->fetchState();
+        if (fetch_state != _last_fetch_state) {
+            _last_fetch_state = fetch_state;
+            _view->setFetchState(fetch_state);
+        }
         const uint32_t updated = _data->updatedMs();
         if (updated != 0 && updated != _last_snap_ms) {
             typhoon::TyphoonSnapshot snap;

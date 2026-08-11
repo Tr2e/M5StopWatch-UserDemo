@@ -47,4 +47,9 @@ void View::setSnapshot(const TyphoonSnapshot& snapshot)
     if (_engine) _engine->applySnapshot(snapshot);
 }
 
+void View::setFetchState(FetchState state)
+{
+    if (_engine) _engine->setFetchState(state);
+}
+
 }  // namespace typhoon

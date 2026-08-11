@@ -5,6 +5,8 @@
 
 namespace typhoon {
 
+enum class FetchState : uint8_t { Idle, Loading, Ready, Failed };
+
 struct NmcTrackPt {
     int16_t hour = 0;
     float lat = 0.0f;
@@ -67,6 +69,7 @@ public:
     // Avoid returning large structs by value on the main task stack.
     void copySnapshot(TyphoonSnapshot& out) const;
     uint32_t updatedMs() const;
+    FetchState fetchState() const;
 
 private:
     struct Impl;

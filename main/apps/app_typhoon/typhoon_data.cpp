@@ -302,6 +302,7 @@ bool fetchActive(TyphoonSnapshot& result)
 struct DataService::Impl {
     mutable std::mutex mutex;
     TyphoonSnapshot state;
+    FetchState fetch_state = FetchState::Idle;
     TaskHandle_t task = nullptr;
     volatile bool stop = false;
 };
@@ -313,6 +314,10 @@ void DataService::start()
 {
     if (_impl->task) return;
     _impl->stop = false;
+    {
+        std::lock_guard<std::mutex> lock(_impl->mutex);
+        _impl->fetch_state = FetchState::Loading;
+    }
     xTaskCreate(
         [](void* arg) {
             auto* impl = static_cast<Impl*>(arg);
@@ -325,9 +330,11 @@ void DataService::start()
                 if (fetchActive(fetched)) {
                     std::lock_guard<std::mutex> lock(impl->mutex);
                     impl->state = fetched;
+                    impl->fetch_state = FetchState::Ready;
                 } else {
                     std::lock_guard<std::mutex> lock(impl->mutex);
                     impl->state.loading = false;
+                    impl->fetch_state = FetchState::Failed;
                 }
                 for (uint32_t elapsed = 0; elapsed < kRefreshPeriodMs && !impl->stop; elapsed += 1000)
                     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -355,6 +362,12 @@ uint32_t DataService::updatedMs() const
 {
     std::lock_guard<std::mutex> lock(_impl->mutex);
     return _impl->state.updated_ms;
+}
+
+FetchState DataService::fetchState() const
+{
+    std::lock_guard<std::mutex> lock(_impl->mutex);
+    return _impl->fetch_state;
 }
 
 }  // namespace typhoon
