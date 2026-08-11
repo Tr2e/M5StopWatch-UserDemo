@@ -171,13 +171,13 @@ void Hal::display_init()
         _display.reset();
     }
 
-    // mclog::tagInfo(_tag, "create full screen canvas");
-    // _canvas = std::make_unique<LGFX_Sprite>(_display.get());
-    // _canvas->setPsram(true);
-    // if (!_canvas->createSprite(_display->width(), _display->height())) {
-    //     mclog::tagError(_tag, "canvas init failed");
-    //     _canvas.reset();
-    // }
+    mclog::tagInfo(_tag, "create full screen canvas");
+    _canvas = std::make_unique<LGFX_Sprite>(_display.get());
+    _canvas->setPsram(true);
+    if (!_canvas->createSprite(_display->width(), _display->height())) {
+        mclog::tagError(_tag, "canvas init failed");
+        _canvas.reset();
+    }
 
     // Load brightness from settings
     auto brightness = getBackLightBrightness(true);
