@@ -195,11 +195,6 @@ static void seedDemoStorms() {
   storms_are_live = false;
 }
 
-// Batch 6: night + idle dim
-static uint32_t last_input_ms = 0;
-static bool     screen_dimmed = false;
-#define IDLE_DIM_MS 15000
-
 // Mild exaggeration — lower than globe mode so rings stay proportional when zoomed
 #define RING_EXAG  2.2f
 
@@ -477,14 +472,16 @@ static void drawContinents(LGFX_Sprite* s) {
 
         if (prevVis && abs(outX - prevX) < tcU(200) && abs(outY - prevY) < tcU(200)) {
           float latRad = pts[j].latRad;
-          uint8_t cr = 45, cg = 150, cb = 85;
+          uint8_t cr = 52, cg = 118, cb = 92;
           if (latRad > 0) {
             float f = latRad / 1.5708f; if (f > 1) f = 1;
-            cr = (uint8_t)(45 * (1 - f));
-            cb = (uint8_t)(85 * (1 - f) + 120 * f);
+            cr = (uint8_t)(52 * (1 - f) + 18 * f);
+            cg = (uint8_t)(118 * (1 - f) + 94 * f);
+            cb = (uint8_t)(92 * (1 - f) + 116 * f);
           } else {
             float f = -latRad / 1.5708f; if (f > 1) f = 1;
-            cg = (uint8_t)(150 * (1 - f) + 60 * f);
+            cg = (uint8_t)(118 * (1 - f) + 76 * f);
+            cb = (uint8_t)(92 * (1 - f) + 104 * f);
           }
           uint16_t col = s->color565(cr, cg, cb);
           s->drawLine(prevX, prevY, outX, outY, col);
@@ -550,7 +547,7 @@ static void strokeMapPaths(LGFX_Sprite* s, const MapPath* paths, int count,
 
 // Province borders — finer data, soft inland color
 static void drawChinaProvinces(LGFX_Sprite* s) {
-  strokeMapPaths(s, china_provinces, china_provinces_count, s->color565(70, 118, 108), false);
+  strokeMapPaths(s, china_provinces, china_provinces_count, s->color565(74, 104, 101), false);
 }
 
 // Regional lat/lon grid (10° meridians / 5° parallels)
@@ -568,7 +565,7 @@ static void drawGeoGrid(LGFX_Sprite* s, uint16_t color) {
   }
   for (int lat = -60; lat <= 60; lat += 5) {
     int px = -1, py = -1; bool pv = false;
-    uint16_t c = (lat == 0) ? s->color565(50, 110, 120) : color;
+    uint16_t c = (lat == 0) ? s->color565(51, 89, 94) : color;
     for (int lon = -180; lon <= 180; lon += 2) {
       int x, y;
       if (project((float)lat, (float)lon, x, y)) {
@@ -588,7 +585,7 @@ static void drawMultiCoastlines(LGFX_Sprite* s, int step, bool thick) {
   const float cLat = ctr_lat * DEG2RAD, cLon = ctr_lon * DEG2RAD;
   const float sin_cLat = sinf(cLat), cos_cLat = cosf(cLat);
   const float sin_cLon = sinf(cLon), cos_cLon = cosf(cLon);
-  const uint16_t coast = s->color565(78, 166, 118);
+  const uint16_t coast = s->color565(76, 126, 108);
   const int margin = tcU(24);
 
   for (int i = 0; i < world_map_count; ++i) {
@@ -636,7 +633,7 @@ static void drawMultiGeoGrid(LGFX_Sprite* s, uint16_t color) {
   }
   for (int lat = -60; lat <= 60; lat += 15) {
     int px = -1, py = -1; bool pv = false;
-    const uint16_t c = (lat == 0) ? s->color565(42, 104, 118) : color;
+    const uint16_t c = (lat == 0) ? s->color565(48, 82, 87) : color;
     for (int lon = -180; lon <= 180; lon += 5) {
       int x, y;
       if (project((float)lat, (float)lon, x, y)) {
@@ -652,14 +649,14 @@ static void drawMultiGeoGrid(LGFX_Sprite* s, uint16_t color) {
 
 static void buildMultiAnimationBg(LGFX_Sprite* s) {
   s->fillScreen(TC_OCEAN);
-  drawMultiGeoGrid(s, s->color565(30, 78, 90));
+  drawMultiGeoGrid(s, s->color565(37, 65, 70));
   drawMultiCoastlines(s, 1, false);
-  s->drawCircle(earth_cx, earth_cy, EARTH_R, s->color565(58, 128, 144));
+  s->drawCircle(earth_cx, earth_cy, EARTH_R, s->color565(66, 108, 112));
 }
 
 static void buildMultiDetailBg(LGFX_Sprite* s) {
   s->fillScreen(TC_OCEAN);
-  drawMultiGeoGrid(s, s->color565(30, 78, 90));
+  drawMultiGeoGrid(s, s->color565(37, 65, 70));
   // A global map uses one complete coastline layer; province borders would be
   // visual noise at this scale and are intentionally omitted.
   drawMultiCoastlines(s, 1, false);
@@ -668,7 +665,7 @@ static void buildMultiDetailBg(LGFX_Sprite* s) {
 static void buildEarthBg(LGFX_Sprite* s) {
   // Oversized regional map — margins supply pixels when view tilts
   s->fillScreen(TC_OCEAN);
-  drawGeoGrid(s, s->color565(22, 55, 65));
+  drawGeoGrid(s, s->color565(31, 51, 55));
   drawContinents(s);
   drawChinaProvinces(s);
 }
@@ -931,18 +928,7 @@ static void pollIpLocate() {
 }
 
 static void applyBrightness() {
-  // Idle dim → 20%; otherwise retain the user's selected brightness.
-  uint8_t pct = brightness;
-  if (screen_dimmed) pct = 20;
-  GetHAL().setBackLightBrightness(static_cast<int>(pct));
-}
-
-static void noteInput() {
-  last_input_ms = GetHAL().millis();
-  if (screen_dimmed) {
-    screen_dimmed = false;
-    applyBrightness();
-  }
+  GetHAL().setBackLightBrightness(static_cast<int>(brightness));
 }
 
 static uint16_t C(uint16_t c) {
@@ -1335,8 +1321,8 @@ static void drawStormIcon(int sx, int sy, uint8_t cat, bool selected) {
   uint16_t col = C(catColor(cat));
   if (selected || tier == 2) {
     drawQuarterArc(sx, sy, R1[tier], C(TC_CYAN), spiral_a1, 2);
-    drawQuarterArc(sx, sy, R2[tier], C(G->color565(50, 160, 170)), spiral_a2, 2);
-    drawQuarterArc(sx, sy, R3[tier], C(G->color565(35, 110, 120)), spiral_a3, 2);
+    drawQuarterArc(sx, sy, R2[tier], C(G->color565(62, 134, 136)), spiral_a2, 2);
+    drawQuarterArc(sx, sy, R3[tier], C(G->color565(48, 94, 97)), spiral_a3, 2);
     G->drawRect(sx - tcU(2), sy - tcU(2), tcU(5), tcU(5), C(TC_RED));
     if (blink_on) G->fillRect(sx - tcU(1), sy - tcU(1), tcU(3), tcU(3), C(TC_WHITE));
     else          G->fillRect(sx - tcU(1), sy - tcU(1), tcU(3), tcU(3), C(TC_CYAN_DIM));
@@ -1448,17 +1434,48 @@ static int kbarY() {
   return TC_SCREEN_H - kbarH() - tcU(8);
 }
 
+// The bundled bitmap font renders the UTF-8 middle dot as a glyph resembling a
+// wind/signal marker.  Keep the compact typographic separator, but draw it as
+// an actual UI status dot everywhere this shared text path is used.
+static bool isMiddleDot(const char* p) {
+  return p && (uint8_t)p[0] == 0xC2 && (uint8_t)p[1] == 0xB7;
+}
+
+static int textWidthWithStatusDots(const char* text) {
+  int width = 0;
+  for (const char* p = text; p && *p; ) {
+    if (isMiddleDot(p)) { width += TC_CHAR_W; p += 2; }
+    else { width += TC_CHAR_W; ++p; }
+  }
+  return width;
+}
+
+static void printWithStatusDots(LovyanGFX* dst, int x, int y, const char* text, uint16_t color) {
+  dst->setTextColor(color);
+  int pen = x;
+  for (const char* p = text; p && *p; ) {
+    if (isMiddleDot(p)) {
+      dst->fillCircle(pen + TC_CHAR_W / 2, y + TC_CHAR_H / 2, tcU(1), color);
+      pen += TC_CHAR_W;
+      p += 2;
+    } else {
+      char glyph[2] = {*p++, 0};
+      dst->setCursor(pen, y);
+      dst->print(glyph);
+      pen += TC_CHAR_W;
+    }
+  }
+}
+
 static void printCenteredChord(LovyanGFX* dst, int y, const char* text, uint16_t color) {
-  const int width = (int)strlen(text) * TC_CHAR_W;
+  const int width = textWidthWithStatusDots(text);
   const int left = circleSafeLeft(y);
   const int right = circleSafeRight(y);
   int x = (int)TC_CX - width / 2;
   if (x < left) x = left;
   if (x + width > right) x = right - width;
   if (x < left) return;  // Text intentionally omitted rather than clipped.
-  dst->setTextColor(color);
-  dst->setCursor(x, y);
-  dst->print(text);
+  printWithStatusDots(dst, x, y, text, color);
 }
 
 static void drawHUD() {
@@ -1511,7 +1528,7 @@ static void drawKbar(const char* left, const char* right) {
   dst->fillRect(x0, ky, bw, kh, TC_BLACK);
   if (hold_progress > 0) {
     int w = (bw * hold_progress) / 100;
-    dst->fillRect(x0, ky, w, kh, dst->color565(20, 60, 70));
+  dst->fillRect(x0, ky, w, kh, dst->color565(25, 51, 53));
   }
   const int ty = ky + (kh - TC_CHAR_H) / 2;
   if (event_show_ms) {
@@ -1554,9 +1571,10 @@ static void drawKbar(const char* left, const char* right) {
     return;
   }
   if (lw + rw + 8 > avail) {
-    // Still tight — one centered "BACK · SEEK" group
+    // Still tight — one centered group; use ASCII here because this bypasses
+    // the shared status-dot text renderer above.
     char buf[40];
-    snprintf(buf, sizeof(buf), "%s · %s", L, R);
+    snprintf(buf, sizeof(buf), "%s / %s", L, R);
     int cw = (int)strlen(buf) * TC_CHAR_W;
     int ex = (int)TC_CX - cw / 2;
     if (ex < x0 + pad) ex = x0 + pad;
@@ -1699,13 +1717,8 @@ static void gotoPage(Page p) {
     earth_r = -1;
     setMapZoom(EARTH_R_TRACK);
     tmStart(true);
-    noteInput();  // keep screen awake while autoplay starts
   } else {
     tm_playing = false;
-    if (prev == PAGE_TRACK) {
-      // Leaving Time Machine — idle dim timer starts fresh from now
-      noteInput();
-    }
   }
   if (p == PAGE_LOCATION) {
     loc_cursor = city_idx;
@@ -1790,10 +1803,12 @@ static void renderBootGlobe(LovyanGFX* s, int cx, int cy, int radius, float lon)
     return true;
   };
 
-  s->fillCircle(cx, cy, radius, s->color565(5, 30, 48));
+  s->fillCircle(cx, cy, radius, s->color565(11, 27, 31));
   // Latitude / longitude lines give the rotating globe its quiet sense of depth.
-  const uint16_t grid = s->color565(12, 66, 82);
-  for (int lat = -60; lat <= 60; lat += 30) {
+  const uint16_t grid = s->color565(29, 62, 65);
+  // A denser, evenly spaced graticule reads as an instrument rather than a
+  // decorative wireframe, while remaining inexpensive on the boot canvas.
+  for (int lat = -75; lat <= 75; lat += 15) {
     int px = 0, py = 0; bool prev = false;
     for (int lo = -180; lo <= 180; lo += 4) {
       const float lr = lat * DEG2RAD, orad = lo * DEG2RAD;
@@ -1804,7 +1819,7 @@ static void renderBootGlobe(LovyanGFX* s, int cx, int cy, int radius, float lon)
       } else prev = false;
     }
   }
-  for (int lo = -150; lo < 180; lo += 30) {
+  for (int lo = -160; lo < 180; lo += 20) {
     int px = 0, py = 0; bool prev = false;
     for (int lat = -85; lat <= 85; lat += 3) {
       const float lr = lat * DEG2RAD, orad = lo * DEG2RAD;
@@ -1826,7 +1841,7 @@ static void renderBootGlobe(LovyanGFX* s, int cx, int cy, int radius, float lon)
   s->drawLine(cx - (int)(ux * inner), cy - (int)(uy * inner),
               cx - (int)(ux * outer), cy - (int)(uy * outer), axis);
   s->drawCircle(cx, cy, radius, TC_CYAN_DIM);
-  s->drawCircle(cx, cy, radius + 2, s->color565(16, 74, 91));
+  s->drawCircle(cx, cy, radius + 2, s->color565(36, 76, 80));
 }
 
 static void renderBoot() {
@@ -1851,18 +1866,19 @@ static void renderBoot() {
   disp_->setCursor(cx - (int)strlen(sub) * TC_CHAR_W / 2, tcU(35));
   disp_->print(sub);
 
-  const char* status = fetch_state == FetchState::Idle ? "PREPARING LIVE DATA" :
-                       fetch_state == FetchState::Loading ? "CONNECTING TO NMC" :
-                       "SYNCING LIVE DATA";
+  const char* status = fetch_state == FetchState::Idle ? "INITIALIZING DATA LINK" :
+                       fetch_state == FetchState::Loading ? "REQUESTING NMC TRACKS" :
+                       "VALIDATING LIVE WEATHER";
   const int sy = cy + radius + tcU(17);
   const int sw = (int)strlen(status) * TC_CHAR_W;
   disp_->setTextColor(TC_TEXT);
   disp_->setCursor(cx - sw / 2, sy);
   disp_->print(status);
-  const int bw = tcU(88), bx = cx - bw / 2, by = sy + tcU(11);
-  disp_->fillRoundRect(bx, by, bw, tcU(2), tcU(1), disp_->color565(12, 46, 60));
-  const int sweep = tcU(18) + (boot_progress * (bw - tcU(18))) / 100;
-  disp_->fillRoundRect(bx, by, sweep, tcU(2), tcU(1), TC_CYAN);
+  const int bw = tcU(88), bx = cx - bw / 2, by = sy + tcU(11), bh = tcU(3);
+  disp_->fillRoundRect(bx, by, bw, bh, tcU(1), disp_->color565(17, 39, 42));
+  const int fill = (boot_progress * bw) / 100;
+  if (fill > 0) disp_->fillRoundRect(bx, by, fill, bh, tcU(1), TC_CYAN);
+  disp_->drawRoundRect(bx, by, bw, bh, tcU(1), disp_->color565(45, 88, 91));
 }
 
 // StickS3 + Lcd.setRotation(1): screen landscape, USB on the right (user photo)
@@ -2231,7 +2247,7 @@ static void renderMenu() {
   int px = (TC_SCREEN_W - pw) / 2, py = tcU(48);
   disp_->fillRect(px, py, pw, ph, TC_PANEL_BG);
   disp_->drawRect(px, py, pw, ph, TC_CYAN);
-  disp_->fillRect(px, py, pw, tcU(14), disp_->color565(10, 40, 50));
+  disp_->fillRect(px, py, pw, tcU(14), disp_->color565(18, 39, 41));
   disp_->setTextColor(TC_CYAN);
   const char* mh = "MAIN MENU";
   disp_->setCursor(px + (pw - (int)strlen(mh) * TC_CHAR_W) / 2, py + tcU(2));
@@ -2271,7 +2287,7 @@ static void renderLocation() {
   const int rowH = tcU(14);
   disp_->fillRect(0, top, pw, bot - top, TC_PANEL_BG);
   disp_->drawFastVLine(pw, top, bot - top, TC_CYAN);
-  disp_->fillRect(0, top, pw, tcU(14), disp_->color565(10, 40, 50));
+  disp_->fillRect(0, top, pw, tcU(14), disp_->color565(18, 39, 41));
   {
     int hy = top + tcU(2);
     disp_->setTextColor(TC_CYAN);
@@ -2367,7 +2383,7 @@ static void renderLocation() {
           pv = false; continue;
         }
         if (pv && abs(ox - prevX) < tcU(40) && abs(oy - prevY) < tcU(40))
-          disp_->drawLine(prevX, prevY, ox, oy, disp_->color565(50, 160, 90));
+          disp_->drawLine(prevX, prevY, ox, oy, disp_->color565(62, 126, 94));
         prevX = ox; prevY = oy; pv = true;
       }
     }
@@ -2549,7 +2565,6 @@ static void render() {
 }
 
 static void handleEvt(uint8_t id, BtnEvt ev) {
-  noteInput();
   if (page == PAGE_BOOT) {
     return;
   }
@@ -2630,7 +2645,6 @@ static void handleEvt(uint8_t id, BtnEvt ev) {
           case 1: // DISPLAY brightness cycle
             brightness = (brightness <= 40) ? 70 : (brightness <= 70) ? 100 : 40;
             brightness_user = brightness;
-            screen_dimmed = false;
             applyBrightness();
             { char b[16]; snprintf(b, sizeof(b), "BRIGHT %d%%", brightness); showEvent(b, TC_YELLOW); }
             break;
@@ -2729,7 +2743,6 @@ static void pollButtons() {
   // Track press edges for combo timing + hold progress bar
   for (int i = 0; i < 2; i++) {
     if (raw[i] && !btn[i].down) {
-      noteInput();
       btn[i].down = true;
       btn[i].t_down = now;
       if (!combo_wait_release && now >= combo_suppress_until) {
@@ -2804,7 +2817,6 @@ void Engine::open() {
 
   ESP_LOGI("Typhoon", "\n=== Typhoon Compass Batch 8 ===");
   brightness_user = brightness;
-  last_input_ms = GetHAL().millis();
   seedDemoStorms();
   seedDemoTrack();
   applyBrightness();
@@ -2852,7 +2864,7 @@ void Engine::open() {
   memset(btn, 0, sizeof(btn));
   page = PAGE_BOOT;
   ui_dirty = true;
-  boot_progress = 100;
+  boot_progress = 6;
   last_frame = last_blink = GetHAL().millis();
 }
 
@@ -2873,19 +2885,6 @@ void Engine::update() {
 
   pollButtons();
 
-  // Auto Time Machine: hold full brightness; idle dim only after leaving TRACK
-  if (page == PAGE_TRACK && tm_playing) {
-    last_input_ms = now;
-    if (screen_dimmed) {
-      screen_dimmed = false;
-      applyBrightness();
-    }
-  } else if (page != PAGE_BOOT && !screen_dimmed && (now - last_input_ms > IDLE_DIM_MS)) {
-    // Batch 6: 15s idle → dim backlight to 20%
-    screen_dimmed = true;
-    applyBrightness();
-  }
-
   if (event_show_ms && (now - event_show_ms > 1800)) {
     event_show_ms = 0;
     ui_dirty = true; // restore kbar text
@@ -2896,7 +2895,12 @@ void Engine::update() {
   }
 
   if (page == PAGE_BOOT) {
-    boot_progress = (boot_progress + 2) % 100;
+    // Loading progress is intentionally monotonic.  It approaches a stage
+    // ceiling while the network is pending and only completes by leaving this
+    // page, so it can never visibly rewind or masquerade as a repeated fetch.
+    const uint8_t target = fetch_state == FetchState::Idle ? 28
+                         : fetch_state == FetchState::Loading ? 88 : 94;
+    if (boot_progress < target) boot_progress++;
     // The simplified latitude/longitude globe is cheap enough for smooth motion.
     if (now - last_frame >= 100) {
       boot_angle = (boot_angle + 4) % 360;
