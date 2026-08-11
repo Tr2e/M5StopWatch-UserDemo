@@ -1238,74 +1238,47 @@ static int kbarY() {
   return TC_SCREEN_H - kbarH() - tcU(8);
 }
 
+static void printCenteredChord(LovyanGFX* dst, int y, const char* text, uint16_t color) {
+  const int width = (int)strlen(text) * TC_CHAR_W;
+  const int left = circleSafeLeft(y);
+  const int right = circleSafeRight(y);
+  int x = (int)TC_CX - width / 2;
+  if (x < left) x = left;
+  if (x + width > right) x = right - width;
+  if (x < left) return;  // Text intentionally omitted rather than clipped.
+  dst->setTextColor(color);
+  dst->setCursor(x, y);
+  dst->print(text);
+}
+
 static void drawHUD() {
   float d = distKm(user_lat, user_lon, TYP_LAT, TYP_LON);
-  char buf[24];
+  char buf[32];
   G->setTextSize(TC_FONT_SIZE);
-  // Drop below the clipped crown; x follows the chord at each row.
-  const int y0 = tcU(22), y1 = y0 + tcU(11), y2 = y0 + tcU(20);
-  const int x0 = circleSafeLeft(y0);
-  const int x1 = x0 + tcU(22);
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(x0, y0); G->print("LAT");
-  G->setTextColor(TC_CYAN);     G->setCursor(x1, y0);
-  snprintf(buf, sizeof(buf), "%.1fN", user_lat); G->print(buf);
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(x0, y1); G->print("LON");
-  G->setTextColor(TC_CYAN);     G->setCursor(x1, y1);
-  snprintf(buf, sizeof(buf), "%.1fE", user_lon); G->print(buf);
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(x0, y2); G->print("SRC");
+  // Top chord: two compact, centered lines.  This keeps all text out of the
+  // narrow crown rather than competing left/right columns for the same chord.
+  const int top0 = tcU(25), top1 = top0 + TC_CHAR_H + tcU(2);
+  snprintf(buf, sizeof(buf), "%.1fN  %.1fE", user_lat, user_lon);
+  printCenteredChord(G, top0, buf, TC_CYAN);
+  const char* source = "MANUAL";
   if (!storms_are_live) {
-    G->setTextColor(TC_YELLOW);
-    G->setCursor(x1, y2);
-    G->print("DEMO");
+    source = "DEMO DATA";
   } else if (wifiIsConnected()) {
-    G->setTextColor(data_stale ? C(TC_YELLOW) : C(TC_GREEN));
-    G->setCursor(x1, y2);
-    G->print(data_stale ? "STALE" : "NMC");
+    source = data_stale ? "NMC STALE" : "NMC LIVE";
   } else {
-    static const char* SRC[] = {"WIFI","GPS","MAN"};
-    G->setTextColor(loc_src == 0 ? C(TC_YELLOW) : C(TC_GREEN));
-    G->setCursor(x1, y2);
-    G->print(SRC[loc_src % 3]);
+    static const char* SRC[] = {"WIFI LOC", "GPS", "MANUAL"};
+    source = SRC[loc_src % 3];
   }
-  const int rw = tcU(60);
-  int rx = circleSafeRight(y0) - rw;
-  if (rx < TC_SCREEN_W / 2) rx = TC_SCREEN_W / 2;
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(rx, y0);            G->print("UTC");
-  G->setTextColor(TC_YELLOW);   G->setCursor(rx + tcU(20), y0);  G->print("07-11");
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(rx, y1);            G->print("ACT");
-  G->setTextColor(C(TC_RED));   G->setCursor(rx + tcU(20), y1);
-  { char ab[8]; snprintf(ab, sizeof(ab), "%d/%d", storm_sel + 1, storm_count); G->print(ab); }
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(rx, y2);            G->print("TILT");
-  G->setTextColor(gyro_tilt ? TC_CYAN : TC_TEXT_DIM);
-  G->setCursor(rx + tcU(28), y2);
-  if (gyro_tilt) {
-    char tb[8]; snprintf(tb, sizeof(tb), "%+02.0f", tilt_pitch);
-    G->print(tb);
-  } else G->print("OFF");
+  snprintf(buf, sizeof(buf), "%s  ·  %d ACTIVE", source, storm_count);
+  printCenteredChord(G, top1, buf, storms_are_live ? TC_TEXT : TC_YELLOW);
 
-  const int by = kbarY() - tcU(32);
-  const int lx = circleSafeLeft(by);
-  const int lx1 = lx + tcU(22);
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(lx, by);            G->print("NEAREST");
-  G->setTextColor(C(TC_RED));   G->setCursor(lx + tcU(46), by);  G->print(typ_name);
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(lx, by + tcU(9));   G->print("DIST");
-  snprintf(buf, sizeof(buf), "%dKM %s", (int)(d + 0.5f), bearingTo(user_lat, user_lon, TYP_LAT, TYP_LON));
-  G->setTextColor(C(TC_RED));   G->setCursor(lx + tcU(26), by + tcU(9)); G->print(buf);
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(lx, by + tcU(18));  G->print("CAT");
-  G->setTextColor(C(catColor(STORMS[storm_sel].cat)));
-  G->setCursor(lx1, by + tcU(18)); G->print(catName(STORMS[storm_sel].cat));
-  const int bw = tcU(48);
-  int bx = circleSafeRight(by) - bw;
-  if (bx < TC_SCREEN_W / 2) bx = TC_SCREEN_W / 2;
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(bx, by);                   G->print("BAT");
-  G->setTextColor(C(TC_GREEN)); G->setCursor(bx + tcU(20), by);
-  snprintf(buf, sizeof(buf), "%d%%", batteryPct()); G->print(buf);
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(bx, by + tcU(9));          G->print("IMU");
-  G->setTextColor(gyro_tilt ? C(TC_GREEN) : TC_TEXT_DIM);
-  G->setCursor(bx + tcU(20), by + tcU(9)); G->print(gyro_tilt ? "ON" : "OFF");
-  G->setTextColor(TC_TEXT_DIM); G->setCursor(bx, by + tcU(18));         G->print("NIGHT");
-  G->setTextColor(night_mode ? C(TC_RED) : TC_TEXT_DIM);
-  G->setCursor(bx + tcU(32), by + tcU(18)); G->print(night_mode ? "ON" : "OFF");
+  const int bottom0 = kbarY() - tcU(29), bottom1 = bottom0 + TC_CHAR_H + tcU(2);
+  snprintf(buf, sizeof(buf), "%s  ·  %dKM %s", typ_name, (int)(d + 0.5f),
+           bearingTo(user_lat, user_lon, TYP_LAT, TYP_LON));
+  printCenteredChord(G, bottom0, buf, C(TC_RED));
+  snprintf(buf, sizeof(buf), "%s  ·  %dKT  ·  %d%%", catName(STORMS[storm_sel].cat),
+           STORMS[storm_sel].wind_kt, batteryPct());
+  printCenteredChord(G, bottom1, buf, C(catColor(STORMS[storm_sel].cat)));
 }
 
 static void drawDashedLine(int x0, int y0, int x1, int y1, uint16_t color) {
@@ -1783,89 +1756,49 @@ static void renderDetail() {
   drawTyphoon();
   drawUserMarker();
 
+  // Detail uses the same rim-first hierarchy as Time Machine.  The map and
+  // wind rings stay unobstructed; no rectangular diagnostic cards compete
+  // with the storm at the center.
   disp_->setTextSize(TC_FONT_SIZE);
-  const int pw = tcU(110);
-  const int top = tcU(36);
-  const int bot = kbarY() - tcU(4);
-  // Opaque panel covers left mid-band — corners clipped by round bezel
-  disp_->fillRect(0, top, pw, bot - top, TC_PANEL_BG);
-  disp_->drawFastVLine(pw, top, bot - top, TC_CYAN);
-  disp_->fillRect(0, top, pw, tcU(14), disp_->color565(10, 40, 50));
-  disp_->setTextColor(C(TC_RED));
-  {
-    int ty = top + tcU(2);
-    disp_->setCursor(circleSafeLeft(ty), ty);
-    char t[20]; snprintf(t, sizeof(t), "%s", typ_name); disp_->print(t);
-  }
-
-  auto row = [&](int y, const char* lab, const char* val, uint16_t vc) {
-    int lx = circleSafeLeft(y);
-    if (lx < tcU(3)) lx = tcU(3);
-    if (lx > pw - tcU(60)) lx = pw - tcU(60);
-    disp_->setTextColor(TC_TEXT_DIM);
-    disp_->setCursor(lx, y); disp_->print(lab);
-    disp_->setTextColor(vc);
-    disp_->setCursor(lx + tcU(45), y); disp_->print(val);
-  };
-
-  char buf[28];
   const Storm& st = STORMS[storm_sel];
-  float d = distKm(user_lat, user_lon, TYP_LAT, TYP_LON);
-  const char* br = bearingTo(user_lat, user_lon, TYP_LAT, TYP_LON);
+  char buf[36];
+  const int top0 = tcU(25), top1 = top0 + TC_CHAR_H + tcU(2);
+  const int top2 = top1 + TC_CHAR_H + tcU(2);
+  printCenteredChord(disp_, top0, typ_name, C(TC_RED));
+  snprintf(buf, sizeof(buf), "%s  ·  %d KT", catName(st.cat), st.wind_kt);
+  printCenteredChord(disp_, top1, buf, C(catColor(st.cat)));
+  snprintf(buf, sizeof(buf), "%.1fN  %.1fE  ·  %d HPA", st.lat, st.lon, st.pressure);
+  printCenteredChord(disp_, top2, buf, TC_TEXT);
 
-  {
-    int cy = top + tcU(16);
-    int lx = circleSafeLeft(cy);
-    if (lx < tcU(3)) lx = tcU(3);
-    disp_->setTextColor(TC_TEXT_DIM); disp_->setCursor(lx, cy); disp_->print("CAT");
-    disp_->setTextColor(C(catColor(st.cat))); disp_->setCursor(lx + tcU(25), cy); disp_->print(catName(st.cat));
-    int bars = (int)st.cat + 1; if (bars > 5) bars = 5;
-    for (int i = 0; i < bars; i++)
-      disp_->fillRect(lx + tcU(55) + i * tcU(7), cy + 1, tcU(5), tcU(5), C(TC_RED));
+  // Ring legend follows the right chord with no opaque card, so it remains
+  // legible without cutting a second rectangular hole into the map.
+  const int legendX = circleSafeRight(tcU(74), tcU(3)) - tcU(47);
+  const int legendY = tcU(74);
+  disp_->setTextColor(TC_TEXT_DIM);
+  disp_->setCursor(legendX, legendY - TC_CHAR_H - tcU(1));
+  disp_->print("RINGS");
+  struct RingLegend { const char* label; float radius; uint16_t color; };
+  const RingLegend legend[] = {
+      {"R7", st.r7, TC_YELLOW}, {"R10", st.r10, TC_ORANGE}, {"R12", st.r12, TC_RED},
+  };
+  for (int i = 0; i < 3; ++i) {
+    const int y = legendY + i * (TC_CHAR_H + tcU(1));
+    disp_->drawFastHLine(legendX, y + TC_CHAR_H / 2, tcU(7), legend[i].color);
+    snprintf(buf, sizeof(buf), "%s %d", legend[i].label, (int)legend[i].radius);
+    disp_->setTextColor(legend[i].color);
+    disp_->setCursor(legendX + tcU(10), y);
+    disp_->print(buf);
   }
 
-  snprintf(buf, sizeof(buf), "%.1fN%.1fE", st.lat, st.lon);
-  row(top + tcU(28), "POS",  buf, C(TC_YELLOW));
-  snprintf(buf, sizeof(buf), "%dhPa", st.pressure);
-  row(top + tcU(40), "PRES", buf, C(TC_TEXT));
-  snprintf(buf, sizeof(buf), "%dkt", st.wind_kt);
-  row(top + tcU(52), "WIND", buf, C(TC_RED));
-  snprintf(buf, sizeof(buf), "%dkt", st.wind_kt + 20);
-  row(top + tcU(64), "GUST", buf, C(TC_RED));
-  row(top + tcU(76), "MOVE", "12kt WNW", C(TC_TEXT));
-  snprintf(buf, sizeof(buf), "%dkm", (int)st.r7);
-  row(top + tcU(88), "R7",   buf, C(TC_YELLOW));
-  snprintf(buf, sizeof(buf), "%dkm", (int)st.r10);
-  row(top + tcU(100), "R10",  buf, C(TC_ORANGE));
-  snprintf(buf, sizeof(buf), "%dkm", (int)st.r12);
-  row(top + tcU(112), "R12",  buf, C(TC_RED));
-  snprintf(buf, sizeof(buf), "%dKM %s", (int)(d + 0.5f), br);
-  row(top + tcU(124), "DIST", buf, C(TC_YELLOW));
-  { char lb[12]; landfallLabel(lb, sizeof(lb)); row(top + tcU(136), "LAND", lb, C(TC_CYAN)); }
-  row(top + tcU(148), "TREND", trendLabel(), C(TC_RED));
-
-  // Light dim on visible earth only (right of panel)
-  for (int y = top; y < bot; y += 3)
-    disp_->drawFastHLine(pw + 1, y, TC_SCREEN_W - pw - 1, TC_BLACK);
-
-  const int rbh = tcU(52), rbw = tcU(60);
-  int ly = top + tcU(4);
-  int lx = circleSafeRight(ly, 2, rbh) - rbw;
-  disp_->fillRect(lx, ly, rbw, rbh, TC_BLACK);
-  disp_->drawRect(lx, ly, rbw, rbh, TC_CYAN);
-  disp_->setTextColor(TC_CYAN);
-  disp_->setCursor(lx + tcU(2), ly + tcU(2)); disp_->print("RINGS");
-  disp_->setTextColor(TC_YELLOW);
-  disp_->setCursor(lx + tcU(2), ly + tcU(14)); disp_->print("7  280");
-  disp_->setTextColor(TC_ORANGE);
-  disp_->setCursor(lx + tcU(2), ly + tcU(26)); disp_->print("10 160");
-  disp_->setTextColor(TC_RED);
-  disp_->setCursor(lx + tcU(2), ly + tcU(38)); disp_->print("12 80");
-
-  static const char* RM[] = {"ALL","R7","R10","R12","OFF"};
-  disp_->setTextColor(TC_CYAN);
-  disp_->setCursor(lx + tcU(2), ly + rbh + 2);
-  disp_->print(RM[ring_mode % 5]);
+  const int bottom0 = kbarY() - tcU(29);
+  const int bottom1 = bottom0 + TC_CHAR_H + tcU(2);
+  snprintf(buf, sizeof(buf), "R7 %d  ·  R10 %d  ·  R12 %d KM", (int)st.r7,
+           (int)st.r10, (int)st.r12);
+  printCenteredChord(disp_, bottom0, buf, TC_YELLOW);
+  const float d = distKm(user_lat, user_lon, TYP_LAT, TYP_LON);
+  snprintf(buf, sizeof(buf), "%d KM %s  ·  GUST %d KT  ·  %s", (int)(d + 0.5f),
+           bearingTo(user_lat, user_lon, TYP_LAT, TYP_LON), st.wind_kt + 20, trendLabel());
+  printCenteredChord(disp_, bottom1, buf, TC_TEXT_DIM);
 
   drawKbar("K1 BACK", "K2 TIME");
   disp_->endWrite();
@@ -2053,7 +1986,8 @@ static void renderMenu() {
   disp_->setCursor((int)TC_CX - (int)strlen(hdr) * TC_CHAR_W / 2, titleY);
   disp_->print(hdr);
 
-  int pw = tcU(180), ph = tcU(140);
+  // Keep the full panel inside the narrowest top/bottom chords it spans.
+  int pw = tcU(174), ph = tcU(140);
   int px = (TC_SCREEN_W - pw) / 2, py = tcU(48);
   disp_->fillRect(px, py, pw, ph, TC_PANEL_BG);
   disp_->drawRect(px, py, pw, ph, TC_CYAN);
@@ -2074,11 +2008,11 @@ static void renderMenu() {
     disp_->print(sel ? ">" : " ");
     disp_->print(MENU_LABELS[i]);
     val[0] = 0;
-    if (i == 3) snprintf(val, sizeof(val), gyro_tilt ? "[ON]" : "[OFF]");
-    else if (i == 4) snprintf(val, sizeof(val), night_mode ? "[ON]" : "[OFF]");
-    else if (i == 2) snprintf(val, sizeof(val), "[%d%%]", brightness);
-    else if (i == 5) snprintf(val, sizeof(val), "[%d]", alert_radius_km);
-    else if (i == 6) snprintf(val, sizeof(val), units_kt ? (units_km ? "[KT/KM]" : "[KT/NM]") : (units_km ? "[MS/KM]" : "[MS/NM]"));
+    if (i == 1) snprintf(val, sizeof(val), "[%d%%]", brightness);
+    else if (i == 2) snprintf(val, sizeof(val), gyro_tilt ? "[ON]" : "[OFF]");
+    else if (i == 3) snprintf(val, sizeof(val), night_mode ? "[ON]" : "[OFF]");
+    else if (i == 4) snprintf(val, sizeof(val), "[%d]", alert_radius_km);
+    else if (i == 5) snprintf(val, sizeof(val), units_kt ? (units_km ? "[KT/KM]" : "[KT/NM]") : (units_km ? "[MS/KM]" : "[MS/NM]"));
     if (val[0]) {
       disp_->setCursor(px + pw - tcU(6) - (int)strlen(val) * TC_CHAR_W, iy);
       disp_->print(val);
@@ -2135,7 +2069,7 @@ static void renderLocation() {
   // Source panel — right of list, chord-safe
   int sx = pw + tcU(6), sy = top;
   int sw = circleSafeRight(sy, 2, tcU(52)) - sx;
-  if (sw < tcU(90)) sw = tcU(90);
+  if (sw < tcU(74)) sw = tcU(74);
   disp_->fillRect(sx, sy, sw, tcU(52), TC_BLACK);
   disp_->drawRect(sx, sy, sw, tcU(52), TC_CYAN);
   disp_->setTextColor(TC_CYAN);
@@ -2144,8 +2078,8 @@ static void renderLocation() {
   for (int i = 0; i < 3; i++) {
     disp_->setTextColor(i == loc_src ? TC_CYAN : TC_TEXT_DIM);
     disp_->setCursor(sx + tcU(4), sy + tcU(16) + i * tcU(12));
-    disp_->print(i == loc_src ? "(*) " : "( ) ");
-    disp_->print(SN[i]);
+    disp_->print(i == loc_src ? "> " : "  ");
+    disp_->print(i == 0 ? "WIFI" : SN[i]);
   }
 
   // Mini regional preview — zoomed map with city label
@@ -2345,7 +2279,9 @@ static void renderMulti() {
     if (sel) G->fillRect(px + 1, iy - 1, pw - 2, rowH, C(TC_CYAN));
     G->setTextColor(sel ? TC_BLACK : C(TC_TEXT));
     G->setCursor(px + 2, iy);
-    G->print(STORMS[i].name);
+    char shortName[7];
+    snprintf(shortName, sizeof(shortName), "%.6s", STORMS[i].name);
+    G->print(shortName);
     float d = distKm(user_lat, user_lon, STORMS[i].lat, STORMS[i].lon);
     char db[8]; snprintf(db, sizeof(db), "%d", (int)(d + 0.5f));
     G->setCursor(px + pw - 2 - (int)strlen(db) * TC_CHAR_W, iy);
