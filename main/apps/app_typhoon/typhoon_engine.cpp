@@ -1896,7 +1896,10 @@ static void renderBootGlobe(LovyanGFX* s, int cx, int cy, int radius, float lon)
     return true;
   };
 
-  s->fillCircle(cx, cy, radius, s->color565(11, 27, 31));
+  // A shallow two-tone ocean gives the wireframe a tangible spherical volume
+  // without per-pixel shading work during boot.
+  s->fillCircle(cx, cy, radius, s->color565(7, 20, 24));
+  s->fillCircle(cx - tcU(3), cy - tcU(3), radius - tcU(4), s->color565(10, 31, 35));
   // Latitude / longitude lines give the rotating globe its quiet sense of depth.
   const uint16_t grid = s->color565(29, 62, 65);
   // A denser, evenly spaced graticule reads as an instrument rather than a
@@ -1923,18 +1926,38 @@ static void renderBootGlobe(LovyanGFX* s, int cx, int cy, int radius, float lon)
       } else prev = false;
     }
   }
+  // Real coastlines, intentionally sampled very sparsely.  At this small
+  // scale they suggest landmass shape rather than becoming noisy geography,
+  // while keeping each loading frame inexpensive.
+  const uint16_t coast = s->color565(53, 95, 83);
+  for (int i = 0; i < world_map_count; ++i) {
+    const MapPoint* pts = world_map[i].points;
+    const int n = world_map[i].length;
+    int px = 0, py = 0;
+    bool prev = false;
+    for (int j = 0; j < n; j += 9) {
+      int x, y;
+      if (projectBoot(pts[j].sinLat, pts[j].cosLat,
+                      pts[j].sinLon, pts[j].cosLon, x, y)) {
+        if (prev) s->drawLine(px, py, x, y, coast);
+        px = x; py = y; prev = true;
+      } else {
+        prev = false;
+      }
+    }
+  }
   // Only the two exterior portions of the tilted axis are visible; the globe
   // correctly occludes the middle section instead of being crossed by a line.
+  s->drawCircle(cx, cy, radius, TC_CYAN_DIM);
+  s->drawCircle(cx, cy, radius + 2, s->color565(36, 76, 80));
   const float tilt = -24.0f * DEG2RAD;
   const float ux = sinf(tilt), uy = cosf(tilt);
-  const float outer = radius * 1.28f, inner = radius + 3.0f;
+  const float outer = radius * 1.28f, inner = radius;
   const uint16_t axis = TC_YELLOW;
   s->drawLine(cx + (int)(ux * outer), cy + (int)(uy * outer),
               cx + (int)(ux * inner), cy + (int)(uy * inner), axis);
   s->drawLine(cx - (int)(ux * inner), cy - (int)(uy * inner),
               cx - (int)(ux * outer), cy - (int)(uy * outer), axis);
-  s->drawCircle(cx, cy, radius, TC_CYAN_DIM);
-  s->drawCircle(cx, cy, radius + 2, s->color565(36, 76, 80));
 }
 
 static void renderBoot() {
@@ -1947,7 +1970,8 @@ static void renderBoot() {
     if ((x - cx) * (x - cx) + (y - cy) * (y - cy) > (radius + 22) * (radius + 22))
       disp_->drawPixel(x, y, (i % 3 == 0) ? TC_CYAN_DIM : TC_TEXT_DIM);
   }
-  renderBootGlobe(disp_, cx, cy, radius, 118.0f + boot_angle * 0.45f);
+  // One complete longitude revolution per angle cycle: loop closure is exact.
+  renderBootGlobe(disp_, cx, cy, radius, 118.0f + boot_angle);
 
   disp_->setTextSize(TC_FONT_SIZE);
   const char* title = "TYPHOON";
