@@ -232,7 +232,6 @@ static int ring_r7 = 4, ring_r10 = 3, ring_r12 = 2;
 
 // --- Batch 2/4: pages + input ---
 static Page page = PAGE_BOOT;
-static bool night_mode = false;
 static bool gyro_tilt = true;
 static uint8_t brightness_user = 80; // user preference (before night/dim)
 static bool units_kt = true;   // false = m/s
@@ -488,11 +487,6 @@ static void drawContinents(LGFX_Sprite* s) {
             cg = (uint8_t)(150 * (1 - f) + 60 * f);
           }
           uint16_t col = s->color565(cr, cg, cb);
-          if (night_mode) {
-            // red-tint coastline
-            uint8_t nr = (uint8_t)((cr + cg / 2) / 3 + 40); if (nr > 255) nr = 255;
-            col = s->color565(nr, nr / 5, nr / 8);
-          }
           s->drawLine(prevX, prevY, outX, outY, col);
           // Light 2px stroke — enough on 466 without StickS3 chunkiness
           s->drawLine(prevX, prevY + 1, outX, outY + 1, col);
@@ -556,8 +550,7 @@ static void strokeMapPaths(LGFX_Sprite* s, const MapPath* paths, int count,
 
 // Province borders — finer data, soft inland color
 static void drawChinaProvinces(LGFX_Sprite* s) {
-  uint16_t col = night_mode ? s->color565(78, 32, 32) : s->color565(70, 118, 108);
-  strokeMapPaths(s, china_provinces, china_provinces_count, col, false);
+  strokeMapPaths(s, china_provinces, china_provinces_count, s->color565(70, 118, 108), false);
 }
 
 // Regional lat/lon grid (10° meridians / 5° parallels)
@@ -575,9 +568,7 @@ static void drawGeoGrid(LGFX_Sprite* s, uint16_t color) {
   }
   for (int lat = -60; lat <= 60; lat += 5) {
     int px = -1, py = -1; bool pv = false;
-    uint16_t c = (lat == 0)
-      ? (night_mode ? s->color565(90, 20, 20) : s->color565(50, 110, 120))
-      : color;
+    uint16_t c = (lat == 0) ? s->color565(50, 110, 120) : color;
     for (int lon = -180; lon <= 180; lon += 2) {
       int x, y;
       if (project((float)lat, (float)lon, x, y)) {
@@ -597,8 +588,7 @@ static void drawMultiCoastlines(LGFX_Sprite* s, int step, bool thick) {
   const float cLat = ctr_lat * DEG2RAD, cLon = ctr_lon * DEG2RAD;
   const float sin_cLat = sinf(cLat), cos_cLat = cosf(cLat);
   const float sin_cLon = sinf(cLon), cos_cLon = cosf(cLon);
-  const uint16_t coast = night_mode ? s->color565(152, 52, 42)
-                                    : s->color565(78, 166, 118);
+  const uint16_t coast = s->color565(78, 166, 118);
   const int margin = tcU(24);
 
   for (int i = 0; i < world_map_count; ++i) {
@@ -661,27 +651,15 @@ static void drawMultiGeoGrid(LGFX_Sprite* s, uint16_t color) {
 }
 
 static void buildMultiAnimationBg(LGFX_Sprite* s) {
-  if (night_mode) {
-    s->fillScreen(s->color565(28, 4, 4));
-    drawMultiGeoGrid(s, s->color565(82, 20, 20));
-    drawMultiCoastlines(s, 1, false);
-    s->drawCircle(earth_cx, earth_cy, EARTH_R, s->color565(120, 42, 30));
-  } else {
-    s->fillScreen(TC_OCEAN);
-    drawMultiGeoGrid(s, s->color565(30, 78, 90));
-    drawMultiCoastlines(s, 1, false);
-    s->drawCircle(earth_cx, earth_cy, EARTH_R, s->color565(58, 128, 144));
-  }
+  s->fillScreen(TC_OCEAN);
+  drawMultiGeoGrid(s, s->color565(30, 78, 90));
+  drawMultiCoastlines(s, 1, false);
+  s->drawCircle(earth_cx, earth_cy, EARTH_R, s->color565(58, 128, 144));
 }
 
 static void buildMultiDetailBg(LGFX_Sprite* s) {
-  if (night_mode) {
-    s->fillScreen(s->color565(28, 4, 4));
-    drawMultiGeoGrid(s, s->color565(82, 20, 20));
-  } else {
-    s->fillScreen(TC_OCEAN);
-    drawMultiGeoGrid(s, s->color565(30, 78, 90));
-  }
+  s->fillScreen(TC_OCEAN);
+  drawMultiGeoGrid(s, s->color565(30, 78, 90));
   // A global map uses one complete coastline layer; province borders would be
   // visual noise at this scale and are intentionally omitted.
   drawMultiCoastlines(s, 1, false);
@@ -689,13 +667,8 @@ static void buildMultiDetailBg(LGFX_Sprite* s) {
 
 static void buildEarthBg(LGFX_Sprite* s) {
   // Oversized regional map — margins supply pixels when view tilts
-  if (night_mode) {
-    s->fillScreen(s->color565(28, 4, 4));
-    drawGeoGrid(s, s->color565(70, 15, 15));
-  } else {
-    s->fillScreen(TC_OCEAN);
-    drawGeoGrid(s, s->color565(22, 55, 65));
-  }
+  s->fillScreen(TC_OCEAN);
+  drawGeoGrid(s, s->color565(22, 55, 65));
   drawContinents(s);
   drawChinaProvinces(s);
 }
@@ -958,9 +931,8 @@ static void pollIpLocate() {
 }
 
 static void applyBrightness() {
-  // StickS3 backlight 0..255 — night caps 40%, idle dim → 20%
+  // Idle dim → 20%; otherwise retain the user's selected brightness.
   uint8_t pct = brightness;
-  if (night_mode && pct > 40) pct = 40;
   if (screen_dimmed) pct = 20;
   GetHAL().setBackLightBrightness(static_cast<int>(pct));
 }
@@ -973,18 +945,8 @@ static void noteInput() {
   }
 }
 
-// Remap RGB565 → red-tinted night palette
 static uint16_t C(uint16_t c) {
-  if (!night_mode) return c;
-  uint8_t r = (c >> 11) & 0x1F;
-  uint8_t g = (c >> 5) & 0x3F;
-  uint8_t b = c & 0x1F;
-  int lum = (r * 38 + (g >> 1) * 75 + b * 15) >> 7; // ~0..31
-  if (lum < 2) return 0x1000;
-  uint8_t nr = (uint8_t)(6 + lum); if (nr > 31) nr = 31;
-  uint8_t ng = (uint8_t)(lum / 4); if (ng > 20) ng = 20;
-  uint8_t nb = (uint8_t)(lum / 10);
-  return (uint16_t)((nr << 11) | (ng << 5) | nb);
+  return c;
 }
 
 static uint16_t catColor(uint8_t cat) {
@@ -1207,15 +1169,6 @@ static bool tickMultiFocus(uint32_t now) {
   return true;
 }
 
-static void setNightMode(bool on) {
-  if (night_mode == on) return;
-  night_mode = on;
-  screen_dimmed = false;
-  buildEarthBg(bg_sprite);
-  applyBrightness();
-  ui_dirty = true;
-}
-
 bool wifiIsConnected() {
   return tcWifiConnected();
 }
@@ -1436,13 +1389,6 @@ static void drawLabels() {
     G->setCursor(user_sx + tcU(5), user_sy - tcU(12));
     G->print(city_name);
   }
-}
-
-static void drawMoonIcon() {
-  if (!night_mode || !G) return;
-  int mx = VIEW_W / 2, my = tcU(18);
-  G->fillCircle(mx, my, tcU(5), C(TC_YELLOW));
-  G->fillCircle(mx + tcU(3), my - tcU(1), tcU(4), night_mode ? G->color565(28, 4, 4) : TC_OCEAN);
 }
 
 static int batteryPct() {
@@ -2036,7 +1982,6 @@ static void renderMainBase() {
   drawLabels();
 
   drawHUD();
-  drawMoonIcon();
   drawKbar("K1 MENU", "K2 DETAIL");
 }
 
@@ -2261,9 +2206,9 @@ static void renderTrack() {
 
 static const char* MENU_LABELS[] = {
   "LOCATION", "DISPLAY", "GYRO TILT",
-  "NIGHT MODE", "ALERT RADIUS", "UNITS", "ABOUT", "EXIT"
+  "ALERT RADIUS", "UNITS", "ABOUT", "EXIT"
 };
-#define MENU_N 8
+#define MENU_N 7
 
 static void renderMenu() {
   disp_->startWrite();
@@ -2305,9 +2250,8 @@ static void renderMenu() {
     val[0] = 0;
     if (i == 1) snprintf(val, sizeof(val), "[%d%%]", brightness);
     else if (i == 2) snprintf(val, sizeof(val), gyro_tilt ? "[ON]" : "[OFF]");
-    else if (i == 3) snprintf(val, sizeof(val), night_mode ? "[ON]" : "[OFF]");
-    else if (i == 4) snprintf(val, sizeof(val), "[%d]", alert_radius_km);
-    else if (i == 5) snprintf(val, sizeof(val), units_kt ? (units_km ? "[KT/KM]" : "[KT/NM]") : (units_km ? "[MS/KM]" : "[MS/NM]"));
+    else if (i == 3) snprintf(val, sizeof(val), "[%d]", alert_radius_km);
+    else if (i == 4) snprintf(val, sizeof(val), units_kt ? (units_km ? "[KT/KM]" : "[KT/NM]") : (units_km ? "[MS/KM]" : "[MS/NM]"));
     if (val[0]) {
       disp_->setCursor(px + pw - tcU(6) - (int)strlen(val) * TC_CHAR_W, iy);
       disp_->print(val);
@@ -2584,7 +2528,6 @@ static void renderMulti() {
     G->print(db);
   }
 
-  drawMoonIcon();
   if (multi_camera.active) {
     printCenteredChord(G, kbarY() - tcU(40), "FOCUSING STORM", TC_CYAN);
   }
@@ -2612,11 +2555,6 @@ static void handleEvt(uint8_t id, BtnEvt ev) {
   }
   if (ev == EVT_COMBO) {
     gotoPage(PAGE_MAIN); showEvent("COMBO MAIN", TC_RED); return;
-  }
-  if (id == 0 && ev == EVT_DBL) {
-    setNightMode(!night_mode);
-    showEvent(night_mode ? "NIGHT ON" : "NIGHT OFF", TC_GREEN);
-    return;
   }
   if (id == 1 && ev == EVT_DBL) {
     if (page == PAGE_LOCATION && loc_src == 0) {
@@ -2702,11 +2640,7 @@ static void handleEvt(uint8_t id, BtnEvt ev) {
             else { tilt_pitch = tilt_roll = imu_pitch = imu_roll = 0; cal_ready = false; }
             showEvent(gyro_tilt ? "GYRO ON" : "GYRO OFF", TC_GREEN);
             break;
-          case 3:
-            setNightMode(!night_mode);
-            showEvent(night_mode ? "NIGHT ON" : "NIGHT OFF", TC_GREEN);
-            break;
-          case 4: {
+          case 3: {
             static const uint16_t AR[] = {100, 200, 300, 500};
             uint8_t ai = 0;
             for (uint8_t k = 0; k < 4; k++) if (alert_radius_km == AR[k]) { ai = (k + 1) % 4; break; }
@@ -2715,15 +2649,15 @@ static void handleEvt(uint8_t id, BtnEvt ev) {
             showEvent(b, TC_YELLOW);
             break;
           }
-          case 5:
+          case 4:
             if (units_kt && units_km) { units_kt = true; units_km = false; }
             else if (units_kt && !units_km) { units_kt = false; units_km = true; }
             else if (!units_kt && units_km) { units_kt = false; units_km = false; }
             else { units_kt = true; units_km = true; }
             showEvent(units_kt ? (units_km?"KT/KM":"KT/NM") : (units_km?"MS/KM":"MS/NM"), TC_YELLOW);
             break;
-          case 6: gotoPage(PAGE_ABOUT); break;
-          case 7: gotoPage(PAGE_MAIN); showEvent("MAIN", TC_CYAN); break;
+          case 5: gotoPage(PAGE_ABOUT); break;
+          case 6: gotoPage(PAGE_MAIN); showEvent("MAIN", TC_CYAN); break;
         }
       }
       break;
