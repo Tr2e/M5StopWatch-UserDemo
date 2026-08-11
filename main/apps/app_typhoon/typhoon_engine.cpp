@@ -62,8 +62,9 @@ static void gotoPage(Page p);
 
 #define VIEW_W     TC_SCREEN_W   // native StopWatch canvas (was StickS3 240)
 #define VIEW_H     TC_SCREEN_H
-// Oversized map so ±15° tilt still shows coastlines in newly exposed edges.
-#define FRAME_MARGIN tcU(32)
+// Cached map dimensions. The current fixed camera needs no rotation bleed;
+// a future global/"far-earth" camera can choose a larger cache independently.
+#define FRAME_MARGIN 0
 #define FRAME_W    (VIEW_W + 2 * FRAME_MARGIN)
 #define FRAME_H    (VIEW_H + 2 * FRAME_MARGIN)
 #define FRAME_OX   FRAME_MARGIN
@@ -176,7 +177,6 @@ static bool     screen_dimmed = false;
 #define RING_EXAG  2.2f
 
 static LGFX_Sprite* bg_sprite = nullptr;
-static LGFX_Sprite* frame_sprite = nullptr; // MAIN composite for tilt
 static LGFX_Sprite* view_sprite = nullptr;  // 240×135 present buffer (anti-flicker)
 static LovyanGFX* G = nullptr;             // draw target (Display or sprite)
 
@@ -1387,25 +1387,6 @@ static void drawKbar(const char* left, const char* right) {
   dst->print(R);
 }
 
-// Present off-screen 240×135 buffer in one DMA-friendly push (no fillScreen flash)
-static void presentView() { /* view_sprite is final buffer */ }
-
-// Map frame → view_sprite (crop or tilt). Call with overlays already on frame_sprite.
-static void blitFrameToView(bool tilt_active) {
-  uint16_t bg = night_mode ? view_sprite->color565(28, 4, 4) : TC_OCEAN;
-  view_sprite->fillScreen(bg);
-  if (!frame_sprite) return;
-  if (tilt_active) {
-    float ang = tilt_roll * 0.35f;
-    float dx = tilt_roll * 0.9f;
-    float dy = -tilt_pitch * 0.9f;
-    frame_sprite->pushRotateZoom(view_sprite,
-      VIEW_W * 0.5f + dx, VIEW_H * 0.5f + dy, ang, 1.0f, 1.0f);
-  } else {
-    frame_sprite->pushSprite(view_sprite, -FRAME_OX, -FRAME_OY);
-  }
-}
-
 static void showEvent(const char* text, uint16_t color) {
   strncpy(event_text, text, sizeof(event_text) - 1);
   event_text[sizeof(event_text) - 1] = 0;
@@ -1774,16 +1755,11 @@ static void pushMapCrop(LovyanGFX* dst) {
 }
 
 static void renderMainBase() {
-  bool want_tilt = gyro_tilt && frame_sprite && view_sprite && (page == PAGE_MAIN || page == PAGE_MULTI);
-  bool active = want_tilt && (fabsf(tilt_pitch) > 0.35f || fabsf(tilt_roll) > 0.35f);
-
-  // Compose map layers on oversized frame (coords = frame space)
-  G = frame_sprite ? (LovyanGFX*)frame_sprite : (LovyanGFX*)disp_;
-  if (frame_sprite) {
-    bg_sprite->pushSprite(frame_sprite, 0, 0);
-  } else {
-    pushMapCrop(disp_);
-  }
+  // Static cached map → presentation sprite.  This is also the path a future
+  // far-earth overview will use; only its cached projection needs to change.
+  disp_ = view_sprite;
+  G = view_sprite;
+  pushMapCrop(view_sprite);
   drawTracks();
   drawWindRings();
   drawTyphoon();
@@ -1791,72 +1767,21 @@ static void renderMainBase() {
   drawCompass();
   drawLabels();
 
-  // Off-screen present buffer: one push to LCD → no fillScreen flicker
-  if (view_sprite && frame_sprite) {
-    blitFrameToView(active);
-    G = view_sprite;
-    drawHUD();
-    drawMoonIcon();
-    if (want_tilt) {
-      char pr[20];
-      snprintf(pr, sizeof(pr), "P%+05.1f R%+05.1f", tilt_pitch, tilt_roll);
-      G->setTextColor(C(TC_YELLOW));
-      int ty = tcU(24);
-      int tw = (int)strlen(pr) * TC_CHAR_W;
-      G->setCursor(circleSafeRight(ty) - tw, ty);
-      G->print(pr);
-    }
-    drawKbar("K1 MENU", "K2 DETAIL");
-    presentView();
-    disp_ = view_sprite;
-  G = view_sprite;
-    return;
-  }
-
-  // Fallback without view buffer
-  disp_ = view_sprite;
-  G = view_sprite;
-  if (frame_sprite) {
-    if (active) {
-      float ang = tilt_roll * 0.35f;
-      float dx = tilt_roll * 0.9f;
-      float dy = -tilt_pitch * 0.9f;
-      frame_sprite->pushRotateZoom(VIEW_W * 0.5f + dx, VIEW_H * 0.5f + dy, ang, 1.0f, 1.0f);
-    } else {
-      frame_sprite->pushSprite(disp_, -FRAME_OX, -FRAME_OY);
-    }
-  }
   drawHUD();
   drawMoonIcon();
-  if (want_tilt) {
-    char pr[20];
-    snprintf(pr, sizeof(pr), "P%+05.1f R%+05.1f", tilt_pitch, tilt_roll);
-    disp_->setTextColor(C(TC_YELLOW));
-    int ty = tcU(24);
-    int tw = (int)strlen(pr) * TC_CHAR_W;
-    disp_->setCursor(circleSafeRight(ty) - tw, ty);
-    disp_->print(pr);
-  }
+  drawKbar("K1 MENU", "K2 DETAIL");
 }
 
 static void renderDetail() {
   // Compose without full-screen dim flash: earth → panel → light right-side dim
   disp_->startWrite();
-  if (frame_sprite) {
-    bg_sprite->pushSprite(frame_sprite, 0, 0);
-    G = frame_sprite;
-    drawTracks();
-    drawWindRings();
-    drawTyphoon();
-    drawUserMarker();
-    disp_ = view_sprite;
+  disp_ = view_sprite;
   G = view_sprite;
-    frame_sprite->pushSprite(disp_, -FRAME_OX, -FRAME_OY);
-  } else {
-    disp_ = view_sprite;
-  G = view_sprite;
-    pushMapCrop(disp_);
-  }
+  pushMapCrop(view_sprite);
+  drawTracks();
+  drawWindRings();
+  drawTyphoon();
+  drawUserMarker();
 
   disp_->setTextSize(TC_FONT_SIZE);
   const int pw = tcU(110);
@@ -1950,31 +1875,23 @@ static void renderTrack() {
   if (TRACK_N > 0) tmEvalHour(tm_hour_f);
 
   disp_->startWrite();
-  if (frame_sprite) {
-    bg_sprite->pushSprite(frame_sprite, 0, 0);
-    G = frame_sprite;
-    drawTracks();
-    // StickS3-style rings around playhead (approx R7/R10/R12)
-    int r12 = kmToPx(tm_r12);
-    if (r12 < tcU(8)) r12 = tcU(8);
-    dashedCircle(tm_sx, tm_sy, (int)(r12 * 2.4f), TC_YELLOW, tcU(10), 4);
-    dashedCircle(tm_sx, tm_sy, (int)(r12 * 1.5f), TC_ORANGE, tcU(8), 4);
-    dashedCircle(tm_sx, tm_sy, r12, TC_RED, tcU(8), 4);
-    G->fillCircle(tm_sx, tm_sy, tcU(3), TC_YELLOW);
-    G->fillRect(tm_sx - tcU(1), tm_sy - tcU(1), tcU(3), tcU(3), TC_WHITE);
-    G->setTextSize(TC_FONT_SIZE);
-    G->setTextColor(C(TC_RED));
-    G->setCursor(tm_sx + tcU(8), tm_sy - tcU(12));
-    G->print(typ_name);
-    drawUserMarker();
-    disp_ = view_sprite;
-    G = view_sprite;
-    frame_sprite->pushSprite(disp_, -FRAME_OX, -FRAME_OY);
-  } else {
-    disp_ = view_sprite;
-    G = view_sprite;
-    pushMapCrop(disp_);
-  }
+  disp_ = view_sprite;
+  G = view_sprite;
+  pushMapCrop(view_sprite);
+  drawTracks();
+  // StickS3-style rings around playhead (approx R7/R10/R12)
+  int r12 = kmToPx(tm_r12);
+  if (r12 < tcU(8)) r12 = tcU(8);
+  dashedCircle(tm_sx, tm_sy, (int)(r12 * 2.4f), TC_YELLOW, tcU(10), 4);
+  dashedCircle(tm_sx, tm_sy, (int)(r12 * 1.5f), TC_ORANGE, tcU(8), 4);
+  dashedCircle(tm_sx, tm_sy, r12, TC_RED, tcU(8), 4);
+  G->fillCircle(tm_sx, tm_sy, tcU(3), TC_YELLOW);
+  G->fillRect(tm_sx - tcU(1), tm_sy - tcU(1), tcU(3), tcU(3), TC_WHITE);
+  G->setTextSize(TC_FONT_SIZE);
+  G->setTextColor(C(TC_RED));
+  G->setCursor(tm_sx + tcU(8), tm_sy - tcU(12));
+  G->print(typ_name);
+  drawUserMarker();
 
   disp_->setTextSize(TC_FONT_SIZE);
   int hour_i = (int)(tm_hour_f + (tm_hour_f >= 0 ? 0.5f : -0.5f));
@@ -2385,12 +2302,9 @@ static void renderMulti() {
   // Guarantee MULTI scale every frame (coast + markers share earth_r)
   if (earth_r != EARTH_R_MULTI) setMapZoom(EARTH_R_MULTI);
   else { projectAll(); projectStorms(); }
-  bool want_tilt = gyro_tilt && frame_sprite && view_sprite;
-  bool active = want_tilt && (fabsf(tilt_pitch) > 0.35f || fabsf(tilt_roll) > 0.35f);
-
-  G = frame_sprite ? (LovyanGFX*)frame_sprite : (LovyanGFX*)disp_;
-  if (frame_sprite) bg_sprite->pushSprite(frame_sprite, 0, 0);
-  else pushMapCrop(disp_);
+  disp_ = view_sprite;
+  G = view_sprite;
+  pushMapCrop(view_sprite);
 
   for (int i = 0; i < storm_count; i++) {
     if (storm_sx[i] < 0) continue;
@@ -2414,21 +2328,6 @@ static void renderMulti() {
   drawUserMarker();
   drawCompass();
 
-  LovyanGFX* screen = (view_sprite && frame_sprite) ? (LovyanGFX*)view_sprite : (LovyanGFX*)disp_;
-  if (view_sprite && frame_sprite) {
-    blitFrameToView(active);
-  } else if (frame_sprite) {
-    if (active) {
-      float ang = tilt_roll * 0.35f;
-      float dx = tilt_roll * 0.9f;
-      float dy = -tilt_pitch * 0.9f;
-      frame_sprite->pushRotateZoom(VIEW_W * 0.5f + dx, VIEW_H * 0.5f + dy, ang, 1.0f, 1.0f);
-    } else {
-      frame_sprite->pushSprite(disp_, -FRAME_OX, -FRAME_OY);
-    }
-  }
-
-  G = screen;
   const int rowH = TC_CHAR_H + 2;
   const int pw = tcU(66);
   const int py = tcU(36);
@@ -2455,9 +2354,6 @@ static void renderMulti() {
 
   drawMoonIcon();
   drawKbar("K1 FOCUS", "K2 NEXT");
-  if (view_sprite && frame_sprite) presentView();
-  disp_ = view_sprite;
-  G = view_sprite;
 }
 
 static void render() {
@@ -2758,16 +2654,6 @@ void Engine::open() {
     return;
   }
   bg_sprite->setTextWrap(false);
-  frame_sprite = new LGFX_Sprite(&parent);
-  frame_sprite->setColorDepth(16);
-  frame_sprite->setPsram(true);
-  if (!frame_sprite->createSprite(FRAME_W, FRAME_H)) {
-    ESP_LOGW("Typhoon", "[IMU] frame sprite alloc failed — tilt disabled");
-    delete frame_sprite;
-    frame_sprite = nullptr;
-  } else {
-    frame_sprite->setTextWrap(false);
-  }
   view_sprite = new LGFX_Sprite(&parent);
   view_sprite->setColorDepth(16);
   view_sprite->setPsram(true);
@@ -2780,11 +2666,9 @@ void Engine::open() {
   view_sprite->setTextWrap(false);
   view_sprite->setTextSize(TC_FONT_SIZE);
   if (bg_sprite) bg_sprite->setTextSize(TC_FONT_SIZE);
-  if (frame_sprite) frame_sprite->setTextSize(TC_FONT_SIZE);
   ESP_LOGI("Typhoon", "[GFX] view %dx%d native canvas OK", VIEW_W, VIEW_H);
   disp_ = view_sprite;
   G = view_sprite;
-  imu_ok = true;
   // StickS3 also builds earth once, but Arduino loop yields; here we defer the heavy
   // coastline pass out of onOpen() so Mooncake/LVGL teardown + first frame stay light.
   if (bg_sprite) {
@@ -2816,7 +2700,6 @@ void Engine::update() {
   }
 
   pollButtons();
-  imuPoll();
 
   // Auto Time Machine: hold full brightness; idle dim only after leaving TRACK
   if (page == PAGE_TRACK && tm_playing) {
@@ -2880,9 +2763,7 @@ void Engine::update() {
   }
 
   if (now - last_blink >= 600) { blink_on = !blink_on; last_blink = now; }
-  bool tilting = gyro_tilt && (fabsf(tilt_pitch) > 0.4f || fabsf(tilt_roll) > 0.4f);
-  uint32_t frame_ms = tilting ? 66 : 100; // ~15fps while tilting
-  if (now - last_frame >= frame_ms) {
+  if (now - last_frame >= 100) {
     spiral_a1 = (spiral_a1 + 12) % 360;
     spiral_a2 = (spiral_a2 + 9) % 360;
     spiral_a3 = (spiral_a3 + 7) % 360;
@@ -2899,7 +2780,6 @@ Engine::~Engine() { close(); }
 
 void Engine::close() {
     if (bg_sprite) { bg_sprite->deleteSprite(); delete bg_sprite; bg_sprite = nullptr; }
-    if (frame_sprite) { frame_sprite->deleteSprite(); delete frame_sprite; frame_sprite = nullptr; }
     if (view_sprite) { view_sprite->deleteSprite(); delete view_sprite; view_sprite = nullptr; }
     disp_ = nullptr;
 }
