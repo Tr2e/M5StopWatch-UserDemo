@@ -258,6 +258,12 @@ static int      tm_sx = 0, tm_sy = 0;
 #define TM_MS_PER_DATA_HOUR  100
 #define TM_END_HOLD_MS 900
 static uint32_t tm_hold_until = 0;
+// The marker is evaluated at display cadence, while the expensive coastline
+// cache follows at a modest cadence.  This keeps wind/ring animation fluid.
+static uint32_t tm_last_camera_ms = 0;
+static bool     tm_camera_valid = false;
+#define TM_CAMERA_REBUILD_MS 180
+static uint32_t tm_eye_start_ms = 0;
 
 // LOCATION
 static uint8_t  loc_cursor = 2;   // Shanghai (Beijing, Nanjing, Shanghai…)
@@ -670,6 +676,14 @@ static void buildEarthBg(LGFX_Sprite* s) {
   drawChinaProvinces(s);
 }
 
+// Time Machine is an animated follow view.  Province borders add little at
+// this scale but make every camera-cache refresh needlessly expensive.
+static void buildTrackBg(LGFX_Sprite* s) {
+  s->fillScreen(TC_OCEAN);
+  drawGeoGrid(s, s->color565(31, 51, 55));
+  drawContinents(s);
+}
+
 // --- Unified track: past → NOW → forecast ---
 struct TrackPt {
   int16_t hour;   // relative to NOW
@@ -748,7 +762,10 @@ static void setMapCenter(float lat, float lon, bool force = false) {
   ctr_lat = lat;
   ctr_lon = lon;
   if (force || dlat >= 0.06f || dlon >= 0.06f) {
-    if (bg_sprite) buildEarthBg(bg_sprite);
+    if (bg_sprite) {
+      if (page == PAGE_TRACK) buildTrackBg(bg_sprite);
+      else buildEarthBg(bg_sprite);
+    }
   }
   projectAll();
   projectStorms();
@@ -1336,6 +1353,38 @@ static void drawTyphoon() {
   drawStormIcon(typ_sx, typ_sy, STORMS[storm_sel].cat, true);
 }
 
+static void drawDetailEyeArc(int cx, int cy, int radius, uint16_t start,
+                             uint16_t color) {
+  // A short dotted arc preserves the app's pixel language while clearly
+  // reading as a section of a circle rather than a spiral arm.
+  constexpr int kArcDegrees = 58;
+  for (int d = 0; d <= kArcDegrees; d += 6) {
+    const float a = (float)(start + d) * DEG2RAD;
+    const int x = cx + (int)(cosf(a) * radius);
+    const int y = cy + (int)(sinf(a) * radius);
+    G->drawPixel(x, y, color);
+  }
+}
+
+// Compact, deliberately pixel-built eye. Three separate sections of
+// concentric circles orbit the same eye, so it reads as a tidy cyclone rather
+// than three independent glyphs.
+static void drawCycloneEye(int cx, int cy, uint16_t phase) {
+  static const uint16_t arcCols[] = {
+    TC_WHITE, TC_CYAN, TC_CYAN_DIM
+  };
+  const int radii[] = {tcU(3), tcU(4), tcU(5)};
+  const uint16_t starts[] = {
+    phase, (uint16_t)(phase + 120), (uint16_t)(phase + 240)
+  };
+  for (int i = 0; i < 3; ++i)
+    drawDetailEyeArc(cx, cy, radii[i], starts[i], C(arcCols[i]));
+  // Quiet, dark eye with one precise highlight; it holds up over both land
+  // and sea without adding a large opaque symbol.
+  G->fillCircle(cx, cy, tcU(2), C(TC_BLACK));
+  G->drawPixel(cx, cy, C(TC_WHITE));
+}
+
 static void drawUserMarker() {
   if (user_sx < 0 || user_sy < 0) return;
   if (user_sx < -tcU(20) || user_sx > FRAME_W + tcU(20) ||
@@ -1619,18 +1668,60 @@ static void tmEvalHour(float hour)
   float u = (span > 0.01f) ? ((hour - (float)a.hour) / span) : 0.0f;
   if (u < 0) u = 0;
   if (u > 1) u = 1;
-  float s = u * u * (3.0f - 2.0f * u);
-  tm_lat = a.lat + (b.lat - a.lat) * s;
-  tm_lon = a.lon + (b.lon - a.lon) * s;
-  tm_r12 = a.r12_km + (b.r12_km - a.r12_km) * s;
-  tm_wind = (uint8_t)(a.wind_kt + (b.wind_kt - a.wind_kt) * s + 0.5f);
-  tm_pressure = (uint16_t)(a.pressure + (int)((b.pressure - a.pressure) * s + 0.5f));
-  tm_cat = (s < 0.5f) ? a.cat : b.cat;
-  track_sel = (int8_t)((s < 0.5f) ? i0 : i1);
+  // Cubic Hermite interpolation keeps velocity continuous through each NMC
+  // node.  The previous smoothstep eased to zero at every node, which looked
+  // like the typhoon and its wind field paused before moving on.
+  const int ip = (i0 > 0) ? i0 - 1 : i0;
+  const int in = (i1 + 1 < (int)TRACK_N) ? i1 + 1 : i1;
+  const float hp = (float)TRACK[ip].hour;
+  const float hn = (float)TRACK[in].hour;
+  auto hermite = [](float p0, float p1, float pm, float pn,
+                    float h0, float h1, float hm, float hn, float t) {
+    const float dt = h1 - h0;
+    const float m0 = (h1 > hm + 0.01f) ? (p1 - pm) / (h1 - hm)
+                                       : (p1 - p0) / dt;
+    const float m1 = (hn > h0 + 0.01f) ? (pn - p0) / (hn - h0)
+                                       : (p1 - p0) / dt;
+    const float t2 = t * t, t3 = t2 * t;
+    return (2.0f * t3 - 3.0f * t2 + 1.0f) * p0
+         + (t3 - 2.0f * t2 + t) * dt * m0
+         + (-2.0f * t3 + 3.0f * t2) * p1
+         + (t3 - t2) * dt * m1;
+  };
+  auto unwrapLon = [](float lon, float reference) {
+    while (lon - reference > 180.0f) lon -= 360.0f;
+    while (lon - reference < -180.0f) lon += 360.0f;
+    return lon;
+  };
+  const float lon0 = a.lon;
+  const float lon1 = unwrapLon(b.lon, lon0);
+  const float lonp = unwrapLon(TRACK[ip].lon, lon0);
+  const float lonn = unwrapLon(TRACK[in].lon, lon1);
+  tm_lat = hermite(a.lat, b.lat, TRACK[ip].lat, TRACK[in].lat,
+                   (float)a.hour, (float)b.hour, hp, hn, u);
+  tm_lon = hermite(lon0, lon1, lonp, lonn,
+                   (float)a.hour, (float)b.hour, hp, hn, u);
+  tm_r12 = hermite(a.r12_km, b.r12_km, TRACK[ip].r12_km, TRACK[in].r12_km,
+                   (float)a.hour, (float)b.hour, hp, hn, u);
+  const float wind = hermite((float)a.wind_kt, (float)b.wind_kt,
+                             (float)TRACK[ip].wind_kt, (float)TRACK[in].wind_kt,
+                             (float)a.hour, (float)b.hour, hp, hn, u);
+  const float pressure = hermite((float)a.pressure, (float)b.pressure,
+                                 (float)TRACK[ip].pressure, (float)TRACK[in].pressure,
+                                 (float)a.hour, (float)b.hour, hp, hn, u);
+  tm_wind = (uint8_t)fmaxf(0.0f, wind + 0.5f);
+  tm_pressure = (uint16_t)fmaxf(0.0f, pressure + 0.5f);
+  tm_cat = (u < 0.5f) ? a.cat : b.cat;
+  track_sel = (int8_t)((u < 0.5f) ? i0 : i1);
   tm_pos = (float)i0 + u;
 
   if (page == PAGE_TRACK) {
-    setMapCenter(tm_lat, tm_lon, false);
+    const uint32_t now = GetHAL().millis();
+    if (!tm_camera_valid || now - tm_last_camera_ms >= TM_CAMERA_REBUILD_MS) {
+      setMapCenter(tm_lat, tm_lon, true);
+      tm_last_camera_ms = now;
+      tm_camera_valid = true;
+    }
     tm_sx = earth_cx;
     tm_sy = earth_cy;
   } else if (!project(tm_lat, tm_lon, tm_sx, tm_sy)) {
@@ -1662,7 +1753,9 @@ static void tmStart(bool from_begin)
   }
   tm_dir = 1;
   tm_hold_until = 0;
+  tm_camera_valid = false;
   tm_last_ms = GetHAL().millis();
+  tm_eye_start_ms = tm_last_ms;
   tm_playing = true;
   float hour = from_begin ? (float)TRACK[0].hour : (float)TRACK[TRACK_NOW_IDX].hour;
   tmEvalHour(hour);
@@ -2009,7 +2102,7 @@ static void renderDetail() {
   pushMapCrop(view_sprite);
   drawTracks();
   drawWindRings();
-  drawTyphoon();
+  drawCycloneEye(typ_sx, typ_sy, spiral_a1);
   drawUserMarker();
 
   // Detail uses the same rim-first hierarchy as Time Machine.  The map and
@@ -2061,8 +2154,6 @@ static void renderDetail() {
 }
 
 static void renderTrack() {
-  if (TRACK_N > 0) tmEvalHour(tm_hour_f);
-
   disp_->startWrite();
   disp_ = view_sprite;
   G = view_sprite;
@@ -2074,8 +2165,10 @@ static void renderTrack() {
   dashedCircle(tm_sx, tm_sy, (int)(r12 * 2.4f), TC_YELLOW, tcU(10), 4);
   dashedCircle(tm_sx, tm_sy, (int)(r12 * 1.5f), TC_ORANGE, tcU(8), 4);
   dashedCircle(tm_sx, tm_sy, r12, TC_RED, tcU(8), 4);
-  G->fillCircle(tm_sx, tm_sy, tcU(3), TC_YELLOW);
-  G->fillRect(tm_sx - tcU(1), tm_sy - tcU(1), tcU(3), tcU(3), TC_WHITE);
+  // Derive phase from wall time, not rendered frame count: a cache rebuild can
+  // skip frames but can never make the cyclone appear to rotate more slowly.
+  const uint16_t tmEyePhase = (uint16_t)(((GetHAL().millis() - tm_eye_start_ms) * 120UL / 1000UL) % 360UL);
+  drawCycloneEye(tm_sx, tm_sy, tmEyePhase);
   G->setTextSize(TC_FONT_SIZE);
   G->setTextColor(C(TC_RED));
   G->setCursor(tm_sx + tcU(8), tm_sy - tcU(12));
@@ -2959,11 +3052,13 @@ void Engine::update() {
     return;
   }
 
-  // Time Machine: follow-cam rebuild is heavier — ~5–6 fps is enough at 2.5s/pt
+  // The overlay is cheap and cached-map based; update it at animation cadence.
+  // Camera cache rebuilding is separately throttled in tmEvalHour().
   if (page == PAGE_TRACK) {
     if (tm_playing) tmTick(now);
     if (tm_playing || ui_dirty) {
-      if (now - last_frame >= 160 || ui_dirty) {
+      constexpr uint32_t kTrackFrameMs = 33;
+      if (now - last_frame >= kTrackFrameMs || ui_dirty) {
         last_frame = now;
         render();
         ui_dirty = false;
@@ -2973,7 +3068,20 @@ void Engine::update() {
     return;
   }
 
-  // DETAIL / MENU: static UI — redraw only when dirty (no 10fps flash)
+  // Detail has only a very small animated eye; the map itself stays cached.
+  if (page == PAGE_DETAIL) {
+    constexpr uint32_t kDetailEyeFrameMs = 83;
+    if (ui_dirty || now - last_frame >= kDetailEyeFrameMs) {
+      // All three arcs share one phase, keeping their 120° spacing fixed.
+      spiral_a1 = (spiral_a1 + 5) % 360;
+      last_frame = now;
+      render();
+      ui_dirty = false;
+    }
+    return;
+  }
+
+  // MENU / LOCATION / ABOUT: static UI — redraw only when dirty
   bool static_page = (page == PAGE_DETAIL || page == PAGE_MENU
                    || page == PAGE_LOCATION || page == PAGE_ABOUT);
 
