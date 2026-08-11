@@ -78,6 +78,9 @@ static int earth_cy = FRAME_H / 2;
 #define EARTH_R_DETAIL tcU(1450)  // ≈4 provinces
 #define EARTH_R_TRACK  tcU(860)   // Time Machine: a bit wider again
 #define EARTH_R_MULTI  tcU(95)
+// Global overview → selected-storm focus.  This keeps enough globe context
+// while making the selected system read as the visual center.
+#define EARTH_R_MULTI_FOCUS tcU(150)
 static int earth_r = EARTH_R_MAIN;
 #define EARTH_R      earth_r
 #define R_EARTH_KM 6371.0f
@@ -119,6 +122,30 @@ static uint8_t storm_count = 0;
 NmcTrack storm_tracks[STORM_MAX];
 static uint8_t storm_sel = 0;  // active on MAIN/DETAIL
 static uint8_t multi_sel = 0;  // highlight on MULTI
+struct MultiCamera {
+  bool active = false;
+  uint32_t started_ms = 0;
+  float from_lat = 0, from_lon = 0;
+  float to_lat = 0, to_lon = 0;
+  int from_r = EARTH_R_MULTI, to_r = EARTH_R_MULTI_FOCUS;
+};
+static MultiCamera multi_camera;
+// Global switching uses a deliberately light earth layer while the camera is
+// moving.  The detailed coastline layer is generated only once after landing.
+static bool multi_detail_pending = false;
+struct MainCamera {
+  bool active = false;
+  uint32_t started_ms = 0;
+  float from_lat = 0, from_lon = 0;
+  float to_lat = 0, to_lon = 0;
+  int from_r = EARTH_R_MAIN, to_r = EARTH_R_MAIN;
+};
+static MainCamera main_camera;
+static bool main_detail_pending = false;
+// Once a storm has been confirmed from PAGE_MULTI, MAIN becomes a contextual
+// overview: it frames both the observer and that storm instead of blindly
+// returning to the observer-only camera.
+static bool main_context_active = false;
 static int storm_sx[STORM_MAX];
 static int storm_sy[STORM_MAX];
 static bool data_stale = true;
@@ -562,6 +589,104 @@ static void drawGeoGrid(LGFX_Sprite* s, uint16_t color) {
   }
 }
 
+// Global coastline path.  MapPoint already stores sin/cos(latitude and
+// longitude) in flash, so changing the camera only needs multiplies/adds.
+// Unlike drawContinents(), this intentionally keeps the China coast because
+// PAGE_MULTI never draws province borders.
+static void drawMultiCoastlines(LGFX_Sprite* s, int step, bool thick) {
+  const float cLat = ctr_lat * DEG2RAD, cLon = ctr_lon * DEG2RAD;
+  const float sin_cLat = sinf(cLat), cos_cLat = cosf(cLat);
+  const float sin_cLon = sinf(cLon), cos_cLon = cosf(cLon);
+  const uint16_t coast = night_mode ? s->color565(152, 52, 42)
+                                    : s->color565(78, 166, 118);
+  const int margin = tcU(24);
+
+  for (int i = 0; i < world_map_count; ++i) {
+    const MapPoint* pts = world_map[i].points;
+    const int n = world_map[i].length;
+    int prevX = -1, prevY = -1;
+    bool prevVisible = false;
+    for (int j = 0; j < n; j += step) {
+      const float cos_dLon = pts[j].cosLon * cos_cLon + pts[j].sinLon * sin_cLon;
+      const float sin_dLon = pts[j].sinLon * cos_cLon - pts[j].cosLon * sin_cLon;
+      const float cos_c = sin_cLat * pts[j].sinLat + cos_cLat * pts[j].cosLat * cos_dLon;
+      if (cos_c < 0.15f) { prevVisible = false; continue; }
+
+      const int x = earth_cx + (int)(EARTH_R * pts[j].cosLat * sin_dLon);
+      const int y = earth_cy - (int)(EARTH_R * (cos_cLat * pts[j].sinLat
+                               - sin_cLat * pts[j].cosLat * cos_dLon));
+      if (x < -margin || x > FRAME_W + margin || y < -margin || y > FRAME_H + margin) {
+        prevVisible = false;
+        continue;
+      }
+      if (prevVisible && abs(x - prevX) < tcU(180) && abs(y - prevY) < tcU(180)) {
+        s->drawLine(prevX, prevY, x, y, coast);
+        if (thick) s->drawLine(prevX, prevY + 1, x, y + 1, coast);
+      }
+      prevX = x; prevY = y; prevVisible = true;
+    }
+  }
+}
+
+// Far-earth camera grid: deliberately sparse enough for a 30fps camera move.
+// This is separate from drawGeoGrid(), which is the static detail-map version.
+static void drawMultiGeoGrid(LGFX_Sprite* s, uint16_t color) {
+  for (int lon = -180; lon < 180; lon += 30) {
+    int px = -1, py = -1; bool pv = false;
+    for (int lat = -75; lat <= 75; lat += 5) {
+      int x, y;
+      if (project((float)lat, (float)lon, x, y)) {
+        if (pv && abs(x - px) < tcU(120) && abs(y - py) < tcU(120))
+          s->drawLine(px, py, x, y, color);
+        px = x; py = y; pv = true;
+      } else {
+        pv = false;
+      }
+    }
+  }
+  for (int lat = -60; lat <= 60; lat += 15) {
+    int px = -1, py = -1; bool pv = false;
+    const uint16_t c = (lat == 0) ? s->color565(42, 104, 118) : color;
+    for (int lon = -180; lon <= 180; lon += 5) {
+      int x, y;
+      if (project((float)lat, (float)lon, x, y)) {
+        if (pv && abs(x - px) < tcU(120) && abs(y - py) < tcU(120))
+          s->drawLine(px, py, x, y, c);
+        px = x; py = y; pv = true;
+      } else {
+        pv = false;
+      }
+    }
+  }
+}
+
+static void buildMultiAnimationBg(LGFX_Sprite* s) {
+  if (night_mode) {
+    s->fillScreen(s->color565(28, 4, 4));
+    drawMultiGeoGrid(s, s->color565(82, 20, 20));
+    drawMultiCoastlines(s, 1, false);
+    s->drawCircle(earth_cx, earth_cy, EARTH_R, s->color565(120, 42, 30));
+  } else {
+    s->fillScreen(TC_OCEAN);
+    drawMultiGeoGrid(s, s->color565(30, 78, 90));
+    drawMultiCoastlines(s, 1, false);
+    s->drawCircle(earth_cx, earth_cy, EARTH_R, s->color565(58, 128, 144));
+  }
+}
+
+static void buildMultiDetailBg(LGFX_Sprite* s) {
+  if (night_mode) {
+    s->fillScreen(s->color565(28, 4, 4));
+    drawMultiGeoGrid(s, s->color565(82, 20, 20));
+  } else {
+    s->fillScreen(TC_OCEAN);
+    drawMultiGeoGrid(s, s->color565(30, 78, 90));
+  }
+  // A global map uses one complete coastline layer; province borders would be
+  // visual noise at this scale and are intentionally omitted.
+  drawMultiCoastlines(s, 1, false);
+}
+
 static void buildEarthBg(LGFX_Sprite* s) {
   // Oversized regional map — margins supply pixels when view tilts
   if (night_mode) {
@@ -941,6 +1066,145 @@ static void setMapZoom(int r) {
   buildEarthBg(bg_sprite);
   projectAll();
   projectStorms();
+}
+
+static float multiShortestLon(float from, float to) {
+  float delta = to - from;
+  while (delta > 180.0f) delta -= 360.0f;
+  while (delta < -180.0f) delta += 360.0f;
+  return delta;
+}
+
+static void sphericalInterpolate(float lat0, float lon0, float lat1, float lon1,
+                                 float t, float& outLat, float& outLon) {
+  const float a0 = lat0 * DEG2RAD, b0 = lon0 * DEG2RAD;
+  const float a1 = lat1 * DEG2RAD, b1 = lon1 * DEG2RAD;
+  const float x0 = cosf(a0) * cosf(b0), y0 = cosf(a0) * sinf(b0), z0 = sinf(a0);
+  const float x1 = cosf(a1) * cosf(b1), y1 = cosf(a1) * sinf(b1), z1 = sinf(a1);
+  float dot = x0 * x1 + y0 * y1 + z0 * z1;
+  if (dot > 1.0f) dot = 1.0f;
+  if (dot < -1.0f) dot = -1.0f;
+  const float omega = acosf(dot);
+  const float sinOmega = sinf(omega);
+  float x, y, z;
+  if (fabsf(sinOmega) < 0.0001f) {
+    x = x0 + (x1 - x0) * t;
+    y = y0 + (y1 - y0) * t;
+    z = z0 + (z1 - z0) * t;
+  } else {
+    const float w0 = sinf((1.0f - t) * omega) / sinOmega;
+    const float w1 = sinf(t * omega) / sinOmega;
+    x = w0 * x0 + w1 * x1;
+    y = w0 * y0 + w1 * y1;
+    z = w0 * z0 + w1 * z1;
+  }
+  const float xy = sqrtf(x * x + y * y);
+  outLat = atan2f(z, xy) / DEG2RAD;
+  outLon = atan2f(y, x) / DEG2RAD;
+}
+
+static void mainOverviewTarget(float& outLat, float& outLon, int& outR) {
+  // The midpoint travels along the great-circle route, so a user/storm pair
+  // straddling ±180° never causes a false camera jump through Greenwich.
+  sphericalInterpolate(user_lat, user_lon, TYP_LAT, TYP_LON, 0.5f, outLat, outLon);
+  const float angular = distKm(user_lat, user_lon, TYP_LAT, TYP_LON) / R_EARTH_KM;
+  const float halfSpan = sinf(angular * 0.5f);
+  const int safeRadius = FRAME_W / 2 - tcU(28);
+  int fitted = EARTH_R_MAIN;
+  if (halfSpan > 0.001f) fitted = (int)((float)safeRadius / halfSpan);
+
+  // The limb can no longer fit both points at the useful overview scale.  Keep
+  // the focused storm visible and retain the existing HUD bearing/distance for
+  // the observer instead of allowing the selected storm to disappear.
+  if (fitted < EARTH_R_MULTI) {
+    outLat = TYP_LAT;
+    outLon = TYP_LON;
+    fitted = EARTH_R_MULTI;
+  }
+  if (fitted > EARTH_R_MAIN) fitted = EARTH_R_MAIN;
+  outR = fitted;
+}
+
+static void beginMainOverviewTransition() {
+  float targetLat, targetLon; int targetR;
+  mainOverviewTarget(targetLat, targetLon, targetR);
+  main_context_active = true;
+  main_camera.active = true;
+  main_camera.started_ms = GetHAL().millis();
+  main_camera.from_lat = ctr_lat;
+  main_camera.from_lon = ctr_lon;
+  main_camera.from_r = earth_r;
+  main_camera.to_lat = targetLat;
+  main_camera.to_lon = targetLon;
+  main_camera.to_r = targetR;
+  main_detail_pending = false;
+  ui_dirty = true;
+}
+
+static bool tickMainOverviewTransition(uint32_t now) {
+  if (!main_camera.active) return false;
+  constexpr uint32_t kDurationMs = 520;
+  float t = (float)(now - main_camera.started_ms) / (float)kDurationMs;
+  if (t > 1.0f) t = 1.0f;
+  const float e = t * t * (3.0f - 2.0f * t);
+  sphericalInterpolate(main_camera.from_lat, main_camera.from_lon,
+                       main_camera.to_lat, main_camera.to_lon, e, ctr_lat, ctr_lon);
+  earth_r = main_camera.from_r + (int)((main_camera.to_r - main_camera.from_r) * e + 0.5f);
+  buildMultiAnimationBg(bg_sprite);
+  projectAll();
+  projectStorms();
+  if (t >= 1.0f) {
+    main_camera.active = false;
+    ctr_lat = main_camera.to_lat;
+    ctr_lon = main_camera.to_lon;
+    earth_r = main_camera.to_r;
+    main_detail_pending = true;
+    ui_dirty = true;
+  }
+  return true;
+}
+
+static void beginMultiFocus(uint8_t index) {
+  if (storm_count == 0) return;
+  if (index >= storm_count) index = 0;
+  multi_camera.active = true;
+  multi_camera.started_ms = GetHAL().millis();
+  multi_camera.from_lat = ctr_lat;
+  multi_camera.from_lon = ctr_lon;
+  multi_camera.from_r = earth_r;
+  multi_camera.to_lat = STORMS[index].lat;
+  multi_camera.to_lon = STORMS[index].lon;
+  multi_camera.to_r = EARTH_R_MULTI_FOCUS;
+  multi_detail_pending = false;
+  ui_dirty = true;
+}
+
+static bool tickMultiFocus(uint32_t now) {
+  if (!multi_camera.active) return false;
+  constexpr uint32_t kDurationMs = 660;
+  float t = (float)(now - multi_camera.started_ms) / (float)kDurationMs;
+  if (t > 1.0f) t = 1.0f;
+  // Smoothstep starts and ends gently, avoiding an abrupt map snap.
+  const float e = t * t * (3.0f - 2.0f * t);
+  ctr_lat = multi_camera.from_lat + (multi_camera.to_lat - multi_camera.from_lat) * e;
+  ctr_lon = multi_camera.from_lon + multiShortestLon(multi_camera.from_lon, multi_camera.to_lon) * e;
+  while (ctr_lon > 180.0f) ctr_lon -= 360.0f;
+  while (ctr_lon < -180.0f) ctr_lon += 360.0f;
+  earth_r = multi_camera.from_r + (int)((multi_camera.to_r - multi_camera.from_r) * e + 0.5f);
+  // During movement, redraw only the sparse far-earth grid.  Coastlines and
+  // province paths are intentionally deferred until the camera has landed.
+  buildMultiAnimationBg(bg_sprite);
+  projectAll();
+  projectStorms();
+  if (t >= 1.0f) {
+    multi_camera.active = false;
+    ctr_lat = multi_camera.to_lat;
+    ctr_lon = multi_camera.to_lon;
+    earth_r = multi_camera.to_r;
+    multi_detail_pending = true;
+    ui_dirty = true;
+  }
+  return true;
 }
 
 static void setNightMode(bool on) {
@@ -1502,15 +1766,46 @@ static void gotoPage(Page p) {
     if (loc_cursor >= LOC_VISIBLE) loc_scroll = loc_cursor - LOC_VISIBLE + 1;
     else loc_scroll = 0;
   }
+  if (prev == PAGE_MULTI && p != PAGE_MULTI) {
+    multi_camera.active = false;
+    multi_detail_pending = false;
+  }
+  if (prev == PAGE_MAIN && p != PAGE_MAIN) {
+    main_camera.active = false;
+    main_detail_pending = false;
+  }
   if (p == PAGE_MULTI) {
     multi_sel = storm_sel;
-    earth_r = -1; // force rebuild + reproject at MULTI scale
-    setMapZoom(EARTH_R_MULTI);
+    // Enter the global page with the inexpensive far-earth layer.  Do not call
+    // setMapZoom()/setMapCenter() here: both would synchronously rebuild the
+    // detailed coastline before the transition starts.
+    earth_r = EARTH_R_MULTI;
+    ctr_lat = user_lat;
+    ctr_lon = user_lon;
+    buildMultiAnimationBg(bg_sprite);
+    projectAll();
+    projectStorms();
+    beginMultiFocus(multi_sel);
   } else if (p == PAGE_MAIN) {
-    // Restore original overview: observer-centered, StickS3 scale
-    earth_r = -1;
-    setMapZoom(EARTH_R_MAIN);
-    setMapCenter(user_lat, user_lon, true);
+    if (prev == PAGE_MULTI && main_context_active) {
+      // Preserve the focused global pose, then ease into the adaptive
+      // observer-to-storm overview rather than snapping back to the user.
+      beginMainOverviewTransition();
+    } else if (main_context_active) {
+      float targetLat, targetLon; int targetR;
+      mainOverviewTarget(targetLat, targetLon, targetR);
+      earth_r = targetR;
+      ctr_lat = targetLat;
+      ctr_lon = targetLon;
+      buildEarthBg(bg_sprite);
+      projectAll();
+      projectStorms();
+    } else {
+      // Default MAIN overview remains observer-centered.
+      earth_r = -1;
+      setMapZoom(EARTH_R_MAIN);
+      setMapCenter(user_lat, user_lon, true);
+    }
   } else if (p == PAGE_DETAIL) {
     // Typhoon follow-cam + ~4-province FOV (not on MAIN)
     earth_r = -1;
@@ -2233,9 +2528,10 @@ static void renderAbout() {
 }
 
 static void renderMulti() {
-  // Guarantee MULTI scale every frame (coast + markers share earth_r)
-  if (earth_r != EARTH_R_MULTI) setMapZoom(EARTH_R_MULTI);
-  else { projectAll(); projectStorms(); }
+  // Camera state is updated by tickMultiFocus(); when at rest it remains
+  // centered on the selected storm at the focused global scale.
+  projectAll();
+  projectStorms();
   disp_ = view_sprite;
   G = view_sprite;
   pushMapCrop(view_sprite);
@@ -2289,6 +2585,9 @@ static void renderMulti() {
   }
 
   drawMoonIcon();
+  if (multi_camera.active) {
+    printCenteredChord(G, kbarY() - tcU(40), "FOCUSING STORM", TC_CYAN);
+  }
   drawKbar("K1 FOCUS", "K2 NEXT");
 }
 
@@ -2334,6 +2633,7 @@ static void handleEvt(uint8_t id, BtnEvt ev) {
     case PAGE_MAIN:
       if (id==0 && ev==EVT_SHORT) {
         applyStorm((storm_sel + storm_count - 1) % storm_count);
+        beginMainOverviewTransition();
         char msg[20]; snprintf(msg, sizeof(msg), "TYP %s", typ_name);
         showEvent(msg, TC_CYAN);
       }
@@ -2468,13 +2768,15 @@ static void handleEvt(uint8_t id, BtnEvt ev) {
     case PAGE_MULTI:
       if (id==0 && ev==EVT_SHORT) {
         applyStorm(multi_sel);
+        main_context_active = true;
         gotoPage(PAGE_MAIN);
         showEvent(typ_name, TC_YELLOW);
       }
       if (id==0 && ev==EVT_LONG)  gotoPage(PAGE_MENU);
       if (id==1 && ev==EVT_SHORT) {
         multi_sel = (multi_sel + 1) % storm_count;
-        char msg[20]; snprintf(msg, sizeof(msg), "SEL %s", STORMS[multi_sel].name);
+        beginMultiFocus(multi_sel);
+        char msg[20]; snprintf(msg, sizeof(msg), "FOCUS %s", STORMS[multi_sel].name);
         showEvent(msg, TC_CYAN);
       }
       if (id==1 && ev==EVT_LONG) {
@@ -2668,6 +2970,54 @@ void Engine::update() {
       render();
     }
     /* yield */
+    return;
+  }
+
+  if (page == PAGE_MULTI && multi_camera.active) {
+    // The far-earth layer is intentionally small enough to follow a 30fps
+    // cadence.  Every camera frame produces exactly one map and one present.
+    constexpr uint32_t kCameraFrameMs = 33;
+    if (now - last_frame >= kCameraFrameMs) {
+      tickMultiFocus(now);
+      last_frame = now;
+      render();
+      ui_dirty = false;
+    }
+    return;
+  }
+
+  if (page == PAGE_MULTI && multi_detail_pending) {
+    // The user sees the light globe until the camera is stationary.  The one
+    // expensive detailed-map build therefore cannot interrupt the motion.
+    buildMultiDetailBg(bg_sprite);
+    multi_detail_pending = false;
+    projectAll();
+    projectStorms();
+    last_frame = now;
+    render();
+    ui_dirty = false;
+    return;
+  }
+
+  if (page == PAGE_MAIN && main_camera.active) {
+    constexpr uint32_t kCameraFrameMs = 33;
+    if (now - last_frame >= kCameraFrameMs) {
+      tickMainOverviewTransition(now);
+      last_frame = now;
+      render();
+      ui_dirty = false;
+    }
+    return;
+  }
+
+  if (page == PAGE_MAIN && main_detail_pending) {
+    buildEarthBg(bg_sprite);
+    main_detail_pending = false;
+    projectAll();
+    projectStorms();
+    last_frame = now;
+    render();
+    ui_dirty = false;
     return;
   }
 
