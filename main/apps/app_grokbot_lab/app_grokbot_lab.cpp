@@ -39,7 +39,26 @@ void AppGrokBotLab::onRunning()
 
     LvglLockGuard lock;
     if (_view) {
-        _view->setButtonFeedback(GetHAL().btnA.isPressed(), GetHAL().btnB.isPressed(), GetHAL().millis());
+        const uint32_t now = GetHAL().millis();
+        const bool leftPressed = GetHAL().btnA.isPressed();
+        const bool rightPressed = GetHAL().btnB.isPressed();
+        _view->setButtonFeedback(leftPressed, rightPressed, now);
+
+        // Hold both physical keys to start/stop the hands-free expression reel.
+        if (leftPressed && rightPressed) {
+            if (_combo_started_at == 0) _combo_started_at = now;
+            if (!_combo_consumed && now - _combo_started_at >= 650) {
+                _view->toggleDemo();
+                _combo_consumed = true;
+            }
+        } else {
+            _combo_started_at = 0;
+        }
+        if (_combo_consumed) {
+            if (!leftPressed && !rightPressed) _combo_consumed = false;
+            _view->update(now);
+            return;
+        }
         if (GetHAL().btnA.wasReleased()) {
             if (GetHAL().btnA.wasReleasedAfterHold()) {
                 _view->celebrate();
@@ -54,7 +73,7 @@ void AppGrokBotLab::onRunning()
                 _view->nextState();
             }
         }
-        _view->update(GetHAL().millis());
+        _view->update(now);
     }
 }
 

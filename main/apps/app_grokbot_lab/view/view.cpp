@@ -97,6 +97,126 @@ const char* stateName(GrokBotLabView::State state)
     };
     return names[static_cast<uint8_t>(state)];
 }
+
+float clamp01(float value)
+{
+    return std::clamp(value, 0.0f, 1.0f);
+}
+
+float smooth(float value)
+{
+    value = clamp01(value);
+    return value * value * (3.0f - 2.0f * value);
+}
+
+void drawDemoFace(lv_layer_t* layer, int cx, int cy, int size, float eye_turn, lv_opa_t opa = LV_OPA_COVER)
+{
+    const int x = cx - size / 2;
+    const int y = cy - size / 2;
+    drawRounded(layer, x, y, size, size, size / 2, 0x101114, opa);
+    drawRounded(layer, x + size / 13, y + size / 13, size - size * 2 / 13, size / 2, size / 2 - size / 13, 0x1C1D21,
+                static_cast<lv_opa_t>(opa * 0.62f));
+    const int eyeW = std::max(8, size / 9);
+    const int eyeH = std::max(14, size / 5);
+    const int gap = size / 4;
+    const int eyeY = cy - eyeH / 4 + static_cast<int>(eye_turn * 8.0f);
+    const int eyeShift = static_cast<int>(eye_turn * 13.0f);
+    drawRounded(layer, cx - gap - eyeW / 2 + eyeShift, eyeY, eyeW, eyeH, eyeW / 2, 0xF4F1EB, opa);
+    drawRounded(layer, cx + gap - eyeW / 2 + eyeShift, eyeY, eyeW, eyeH, eyeW / 2, 0xF4F1EB, opa);
+}
+
+void drawDemoTimeline(lv_layer_t* layer, const lv_area_t& area, float elapsed)
+{
+    constexpr float kDuration = 18.0f;
+    const float t = std::fmod(elapsed, kDuration);
+    const int cx = area.x1 + kCenter;
+    const int cy = area.y1 + kCenter;
+
+    // 0–2.4: familiar face settles in and looks upward.
+    if (t < 2.4f) {
+        const float p = smooth(t / 2.4f);
+        drawDemoFace(layer, cx, cy, static_cast<int>(325 + p * 85), -0.25f + p * 0.8f);
+        return;
+    }
+
+    // 2.4–4.4: circle and hexagon cross-morph through a shared centre/scale.
+    if (t < 4.4f) {
+        const float p = smooth((t - 2.4f) / 2.0f);
+        const int radius = static_cast<int>(204 - p * 36);
+        drawDemoFace(layer, cx, cy, radius * 2, 0.35f, static_cast<lv_opa_t>((1.0f - p) * 255));
+        drawHexagon(layer, cx, cy, radius, 0x101114);
+        const int eyeW = 34;
+        const int eyeH = 65;
+        drawRounded(layer, cx - 64, cy - 12, eyeW, eyeH, eyeW / 2, 0xF4F1EB);
+        drawRounded(layer, cx + 30, cy - 12, eyeW, eyeH, eyeW / 2, 0xF4F1EB);
+        return;
+    }
+
+    // 4.4–6.4: the shape contracts into a travelling seed with a colour trail.
+    if (t < 6.4f) {
+        const float p = smooth((t - 4.4f) / 2.0f);
+        const int size = std::max(18, static_cast<int>(336 * (1.0f - p)));
+        const int x = cx - static_cast<int>(p * 128.0f);
+        const int y = cy + static_cast<int>(p * 72.0f);
+        drawDemoFace(layer, x, y, size, 0.2f, static_cast<lv_opa_t>(255 - p * 45));
+        static constexpr uint32_t colors[] = {0x54C8B8, 0xB64CD9, 0xF0A640};
+        for (int i = 0; i < 5; ++i) {
+            const float tail = p - i * 0.12f;
+            if (tail < 0.0f) continue;
+            const int tx = x - 25 - i * 30;
+            const int ty = y + 18 - i * 15;
+            drawRounded(layer, tx - 8, ty - 8, 16, 16, 8, colors[i % 3], static_cast<lv_opa_t>(170 - i * 24));
+        }
+        return;
+    }
+
+    // 6.4–9.2: the seed blooms back into a face while orbital paths emerge.
+    if (t < 9.2f) {
+        const float p = smooth((t - 6.4f) / 2.8f);
+        drawDemoFace(layer, cx, cy + 18, static_cast<int>(42 + p * 210), -0.1f);
+        static constexpr uint32_t colors[] = {0x5B68D9, 0xB64CD9, 0xE45B67, 0xF0A640};
+        for (int i = 0; i < 4; ++i) {
+            const int start = static_cast<int>(std::fmod(elapsed * 95.0f + i * 91.0f, 360.0f));
+            drawArc(layer, cx, cy + 18, 132 + i * 14, start, start + static_cast<int>(58 + p * 62), colors[i], 6, 220);
+        }
+        return;
+    }
+
+    // 9.2–12.2: orbital energy condenses into a party hat and ribbons.
+    if (t < 12.2f) {
+        const float p = smooth((t - 9.2f) / 3.0f);
+        const int size = 235;
+        const int faceY = cy + 36;
+        drawDemoFace(layer, cx, faceY, size, 0.0f);
+        const int hatY = faceY - size / 2 - static_cast<int>(p * 116);
+        drawTriangle(layer, {static_cast<lv_coord_t>(cx - 70), static_cast<lv_coord_t>(faceY - 85)},
+                     {static_cast<lv_coord_t>(cx + 70), static_cast<lv_coord_t>(faceY - 85)}, {static_cast<lv_coord_t>(cx), static_cast<lv_coord_t>(hatY)},
+                     0x101114);
+        static constexpr uint32_t colors[] = {0xF0A640, 0xB64CD9, 0x5B68D9, 0xE45B67, 0x54C8B8};
+        for (int i = 0; i < 5; ++i) {
+            const int start = 210 + i * 23 + static_cast<int>(std::sin(elapsed * 2.0f + i) * 9.0f);
+            drawArc(layer, cx, cy + 30, 134 + i * 12, start, start + static_cast<int>(30 + p * 45), colors[i], 6, 220);
+        }
+        return;
+    }
+
+    // 12.2–14.4: party shape drops away; a crisp exclamation owns the frame.
+    if (t < 14.4f) {
+        const float p = smooth((t - 12.2f) / 2.2f);
+        drawDemoFace(layer, cx, cy + 70, static_cast<int>(235 * (1.0f - p)), 0.0f, static_cast<lv_opa_t>((1.0f - p) * 255));
+        const int stemW = static_cast<int>(28 + p * 16);
+        const int stemH = static_cast<int>(100 + p * 62);
+        drawRounded(layer, cx - stemW / 2, cy - 112, stemW, stemH, stemW / 2, 0x101114);
+        drawRounded(layer, cx - 23, cy + 87, 46, 46, 23, 0x101114);
+        return;
+    }
+
+    // 14.4–18: the punctuation softens into the next round Idle face.
+    const float p = smooth((t - 14.4f) / 3.6f);
+    drawRounded(layer, cx - 20, cy - 112, 40, 150, 20, 0x101114, static_cast<lv_opa_t>((1.0f - p) * 255));
+    drawRounded(layer, cx - 23, cy + 87, 46, 46, 23, 0x101114, static_cast<lv_opa_t>((1.0f - p) * 255));
+    drawDemoFace(layer, cx, cy, static_cast<int>(32 + p * 398), -0.15f + p * 0.15f, static_cast<lv_opa_t>(p * 255));
+}
 }  // namespace
 
 void GrokBotLabView::init(lv_obj_t* parent)
@@ -158,11 +278,13 @@ void GrokBotLabView::update(uint32_t now)
 
 void GrokBotLabView::nextState()
 {
+    _demo_mode = false;
     setState(static_cast<State>((static_cast<uint8_t>(_state) + 1) % static_cast<uint8_t>(State::Count)));
 }
 
 void GrokBotLabView::previousState()
 {
+    _demo_mode = false;
     const auto count = static_cast<uint8_t>(State::Count);
     setState(static_cast<State>((static_cast<uint8_t>(_state) + count - 1) % count));
 }
@@ -177,6 +299,15 @@ void GrokBotLabView::showProgress()
 {
     setState(State::Progress);
     _auto_return_to_idle = true;
+}
+
+void GrokBotLabView::toggleDemo()
+{
+    _demo_mode = !_demo_mode;
+    _demo_index = 0;
+    _demo_step_started_at = lv_tick_get();
+    setState(State::Idle);
+    if (_demo_mode) _state_label->setOpa(LV_OPA_TRANSP);
 }
 
 void GrokBotLabView::setButtonFeedback(bool left_pressed, bool right_pressed, uint32_t now)
@@ -250,6 +381,10 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
     lv_obj_get_coords(lv_event_get_target_obj(event), &area);
     const uint32_t now = lv_tick_get();
     const float seconds = static_cast<float>(now - view->_state_started_at) / 1000.0f;
+    if (view->_demo_mode) {
+        drawDemoTimeline(layer, area, seconds);
+        return;
+    }
     const float breath = std::sin(seconds * 2.0f * kPi / 3.4f);
     const float blinkCycle = std::fmod(seconds, 4.1f);
     const float blink = blinkCycle > 3.82f ? std::max(0.18f, std::fabs(blinkCycle - 3.96f) * 18.0f) : 1.0f;
