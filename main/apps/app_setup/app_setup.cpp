@@ -8,6 +8,7 @@
 #include <mooncake.h>
 #include <mooncake_log.h>
 #include <assets/assets.h>
+#include <apps/common/network/wifi_service.h>
 
 using namespace mooncake;
 using namespace view;
@@ -55,7 +56,7 @@ void AppSetup::onOpen()
                      _destroy_menu = true;
                      _worker       = std::make_unique<ButtonWorker>();
                  }},
-                {"Wi-Fi",
+                {network::WifiService::GetInstance().getStatus().has_saved_network ? "Wi-Fi" : "Wi-Fi (setup required)",
                  [&]() {
                      _destroy_menu = true;
                      _worker       = std::make_unique<WifiWorker>();

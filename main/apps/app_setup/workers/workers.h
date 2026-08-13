@@ -150,7 +150,7 @@ public:
     void update() override;
     bool shouldExitApp() const override
     {
-        return _exit_to_launcher;
+        return false;
     }
 
 private:
@@ -158,9 +158,6 @@ private:
 
     std::unique_ptr<WifiView> _view;
     uint32_t _next_update_tick = 0;
-    bool _restore_station       = false;
-    bool _config_exit_seen      = false;
-    bool _exit_to_launcher      = false;
 };
 
 }  // namespace setup_workers

@@ -7,7 +7,7 @@
 #include <assets/assets.h>
 #include <mooncake_log.h>
 #include <hal/hal.h>
-#include <wifi_manager.h>
+#include <apps/common/network/wifi_service.h>
 #include <string>
 #include <ctime>
 #include <cmath>
@@ -96,29 +96,50 @@ void ArcTopClock::update(bool force)
         lv_obj_update_layout(lv_layer_top());
         layout_date();
         layout_clock();
-        update_wifi_indicator();
         // set_clock_to("00:00");
         update_time_count = GetHAL().millis();
+    }
+
+    // Network activity needs a quicker cadence than the clock so the status
+    // icon communicates progress without creating an extra LVGL timer.
+    if (force || GetHAL().millis() - wifi_update_time_count > 250) {
+        update_wifi_indicator();
+        wifi_update_time_count = GetHAL().millis();
     }
 }
 
 void ArcTopClock::update_wifi_indicator()
 {
-    auto& wifi = WifiManager::GetInstance();
-
-    int level  = 0;
-    if (wifi.IsConnected()) {
-        const int rssi = wifi.GetRssi();
-        level          = rssi >= -55 ? 4 : rssi >= -67 ? 3 : rssi >= -75 ? 2 : rssi >= -85 ? 1 : 0;
+    const auto status = network::WifiService::GetInstance().getStatus();
+    int level = 0;
+    int flashing_arc = -1;
+    bool show_provisioning = false;
+    bool show_error = false;
+    switch (status.state) {
+        case network::WifiState::Online:
+            level = status.rssi >= -55 ? 4 : status.rssi >= -67 ? 3 : status.rssi >= -75 ? 2 : 1;
+            break;
+        case network::WifiState::Provisioning:
+            level = 4;
+            show_provisioning = true;
+            break;
+        case network::WifiState::Scanning:
+        case network::WifiState::Connecting:
+        case network::WifiState::Retrying:
+            level = 2;
+            flashing_arc = (GetHAL().millis() / 250) % 3;
+            break;
+        case network::WifiState::Failed:
+        case network::WifiState::Unconfigured:
+            level = 4;
+            show_error = true;
+            break;
     }
-
-    draw_wifi_indicator(level);
+    draw_wifi_indicator(level, flashing_arc, show_provisioning, show_error);
 }
 
-void ArcTopClock::draw_wifi_indicator(int level)
+void ArcTopClock::draw_wifi_indicator(int level, int flashing_arc, bool show_provisioning, bool show_error)
 {
-    // Standard Wi-Fi glyph: a connection point and three nested arches.
-    // RSSI controls the number of white arches; inactive arches remain dim.
     wifi_icon->fillBg(lv_color_black(), LV_OPA_TRANSP);
     wifi_icon->startDrawing();
 
@@ -130,7 +151,7 @@ void ArcTopClock::draw_wifi_indicator(int level)
     constexpr int widths[] = {3, 3, 3};
 
     for (int i = 0; i < 3; ++i) {
-        const bool active      = level >= (i + 2);
+        const bool active = flashing_arc >= 0 ? i == flashing_arc : level >= (i + 2);
         const auto arc_color   = lv_color_hex(active ? 0xFFFFFF : 0x5D6875);
         const auto arc_opacity = active ? LV_OPA_COVER : LV_OPA_50;
         // 225° to 315° traces a top-facing arch in LVGL's clockwise system.
@@ -139,6 +160,25 @@ void ArcTopClock::draw_wifi_indicator(int level)
 
     const auto dot_color = lv_color_hex(level > 0 ? 0xFFFFFF : 0x5D6875);
     wifi_icon->drawCircle(center_x, center_y, 3, dot_color, level > 0 ? LV_OPA_COVER : LV_OPA_50);
+
+    if (show_provisioning) {
+        // Phone provisioning: one dot advances across the three-dot ellipsis.
+        const int active_dot = (GetHAL().millis() / 250) % 3;
+        constexpr int dots_x[] = {29, 34, 39};
+        for (int i = 0; i < 3; ++i) {
+            wifi_icon->drawCircle(dots_x[i], 34, 2, lv_color_hex(0xFFFFFF),
+                                  i == active_dot ? LV_OPA_COVER : LV_OPA_50);
+        }
+    }
+
+    if (show_error) {
+        // An explicit red X makes both missing credentials and unrecoverable
+        // connection failures actionable without relying on icon colour alone.
+        constexpr int x = 35;
+        constexpr int y = 33;
+        wifi_icon->drawLine(x - 3, y - 3, x + 3, y + 3, 2, lv_color_hex(0xE95D5D));
+        wifi_icon->drawLine(x + 3, y - 3, x - 3, y + 3, 2, lv_color_hex(0xE95D5D));
+    }
 
     wifi_icon->finishDrawing();
     lv_obj_invalidate(wifi_icon->get());
