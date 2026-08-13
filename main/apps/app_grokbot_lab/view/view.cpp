@@ -65,11 +65,35 @@ void drawArc(lv_layer_t* layer, int cx, int cy, int radius, int start_angle, int
     lv_draw_arc(layer, &dsc);
 }
 
+void drawTriangle(lv_layer_t* layer, lv_point_t a, lv_point_t b, lv_point_t c, uint32_t color, lv_opa_t opa = LV_OPA_COVER)
+{
+    lv_draw_triangle_dsc_t dsc;
+    lv_draw_triangle_dsc_init(&dsc);
+    dsc.p[0] = {a.x, a.y};
+    dsc.p[1] = {b.x, b.y};
+    dsc.p[2] = {c.x, c.y};
+    dsc.color = lv_color_hex(color);
+    dsc.opa = opa;
+    lv_draw_triangle(layer, &dsc);
+}
+
+void drawHexagon(lv_layer_t* layer, int cx, int cy, int radius, uint32_t color)
+{
+    lv_point_t points[6] = {};
+    for (int i = 0; i < 6; ++i) {
+        const float angle = (30.0f + i * 60.0f) * kPi / 180.0f;
+        points[i] = {static_cast<lv_coord_t>(cx + std::cos(angle) * radius), static_cast<lv_coord_t>(cy + std::sin(angle) * radius)};
+    }
+    const lv_point_t center = {static_cast<lv_coord_t>(cx), static_cast<lv_coord_t>(cy)};
+    for (int i = 0; i < 6; ++i) drawTriangle(layer, center, points[i], points[(i + 1) % 6], color);
+}
+
 const char* stateName(GrokBotLabView::State state)
 {
     static constexpr const char* names[] = {
         "IDLE", "CURIOUS", "LISTENING", "THINKING", "WORKING",
         "HAPPY", "PLAYFUL", "SURPRISED", "SLEEPING", "ALERT", "CELEBRATE", "PROGRESS",
+        "EXCLAIM", "HEX", "PARTY", "ORBIT", "SPAWN",
     };
     return names[static_cast<uint8_t>(state)];
 }
@@ -80,7 +104,7 @@ void GrokBotLabView::init(lv_obj_t* parent)
     _panel = std::make_unique<Container>(parent);
     _panel->align(LV_ALIGN_CENTER, 0, 0);
     _panel->setSize(kPanelSize, kPanelSize);
-    _panel->setBgColor(lv_color_hex(0x050505));
+    _panel->setBgColor(lv_color_hex(0xF7F6F4));
     _panel->setBorderWidth(0);
     _panel->setPaddingAll(0);
     _panel->removeFlag(LV_OBJ_FLAG_SCROLLABLE);
@@ -100,7 +124,7 @@ void GrokBotLabView::init(lv_obj_t* parent)
     _state_label = std::make_unique<Label>(_panel->get());
     _state_label->align(LV_ALIGN_TOP_MID, 0, 32);
     _state_label->setTextFont(&lv_font_maple_mono_medium_24);
-    _state_label->setTextColor(lv_color_hex(0xF2F2F2));
+    _state_label->setTextColor(lv_color_hex(0x252525));
     _state_label->setOpa(0);
 
     _state_started_at = lv_tick_get();
@@ -239,6 +263,8 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
     int eyeH = static_cast<int>(80 * blink);
     int offsetX = view->_gaze_x;
     int offsetY = view->_gaze_y;
+    bool drawBody = true;
+    bool drawEyes = true;
 
     if (view->_state == State::Listening) {
         bodyY -= 3;
@@ -288,6 +314,28 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
         eyeGap = 80;
         eyeW = 32;
         eyeH = static_cast<int>(62 * blink);
+    } else if (view->_state == State::Exclaim) {
+        drawBody = false;
+        drawEyes = false;
+    } else if (view->_state == State::Hex) {
+        bodyW = 330;
+        bodyH = 330;
+        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyY = area.y1 + kCenter - bodyH / 2;
+        eyeY = bodyY + 160;
+        eyeGap = 88;
+        eyeW = 36;
+        eyeH = static_cast<int>(68 * blink);
+        drawBody = false;
+    } else if (view->_state == State::Party || view->_state == State::Orbit || view->_state == State::Spawn) {
+        bodyW = 235;
+        bodyH = 235;
+        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyY = area.y1 + kCenter - bodyH / 2 + 28;
+        eyeY = bodyY + 118;
+        eyeGap = 64;
+        eyeW = 27;
+        eyeH = static_cast<int>(50 * blink);
     }
 
     if (view->_state == State::Happy) {
@@ -355,20 +403,64 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
         arc.end_angle = 270 + progress;
         arc.rounded = 1;
         lv_draw_arc(layer, &arc);
+    } else if (view->_state == State::Exclaim) {
+        const float pulse = 0.92f + 0.08f * std::sin(seconds * 7.0f);
+        const int stemW = static_cast<int>(38 * pulse);
+        const int stemH = static_cast<int>(146 * pulse);
+        drawRounded(layer, area.x1 + kCenter - stemW / 2, area.y1 + kCenter - 104, stemW, stemH, stemW / 2, 0x101114);
+        drawRounded(layer, area.x1 + kCenter - 22, area.y1 + kCenter + 82, 44, 44, 22, 0x101114);
+    } else if (view->_state == State::Party) {
+        const int hatTop = bodyY - 128;
+        drawTriangle(layer, {static_cast<lv_coord_t>(bodyX + 46), static_cast<lv_coord_t>(bodyY + 28)},
+                     {static_cast<lv_coord_t>(bodyX + bodyW - 44), static_cast<lv_coord_t>(bodyY + 28)},
+                     {static_cast<lv_coord_t>(bodyX + bodyW / 2), static_cast<lv_coord_t>(hatTop)}, 0x101114);
+        static constexpr uint32_t colors[] = {0xF0A640, 0xB64CD9, 0x5B68D9, 0xE45B67, 0x54C8B8};
+        for (int i = 0; i < 5; ++i) {
+            const int radius = 132 + i * 12;
+            const int start = 205 + i * 23 + static_cast<int>(std::sin(seconds * 2.0f + i) * 9.0f);
+            drawArc(layer, area.x1 + kCenter, area.y1 + kCenter + 20, radius, start, start + 72, colors[i], 6, 220);
+        }
+    } else if (view->_state == State::Orbit) {
+        static constexpr uint32_t colors[] = {0x5B68D9, 0xB64CD9, 0xE45B67, 0xF0A640};
+        for (int i = 0; i < 4; ++i) {
+            const int start = static_cast<int>(std::fmod(seconds * 95.0f + i * 91.0f, 360.0f));
+            drawArc(layer, area.x1 + kCenter, area.y1 + kCenter + 18, 148 + i * 13, start, start + 116, colors[i], 6, 220);
+        }
+    } else if (view->_state == State::Spawn) {
+        const float cycle = std::fmod(seconds, 2.4f) / 2.4f;
+        const float scale = cycle < 0.5f ? cycle * 2.0f : 2.0f - cycle * 2.0f;
+        bodyW = std::max(18, static_cast<int>(235 * scale));
+        bodyH = bodyW;
+        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyY = area.y1 + kCenter - bodyH / 2 + 28;
+        eyeY = bodyY + bodyH / 2;
+        eyeGap = std::max(8, bodyW / 4);
+        eyeW = std::max(5, bodyW / 9);
+        eyeH = std::max(8, bodyW / 5);
+        for (int i = 0; i < 4; ++i) {
+            const int x = area.x1 + kCenter - 110 + i * 34 + static_cast<int>(cycle * 100.0f);
+            const int y = area.y1 + kCenter + 102 - i * 17;
+            drawRounded(layer, x - 6, y - 6, 12, 12, 6, i % 2 ? 0xB64CD9 : 0x54C8B8,
+                        static_cast<lv_opa_t>(220 * (1.0f - cycle)));
+        }
     }
 
-    // Inverted icon palette: near-black body with warm-white eyes.
-    // Separate dark values retain the blob silhouette on the black AMOLED stage.
+    // Black body with warm-white eyes on the official-style light canvas.
     const int bodyRadius = std::min(bodyW, bodyH) / 2;
-    drawRounded(layer, bodyX, bodyY, bodyW, bodyH, bodyRadius, 0x242424);
-    drawRounded(layer, bodyX + 16, bodyY + 16, bodyW - 32, bodyH / 2, std::max(12, bodyRadius - 16), 0x343434, 191);
-    drawRounded(layer, bodyX + 14, bodyY + bodyH / 2, bodyW - 28, bodyH / 2 - 14, std::max(12, bodyRadius - 22), 0x171717, 214);
+    if (drawBody) {
+        drawRounded(layer, bodyX, bodyY, bodyW, bodyH, bodyRadius, 0x101114);
+        drawRounded(layer, bodyX + 16, bodyY + 16, bodyW - 32, bodyH / 2, std::max(12, bodyRadius - 16), 0x1C1D21, 184);
+        drawRounded(layer, bodyX + 14, bodyY + bodyH / 2, bodyW - 28, bodyH / 2 - 14, std::max(12, bodyRadius - 22), 0x08090B, 220);
+    }
+    if (view->_state == State::Hex) drawHexagon(layer, bodyX + bodyW / 2, bodyY + bodyH / 2, 174, 0x101114);
     if (view->_state == State::Curious) {
         offsetX += 8;
         offsetY -= 3;
     }
-    drawRounded(layer, bodyX + bodyW / 2 - eyeGap / 2 - eyeW / 2 + offsetX, eyeY + offsetY, eyeW, std::max(7, eyeH), eyeW / 2, 0xF4F1EB);
-    drawRounded(layer, bodyX + bodyW / 2 + eyeGap / 2 - eyeW / 2 + offsetX, eyeY + offsetY, eyeW, std::max(7, eyeH), eyeW / 2, 0xF4F1EB);
+    if (drawEyes) {
+        drawRounded(layer, bodyX + bodyW / 2 - eyeGap / 2 - eyeW / 2 + offsetX, eyeY + offsetY, eyeW, std::max(7, eyeH), eyeW / 2, 0xF4F1EB);
+        drawRounded(layer, bodyX + bodyW / 2 + eyeGap / 2 - eyeW / 2 + offsetX, eyeY + offsetY, eyeW, std::max(7, eyeH), eyeW / 2, 0xF4F1EB);
+    }
 
     if (view->_state == State::Happy || view->_state == State::Playful) {
         drawRounded(layer, bodyX + bodyW / 2 - 46, bodyY + bodyH * 3 / 4, 92, 15, 8, 0xF4F1EB, 199);

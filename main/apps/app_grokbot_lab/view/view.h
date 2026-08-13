@@ -26,6 +26,11 @@ public:
         Alerting,
         Celebrate,
         Progress,
+        Exclaim,
+        Hex,
+        Party,
+        Orbit,
+        Spawn,
         Count,
     };
 
