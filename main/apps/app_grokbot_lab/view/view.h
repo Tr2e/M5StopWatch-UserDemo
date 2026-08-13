@@ -53,8 +53,6 @@ private:
     uint32_t _state_label_shown_at = 0;
     uint32_t _left_button_released_at = 0;
     uint32_t _right_button_released_at = 0;
-    uint32_t _demo_step_started_at = 0;
-    uint8_t _demo_index = 0;
     int _gaze_x = 0;
     int _gaze_y = 0;
     bool _touching = false;

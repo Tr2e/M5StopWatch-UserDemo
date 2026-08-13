@@ -65,6 +65,28 @@ void drawArc(lv_layer_t* layer, int cx, int cy, int radius, int start_angle, int
     lv_draw_arc(layer, &dsc);
 }
 
+void drawButtonPulse(lv_layer_t* layer, const lv_area_t& area, uint32_t now, bool pressed, uint32_t released_at, bool left, uint32_t color)
+{
+    constexpr uint32_t kEdgeReleaseMs = 220;
+    float amount = 0.0f;
+    if (pressed) {
+        amount = 1.0f;
+    } else if (released_at != 0 && now - released_at < kEdgeReleaseMs) {
+        const float t = static_cast<float>(now - released_at) / kEdgeReleaseMs;
+        amount = (1.0f - t) * (1.0f - t);
+    }
+    if (amount <= 0.01f) return;
+
+    const int start = left ? 192 : 282;
+    const int end = left ? 258 : 348;
+    const int inset = static_cast<int>((1.0f - amount) * 18.0f);
+    const int cx = area.x1 + kCenter;
+    const int cy = area.y1 + kCenter;
+    drawArc(layer, cx, cy, 226 - inset, start, end, color, 12, static_cast<lv_opa_t>(24 + amount * 72));
+    drawArc(layer, cx, cy, 221 - inset, start + 5, end - 5, color, 5, static_cast<lv_opa_t>(72 + amount * 165));
+    drawArc(layer, cx, cy, 214 - inset, start + 15, end - 15, 0xF4F1EB, 2, static_cast<lv_opa_t>(amount * 135));
+}
+
 void drawTriangle(lv_layer_t* layer, lv_point_t a, lv_point_t b, lv_point_t c, uint32_t color, lv_opa_t opa = LV_OPA_COVER)
 {
     lv_draw_triangle_dsc_t dsc;
@@ -258,16 +280,20 @@ void GrokBotLabView::update(uint32_t now)
         _auto_return_to_idle = false;
         setState(State::Idle);
     }
-    constexpr uint32_t kLabelHoldMs = 900;
-    constexpr uint32_t kLabelFadeMs = 350;
-    const uint32_t labelAge = now - _state_label_shown_at;
-    if (labelAge < kLabelHoldMs) {
-        _state_label->setOpa(LV_OPA_COVER);
-    } else if (labelAge < kLabelHoldMs + kLabelFadeMs) {
-        const auto fade = static_cast<lv_opa_t>(LV_OPA_COVER - (labelAge - kLabelHoldMs) * LV_OPA_COVER / kLabelFadeMs);
-        _state_label->setOpa(fade);
-    } else {
+    if (_demo_mode) {
         _state_label->setOpa(LV_OPA_TRANSP);
+    } else {
+        constexpr uint32_t kLabelHoldMs = 900;
+        constexpr uint32_t kLabelFadeMs = 350;
+        const uint32_t labelAge = now - _state_label_shown_at;
+        if (labelAge < kLabelHoldMs) {
+            _state_label->setOpa(LV_OPA_COVER);
+        } else if (labelAge < kLabelHoldMs + kLabelFadeMs) {
+            const auto fade = static_cast<lv_opa_t>(LV_OPA_COVER - (labelAge - kLabelHoldMs) * LV_OPA_COVER / kLabelFadeMs);
+            _state_label->setOpa(fade);
+        } else {
+            _state_label->setOpa(LV_OPA_TRANSP);
+        }
     }
     if (now - _last_redraw_at < 33) {
         return;
@@ -304,8 +330,6 @@ void GrokBotLabView::showProgress()
 void GrokBotLabView::toggleDemo()
 {
     _demo_mode = !_demo_mode;
-    _demo_index = 0;
-    _demo_step_started_at = lv_tick_get();
     setState(State::Idle);
     if (_demo_mode) _state_label->setOpa(LV_OPA_TRANSP);
 }
@@ -362,8 +386,10 @@ void GrokBotLabView::onStageEvent(lv_event_t* event)
     if (view == nullptr) return;
     const auto code = lv_event_get_code(event);
     if (code == LV_EVENT_PRESSED) {
-        view->setState(State::Curious);
-        view->_auto_return_to_idle = true;
+        if (!view->_demo_mode) {
+            view->setState(State::Curious);
+            view->_auto_return_to_idle = true;
+        }
         view->updateGaze(event, true);
     } else if (code == LV_EVENT_PRESSING) {
         view->updateGaze(event, true);
@@ -383,6 +409,8 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
     const float seconds = static_cast<float>(now - view->_state_started_at) / 1000.0f;
     if (view->_demo_mode) {
         drawDemoTimeline(layer, area, seconds);
+        drawButtonPulse(layer, area, now, view->_left_button_pressed, view->_left_button_released_at, true, 0xFFD166);
+        drawButtonPulse(layer, area, now, view->_right_button_pressed, view->_right_button_released_at, false, 0x8CCBFF);
         return;
     }
     const float breath = std::sin(seconds * 2.0f * kPi / 3.4f);
@@ -482,10 +510,9 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
         bodyW += static_cast<int>(std::sin(seconds * 5.2f) * 9.0f);
         eyeGap += 5;
     } else if (view->_state == State::Alerting) {
-        bodyX += static_cast<int>(std::sin(seconds * 25.0f) * 6.0f);
         bodyW = 350;
         bodyH = 350;
-        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyX = area.x1 + kCenter - bodyW / 2 + static_cast<int>(std::sin(seconds * 25.0f) * 6.0f);
         bodyY = area.y1 + kCenter - bodyH / 2;
         eyeY = bodyY + 180;
         drawRing(layer, area.x1 + kCenter, area.y1 + kCenter, 205 + static_cast<int>(std::sin(seconds * 5.0f) * 8.0f),
@@ -603,27 +630,6 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
 
     // Side-key feedback sits above the face at the physical key's matching
     // screen edge: yellow at 10:30, blue at 1:30.
-    constexpr uint32_t kEdgeReleaseMs = 220;
-    const auto drawButtonPulse = [&](bool pressed, uint32_t released_at, bool left, uint32_t color) {
-        float amount = 0.0f;
-        if (pressed) {
-            amount = 1.0f;
-        } else if (released_at != 0 && now - released_at < kEdgeReleaseMs) {
-            const float t = static_cast<float>(now - released_at) / kEdgeReleaseMs;
-            amount = (1.0f - t) * (1.0f - t);
-        }
-        if (amount <= 0.01f) return;
-
-        const int start = left ? 192 : 282;
-        const int end = left ? 258 : 348;
-        const int inset = static_cast<int>((1.0f - amount) * 18.0f);
-        drawArc(layer, area.x1 + kCenter, area.y1 + kCenter, 226 - inset, start, end, color, 12,
-                static_cast<lv_opa_t>(24 + amount * 72));
-        drawArc(layer, area.x1 + kCenter, area.y1 + kCenter, 221 - inset, start + 5, end - 5, color, 5,
-                static_cast<lv_opa_t>(72 + amount * 165));
-        drawArc(layer, area.x1 + kCenter, area.y1 + kCenter, 214 - inset, start + 15, end - 15, 0xF4F1EB, 2,
-                static_cast<lv_opa_t>(amount * 135));
-    };
-    drawButtonPulse(view->_left_button_pressed, view->_left_button_released_at, true, 0xFFD166);
-    drawButtonPulse(view->_right_button_pressed, view->_right_button_released_at, false, 0x8CCBFF);
+    drawButtonPulse(layer, area, now, view->_left_button_pressed, view->_left_button_released_at, true, 0xFFD166);
+    drawButtonPulse(layer, area, now, view->_right_button_pressed, view->_right_button_released_at, false, 0x8CCBFF);
 }
