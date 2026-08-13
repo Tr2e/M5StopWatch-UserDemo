@@ -13,7 +13,7 @@ using namespace mooncake;
 AppGrokBotLab::AppGrokBotLab()
 {
     setAppInfo().name = "Bot Lab";
-    setAppInfo().icon = (void*)getBotLabIcon();
+    setAppInfo().icon = (void*)&bot_lab_icon;
 }
 
 void AppGrokBotLab::onCreate()

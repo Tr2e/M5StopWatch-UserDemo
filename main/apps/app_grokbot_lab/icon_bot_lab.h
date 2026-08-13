@@ -7,5 +7,5 @@
 
 #include <lvgl.h>
 
-// Procedurally generated so the launcher artwork remains an original asset.
-const lv_image_dsc_t* getBotLabIcon();
+// Pre-generated RGB565 launcher artwork, matching the other Stopwatch apps.
+LV_IMG_DECLARE(bot_lab_icon);
