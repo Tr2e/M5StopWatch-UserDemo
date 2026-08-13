@@ -39,6 +39,7 @@ void AppGrokBotLab::onRunning()
 
     LvglLockGuard lock;
     if (_view) {
+        _view->setButtonFeedback(GetHAL().btnA.isPressed(), GetHAL().btnB.isPressed(), GetHAL().millis());
         if (GetHAL().btnA.wasReleased()) {
             if (GetHAL().btnA.wasReleasedAfterHold()) {
                 _view->celebrate();

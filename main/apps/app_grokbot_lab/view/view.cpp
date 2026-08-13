@@ -49,6 +49,22 @@ void drawRing(lv_layer_t* layer, int cx, int cy, int radius, uint32_t color, int
     lv_draw_arc(layer, &dsc);
 }
 
+void drawArc(lv_layer_t* layer, int cx, int cy, int radius, int start_angle, int end_angle, uint32_t color, int width, lv_opa_t opa)
+{
+    lv_draw_arc_dsc_t dsc;
+    lv_draw_arc_dsc_init(&dsc);
+    dsc.color = lv_color_hex(color);
+    dsc.width = width;
+    dsc.opa = opa;
+    dsc.center.x = cx;
+    dsc.center.y = cy;
+    dsc.radius = radius;
+    dsc.start_angle = start_angle;
+    dsc.end_angle = end_angle;
+    dsc.rounded = 1;
+    lv_draw_arc(layer, &dsc);
+}
+
 const char* stateName(GrokBotLabView::State state)
 {
     static constexpr const char* names[] = {
@@ -137,6 +153,18 @@ void GrokBotLabView::showProgress()
 {
     setState(State::Progress);
     _auto_return_to_idle = true;
+}
+
+void GrokBotLabView::setButtonFeedback(bool left_pressed, bool right_pressed, uint32_t now)
+{
+    if (_left_button_pressed && !left_pressed) {
+        _left_button_released_at = now;
+    }
+    if (_right_button_pressed && !right_pressed) {
+        _right_button_released_at = now;
+    }
+    _left_button_pressed = left_pressed;
+    _right_button_pressed = right_pressed;
 }
 
 void GrokBotLabView::setState(State state)
@@ -345,4 +373,30 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
     if (view->_state == State::Happy || view->_state == State::Playful) {
         drawRounded(layer, bodyX + bodyW / 2 - 46, bodyY + bodyH * 3 / 4, 92, 15, 8, 0xF4F1EB, 199);
     }
+
+    // Side-key feedback sits above the face at the physical key's matching
+    // screen edge: yellow at 10:30, blue at 1:30.
+    constexpr uint32_t kEdgeReleaseMs = 220;
+    const auto drawButtonPulse = [&](bool pressed, uint32_t released_at, bool left, uint32_t color) {
+        float amount = 0.0f;
+        if (pressed) {
+            amount = 1.0f;
+        } else if (released_at != 0 && now - released_at < kEdgeReleaseMs) {
+            const float t = static_cast<float>(now - released_at) / kEdgeReleaseMs;
+            amount = (1.0f - t) * (1.0f - t);
+        }
+        if (amount <= 0.01f) return;
+
+        const int start = left ? 192 : 282;
+        const int end = left ? 258 : 348;
+        const int inset = static_cast<int>((1.0f - amount) * 18.0f);
+        drawArc(layer, area.x1 + kCenter, area.y1 + kCenter, 226 - inset, start, end, color, 12,
+                static_cast<lv_opa_t>(24 + amount * 72));
+        drawArc(layer, area.x1 + kCenter, area.y1 + kCenter, 221 - inset, start + 5, end - 5, color, 5,
+                static_cast<lv_opa_t>(72 + amount * 165));
+        drawArc(layer, area.x1 + kCenter, area.y1 + kCenter, 214 - inset, start + 15, end - 15, 0xF4F1EB, 2,
+                static_cast<lv_opa_t>(amount * 135));
+    };
+    drawButtonPulse(view->_left_button_pressed, view->_left_button_released_at, true, 0xFFD166);
+    drawButtonPulse(view->_right_button_pressed, view->_right_button_released_at, false, 0x8CCBFF);
 }
