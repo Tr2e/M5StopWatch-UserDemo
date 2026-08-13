@@ -40,10 +40,10 @@ private:
     std::unique_ptr<uitk::lvgl_cpp::Container> _panel;
     std::unique_ptr<uitk::lvgl_cpp::Container> _stage;
     std::unique_ptr<uitk::lvgl_cpp::Label> _state_label;
-    std::unique_ptr<uitk::lvgl_cpp::Label> _hint_label;
     State _state = State::Idle;
     uint32_t _state_started_at = 0;
     uint32_t _last_redraw_at = 0;
+    uint32_t _state_label_shown_at = 0;
     int _gaze_x = 0;
     int _gaze_y = 0;
     bool _touching = false;

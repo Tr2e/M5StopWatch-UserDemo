@@ -14,8 +14,10 @@ using namespace uitk::lvgl_cpp;
 
 namespace {
 constexpr int kPanelSize = 466;
-constexpr int kStageSize = 420;
+constexpr int kStageSize = 466;
 constexpr int kCenter = kStageSize / 2;
+constexpr int kFaceSize = 430;
+constexpr int kEffectFaceSize = 270;
 constexpr float kPi = 3.14159265358979323846f;
 
 void drawRounded(lv_layer_t* layer, int x, int y, int width, int height, int radius, uint32_t color, lv_opa_t opa = LV_OPA_COVER)
@@ -68,7 +70,7 @@ void GrokBotLabView::init(lv_obj_t* parent)
     _panel->removeFlag(LV_OBJ_FLAG_SCROLLABLE);
 
     _stage = std::make_unique<Container>(_panel->get());
-    _stage->align(LV_ALIGN_CENTER, 0, 18);
+    _stage->align(LV_ALIGN_CENTER, 0, 0);
     _stage->setSize(kStageSize, kStageSize);
     _stage->setBgOpa(LV_OPA_TRANSP);
     _stage->setBorderWidth(0);
@@ -80,17 +82,13 @@ void GrokBotLabView::init(lv_obj_t* parent)
     _stage->addEventCb(onStageEvent, LV_EVENT_RELEASED, this);
 
     _state_label = std::make_unique<Label>(_panel->get());
-    _state_label->align(LV_ALIGN_TOP_MID, 0, 18);
+    _state_label->align(LV_ALIGN_TOP_MID, 0, 32);
     _state_label->setTextFont(&lv_font_maple_mono_medium_24);
     _state_label->setTextColor(lv_color_hex(0xF2F2F2));
-
-    _hint_label = std::make_unique<Label>(_panel->get());
-    _hint_label->align(LV_ALIGN_BOTTOM_MID, 0, -14);
-    _hint_label->setTextFont(&lv_font_montserrat_16);
-    _hint_label->setTextColor(lv_color_hex(0x7E7E7E));
-    _hint_label->setText("A/B switch  ·  hold for FX");
+    _state_label->setOpa(0);
 
     _state_started_at = lv_tick_get();
+    _state_label_shown_at = _state_started_at;
     updateLabels();
 }
 
@@ -99,6 +97,17 @@ void GrokBotLabView::update(uint32_t now)
     if (_auto_return_to_idle && !_touching && now - _state_started_at > 2400) {
         _auto_return_to_idle = false;
         setState(State::Idle);
+    }
+    constexpr uint32_t kLabelHoldMs = 900;
+    constexpr uint32_t kLabelFadeMs = 350;
+    const uint32_t labelAge = now - _state_label_shown_at;
+    if (labelAge < kLabelHoldMs) {
+        _state_label->setOpa(LV_OPA_COVER);
+    } else if (labelAge < kLabelHoldMs + kLabelFadeMs) {
+        const auto fade = static_cast<lv_opa_t>(LV_OPA_COVER - (labelAge - kLabelHoldMs) * LV_OPA_COVER / kLabelFadeMs);
+        _state_label->setOpa(fade);
+    } else {
+        _state_label->setOpa(LV_OPA_TRANSP);
     }
     if (now - _last_redraw_at < 33) {
         return;
@@ -134,6 +143,7 @@ void GrokBotLabView::setState(State state)
 {
     _state = state;
     _state_started_at = lv_tick_get();
+    _state_label_shown_at = _state_started_at;
     _auto_return_to_idle = false;
     updateLabels();
     lv_obj_invalidate(_stage->get());
@@ -191,14 +201,14 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
     const float breath = std::sin(seconds * 2.0f * kPi / 3.4f);
     const float blinkCycle = std::fmod(seconds, 4.1f);
     const float blink = blinkCycle > 3.82f ? std::max(0.18f, std::fabs(blinkCycle - 3.96f) * 18.0f) : 1.0f;
-    int bodyW = 208;
-    int bodyH = 192;
+    int bodyW = kFaceSize;
+    int bodyH = kFaceSize;
     int bodyX = area.x1 + kCenter - bodyW / 2;
     int bodyY = area.y1 + kCenter - bodyH / 2 + static_cast<int>(breath * 5.0f);
-    int eyeY = bodyY + 103;
-    int eyeGap = 58;
-    int eyeW = 23;
-    int eyeH = static_cast<int>(42 * blink);
+    int eyeY = bodyY + 220;
+    int eyeGap = 116;
+    int eyeW = 44;
+    int eyeH = static_cast<int>(80 * blink);
     int offsetX = view->_gaze_x;
     int offsetY = view->_gaze_y;
 
@@ -207,35 +217,49 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
         offsetY -= 8;
         eyeGap -= 8;
     } else if (view->_state == State::Working) {
-        bodyW -= 8;
-        bodyH += 6;
-        eyeY += 5;
-        eyeGap -= 9;
+        bodyW -= 12;
+        bodyH += 4;
+        eyeY += 8;
+        eyeGap -= 16;
         offsetY += 4;
     } else if (view->_state == State::Sleeping) {
         bodyY += static_cast<int>(breath * 7.0f) + 5;
         eyeY += 8;
-        eyeH = 7;
-        eyeW = 28;
+        eyeH = 14;
+        eyeW = 54;
     } else if (view->_state == State::Surprised) {
         bodyY -= 7;
-        bodyW += 8;
+        bodyW = 350;
+        bodyH = 350;
+        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyY = area.y1 + kCenter - bodyH / 2 - 5;
+        eyeY = bodyY + 175;
         eyeY -= 9;
-        eyeW += 5;
-        eyeH += 14;
-        drawRing(layer, area.x1 + kCenter, area.y1 + kCenter, 125 + static_cast<int>(std::sin(seconds * 7.0f) * 5.0f),
-                 0xF4F1EB, 2, 115);
+        eyeW += 8;
+        eyeH += 26;
+        drawRing(layer, area.x1 + kCenter, area.y1 + kCenter, 202 + static_cast<int>(std::sin(seconds * 7.0f) * 5.0f),
+                 0xF4F1EB, 3, 115);
     } else if (view->_state == State::Celebrate) {
+        bodyW = kEffectFaceSize;
+        bodyH = kEffectFaceSize;
+        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyY = area.y1 + kCenter - bodyH / 2;
+        eyeY = bodyY + 138;
+        eyeGap = 76;
+        eyeW = 31;
+        eyeH = static_cast<int>(58 * blink);
         bodyY += static_cast<int>(std::fabs(std::sin(seconds * 5.0f)) * 15.0f) - 5;
         eyeY -= 4;
         eyeGap += 8;
     } else if (view->_state == State::Progress) {
-        bodyW -= 14;
-        bodyH -= 8;
-        bodyX += 7;
-        bodyY += 5;
-        eyeY += 2;
-        eyeGap -= 10;
+        bodyW = 300;
+        bodyH = 300;
+        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyY = area.y1 + kCenter - bodyH / 2;
+        eyeY = bodyY + 154;
+        eyeGap = 80;
+        eyeW = 32;
+        eyeH = static_cast<int>(62 * blink);
     }
 
     if (view->_state == State::Happy) {
@@ -248,36 +272,41 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
         eyeGap += 5;
     } else if (view->_state == State::Alerting) {
         bodyX += static_cast<int>(std::sin(seconds * 25.0f) * 6.0f);
-        drawRing(layer, area.x1 + kCenter, area.y1 + kCenter, 132 + static_cast<int>(std::sin(seconds * 5.0f) * 8.0f),
+        bodyW = 350;
+        bodyH = 350;
+        bodyX = area.x1 + kCenter - bodyW / 2;
+        bodyY = area.y1 + kCenter - bodyH / 2;
+        eyeY = bodyY + 180;
+        drawRing(layer, area.x1 + kCenter, area.y1 + kCenter, 205 + static_cast<int>(std::sin(seconds * 5.0f) * 8.0f),
                  0xFF4E5C, 4, LV_OPA_70);
     } else if (view->_state == State::Thinking) {
         for (int i = 0; i < 3; ++i) {
             const float phase = seconds * 2.8f + i * 0.72f;
-            const int dotX = area.x1 + kCenter + 112 + static_cast<int>(std::cos(phase) * 14.0f);
-            const int dotY = area.y1 + kCenter - 52 + i * 26;
-            drawRounded(layer, dotX - 5, dotY - 5, 10, 10, 5, 0xA9D6FF,
+            const int dotX = area.x1 + kCenter + 170 + static_cast<int>(std::cos(phase) * 14.0f);
+            const int dotY = area.y1 + kCenter - 80 + i * 40;
+            drawRounded(layer, dotX - 8, dotY - 8, 16, 16, 8, 0xA9D6FF,
                         static_cast<lv_opa_t>(90 + 150 * (0.5f + 0.5f * std::sin(phase))));
         }
     } else if (view->_state == State::Working) {
         for (int i = 0; i < 4; ++i) {
             const float phase = seconds * 4.0f + i * 1.22f;
-            const int x = area.x1 + kCenter - 54 + i * 36;
-            const int y = area.y1 + kCenter + 128 + static_cast<int>(std::sin(phase) * 6.0f);
-            drawRounded(layer, x - 4, y - 4, 8, 8, 4, 0xF4F1EB,
+            const int x = area.x1 + kCenter - 95 + i * 64;
+            const int y = area.y1 + kCenter + 180 + static_cast<int>(std::sin(phase) * 8.0f);
+            drawRounded(layer, x - 6, y - 6, 12, 12, 6, 0xF4F1EB,
                         static_cast<lv_opa_t>(75 + 115 * (0.5f + 0.5f * std::sin(phase))));
         }
     } else if (view->_state == State::Sleeping) {
         for (int i = 0; i < 2; ++i) {
             const float phase = seconds * 1.2f + i * 1.6f;
-            const int x = area.x1 + kCenter + 105 + i * 22;
-            const int y = area.y1 + kCenter - 55 - i * 25 + static_cast<int>(std::sin(phase) * 5.0f);
-            drawRounded(layer, x - 5, y - 5, 10 + i * 3, 10 + i * 3, 5, 0xA9D6FF, 166);
+            const int x = area.x1 + kCenter + 160 + i * 28;
+            const int y = area.y1 + kCenter - 76 - i * 34 + static_cast<int>(std::sin(phase) * 5.0f);
+            drawRounded(layer, x - 7, y - 7, 14 + i * 4, 14 + i * 4, 7, 0xA9D6FF, 166);
         }
     } else if (view->_state == State::Celebrate) {
         static constexpr uint32_t colors[] = {0xF4F1EB, 0xA9D6FF, 0xFFCC66, 0xFF8292};
         for (int i = 0; i < 18; ++i) {
             const float phase = seconds * (1.7f + (i % 3) * 0.22f) + i * 0.81f;
-            const int radius = 130 + (i % 5) * 13;
+            const int radius = 156 + (i % 5) * 10;
             const int x = area.x1 + kCenter + static_cast<int>(std::cos(phase) * radius);
             const int y = area.y1 + kCenter + static_cast<int>(std::sin(phase * 1.31f) * (78 + (i % 4) * 12));
             const int size = 5 + (i % 3) * 2;
@@ -285,7 +314,7 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
         }
     } else if (view->_state == State::Progress) {
         const int progress = static_cast<int>(std::fmod(seconds * 0.18f, 1.0f) * 360.0f);
-        drawRing(layer, area.x1 + kCenter, area.y1 + kCenter, 138, 0x2F2F2F, 7, LV_OPA_COVER);
+        drawRing(layer, area.x1 + kCenter, area.y1 + kCenter, 211, 0x2F2F2F, 8, LV_OPA_COVER);
         lv_draw_arc_dsc_t arc;
         lv_draw_arc_dsc_init(&arc);
         arc.color = lv_color_hex(0xF4F1EB);
@@ -293,7 +322,7 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
         arc.opa = LV_OPA_COVER;
         arc.center.x = area.x1 + kCenter;
         arc.center.y = area.y1 + kCenter;
-        arc.radius = 138;
+        arc.radius = 211;
         arc.start_angle = 270;
         arc.end_angle = 270 + progress;
         arc.rounded = 1;
@@ -302,9 +331,10 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
 
     // Inverted icon palette: near-black body with warm-white eyes.
     // Separate dark values retain the blob silhouette on the black AMOLED stage.
-    drawRounded(layer, bodyX, bodyY, bodyW, bodyH, 94, 0x242424);
-    drawRounded(layer, bodyX + 12, bodyY + 12, bodyW - 24, bodyH / 2, 82, 0x343434, 191);
-    drawRounded(layer, bodyX + 10, bodyY + bodyH / 2, bodyW - 20, bodyH / 2 - 10, 76, 0x171717, 214);
+    const int bodyRadius = std::min(bodyW, bodyH) / 2;
+    drawRounded(layer, bodyX, bodyY, bodyW, bodyH, bodyRadius, 0x242424);
+    drawRounded(layer, bodyX + 16, bodyY + 16, bodyW - 32, bodyH / 2, std::max(12, bodyRadius - 16), 0x343434, 191);
+    drawRounded(layer, bodyX + 14, bodyY + bodyH / 2, bodyW - 28, bodyH / 2 - 14, std::max(12, bodyRadius - 22), 0x171717, 214);
     if (view->_state == State::Curious) {
         offsetX += 8;
         offsetY -= 3;
@@ -313,6 +343,6 @@ void GrokBotLabView::onStageDraw(lv_event_t* event)
     drawRounded(layer, bodyX + bodyW / 2 + eyeGap / 2 - eyeW / 2 + offsetX, eyeY + offsetY, eyeW, std::max(7, eyeH), eyeW / 2, 0xF4F1EB);
 
     if (view->_state == State::Happy || view->_state == State::Playful) {
-        drawRounded(layer, bodyX + bodyW / 2 - 24, bodyY + 145, 48, 9, 5, 0xF4F1EB, 199);
+        drawRounded(layer, bodyX + bodyW / 2 - 46, bodyY + bodyH * 3 / 4, 92, 15, 8, 0xF4F1EB, 199);
     }
 }
