@@ -21,6 +21,4 @@ public:
 private:
     std::unique_ptr<view::GrokBotLabView> _view;
     std::unique_ptr<input::KeyManager> _key_manager;
-    uint32_t _combo_started_at = 0;
-    bool _combo_consumed = false;
 };
