@@ -1,0 +1,44 @@
+# RuView Sentinel
+
+RuView Sentinel is an experimental, camera-free room activity sensor for a single M5StopWatch and an existing 2.4 GHz Wi-Fi router. It uses the ESP32-S3 Channel State Information (CSI) receiver; it does not inspect network payloads and it does not identify people.
+
+## Use
+
+1. Configure Wi-Fi in the StopWatch Setup app and connect to a 2.4 GHz access point.
+2. Open **RuView** and place the watch on a stable, non-metallic surface.
+3. Leave the watch and room still while the 30-second calibration completes.
+4. Read the center value as an experimental RF activity score, not a person count or medical measurement.
+5. Press **A** to recalibrate. Hold **A+B** to exit.
+
+Calibration pauses whenever the IMU detects that the watch itself is moving. The app vibrates once when sustained RF activity crosses the current threshold.
+
+## What this first version measures
+
+The app enables ESP-IDF CSI capture while the station remains connected, temporarily enables promiscuous reception, and filters CSI frames to the associated access point BSSID. Each callback reduces the I/Q subcarriers to log mean power. The foreground state machine then:
+
+- smooths the signal;
+- learns a stationary mean and variance for 30 seconds;
+- compares new samples to that local baseline;
+- requires multiple samples to enter and leave the activity state;
+- suppresses classification while the watch is moving.
+
+This is deliberately a scalar presence/activity experiment. It does not implement RuView's server, neural pose model, multi-node localization, heart-rate estimation, or through-wall body reconstruction.
+
+## Known limits
+
+- CSI frame rate depends on access-point traffic and firmware behavior. `WAITING FOR SIGNAL` means the watch is connected but is not receiving usable CSI frames from the AP.
+- A single antenna and a moving wearable cannot separate people, position, furniture changes, pets, doors, or interference reliably.
+- Every room, access point, placement, and watch unit may require different thresholds.
+- Metal surfaces, charging cables, hand contact, and access-point channel changes invalidate calibration.
+- Promiscuous reception and continuous Wi-Fi increase power consumption; CSI is disabled when the app closes.
+
+## Hardware validation checklist
+
+- Confirm calibration reaches 100% with the watch untouched.
+- Record idle frame rate, RSSI, and false alerts for at least 10 minutes.
+- Walk into and out of the room ten times and record detections.
+- Repeat with the watch moved to three placements.
+- Confirm picking up the watch shows `WATCH MOVING`, not `ACTIVITY`.
+- Confirm Wi-Fi, time sync, and other apps still work after leaving RuView.
+
+The activity threshold and motion threshold are first-pass engineering defaults. Tune them from captured hardware observations rather than treating the current values as accuracy claims.
