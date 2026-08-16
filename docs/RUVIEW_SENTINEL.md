@@ -14,6 +14,8 @@ Calibration pauses whenever the IMU detects that the watch itself is moving. The
 
 During an activity event, the center detail shows its peak score, elapsed duration, and event number. After the room returns to stillness, the same line retains the last event age and peak until recalibration.
 
+If a high activity score persists for at least 12 seconds and then remains stable at the new RF level for 6 seconds, RuView treats it as a lasting room change rather than endless motion. It closes the activity event, shows **ADAPTING BASELINE**, and learns the new stable environment for 15 seconds. Brief motion never enters this recovery path.
+
 ## What this first version measures
 
 The app enables ESP-IDF CSI capture while the station remains connected, temporarily enables promiscuous reception, and filters CSI frames to the associated access point BSSID. Each callback reduces the I/Q subcarriers to an eight-band log-power fingerprint. The foreground state machine then:

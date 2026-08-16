@@ -21,11 +21,15 @@ namespace ruview {
 
 namespace {
 constexpr uint32_t kCalibrationDurationMs = 30000;
+constexpr uint32_t kRecoveryCalibrationDurationMs = 15000;
+constexpr uint32_t kMinimumActivityBeforeRecoveryMs = 12000;
+constexpr uint32_t kSettledDriftDurationMs = 6000;
 constexpr uint32_t kSignalTimeoutMs = 3000;
 constexpr uint32_t kEnableRetryMs = 1000;
 constexpr uint32_t kTrafficProbeIntervalMs = 100;
 constexpr float kStationaryMotionLimit = 0.18f;
 constexpr float kMinimumBinNoiseFloor = 0.025f;
+constexpr float kSettledTransientScore = 14.0f;
 constexpr float kDefaultActivityEnterScore = 42.0f;
 constexpr float kDefaultActivityExitScore = 24.0f;
 }
@@ -61,6 +65,8 @@ void CsiSentinel::resetCalibration()
     std::fill(std::begin(_filtered_profile), std::end(_filtered_profile), 0.0f);
     std::fill(std::begin(_previous_profile), std::end(_previous_profile), 0.0f);
     _profile_initialized = false;
+    _recovering_baseline = false;
+    _settled_drift_ms = 0;
     _noise_score_mean = 0.0f;
     _noise_score_m2 = 0.0f;
     _noise_score_samples = 0;
@@ -206,6 +212,56 @@ float CsiSentinel::calculateActivityScore() const
     return std::min(100.0f, (strongest_baseline * 0.78f + strongest_transient * 0.22f) * 18.0f);
 }
 
+float CsiSentinel::calculateTransientScore() const
+{
+    float transient_z[kFeatureBinCount] = {};
+    for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+        const float variance = _calibration_samples > 1
+                                   ? _baseline_profile_m2[bin] /
+                                         static_cast<float>(_calibration_samples - 1)
+                                   : 0.0f;
+        const float sigma = std::max(kMinimumBinNoiseFloor,
+                                     std::sqrt(std::max(0.0f, variance)));
+        transient_z[bin] = std::min(8.0f,
+                                    std::fabs(_filtered_profile[bin] -
+                                              _previous_profile[bin]) /
+                                        sigma);
+    }
+    std::sort(std::begin(transient_z), std::end(transient_z), std::greater<float>());
+    return std::min(100.0f, (transient_z[0] + transient_z[1] + transient_z[2]) * 6.0f);
+}
+
+uint32_t CsiSentinel::calibrationTargetMs() const
+{
+    return _recovering_baseline ? kRecoveryCalibrationDurationMs : kCalibrationDurationMs;
+}
+
+void CsiSentinel::beginAutomaticRecovery(uint32_t now_ms)
+{
+    if (_activity_latched) {
+        _last_activity_ended_ms = now_ms;
+        _last_activity_duration_ms = now_ms - _activity_started_ms;
+        _last_activity_peak_score = _activity_peak_score;
+    }
+    _activity_latched = false;
+    _activity_votes = 0;
+    _clear_votes = 0;
+    _settled_drift_ms = 0;
+    _calibrated = false;
+    _recovering_baseline = true;
+    _calibration_stationary_ms = 0;
+    _calibration_samples = 0;
+    _baseline_mean = 0.0f;
+    _baseline_m2 = 0.0f;
+    std::fill(std::begin(_baseline_profile_mean), std::end(_baseline_profile_mean), 0.0f);
+    std::fill(std::begin(_baseline_profile_m2), std::end(_baseline_profile_m2), 0.0f);
+    _noise_score_mean = 0.0f;
+    _noise_score_m2 = 0.0f;
+    _noise_score_samples = 0;
+    _adaptive_enter_score = kDefaultActivityEnterScore;
+    _adaptive_exit_score = kDefaultActivityExitScore;
+}
+
 float CsiSentinel::activeEnterScore() const
 {
     const float scale = _sensitivity == Sensitivity::Low ? 1.22f
@@ -329,10 +385,12 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
     if (frame_count == 0) {
         snapshot.calibrated = _calibrated;
         snapshot.calibration_progress = std::min(1.0f, static_cast<float>(_calibration_stationary_ms) /
-                                                          static_cast<float>(kCalibrationDurationMs));
+                                                          static_cast<float>(calibrationTargetMs()));
         snapshot.state = (_last_frame_ms == 0 || now_ms - _last_frame_ms > kSignalTimeoutMs)
                              ? SentinelState::WaitingForSignal
-                             : (_calibrated ? SentinelState::Still : SentinelState::Calibrating);
+                             : (_calibrated ? SentinelState::Still
+                                            : (_recovering_baseline ? SentinelState::AdaptingBaseline
+                                                                    : SentinelState::Calibrating));
         return snapshot;
     }
     _last_frame_ms = now_ms;
@@ -385,7 +443,7 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
             _baseline_profile_m2[bin] +=
                 bin_delta * (_filtered_profile[bin] - _baseline_profile_mean[bin]);
         }
-        if (_calibration_stationary_ms >= kCalibrationDurationMs && _calibration_samples >= 30) {
+        if (_calibration_stationary_ms >= calibrationTargetMs() && _calibration_samples >= 30) {
             _calibrated = true;
             const float noise_variance = _noise_score_samples > 1
                                              ? _noise_score_m2 /
@@ -397,8 +455,10 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
             _adaptive_exit_score = std::clamp(_adaptive_enter_score * 0.55f, 17.0f, 38.0f);
             snapshot.trigger_score = activeEnterScore();
         }
-        snapshot.state = SentinelState::Calibrating;
+        snapshot.state = _recovering_baseline ? SentinelState::AdaptingBaseline
+                                              : SentinelState::Calibrating;
     } else {
+        _recovering_baseline = false;
         snapshot.activity_score = calculateActivityScore();
 
         const bool was_activity = _activity_latched;
@@ -424,6 +484,21 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
             _last_activity_peak_score = _activity_peak_score;
         }
 
+        const uint32_t activity_duration_ms = _activity_latched
+                                                  ? now_ms - _activity_started_ms
+                                                  : 0;
+        if (_activity_latched &&
+            activity_duration_ms >= kMinimumActivityBeforeRecoveryMs &&
+            calculateTransientScore() < kSettledTransientScore) {
+            _settled_drift_ms += std::min<uint32_t>(elapsed_ms, 500);
+        } else {
+            _settled_drift_ms = 0;
+        }
+        if (_settled_drift_ms >= kSettledDriftDurationMs) {
+            beginAutomaticRecovery(now_ms);
+            snapshot.state = SentinelState::AdaptingBaseline;
+        }
+
         // Slowly follow long-term room drift only while the scene is quiet.
         if (!_activity_latched && snapshot.activity_score < 16.0f) {
             _baseline_mean += 0.002f * (_filtered_signal - _baseline_mean);
@@ -432,7 +507,9 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
                     0.002f * (_filtered_profile[bin] - _baseline_profile_mean[bin]);
             }
         }
-        snapshot.state = _activity_latched ? SentinelState::Activity : SentinelState::Still;
+        if (snapshot.state != SentinelState::AdaptingBaseline) {
+            snapshot.state = _activity_latched ? SentinelState::Activity : SentinelState::Still;
+        }
     }
 
     _previous_signal = _filtered_signal;
@@ -440,7 +517,7 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
               std::begin(_previous_profile));
     snapshot.calibrated = _calibrated;
     snapshot.calibration_progress = std::min(1.0f, static_cast<float>(_calibration_stationary_ms) /
-                                                      static_cast<float>(kCalibrationDurationMs));
+                                                      static_cast<float>(calibrationTargetMs()));
     snapshot.has_activity_event = _activity_event_count > 0;
     snapshot.activity_event_active = _activity_latched;
     snapshot.activity_event_count = _activity_event_count;
@@ -466,6 +543,7 @@ const char* sentinelStateTitle(SentinelState state)
         case SentinelState::WaitingForWifi: return "CONNECT WI-FI";
         case SentinelState::WaitingForSignal: return "WAITING FOR SIGNAL";
         case SentinelState::Calibrating: return "CALIBRATING";
+        case SentinelState::AdaptingBaseline: return "ADAPTING BASELINE";
         case SentinelState::Still: return "ROOM STILL";
         case SentinelState::Activity: return "ACTIVITY";
         case SentinelState::DeviceMoving: return "WATCH MOVING";
@@ -480,6 +558,7 @@ const char* sentinelStateDetail(SentinelState state)
         case SentinelState::WaitingForWifi: return "Connect the watch to a 2.4 GHz router";
         case SentinelState::WaitingForSignal: return "No CSI frames yet - keep router traffic active";
         case SentinelState::Calibrating: return "Leave the watch untouched";
+        case SentinelState::AdaptingBaseline: return "Stable room change - learning new baseline";
         case SentinelState::Still: return "No significant RF disturbance";
         case SentinelState::Activity: return "RF environment changed";
         case SentinelState::DeviceMoving: return "Place the watch on a stable surface";

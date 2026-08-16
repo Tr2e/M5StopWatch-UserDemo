@@ -17,6 +17,7 @@ uint32_t stateColor(ruview::SentinelState state)
         case ruview::SentinelState::Activity: return 0xFF665E;
         case ruview::SentinelState::DeviceMoving: return 0xFFC857;
         case ruview::SentinelState::Calibrating: return 0x72A7FF;
+        case ruview::SentinelState::AdaptingBaseline: return 0xA78BFA;
         case ruview::SentinelState::WaitingForSignal: return 0xA78BFA;
         case ruview::SentinelState::WaitingForWifi: return 0x8E9AAF;
         case ruview::SentinelState::Error: return 0xFF665E;
@@ -106,7 +107,8 @@ void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* er
     if (!_panel) return;
 
     const uint32_t color = stateColor(snapshot.state);
-    const bool calibrating = snapshot.state == ruview::SentinelState::Calibrating;
+    const bool calibrating = snapshot.state == ruview::SentinelState::Calibrating ||
+                             snapshot.state == ruview::SentinelState::AdaptingBaseline;
     const int meter_value = calibrating
                                 ? static_cast<int>(snapshot.calibration_progress * 100.0f)
                                 : static_cast<int>(std::clamp(snapshot.activity_score, 0.0f, 100.0f));

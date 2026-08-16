@@ -16,6 +16,7 @@ enum class SentinelState : uint8_t {
     WaitingForWifi,
     WaitingForSignal,
     Calibrating,
+    AdaptingBaseline,
     Still,
     Activity,
     DeviceMoving,
@@ -67,8 +68,11 @@ private:
     void disableCsi();
     void sendTrafficProbe(uint32_t now_ms);
     float calculateActivityScore() const;
+    float calculateTransientScore() const;
     float activeEnterScore() const;
     float activeExitScore() const;
+    uint32_t calibrationTargetMs() const;
+    void beginAutomaticRecovery(uint32_t now_ms);
 
     portMUX_TYPE _sample_mux = portMUX_INITIALIZER_UNLOCKED;
     float _signal_sum = 0.0f;
@@ -91,6 +95,8 @@ private:
     uint32_t _last_frame_ms = 0;
 
     bool _calibrated = false;
+    bool _recovering_baseline = false;
+    uint32_t _settled_drift_ms = 0;
     uint32_t _calibration_stationary_ms = 0;
     uint32_t _calibration_samples = 0;
     float _baseline_mean = 0.0f;
