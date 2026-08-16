@@ -89,6 +89,13 @@ void ArcTopClock::update(bool force)
         std::tm* localTime = std::localtime(&now);
         set_date_to(fmt::format("{:02d}/{:02d}", localTime->tm_mon + 1, localTime->tm_mday));
         set_clock_to(fmt::format("{:02d}:{:02d}", localTime->tm_hour, localTime->tm_min));
+        // Text and font changes invalidate LVGL's content-sized labels. Flush
+        // that deferred layout before reading their dimensions, otherwise the
+        // first frame after returning to Launcher uses the old placeholder
+        // size and visibly jumps on the next one-second update.
+        lv_obj_update_layout(lv_layer_top());
+        layout_date();
+        layout_clock();
         update_wifi_indicator();
         // set_clock_to("00:00");
         update_time_count = GetHAL().millis();
@@ -148,7 +155,6 @@ void ArcTopClock::set_clock_to(const std::string_view text)
             labels[i]->setText(buf);
         }
     }
-    layout_clock();
 }
 
 void ArcTopClock::set_date_to(const std::string_view text)
@@ -162,7 +168,6 @@ void ArcTopClock::set_date_to(const std::string_view text)
             date_labels[i]->setText(buf);
         }
     }
-    layout_date();
 }
 
 void ArcTopClock::layout_date()
