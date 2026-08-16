@@ -67,13 +67,17 @@ float AppRuView::updateDeviceMotion()
 void AppRuView::onRunning()
 {
     GetHAL().updateButtonStates();
-    if (_key_manager && _key_manager->update(false) == input::KeyEvent::GoHome) {
+    const auto key_event = _key_manager ? _key_manager->update(false) : input::KeyEvent::None;
+    if (key_event == input::KeyEvent::GoHome) {
         close();
         return;
     }
-    if (GetHAL().btnA.wasReleased() && !GetHAL().btnA.wasReleasedAfterHold()) {
+    if (key_event == input::KeyEvent::GoPrevious) {
         _sentinel.resetCalibration();
         GetHAL().vibrate(45, 55);
+    } else if (key_event == input::KeyEvent::GoNext) {
+        _sentinel.cycleSensitivity();
+        GetHAL().vibrate(30, 45);
     }
 
     const uint32_t now = GetHAL().millis();

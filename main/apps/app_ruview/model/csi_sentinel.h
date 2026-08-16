@@ -22,6 +22,12 @@ enum class SentinelState : uint8_t {
     Error,
 };
 
+enum class Sensitivity : uint8_t {
+    Low,
+    Medium,
+    High,
+};
+
 struct SentinelSnapshot {
     SentinelState state = SentinelState::WaitingForWifi;
     float calibration_progress = 0.0f;
@@ -33,6 +39,8 @@ struct SentinelSnapshot {
     uint32_t total_frames = 0;
     bool calibrated = false;
     bool device_stationary = true;
+    Sensitivity sensitivity = Sensitivity::Medium;
+    float trigger_score = 42.0f;
 };
 
 class CsiSentinel {
@@ -40,6 +48,7 @@ public:
     bool start();
     void stop();
     void resetCalibration();
+    void cycleSensitivity();
     SentinelSnapshot update(uint32_t now_ms, float device_motion);
     const char* errorMessage() const;
 
@@ -50,6 +59,10 @@ private:
     void acceptFrame(const wifi_csi_info_t& info);
     bool enableCsi();
     void disableCsi();
+    void sendTrafficProbe(uint32_t now_ms);
+    float calculateActivityScore() const;
+    float activeEnterScore() const;
+    float activeExitScore() const;
 
     portMUX_TYPE _sample_mux = portMUX_INITIALIZER_UNLOCKED;
     float _signal_sum = 0.0f;
@@ -64,6 +77,9 @@ private:
     bool _has_ap_filter = false;
     uint8_t _ap_bssid[6] = {};
     const char* _error = nullptr;
+    int _probe_socket = -1;
+    uint32_t _last_probe_ms = 0;
+    uint32_t _probe_sequence = 0;
     uint32_t _last_enable_attempt_ms = 0;
     uint32_t _last_update_ms = 0;
     uint32_t _last_frame_ms = 0;
@@ -80,6 +96,12 @@ private:
     float _filtered_profile[kFeatureBinCount] = {};
     float _previous_profile[kFeatureBinCount] = {};
     bool _profile_initialized = false;
+    float _noise_score_mean = 0.0f;
+    float _noise_score_m2 = 0.0f;
+    uint32_t _noise_score_samples = 0;
+    float _adaptive_enter_score = 42.0f;
+    float _adaptive_exit_score = 24.0f;
+    Sensitivity _sensitivity = Sensitivity::Medium;
     uint8_t _activity_votes = 0;
     uint8_t _clear_votes = 0;
     bool _activity_latched = false;
@@ -87,5 +109,6 @@ private:
 
 const char* sentinelStateTitle(SentinelState state);
 const char* sentinelStateDetail(SentinelState state);
+const char* sensitivityName(Sensitivity sensitivity);
 
 }  // namespace ruview

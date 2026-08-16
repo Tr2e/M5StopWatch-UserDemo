@@ -96,7 +96,7 @@ void RuViewView::init(lv_obj_t* parent)
     lv_obj_align(_stats, LV_ALIGN_BOTTOM_MID, 0, -64);
 
     _hint = lv_label_create(_panel);
-    lv_label_set_text(_hint, "A  RECALIBRATE     A+B  EXIT");
+    lv_label_set_text(_hint, "A RECAL   B SENS   A+B EXIT");
     styleLabel(_hint, &lv_font_montserrat_14, 0x7F8DA8);
     lv_obj_align(_hint, LV_ALIGN_BOTTOM_MID, 0, -34);
 }
@@ -131,8 +131,9 @@ void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* er
     lv_label_set_text(_detail, error_message ? error_message : ruview::sentinelStateDetail(snapshot.state));
 
     char stats[96];
-    std::snprintf(stats, sizeof(stats), "%.0f fps   RSSI %d   %lu frames", snapshot.frame_rate_hz,
-                  snapshot.rssi_dbm, static_cast<unsigned long>(snapshot.total_frames));
+    std::snprintf(stats, sizeof(stats), "%.0f fps   RSSI %d   %s   T%.0f", snapshot.frame_rate_hz,
+                  snapshot.rssi_dbm, ruview::sensitivityName(snapshot.sensitivity),
+                  snapshot.trigger_score);
     lv_label_set_text(_stats, stats);
 
     if (_last_state != snapshot.state && snapshot.state == ruview::SentinelState::Activity) {

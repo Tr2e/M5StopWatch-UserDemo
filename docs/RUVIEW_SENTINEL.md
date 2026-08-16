@@ -8,7 +8,7 @@ RuView Sentinel is an experimental, camera-free room activity sensor for a singl
 2. Open **RuView** and place the watch on a stable, non-metallic surface.
 3. Leave the watch and room still while the 30-second calibration completes.
 4. Read the center value as an experimental RF activity score, not a person count or medical measurement.
-5. Press **A** to recalibrate. Hold **A+B** to exit.
+5. Press **A** to recalibrate, press **B** to cycle LOW/MED/HIGH sensitivity, and hold **A+B** to exit.
 
 Calibration pauses whenever the IMU detects that the watch itself is moving. The app vibrates once when sustained RF activity crosses the current threshold.
 
@@ -20,7 +20,10 @@ The app enables ESP-IDF CSI capture while the station remains connected, tempora
 - learns a stationary mean and variance for 30 seconds;
 - compares new samples to that local baseline;
 - requires multiple samples to enter and leave the activity state;
+- learns an activity threshold from the observed calibration noise;
 - suppresses classification while the watch is moving.
+
+While RuView is open, the watch sends a 16-byte UDP probe to the local gateway every 100 ms. The resulting Wi-Fi acknowledgements provide a steadier local CSI sample cadence without sending payload data to the internet.
 
 This is deliberately a scalar presence/activity experiment. It does not implement RuView's server, neural pose model, multi-node localization, heart-rate estimation, or through-wall body reconstruction.
 
