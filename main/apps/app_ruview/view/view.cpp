@@ -37,30 +37,36 @@ void styleLabel(lv_obj_t* label, const lv_font_t* font, uint32_t color)
 
 namespace view {
 
-void RuViewView::updateAmbientVisuals(const ruview::SentinelSnapshot& snapshot, uint32_t color)
+void RuViewView::animationTimerCallback(lv_timer_t* timer)
 {
+    auto* view = static_cast<RuViewView*>(lv_timer_get_user_data(timer));
+    if (view) view->updateAmbientVisuals();
+}
+
+void RuViewView::updateAmbientVisuals()
+{
+    if (!_panel || !_has_visual_snapshot) return;
+
+    const auto& snapshot = _visual_snapshot;
     ++_visual_tick;
     const bool calibrating = snapshot.state == ruview::SentinelState::Calibrating ||
                              snapshot.state == ruview::SentinelState::AdaptingBaseline;
-    const float breath = (std::sin(static_cast<float>(_visual_tick) * 0.48f) + 1.0f) * 0.5f;
+    const float breath = (std::sin(static_cast<float>(_visual_tick) * 0.052f) + 1.0f) * 0.5f;
 
-    int core_width = 184 + static_cast<int>(breath * 12.0f);
-    int core_height = 132 + static_cast<int>(breath * 8.0f);
-    const int core_x = static_cast<int>(std::sin(_visual_tick * 0.21f) * 5.0f);
-    const int core_y = -20 + static_cast<int>(std::sin(_visual_tick * 0.27f + 1.2f) * 4.0f);
+    int core_size = 170 + static_cast<int>(breath * 8.0f);
+    const int core_x = static_cast<int>(std::sin(_visual_tick * 0.026f) * 4.0f);
+    const int core_y = -20 + static_cast<int>(std::sin(_visual_tick * 0.031f + 1.2f) * 3.0f);
     if (snapshot.state == ruview::SentinelState::Activity) {
-        const float bounce = std::fabs(std::sin(_visual_tick * 0.92f));
-        core_width = 198 + static_cast<int>(bounce * 18.0f);
-        core_height = 140 - static_cast<int>(bounce * 8.0f);
+        const float bounce = (std::sin(_visual_tick * 0.12f) + 1.0f) * 0.5f;
+        core_size = 178 + static_cast<int>(bounce * 10.0f);
         lv_obj_set_style_bg_color(_core, lv_color_hex(0x351329), 0);
     } else if (calibrating) {
-        core_width = 188 + static_cast<int>(breath * 10.0f);
-        core_height = 134 + static_cast<int>(breath * 6.0f);
+        core_size = 172 + static_cast<int>(breath * 8.0f);
         lv_obj_set_style_bg_color(_core, lv_color_hex(0x151B38), 0);
     } else {
         lv_obj_set_style_bg_color(_core, lv_color_hex(0x122B2A), 0);
     }
-    lv_obj_set_size(_core, core_width, core_height);
+    lv_obj_set_size(_core, core_size, core_size);
     lv_obj_align(_core, LV_ALIGN_CENTER, core_x, core_y);
     lv_obj_set_style_bg_opa(_core, 172 + static_cast<int>(breath * 34.0f), 0);
     const int text_drift_y = core_y + 20;
@@ -73,54 +79,58 @@ void RuViewView::updateAmbientVisuals(const ruview::SentinelSnapshot& snapshot, 
     };
     static constexpr int kBubbleX[8] = {80, 145, 302, 376, 92, 365, 154, 308};
     static constexpr int kBubbleY[8] = {145, 91, 94, 151, 294, 292, 349, 346};
-    static constexpr int kBubbleBase[8] = {27, 18, 25, 20, 23, 29, 18, 24};
+    static constexpr int kBubbleBase[8] = {34, 17, 27, 21, 24, 38, 15, 29};
+    static constexpr int kBubbleBaseOpacity[8] = {48, 82, 58, 104, 68, 42, 94, 54};
     static constexpr float kBubblePhase[8] = {0.1f, 1.7f, 3.0f, 4.4f, 5.8f, 2.3f, 3.8f, 0.9f};
-    const uint8_t scan_bubble = static_cast<uint8_t>((_visual_tick / 2) % 8);
+    const uint8_t scan_bubble = static_cast<uint8_t>((_visual_tick / 12) % 8);
     for (uint8_t index = 0; index < 8; ++index) {
-        float level = snapshot.band_activity[index];
+        float target_level = snapshot.band_activity[index];
         if (calibrating) {
-            level = index == scan_bubble ? 100.0f : 14.0f;
+            target_level = index == scan_bubble ? 82.0f : 12.0f;
         } else if (snapshot.state == ruview::SentinelState::WaitingForWifi ||
                    snapshot.state == ruview::SentinelState::WaitingForSignal) {
-            level = index == scan_bubble ? 62.0f : 8.0f;
+            target_level = index == scan_bubble ? 52.0f : 6.0f;
         }
+        target_level = std::clamp(target_level, 0.0f, 100.0f);
+        // Rise softly and decay even more slowly so noisy CSI samples become a
+        // fluid glow instead of visible 5 Hz flashes.
+        const float blend = target_level > _smoothed_band_activity[index] ? 0.105f : 0.045f;
+        _smoothed_band_activity[index] +=
+            (target_level - _smoothed_band_activity[index]) * blend;
+        const float level = _smoothed_band_activity[index];
         const float phase = kBubblePhase[index];
-        const float drift_x = std::sin(_visual_tick * (0.16f + index * 0.007f) + phase) *
+        const float drift_x = std::sin(_visual_tick * (0.021f + index * 0.0011f) + phase) *
                               (7.0f + index % 3 * 2.0f);
-        const float drift_y = std::cos(_visual_tick * (0.13f + index * 0.009f) + phase * 1.4f) *
+        const float drift_y = std::cos(_visual_tick * (0.017f + index * 0.0013f) + phase * 1.4f) *
                               (6.0f + (index + 1) % 3 * 2.0f);
         const float bounce = snapshot.state == ruview::SentinelState::Activity
-                                 ? std::fabs(std::sin(_visual_tick * 0.78f + phase)) * 12.0f
+                                 ? (std::sin(_visual_tick * 0.075f + phase) + 1.0f) * 3.5f
                                  : 0.0f;
-        const int bubble_width = kBubbleBase[index] +
-                                 static_cast<int>(std::clamp(level, 0.0f, 100.0f) * 0.15f + bounce);
-        const float aspect = 0.76f + (index % 3) * 0.14f;
-        const int bubble_height = std::max(12, static_cast<int>(bubble_width * aspect));
-        const float push = snapshot.state == ruview::SentinelState::Activity ? 1.12f : 1.0f;
-        const int x = 233 + static_cast<int>((kBubbleX[index] - 233) * push + drift_x) - bubble_width / 2;
-        const int y = 237 + static_cast<int>((kBubbleY[index] - 237) * push + drift_y) - bubble_height / 2;
-        lv_obj_set_size(_band_bubbles[index], bubble_width, bubble_height);
+        const int bubble_size = kBubbleBase[index] + static_cast<int>(level * 0.11f + bounce);
+        const float push = 1.0f + level * 0.0007f;
+        const int x = 233 + static_cast<int>((kBubbleX[index] - 233) * push + drift_x) - bubble_size / 2;
+        const int y = 237 + static_cast<int>((kBubbleY[index] - 237) * push + drift_y) - bubble_size / 2;
+        lv_obj_set_size(_band_bubbles[index], bubble_size, bubble_size);
         lv_obj_set_pos(_band_bubbles[index], x, y);
         lv_obj_set_style_bg_color(_band_bubbles[index], lv_color_hex(kBubbleColors[index]), 0);
         lv_obj_set_style_bg_opa(_band_bubbles[index],
-                                68 + static_cast<int>(std::clamp(level, 0.0f, 100.0f) * 1.55f), 0);
+                                std::min(238, kBubbleBaseOpacity[index] + static_cast<int>(level * 1.42f)), 0);
+        lv_obj_set_style_border_color(_band_bubbles[index], lv_color_hex(kBubbleColors[index]), 0);
+        lv_obj_set_style_border_opa(_band_bubbles[index],
+                                    std::min(150, 24 + static_cast<int>(level * 0.9f)), 0);
     }
 
-    if (snapshot.state == ruview::SentinelState::Activity &&
-        (_last_state != ruview::SentinelState::Activity ||
-         (_pulse_step == 0 && _visual_tick % 10 == 0))) {
-        _pulse_step = 1;
-        lv_obj_remove_flag(_pulse, LV_OBJ_FLAG_HIDDEN);
-    }
-    if (_pulse_step > 0) {
-        const int pulse_size = 118 + _pulse_step * 28;
-        const int pulse_opa = std::max(0, 145 - _pulse_step * 25);
+    if (_pulse_active) {
+        _pulse_progress = std::min(1.0f, _pulse_progress + 0.035f);
+        const float eased = 1.0f - std::pow(1.0f - _pulse_progress, 3.0f);
+        const int pulse_size = 116 + static_cast<int>(eased * 176.0f);
+        const int pulse_opa = static_cast<int>((1.0f - eased) * 112.0f);
         lv_obj_set_size(_pulse, pulse_size, pulse_size);
         lv_obj_align(_pulse, LV_ALIGN_CENTER, core_x, core_y);
         lv_obj_set_style_bg_color(_pulse, lv_color_hex(0xD362C5), 0);
         lv_obj_set_style_bg_opa(_pulse, pulse_opa, 0);
-        if (++_pulse_step >= 6) {
-            _pulse_step = 0;
+        if (_pulse_progress >= 1.0f) {
+            _pulse_active = false;
             lv_obj_add_flag(_pulse, LV_OBJ_FLAG_HIDDEN);
         }
     }
@@ -135,6 +145,10 @@ void RuViewView::updateAmbientVisuals(const ruview::SentinelSnapshot& snapshot, 
 
 RuViewView::~RuViewView()
 {
+    if (_animation_timer) {
+        lv_timer_delete(_animation_timer);
+        _animation_timer = nullptr;
+    }
     if (_panel) {
         lv_obj_delete(_panel);
         _panel = nullptr;
@@ -180,7 +194,7 @@ void RuViewView::init(lv_obj_t* parent)
     lv_obj_set_style_arc_width(_meter, 6, LV_PART_INDICATOR);
 
     _core = lv_obj_create(_panel);
-    lv_obj_set_size(_core, 190, 136);
+    lv_obj_set_size(_core, 174, 174);
     lv_obj_align(_core, LV_ALIGN_CENTER, 0, -20);
     lv_obj_set_style_bg_color(_core, lv_color_hex(0x122B2A), 0);
     lv_obj_set_style_bg_opa(_core, 185, 0);
@@ -191,10 +205,10 @@ void RuViewView::init(lv_obj_t* parent)
 
     for (auto& bubble : _band_bubbles) {
         bubble = lv_obj_create(_panel);
-        lv_obj_set_size(bubble, 20, 16);
+        lv_obj_set_size(bubble, 20, 20);
         lv_obj_set_style_bg_color(bubble, lv_color_hex(0x72D2C5), 0);
         lv_obj_set_style_bg_opa(bubble, 90, 0);
-        lv_obj_set_style_border_width(bubble, 0, 0);
+        lv_obj_set_style_border_width(bubble, 2, 0);
         lv_obj_set_style_radius(bubble, LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_pad_all(bubble, 0, 0);
         lv_obj_remove_flag(bubble, LV_OBJ_FLAG_SCROLLABLE);
@@ -228,6 +242,8 @@ void RuViewView::init(lv_obj_t* parent)
     lv_label_set_text(_hint, "A RECAL   B SENS   A+B EXIT");
     styleLabel(_hint, &lv_font_montserrat_14, 0x7F8DA8);
     lv_obj_align(_hint, LV_ALIGN_BOTTOM_MID, 0, -34);
+
+    _animation_timer = lv_timer_create(animationTimerCallback, 33, this);
 }
 
 void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* error_message)
@@ -243,7 +259,8 @@ void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* er
     lv_arc_set_value(_meter, meter_value);
     lv_obj_set_style_arc_color(_meter, lv_color_hex(color), LV_PART_INDICATOR);
     lv_obj_set_style_text_color(_state, lv_color_hex(color), 0);
-    updateAmbientVisuals(snapshot, color);
+    _visual_snapshot = snapshot;
+    _has_visual_snapshot = true;
 
     char score[16];
     if (snapshot.state == ruview::SentinelState::WaitingForWifi ||
@@ -284,6 +301,9 @@ void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* er
 
     if (_last_state != snapshot.state && snapshot.state == ruview::SentinelState::Activity) {
         lv_obj_set_style_bg_color(_panel, lv_color_hex(0x150807), 0);
+        _pulse_progress = 0.0f;
+        _pulse_active = true;
+        lv_obj_remove_flag(_pulse, LV_OBJ_FLAG_HIDDEN);
     } else if (snapshot.state != ruview::SentinelState::Activity) {
         lv_obj_set_style_bg_color(_panel, lv_color_hex(0x05070B), 0);
     }
