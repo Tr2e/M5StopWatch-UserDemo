@@ -80,7 +80,7 @@ public:
                      WifiManager::GetInstance().GetApWebUrl();
         } else if (status.state == network::WifiState::Online) {
             detail = status.ssid + "\nIP: " + status.ip_address +
-                     (status.time_synced ? "\nTime synchronized" : "\nSynchronizing time…");
+                     (status.time_synced ? "\nTime synchronized" : "\nSynchronizing time...");
         }
         _status->setText(network::wifiStateDetail(status.state));
         _detail->setText(detail);

@@ -77,7 +77,7 @@ bool WifiService::initialize()
     }
 
     if (getStatus().has_saved_network) {
-        setState(WifiState::Connecting, "Connecting to saved network…");
+        setState(WifiState::Connecting, "Connecting to saved network...");
         wifi.StartStation();
     } else {
         setState(WifiState::Unconfigured);
@@ -98,7 +98,7 @@ void WifiService::update()
     if (start_station) {
         Settings settings("system", false);
         GetHAL().setTimezone(settings.GetString("tz", "GMT0"));
-        setState(WifiState::Connecting, "Connecting to saved network…");
+        setState(WifiState::Connecting, "Connecting to saved network...");
         WifiManager::GetInstance().StartStation();
     }
 }
@@ -154,7 +154,7 @@ void WifiService::retryConnection()
     }
     auto& wifi = WifiManager::GetInstance();
     wifi.StopStation();
-    setState(WifiState::Connecting, "Retrying saved network…");
+    setState(WifiState::Connecting, "Retrying saved network...");
     wifi.StartStation();
 }
 
@@ -169,10 +169,10 @@ void WifiService::onWifiEvent(int raw_event, const std::string& data)
     const auto event = static_cast<WifiEvent>(raw_event);
     switch (event) {
         case WifiEvent::Scanning:
-            setState(WifiState::Scanning, "Looking for saved networks…");
+            setState(WifiState::Scanning, "Looking for saved networks...");
             break;
         case WifiEvent::Connecting:
-            setState(WifiState::Connecting, "Connecting to " + data + "…");
+            setState(WifiState::Connecting, "Connecting to " + data + "...");
             break;
         case WifiEvent::Connected: {
             auto& wifi = WifiManager::GetInstance();
@@ -198,8 +198,8 @@ void WifiService::onWifiEvent(int raw_event, const std::string& data)
                 setState(WifiState::Failed, "Wi-Fi password was rejected. Set up Wi-Fi again.");
             } else {
                 setState(getStatus().has_saved_network ? WifiState::Retrying : WifiState::Unconfigured,
-                         data.empty() ? "Connection lost. Retrying…"
-                                      : "Connection lost (reason " + data + "). Retrying…");
+                         data.empty() ? "Connection lost. Retrying..."
+                                      : "Connection lost (reason " + data + "). Retrying...");
             }
             break;
         case WifiEvent::ConfigModeEnter:
@@ -248,10 +248,10 @@ const char* wifiStateDetail(WifiState state)
     switch (state) {
         case WifiState::Unconfigured: return "No saved network. Start setup to connect.";
         case WifiState::Provisioning: return "Connect a phone to the device hotspot.";
-        case WifiState::Scanning: return "Looking for saved networks…";
-        case WifiState::Connecting: return "Connecting to saved network…";
+        case WifiState::Scanning: return "Looking for saved networks...";
+        case WifiState::Connecting: return "Connecting to saved network...";
         case WifiState::Online: return "Connected";
-        case WifiState::Retrying: return "Connection lost. Retrying…";
+        case WifiState::Retrying: return "Connection lost. Retrying...";
         case WifiState::Failed: return "Wi-Fi hardware could not start.";
     }
     return "";
