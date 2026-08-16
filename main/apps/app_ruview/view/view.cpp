@@ -300,12 +300,9 @@ void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* er
     lv_label_set_text(_stats, stats);
 
     if (_last_state != snapshot.state && snapshot.state == ruview::SentinelState::Activity) {
-        lv_obj_set_style_bg_color(_panel, lv_color_hex(0x150807), 0);
         _pulse_progress = 0.0f;
         _pulse_active = true;
         lv_obj_remove_flag(_pulse, LV_OBJ_FLAG_HIDDEN);
-    } else if (snapshot.state != ruview::SentinelState::Activity) {
-        lv_obj_set_style_bg_color(_panel, lv_color_hex(0x05070B), 0);
     }
     _last_state = snapshot.state;
 }
