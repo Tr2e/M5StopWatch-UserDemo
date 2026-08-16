@@ -60,40 +60,40 @@ void RuViewView::init(lv_obj_t* parent)
     lv_obj_align(_eyebrow, LV_ALIGN_TOP_MID, 0, 48);
 
     _meter = lv_arc_create(_panel);
-    lv_obj_set_size(_meter, 250, 250);
-    lv_obj_align(_meter, LV_ALIGN_CENTER, 0, 5);
+    lv_obj_set_size(_meter, 310, 310);
+    lv_obj_align(_meter, LV_ALIGN_CENTER, 0, 4);
     lv_arc_set_rotation(_meter, 135);
     lv_arc_set_bg_angles(_meter, 0, 270);
     lv_arc_set_range(_meter, 0, 100);
     lv_arc_set_value(_meter, 0);
     lv_obj_remove_style(_meter, nullptr, LV_PART_KNOB);
-    lv_obj_set_style_arc_width(_meter, 13, LV_PART_MAIN);
+    lv_obj_set_style_arc_width(_meter, 12, LV_PART_MAIN);
     lv_obj_set_style_arc_color(_meter, lv_color_hex(0x1B2230), LV_PART_MAIN);
-    lv_obj_set_style_arc_width(_meter, 13, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_width(_meter, 12, LV_PART_INDICATOR);
 
     _score = lv_label_create(_panel);
     lv_label_set_text(_score, "--");
     styleLabel(_score, &lv_font_montserrat_36, 0xFFFFFF);
-    lv_obj_align(_score, LV_ALIGN_CENTER, 0, -31);
+    lv_obj_align(_score, LV_ALIGN_CENTER, 0, -40);
 
     _state = lv_label_create(_panel);
     lv_label_set_text(_state, "STARTING");
     styleLabel(_state, &lv_font_montserrat_22, 0xFFFFFF);
     lv_obj_set_width(_state, 330);
-    lv_obj_align(_state, LV_ALIGN_CENTER, 0, 20);
+    lv_obj_align(_state, LV_ALIGN_CENTER, 0, 12);
 
     _detail = lv_label_create(_panel);
     lv_label_set_text(_detail, "Preparing Wi-Fi CSI");
-    styleLabel(_detail, &lv_font_montserrat_16, 0x9AA6BB);
-    lv_obj_set_width(_detail, 310);
+    styleLabel(_detail, &lv_font_montserrat_14, 0x9AA6BB);
+    lv_obj_set_width(_detail, 252);
     lv_label_set_long_mode(_detail, LV_LABEL_LONG_WRAP);
-    lv_obj_align(_detail, LV_ALIGN_CENTER, 0, 58);
+    lv_obj_align(_detail, LV_ALIGN_CENTER, 0, 55);
 
     _stats = lv_label_create(_panel);
     lv_label_set_text(_stats, "0 fps   RSSI --   0 frames");
     styleLabel(_stats, &lv_font_montserrat_14, 0x69758A);
     lv_obj_set_width(_stats, 370);
-    lv_obj_align(_stats, LV_ALIGN_BOTTOM_MID, 0, -67);
+    lv_obj_align(_stats, LV_ALIGN_BOTTOM_MID, 0, -64);
 
     _hint = lv_label_create(_panel);
     lv_label_set_text(_hint, "A  RECALIBRATE     A+B  EXIT");
