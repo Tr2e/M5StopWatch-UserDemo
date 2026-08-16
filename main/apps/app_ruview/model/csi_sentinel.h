@@ -41,6 +41,12 @@ struct SentinelSnapshot {
     bool device_stationary = true;
     Sensitivity sensitivity = Sensitivity::Medium;
     float trigger_score = 42.0f;
+    bool has_activity_event = false;
+    bool activity_event_active = false;
+    float activity_peak_score = 0.0f;
+    uint32_t activity_duration_ms = 0;
+    uint32_t last_activity_age_ms = 0;
+    uint32_t activity_event_count = 0;
 };
 
 class CsiSentinel {
@@ -105,6 +111,12 @@ private:
     uint8_t _activity_votes = 0;
     uint8_t _clear_votes = 0;
     bool _activity_latched = false;
+    uint32_t _activity_started_ms = 0;
+    uint32_t _last_activity_ended_ms = 0;
+    uint32_t _last_activity_duration_ms = 0;
+    uint32_t _activity_event_count = 0;
+    float _activity_peak_score = 0.0f;
+    float _last_activity_peak_score = 0.0f;
 };
 
 const char* sentinelStateTitle(SentinelState state);

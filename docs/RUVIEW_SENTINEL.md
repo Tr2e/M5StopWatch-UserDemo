@@ -12,6 +12,8 @@ RuView Sentinel is an experimental, camera-free room activity sensor for a singl
 
 Calibration pauses whenever the IMU detects that the watch itself is moving. The app vibrates once when sustained RF activity crosses the current threshold.
 
+During an activity event, the center detail shows its peak score, elapsed duration, and event number. After the room returns to stillness, the same line retains the last event age and peak until recalibration.
+
 ## What this first version measures
 
 The app enables ESP-IDF CSI capture while the station remains connected, temporarily enables promiscuous reception, and filters CSI frames to the associated access point BSSID. Each callback reduces the I/Q subcarriers to an eight-band log-power fingerprint. The foreground state machine then:

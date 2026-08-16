@@ -128,7 +128,22 @@ void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* er
     }
     lv_label_set_text(_score, score);
     lv_label_set_text(_state, ruview::sentinelStateTitle(snapshot.state));
-    lv_label_set_text(_detail, error_message ? error_message : ruview::sentinelStateDetail(snapshot.state));
+    char detail[96];
+    if (error_message) {
+        std::snprintf(detail, sizeof(detail), "%s", error_message);
+    } else if (snapshot.activity_event_active) {
+        std::snprintf(detail, sizeof(detail), "Peak %.0f   %.1fs   #%lu", snapshot.activity_peak_score,
+                      snapshot.activity_duration_ms / 1000.0f,
+                      static_cast<unsigned long>(snapshot.activity_event_count));
+    } else if (snapshot.state == ruview::SentinelState::Still && snapshot.has_activity_event) {
+        std::snprintf(detail, sizeof(detail), "Last %lus ago   peak %.0f   #%lu",
+                      static_cast<unsigned long>(snapshot.last_activity_age_ms / 1000),
+                      snapshot.activity_peak_score,
+                      static_cast<unsigned long>(snapshot.activity_event_count));
+    } else {
+        std::snprintf(detail, sizeof(detail), "%s", ruview::sentinelStateDetail(snapshot.state));
+    }
+    lv_label_set_text(_detail, detail);
 
     char stats[96];
     std::snprintf(stats, sizeof(stats), "%.0f fps   RSSI %d   %s   T%.0f", snapshot.frame_rate_hz,

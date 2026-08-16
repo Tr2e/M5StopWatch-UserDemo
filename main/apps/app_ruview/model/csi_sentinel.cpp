@@ -69,6 +69,12 @@ void CsiSentinel::resetCalibration()
     _activity_votes = 0;
     _clear_votes = 0;
     _activity_latched = false;
+    _activity_started_ms = 0;
+    _last_activity_ended_ms = 0;
+    _last_activity_duration_ms = 0;
+    _activity_event_count = 0;
+    _activity_peak_score = 0.0f;
+    _last_activity_peak_score = 0.0f;
 }
 
 void CsiSentinel::cycleSensitivity()
@@ -80,7 +86,6 @@ void CsiSentinel::cycleSensitivity()
     }
     _activity_votes = 0;
     _clear_votes = 0;
-    _activity_latched = false;
 }
 
 bool CsiSentinel::enableCsi()
@@ -353,6 +358,12 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
     if (!snapshot.device_stationary) {
         _activity_votes = 0;
         _clear_votes = 0;
+        if (_activity_latched) {
+            _activity_latched = false;
+            _last_activity_ended_ms = now_ms;
+            _last_activity_duration_ms = now_ms - _activity_started_ms;
+            _last_activity_peak_score = _activity_peak_score;
+        }
         snapshot.state = SentinelState::DeviceMoving;
     } else if (!_calibrated) {
         const uint32_t accepted_ms = std::min<uint32_t>(elapsed_ms, 500);
@@ -390,6 +401,7 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
     } else {
         snapshot.activity_score = calculateActivityScore();
 
+        const bool was_activity = _activity_latched;
         if (snapshot.activity_score >= activeEnterScore()) {
             _activity_votes = std::min<uint8_t>(10, _activity_votes + 1);
             _clear_votes = 0;
@@ -399,6 +411,18 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
         }
         if (_activity_votes >= 2) _activity_latched = true;
         if (_clear_votes >= 6) _activity_latched = false;
+
+        if (_activity_latched && !was_activity) {
+            _activity_started_ms = now_ms;
+            _activity_peak_score = snapshot.activity_score;
+            ++_activity_event_count;
+        } else if (_activity_latched) {
+            _activity_peak_score = std::max(_activity_peak_score, snapshot.activity_score);
+        } else if (was_activity) {
+            _last_activity_ended_ms = now_ms;
+            _last_activity_duration_ms = now_ms - _activity_started_ms;
+            _last_activity_peak_score = _activity_peak_score;
+        }
 
         // Slowly follow long-term room drift only while the scene is quiet.
         if (!_activity_latched && snapshot.activity_score < 16.0f) {
@@ -417,6 +441,17 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
     snapshot.calibrated = _calibrated;
     snapshot.calibration_progress = std::min(1.0f, static_cast<float>(_calibration_stationary_ms) /
                                                       static_cast<float>(kCalibrationDurationMs));
+    snapshot.has_activity_event = _activity_event_count > 0;
+    snapshot.activity_event_active = _activity_latched;
+    snapshot.activity_event_count = _activity_event_count;
+    if (_activity_latched) {
+        snapshot.activity_peak_score = _activity_peak_score;
+        snapshot.activity_duration_ms = now_ms - _activity_started_ms;
+    } else if (_last_activity_ended_ms != 0) {
+        snapshot.activity_peak_score = _last_activity_peak_score;
+        snapshot.activity_duration_ms = _last_activity_duration_ms;
+        snapshot.last_activity_age_ms = now_ms - _last_activity_ended_ms;
+    }
     return snapshot;
 }
 
