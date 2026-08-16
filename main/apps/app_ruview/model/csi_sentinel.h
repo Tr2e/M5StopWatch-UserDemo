@@ -44,6 +44,8 @@ public:
     const char* errorMessage() const;
 
 private:
+    static constexpr uint8_t kFeatureBinCount = 8;
+
     static void csiCallback(void* context, wifi_csi_info_t* info);
     void acceptFrame(const wifi_csi_info_t& info);
     bool enableCsi();
@@ -51,6 +53,7 @@ private:
 
     portMUX_TYPE _sample_mux = portMUX_INITIALIZER_UNLOCKED;
     float _signal_sum = 0.0f;
+    float _profile_sum[kFeatureBinCount] = {};
     int _latest_rssi = 0;
     uint32_t _pending_frames = 0;
     uint32_t _total_frames = 0;
@@ -72,6 +75,11 @@ private:
     float _baseline_m2 = 0.0f;
     float _filtered_signal = 0.0f;
     float _previous_signal = 0.0f;
+    float _baseline_profile_mean[kFeatureBinCount] = {};
+    float _baseline_profile_m2[kFeatureBinCount] = {};
+    float _filtered_profile[kFeatureBinCount] = {};
+    float _previous_profile[kFeatureBinCount] = {};
+    bool _profile_initialized = false;
     uint8_t _activity_votes = 0;
     uint8_t _clear_votes = 0;
     bool _activity_latched = false;

@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <functional>
+#include <iterator>
 #include <esp_err.h>
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
@@ -19,7 +21,9 @@ constexpr uint32_t kCalibrationDurationMs = 30000;
 constexpr uint32_t kSignalTimeoutMs = 3000;
 constexpr uint32_t kEnableRetryMs = 1000;
 constexpr float kStationaryMotionLimit = 0.18f;
-constexpr float kMinimumNoiseFloor = 0.035f;
+constexpr float kMinimumBinNoiseFloor = 0.025f;
+constexpr float kActivityEnterScore = 42.0f;
+constexpr float kActivityExitScore = 24.0f;
 }
 
 bool CsiSentinel::start()
@@ -48,6 +52,11 @@ void CsiSentinel::resetCalibration()
     _baseline_m2 = 0.0f;
     _filtered_signal = 0.0f;
     _previous_signal = 0.0f;
+    std::fill(std::begin(_baseline_profile_mean), std::end(_baseline_profile_mean), 0.0f);
+    std::fill(std::begin(_baseline_profile_m2), std::end(_baseline_profile_m2), 0.0f);
+    std::fill(std::begin(_filtered_profile), std::end(_filtered_profile), 0.0f);
+    std::fill(std::begin(_previous_profile), std::end(_previous_profile), 0.0f);
+    _profile_initialized = false;
     _activity_votes = 0;
     _clear_votes = 0;
     _activity_latched = false;
@@ -121,7 +130,7 @@ void CsiSentinel::csiCallback(void* context, wifi_csi_info_t* info)
 
 void CsiSentinel::acceptFrame(const wifi_csi_info_t& info)
 {
-    if (!info.buf || info.len < 8) {
+    if (!info.buf || info.len < kFeatureBinCount * 2) {
         return;
     }
 
@@ -132,23 +141,40 @@ void CsiSentinel::acceptFrame(const wifi_csi_info_t& info)
     }
 
     const uint16_t offset = info.first_word_invalid ? 4 : 0;
-    double power_sum = 0.0;
-    uint16_t pair_count = 0;
-    for (uint16_t index = offset; index + 1 < info.len; index += 2) {
+    const uint16_t pair_count = (info.len - offset) / 2;
+    float bin_sum[kFeatureBinCount] = {};
+    uint16_t bin_count[kFeatureBinCount] = {};
+    float signal_sum = 0.0f;
+    for (uint16_t pair = 0; pair < pair_count; ++pair) {
+        const uint16_t index = offset + pair * 2;
         const float imaginary = static_cast<float>(info.buf[index]);
         const float real = static_cast<float>(info.buf[index + 1]);
-        power_sum += real * real + imaginary * imaginary;
-        ++pair_count;
+        const float feature = std::log1p(real * real + imaginary * imaginary);
+        const uint8_t bin = std::min<uint8_t>(kFeatureBinCount - 1,
+                                              pair * kFeatureBinCount / pair_count);
+        bin_sum[bin] += feature;
+        ++bin_count[bin];
+        signal_sum += feature;
     }
     if (pair_count == 0) {
         return;
     }
 
-    // Log power keeps AGC jumps bounded while retaining small environmental
-    // changes. Only aggregate scalars in the Wi-Fi task callback.
-    const float signal = std::log1p(static_cast<float>(power_sum / pair_count));
+    // Preserve coarse frequency-selective changes instead of collapsing every
+    // subcarrier into one power value. Human motion often raises some bands
+    // while lowering others, which a single average would cancel out.
+    float profile[kFeatureBinCount] = {};
+    for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+        if (bin_count[bin] > 0) {
+            profile[bin] = bin_sum[bin] / static_cast<float>(bin_count[bin]);
+        }
+    }
+    const float signal = signal_sum / static_cast<float>(pair_count);
     portENTER_CRITICAL(&_sample_mux);
     _signal_sum += signal;
+    for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+        _profile_sum[bin] += profile[bin];
+    }
     _latest_rssi = info.rx_ctrl.rssi;
     ++_pending_frames;
     ++_total_frames;
@@ -176,13 +202,16 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
     }
 
     float signal_sum = 0.0f;
+    float profile_sum[kFeatureBinCount] = {};
     uint32_t frame_count = 0;
     portENTER_CRITICAL(&_sample_mux);
     signal_sum = _signal_sum;
+    std::copy(std::begin(_profile_sum), std::end(_profile_sum), std::begin(profile_sum));
     frame_count = _pending_frames;
     snapshot.rssi_dbm = _latest_rssi;
     snapshot.total_frames = _total_frames;
     _signal_sum = 0.0f;
+    std::fill(std::begin(_profile_sum), std::end(_profile_sum), 0.0f);
     _pending_frames = 0;
     portEXIT_CRITICAL(&_sample_mux);
 
@@ -204,11 +233,20 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
     _last_frame_ms = now_ms;
 
     const float raw_signal = signal_sum / static_cast<float>(frame_count);
-    if (_filtered_signal == 0.0f) {
+    if (!_profile_initialized) {
         _filtered_signal = raw_signal;
         _previous_signal = raw_signal;
+        for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+            _filtered_profile[bin] = profile_sum[bin] / static_cast<float>(frame_count);
+            _previous_profile[bin] = _filtered_profile[bin];
+        }
+        _profile_initialized = true;
     } else {
         _filtered_signal += 0.22f * (raw_signal - _filtered_signal);
+        for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+            const float sample = profile_sum[bin] / static_cast<float>(frame_count);
+            _filtered_profile[bin] += 0.28f * (sample - _filtered_profile[bin]);
+        }
     }
     snapshot.signal_level = _filtered_signal;
 
@@ -223,38 +261,66 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
         const float delta = _filtered_signal - _baseline_mean;
         _baseline_mean += delta / static_cast<float>(_calibration_samples);
         _baseline_m2 += delta * (_filtered_signal - _baseline_mean);
+        for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+            const float bin_delta = _filtered_profile[bin] - _baseline_profile_mean[bin];
+            _baseline_profile_mean[bin] += bin_delta / static_cast<float>(_calibration_samples);
+            _baseline_profile_m2[bin] +=
+                bin_delta * (_filtered_profile[bin] - _baseline_profile_mean[bin]);
+        }
         if (_calibration_stationary_ms >= kCalibrationDurationMs && _calibration_samples >= 30) {
             _calibrated = true;
         }
         snapshot.state = SentinelState::Calibrating;
     } else {
-        const float variance = _calibration_samples > 1
-                                   ? _baseline_m2 / static_cast<float>(_calibration_samples - 1)
-                                   : 0.0f;
-        const float sigma = std::max(kMinimumNoiseFloor, std::sqrt(std::max(0.0f, variance)));
-        const float baseline_z = std::fabs(_filtered_signal - _baseline_mean) / sigma;
-        const float transient_z = std::fabs(_filtered_signal - _previous_signal) / sigma;
-        const float combined = baseline_z * 0.82f + transient_z * 0.18f;
+        float baseline_z[kFeatureBinCount] = {};
+        float transient_z[kFeatureBinCount] = {};
+        for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+            const float variance = _calibration_samples > 1
+                                       ? _baseline_profile_m2[bin] /
+                                             static_cast<float>(_calibration_samples - 1)
+                                       : 0.0f;
+            const float sigma = std::max(kMinimumBinNoiseFloor,
+                                         std::sqrt(std::max(0.0f, variance)));
+            baseline_z[bin] = std::min(8.0f,
+                                       std::fabs(_filtered_profile[bin] -
+                                                 _baseline_profile_mean[bin]) /
+                                           sigma);
+            transient_z[bin] = std::min(8.0f,
+                                        std::fabs(_filtered_profile[bin] -
+                                                  _previous_profile[bin]) /
+                                            sigma);
+        }
+        std::sort(std::begin(baseline_z), std::end(baseline_z), std::greater<float>());
+        std::sort(std::begin(transient_z), std::end(transient_z), std::greater<float>());
+        const float strongest_baseline = (baseline_z[0] + baseline_z[1] + baseline_z[2]) / 3.0f;
+        const float strongest_transient = (transient_z[0] + transient_z[1] + transient_z[2]) / 3.0f;
+        const float combined = strongest_baseline * 0.78f + strongest_transient * 0.22f;
         snapshot.activity_score = std::min(100.0f, combined * 18.0f);
 
-        if (snapshot.activity_score >= 55.0f) {
+        if (snapshot.activity_score >= kActivityEnterScore) {
             _activity_votes = std::min<uint8_t>(10, _activity_votes + 1);
             _clear_votes = 0;
-        } else if (snapshot.activity_score < 30.0f) {
+        } else if (snapshot.activity_score < kActivityExitScore) {
             _clear_votes = std::min<uint8_t>(20, _clear_votes + 1);
             if (_activity_votes > 0) --_activity_votes;
         }
-        if (_activity_votes >= 3) _activity_latched = true;
-        if (_clear_votes >= 8) _activity_latched = false;
+        if (_activity_votes >= 2) _activity_latched = true;
+        if (_clear_votes >= 6) _activity_latched = false;
 
         // Slowly follow long-term room drift only while the scene is quiet.
-        if (!_activity_latched && snapshot.activity_score < 20.0f) {
+        if (!_activity_latched && snapshot.activity_score < 16.0f) {
             _baseline_mean += 0.002f * (_filtered_signal - _baseline_mean);
+            for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+                _baseline_profile_mean[bin] +=
+                    0.002f * (_filtered_profile[bin] - _baseline_profile_mean[bin]);
+            }
         }
         snapshot.state = _activity_latched ? SentinelState::Activity : SentinelState::Still;
     }
 
     _previous_signal = _filtered_signal;
+    std::copy(std::begin(_filtered_profile), std::end(_filtered_profile),
+              std::begin(_previous_profile));
     snapshot.calibrated = _calibrated;
     snapshot.calibration_progress = std::min(1.0f, static_cast<float>(_calibration_stationary_ms) /
                                                       static_cast<float>(kCalibrationDurationMs));
