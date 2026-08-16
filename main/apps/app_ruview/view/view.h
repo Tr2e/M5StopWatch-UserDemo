@@ -37,6 +37,7 @@ private:
     int16_t _bubble_y[8] = {};
     uint8_t _bubble_size[8] = {};
     uint8_t _bubble_float_amplitude[8] = {};
+    uint8_t _bubble_shake_strength[8] = {};
     float _bubble_phase[8] = {};
     float _bubble_speed[8] = {};
     uint32_t _visual_tick = 0;
