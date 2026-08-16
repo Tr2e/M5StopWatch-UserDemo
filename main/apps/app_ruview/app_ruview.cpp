@@ -13,9 +13,7 @@
 AppRuView::AppRuView()
 {
     setAppInfo().name = "RuView";
-    // The FFT radio-wave glyph is reused until the product icon set gets a
-    // dedicated RuView asset.
-    setAppInfo().icon = (void*)&icon_fft;
+    setAppInfo().icon = (void*)&icon_ruview;
 }
 
 void AppRuView::onCreate()
