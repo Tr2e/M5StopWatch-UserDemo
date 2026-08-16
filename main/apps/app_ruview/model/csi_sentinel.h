@@ -48,6 +48,7 @@ struct SentinelSnapshot {
     uint32_t activity_duration_ms = 0;
     uint32_t last_activity_age_ms = 0;
     uint32_t activity_event_count = 0;
+    float band_activity[8] = {};
 };
 
 class CsiSentinel {
@@ -69,6 +70,7 @@ private:
     void sendTrafficProbe(uint32_t now_ms);
     float calculateActivityScore() const;
     float calculateTransientScore() const;
+    void populateBandActivity(SentinelSnapshot& snapshot) const;
     float activeEnterScore() const;
     float activeExitScore() const;
     uint32_t calibrationTargetMs() const;

@@ -28,6 +28,7 @@ void AppRuView::onOpen()
     mclog::tagInfo(getAppInfo().name, "on open");
     _key_manager = std::make_unique<input::KeyManager>();
     _last_sample_ms = 0;
+    _second_activity_pulse_at = 0;
     _have_previous_accel = false;
     _filtered_motion = 0.0f;
     _last_state = ruview::SentinelState::Error;
@@ -81,6 +82,10 @@ void AppRuView::onRunning()
     }
 
     const uint32_t now = GetHAL().millis();
+    if (_second_activity_pulse_at != 0 && now >= _second_activity_pulse_at) {
+        GetHAL().vibrate(65, 78);
+        _second_activity_pulse_at = 0;
+    }
     if (_last_sample_ms != 0 && now - _last_sample_ms < 200) {
         return;
     }
@@ -89,7 +94,8 @@ void AppRuView::onRunning()
     const float motion = updateDeviceMotion();
     const auto snapshot = _sentinel.update(now, motion);
     if (snapshot.state == ruview::SentinelState::Activity && _last_state != ruview::SentinelState::Activity) {
-        GetHAL().vibrate(180, 90);
+        GetHAL().vibrate(70, 90);
+        _second_activity_pulse_at = now + 135;
     }
     _last_state = snapshot.state;
 

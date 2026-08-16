@@ -27,6 +27,7 @@ private:
     ruview::CsiSentinel _sentinel;
     ruview::SentinelState _last_state = ruview::SentinelState::Error;
     uint32_t _last_sample_ms = 0;
+    uint32_t _second_activity_pulse_at = 0;
     bool _have_previous_accel = false;
     float _previous_accel_x = 0.0f;
     float _previous_accel_y = 0.0f;

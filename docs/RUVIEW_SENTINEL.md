@@ -14,6 +14,8 @@ Calibration pauses whenever the IMU detects that the watch itself is moving. The
 
 During an activity event, the center detail shows its peak score, elapsed duration, and event number. After the room returns to stillness, the same line retains the last event age and peak until recalibration.
 
+The live view uses eight light particles for the eight CSI frequency bands. Particle brightness and size represent per-band deviation, not physical direction. The center breathes while still, calibration sweeps around the particles, and activity produces expanding visual ripples with a two-pulse haptic cue.
+
 If a high activity score persists for at least 12 seconds and then remains stable at the new RF level for 6 seconds, RuView treats it as a lasting room change rather than endless motion. It closes the activity event, shows **ADAPTING BASELINE**, and learns the new stable environment for 15 seconds. Brief motion never enters this recovery path.
 
 ## What this first version measures

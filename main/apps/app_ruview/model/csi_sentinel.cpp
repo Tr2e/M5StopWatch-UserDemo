@@ -231,6 +231,28 @@ float CsiSentinel::calculateTransientScore() const
     return std::min(100.0f, (transient_z[0] + transient_z[1] + transient_z[2]) * 6.0f);
 }
 
+void CsiSentinel::populateBandActivity(SentinelSnapshot& snapshot) const
+{
+    for (uint8_t bin = 0; bin < kFeatureBinCount; ++bin) {
+        const float variance = _calibration_samples > 1
+                                   ? _baseline_profile_m2[bin] /
+                                         static_cast<float>(_calibration_samples - 1)
+                                   : 0.0f;
+        const float sigma = std::max(kMinimumBinNoiseFloor,
+                                     std::sqrt(std::max(0.0f, variance)));
+        const float baseline_z = std::min(8.0f,
+                                          std::fabs(_filtered_profile[bin] -
+                                                    _baseline_profile_mean[bin]) /
+                                              sigma);
+        const float transient_z = std::min(8.0f,
+                                           std::fabs(_filtered_profile[bin] -
+                                                     _previous_profile[bin]) /
+                                               sigma);
+        snapshot.band_activity[bin] =
+            std::min(100.0f, (baseline_z * 0.78f + transient_z * 0.22f) * 18.0f);
+    }
+}
+
 uint32_t CsiSentinel::calibrationTargetMs() const
 {
     return _recovering_baseline ? kRecoveryCalibrationDurationMs : kCalibrationDurationMs;
@@ -460,6 +482,7 @@ SentinelSnapshot CsiSentinel::update(uint32_t now_ms, float device_motion)
     } else {
         _recovering_baseline = false;
         snapshot.activity_score = calculateActivityScore();
+        populateBandActivity(snapshot);
 
         const bool was_activity = _activity_latched;
         if (snapshot.activity_score >= activeEnterScore()) {
