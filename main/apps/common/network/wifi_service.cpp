@@ -8,7 +8,6 @@
 #include <esp_wifi_types.h>
 #include <freertos/FreeRTOS.h>
 #include <hal/hal.h>
-#include <hal/utils/settings/settings.h>
 #include <ssid_manager.h>
 #include <sys/time.h>
 #include <wifi_manager.h>
@@ -96,8 +95,7 @@ void WifiService::update()
         }
     }
     if (start_station) {
-        Settings settings("system", false);
-        GetHAL().setTimezone(settings.GetString("tz", "GMT0"));
+        GetHAL().setTimezone(GetHAL().getTimezone());
         setState(WifiState::Connecting, "Connecting to saved network...");
         WifiManager::GetInstance().StartStation();
     }

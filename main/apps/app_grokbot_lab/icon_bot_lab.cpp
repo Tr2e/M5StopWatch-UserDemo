@@ -54,7 +54,7 @@ constexpr bool inRightEye(int x, int y)
 
 constexpr uint16_t iconPixel(int x, int y)
 {
-    constexpr uint16_t kCanvas = rgb565(8, 8, 8);
+    constexpr uint16_t kCanvas = rgb565(0, 0, 0);
     constexpr uint16_t kEdge = rgb565(222, 222, 218);
     constexpr uint16_t kBall = rgb565(248, 248, 245);
     constexpr uint16_t kEye = rgb565(20, 20, 20);

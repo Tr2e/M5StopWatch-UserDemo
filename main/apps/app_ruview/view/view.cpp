@@ -6,31 +6,98 @@
 #include "view.h"
 
 #include <algorithm>
+#include <assets/assets.h>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 namespace {
 
-uint32_t stateColor(ruview::SentinelState state)
+constexpr int kCanvas = 466;
+constexpr int kCenter = kCanvas / 2;
+constexpr int kContentLeft = 48;
+constexpr int kScoreLeft = kContentLeft - 10;
+constexpr int kMetaY = 122;
+constexpr int kScoreY = 164;
+constexpr int kDetailY = 294;
+constexpr int kDetailWidth = 248;
+constexpr int kUnitGap = 6;
+constexpr uint32_t kBg = 0x050505;
+constexpr uint32_t kText = 0xF5F5F5;
+constexpr uint32_t kMuted = 0x8E8E93;
+constexpr uint32_t kFaint = 0x5C5C5C;
+constexpr uint32_t kDot = 0xC8C8C8;
+constexpr uint32_t kRim = 0x2A2A2A;
+constexpr uint32_t kRimFill = 0xE8E8E8;
+constexpr uint32_t kActive = 0xFF5C2A;
+constexpr uint32_t kActiveText = 0xFF6A33;
+
+const char* shortStateLabel(ruview::SentinelState state)
 {
     switch (state) {
-        case ruview::SentinelState::Still: return 0x67D9B4;
-        case ruview::SentinelState::Activity: return 0xFF665E;
-        case ruview::SentinelState::DeviceMoving: return 0xFFC857;
-        case ruview::SentinelState::Calibrating: return 0x72A7FF;
-        case ruview::SentinelState::AdaptingBaseline: return 0xA78BFA;
-        case ruview::SentinelState::WaitingForSignal: return 0xA78BFA;
-        case ruview::SentinelState::WaitingForWifi: return 0x8E9AAF;
-        case ruview::SentinelState::Error: return 0xFF665E;
+        case ruview::SentinelState::WaitingForWifi: return "NO WIFI";
+        case ruview::SentinelState::WaitingForSignal: return "NO SIGNAL";
+        case ruview::SentinelState::Calibrating: return "CALIBRATING";
+        case ruview::SentinelState::AdaptingBaseline: return "ADAPTING";
+        case ruview::SentinelState::Still: return "STILL";
+        case ruview::SentinelState::Activity: return "ACTIVITY";
+        case ruview::SentinelState::DeviceMoving: return "MOVING";
+        case ruview::SentinelState::Error: return "ERROR";
     }
-    return 0xFFFFFF;
+    return "RUVIEW";
 }
 
-void styleLabel(lv_obj_t* label, const lv_font_t* font, uint32_t color)
+bool isNumericScoreState(ruview::SentinelState state)
+{
+    return state == ruview::SentinelState::Calibrating ||
+           state == ruview::SentinelState::AdaptingBaseline ||
+           state == ruview::SentinelState::Still ||
+           state == ruview::SentinelState::Activity;
+}
+
+bool isCalibratingState(ruview::SentinelState state)
+{
+    return state == ruview::SentinelState::Calibrating ||
+           state == ruview::SentinelState::AdaptingBaseline;
+}
+
+void styleLabel(lv_obj_t* label, const lv_font_t* font, uint32_t color, lv_text_align_t align)
 {
     lv_obj_set_style_text_font(label, font, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(color), 0);
-    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_align(label, align, 0);
+    lv_obj_set_style_pad_all(label, 0, 0);
+    lv_obj_set_style_border_width(label, 0, 0);
+    lv_obj_set_style_outline_width(label, 0, 0);
+    lv_obj_remove_flag(label, LV_OBJ_FLAG_SCROLLABLE);
+}
+
+void pinLeftColumn(lv_obj_t* label, int y)
+{
+    lv_obj_set_pos(label, kContentLeft, y);
+    lv_obj_set_width(label, kDetailWidth);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
+}
+
+void setLabelIfChanged(lv_obj_t* label, const char* text)
+{
+    const char* current = lv_label_get_text(label);
+    if (current && std::strcmp(current, text) == 0) return;
+    lv_label_set_text(label, text);
+}
+
+lv_obj_t* makeDot(lv_obj_t* parent)
+{
+    lv_obj_t* dot = lv_obj_create(parent);
+    lv_obj_set_size(dot, 10, 10);
+    lv_obj_set_style_bg_color(dot, lv_color_hex(kDot), 0);
+    lv_obj_set_style_bg_opa(dot, 40, 0);
+    lv_obj_set_style_border_width(dot, 0, 0);
+    lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_pad_all(dot, 0, 0);
+    lv_obj_remove_flag(dot, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(dot, LV_OBJ_FLAG_CLICKABLE);
+    return dot;
 }
 
 }  // namespace
@@ -43,82 +110,93 @@ void RuViewView::animationTimerCallback(lv_timer_t* timer)
     if (view) view->updateAmbientVisuals();
 }
 
+void RuViewView::setScore(const char* text, bool large_numeric, bool show_unit)
+{
+    const lv_font_t* font = large_numeric ? &CommissionerMedium108 : &lv_font_maple_mono_medium_48;
+    const lv_font_t* unit_font = &lv_font_maple_mono_medium_48;
+    const int digit_w = lv_font_get_glyph_width(font, '0', 0);
+    const int slot_w = digit_w * 2;
+    const int score_x = kScoreLeft;
+    const int unit_x = score_x + slot_w + kUnitGap;
+    const char* current = lv_label_get_text(_score);
+    const bool same_text = current && std::strcmp(current, text) == 0;
+
+    lv_obj_set_style_text_font(_score, font, 0);
+    lv_obj_set_style_text_align(_score, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_size(_score, slot_w, font->line_height);
+    lv_obj_set_pos(_score, score_x, kScoreY);
+    if (!same_text) {
+        lv_label_set_text(_score, text);
+    }
+
+    if (show_unit) {
+        lv_obj_set_style_text_font(_unit, unit_font, 0);
+        const int score_baseline = kScoreY + font->line_height - font->base_line;
+        const int unit_y = score_baseline - (unit_font->line_height - unit_font->base_line);
+        lv_obj_set_pos(_unit, unit_x, unit_y);
+        lv_obj_remove_flag(_unit, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_align_to(_alert, _unit, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
+    } else {
+        lv_obj_add_flag(_unit, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_align_to(_alert, _score, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
+    }
+}
+
 void RuViewView::updateAmbientVisuals()
 {
     if (!_panel || !_has_visual_snapshot) return;
 
     const auto& snapshot = _visual_snapshot;
     ++_visual_tick;
-    const bool calibrating = snapshot.state == ruview::SentinelState::Calibrating ||
-                             snapshot.state == ruview::SentinelState::AdaptingBaseline;
-    const float breath = (std::sin(static_cast<float>(_visual_tick) * 0.052f) + 1.0f) * 0.5f;
+    const float breath = (std::sin(static_cast<float>(_visual_tick) * 0.035f) + 1.0f) * 0.5f;
+    const bool calibrating = isCalibratingState(snapshot.state);
+    const bool active = snapshot.state == ruview::SentinelState::Activity;
 
-    int core_size = 170 + static_cast<int>(breath * 8.0f);
-    const int core_x = static_cast<int>(std::sin(_visual_tick * 0.026f) * 4.0f);
-    const int core_y = -20 + static_cast<int>(std::sin(_visual_tick * 0.031f + 1.2f) * 3.0f);
-    if (snapshot.state == ruview::SentinelState::Activity) {
-        const float bounce = (std::sin(_visual_tick * 0.12f) + 1.0f) * 0.5f;
-        core_size = 178 + static_cast<int>(bounce * 10.0f);
-        lv_obj_set_style_bg_color(_core, lv_color_hex(0x351329), 0);
-    } else if (calibrating) {
-        core_size = 172 + static_cast<int>(breath * 8.0f);
-        lv_obj_set_style_bg_color(_core, lv_color_hex(0x151B38), 0);
-    } else {
-        lv_obj_set_style_bg_color(_core, lv_color_hex(0x122B2A), 0);
-    }
-    lv_obj_set_size(_core, core_size, core_size);
-    lv_obj_align(_core, LV_ALIGN_CENTER, core_x, core_y);
-    lv_obj_set_style_bg_opa(_core, 172 + static_cast<int>(breath * 34.0f), 0);
-    const int text_drift_y = core_y + 20;
-    lv_obj_align(_score, LV_ALIGN_CENTER, core_x, -40 + text_drift_y);
-    lv_obj_align(_state, LV_ALIGN_CENTER, core_x, 12 + text_drift_y);
-
-    float entry_shock = 0.0f;
-    if (_shock_active) {
-        _shock_progress = std::min(1.0f, _shock_progress + 0.038f);
-        entry_shock = std::sin(_shock_progress * 6.0f * 3.14159265f) *
-                      (1.0f - _shock_progress) * 9.0f;
-        if (_shock_progress >= 1.0f) _shock_active = false;
-    }
-    const float activity_shake = snapshot.state == ruview::SentinelState::Activity
-                                     ? std::sin(_visual_tick * 0.86f) * 2.4f +
-                                           std::sin(_visual_tick * 1.37f) * 1.2f
-                                     : 0.0f;
-    for (uint8_t index = 0; index < 8; ++index) {
-        const float float_y = std::sin(_visual_tick * _bubble_speed[index] + _bubble_phase[index]) *
-                              _bubble_float_amplitude[index];
-        const float shake_scale = _bubble_shake_strength[index] / 100.0f;
-        const float shake_x = (entry_shock + activity_shake) * shake_scale;
-        const int bubble_size = _bubble_size[index];
-        // Ambient motion is deliberately screen-vertical. Activity feedback
-        // is deliberately screen-horizontal; neither follows a radial line.
-        const int x = _bubble_x[index] + static_cast<int>(shake_x) - bubble_size / 2;
-        const int y = _bubble_y[index] + static_cast<int>(float_y) - bubble_size / 2;
-        lv_obj_set_size(_band_bubbles[index], bubble_size, bubble_size);
-        lv_obj_set_pos(_band_bubbles[index], x, y);
-    }
-
-    if (_pulse_active) {
-        _pulse_progress = std::min(1.0f, _pulse_progress + 0.035f);
-        const float eased = 1.0f - std::pow(1.0f - _pulse_progress, 3.0f);
-        const int pulse_size = 116 + static_cast<int>(eased * 176.0f);
-        const int pulse_opa = static_cast<int>((1.0f - eased) * 112.0f);
-        lv_obj_set_size(_pulse, pulse_size, pulse_size);
-        lv_obj_align(_pulse, LV_ALIGN_CENTER, core_x, core_y);
-        lv_obj_set_style_bg_color(_pulse, lv_color_hex(0x6377DC), 0);
-        lv_obj_set_style_bg_opa(_pulse, pulse_opa, 0);
-        if (_pulse_progress >= 1.0f) {
-            _pulse_active = false;
-            lv_obj_add_flag(_pulse, LV_OBJ_FLAG_HIDDEN);
-        }
-    }
-
-    const int base_arc_opa = snapshot.state == ruview::SentinelState::Still
-                                 ? 25 + static_cast<int>(breath * 18.0f)
-                                 : 34;
-    lv_obj_set_style_arc_opa(_meter, base_arc_opa, LV_PART_MAIN);
-    lv_obj_set_style_arc_opa(_meter, snapshot.state == ruview::SentinelState::Activity ? 158 : 145,
+    lv_obj_set_style_bg_color(_panel, lv_color_hex(kBg), 0);
+    lv_obj_set_style_arc_width(_meter, active ? 4 : 3, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(_meter, lv_color_hex(active ? kActive : kRimFill), LV_PART_INDICATOR);
+    lv_obj_set_style_arc_opa(_meter, 40 + static_cast<int>(breath * 14.0f), LV_PART_MAIN);
+    lv_obj_set_style_arc_opa(_meter, active ? 200 : (calibrating ? 120 : 88 + static_cast<int>(breath * 16.0f)),
                              LV_PART_INDICATOR);
+
+    if (!lv_obj_has_flag(_alert, LV_OBJ_FLAG_HIDDEN)) {
+        const int alert_opa = active ? 150 + static_cast<int>(breath * 90.0f) : 180;
+        lv_obj_set_style_bg_opa(_alert, alert_opa, 0);
+        lv_obj_set_style_bg_color(_alert, lv_color_hex(active ? kActive : kText), 0);
+    }
+
+    const float chase_head = std::fmod(static_cast<float>(_visual_tick) * 0.20f, 8.0f);
+    for (uint8_t index = 0; index < 8; ++index) {
+        int size = 9;
+        int opa = 32;
+        uint32_t color = kDot;
+
+        if (active) {
+            float trail = chase_head - static_cast<float>(index);
+            if (trail < 0.0f) trail += 8.0f;
+            const float glow = std::max(0.0f, 1.0f - trail / 2.6f);
+            const float head = glow * glow;
+            size = 8 + static_cast<int>(head * 13.0f);
+            opa = 36 + static_cast<int>(head * 210.0f);
+            color = kActive;
+        } else {
+            float band = snapshot.band_activity[index];
+            if (calibrating) {
+                const float wave = (std::sin(_visual_tick * 0.045f + index * 0.7f) + 1.0f) * 0.5f;
+                band = 10.0f + wave * 22.0f;
+            } else if (!snapshot.calibrated) {
+                band = 0.0f;
+            }
+            const float clamped = std::clamp(band, 0.0f, 100.0f);
+            size = 9 + static_cast<int>(clamped / 22.0f);
+            opa = 32 + static_cast<int>(clamped * 1.5f);
+        }
+
+        lv_obj_set_size(_band_dots[index], size, size);
+        lv_obj_set_pos(_band_dots[index], _dot_x[index] - size / 2, _dot_y[index] - size / 2);
+        lv_obj_set_style_bg_color(_band_dots[index], lv_color_hex(color), 0);
+        lv_obj_set_style_bg_opa(_band_dots[index], std::min(opa, 240), 0);
+    }
 }
 
 RuViewView::~RuViewView()
@@ -136,196 +214,169 @@ RuViewView::~RuViewView()
 void RuViewView::init(lv_obj_t* parent)
 {
     _panel = lv_obj_create(parent);
-    lv_obj_set_size(_panel, 466, 466);
+    lv_obj_set_size(_panel, kCanvas, kCanvas);
     lv_obj_center(_panel);
-    lv_obj_set_style_bg_color(_panel, lv_color_hex(0x05070B), 0);
+    lv_obj_set_style_bg_color(_panel, lv_color_hex(kBg), 0);
     lv_obj_set_style_bg_opa(_panel, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(_panel, 0, 0);
+    lv_obj_set_style_radius(_panel, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(_panel, 0, 0);
     lv_obj_remove_flag(_panel, LV_OBJ_FLAG_SCROLLABLE);
 
-    _pulse = lv_obj_create(_panel);
-    lv_obj_set_size(_pulse, 118, 118);
-    lv_obj_align(_pulse, LV_ALIGN_CENTER, 0, -20);
-    lv_obj_set_style_bg_opa(_pulse, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(_pulse, 0, 0);
-    lv_obj_set_style_radius(_pulse, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_pad_all(_pulse, 0, 0);
-    lv_obj_remove_flag(_pulse, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_flag(_pulse, LV_OBJ_FLAG_HIDDEN);
-
-    _eyebrow = lv_label_create(_panel);
-    lv_label_set_text(_eyebrow, "RUVIEW  /  SENTINEL");
-    styleLabel(_eyebrow, &lv_font_montserrat_16, 0x7F8DA8);
-    lv_obj_align(_eyebrow, LV_ALIGN_TOP_MID, 0, 48);
-
     _meter = lv_arc_create(_panel);
-    // Treat calibration/loading as a watch-face complication: the progress
-    // follows the round display edge instead of consuming the content area.
-    lv_obj_set_size(_meter, 440, 440);
-    lv_obj_align(_meter, LV_ALIGN_CENTER, 0, 0);
-    lv_arc_set_rotation(_meter, 135);
-    lv_arc_set_bg_angles(_meter, 0, 270);
+    lv_obj_set_size(_meter, 450, 450);
+    lv_obj_center(_meter);
+    lv_arc_set_rotation(_meter, 270);
+    lv_arc_set_bg_angles(_meter, 0, 360);
     lv_arc_set_range(_meter, 0, 100);
     lv_arc_set_value(_meter, 0);
     lv_obj_remove_style(_meter, nullptr, LV_PART_KNOB);
-    lv_obj_set_style_arc_width(_meter, 5, LV_PART_MAIN);
-    lv_obj_set_style_arc_color(_meter, lv_color_hex(0x343153), LV_PART_MAIN);
-    lv_obj_set_style_arc_width(_meter, 6, LV_PART_INDICATOR);
+    lv_obj_remove_flag(_meter, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_arc_width(_meter, 3, LV_PART_MAIN);
+    lv_obj_set_style_arc_width(_meter, 3, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(_meter, lv_color_hex(kRim), LV_PART_MAIN);
+    lv_obj_set_style_arc_color(_meter, lv_color_hex(kRimFill), LV_PART_INDICATOR);
+    lv_obj_set_style_arc_opa(_meter, 56, LV_PART_MAIN);
+    lv_obj_set_style_arc_opa(_meter, 96, LV_PART_INDICATOR);
 
-    _core = lv_obj_create(_panel);
-    lv_obj_set_size(_core, 174, 174);
-    lv_obj_align(_core, LV_ALIGN_CENTER, 0, -20);
-    lv_obj_set_style_bg_color(_core, lv_color_hex(0x122B2A), 0);
-    lv_obj_set_style_bg_opa(_core, 185, 0);
-    lv_obj_set_style_border_width(_core, 0, 0);
-    lv_obj_set_style_radius(_core, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_pad_all(_core, 0, 0);
-    lv_obj_remove_flag(_core, LV_OBJ_FLAG_SCROLLABLE);
-
-    static constexpr int kBubbleAnchorX[8] = {80, 145, 302, 376, 92, 365, 154, 308};
-    static constexpr int kBubbleAnchorY[8] = {145, 91, 94, 151, 294, 292, 349, 346};
-    static constexpr uint32_t kBubbleColors[8] = {
-        0x6377DC, 0xD362C5, 0x72D2C5, 0xF0A778,
-        0xC599FF, 0x80B9E7, 0xFF8292, 0xA7E577,
-    };
-    uint8_t color_order[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-    uint8_t size_order[8] = {15, 18, 21, 24, 27, 30, 34, 38};
-    uint8_t opacity_order[8] = {54, 64, 74, 86, 98, 110, 126, 142};
-    uint8_t amplitude_order[8] = {3, 3, 4, 4, 5, 5, 6, 7};
-    uint8_t speed_order[8] = {13, 14, 15, 16, 18, 19, 21, 22};
-    for (int index = 7; index > 0; --index) {
-        const int swap_index = static_cast<int>(lv_rand(0, index));
-        std::swap(color_order[index], color_order[swap_index]);
-        const int size_swap = static_cast<int>(lv_rand(0, index));
-        std::swap(size_order[index], size_order[size_swap]);
-        const int opacity_swap = static_cast<int>(lv_rand(0, index));
-        std::swap(opacity_order[index], opacity_order[opacity_swap]);
-        const int amplitude_swap = static_cast<int>(lv_rand(0, index));
-        std::swap(amplitude_order[index], amplitude_order[amplitude_swap]);
-        const int speed_swap = static_cast<int>(lv_rand(0, index));
-        std::swap(speed_order[index], speed_order[speed_swap]);
-    }
+    constexpr float kDotRadius = 188.0f;
+    constexpr float kStartDeg = -58.0f;
+    constexpr float kEndDeg = 58.0f;
+    constexpr float kDeg2Rad = 3.14159265f / 180.0f;
     for (uint8_t index = 0; index < 8; ++index) {
-        _bubble_x[index] = kBubbleAnchorX[index] + static_cast<int>(lv_rand(0, 12)) - 6;
-        _bubble_y[index] = kBubbleAnchorY[index] + static_cast<int>(lv_rand(0, 8)) - 4;
-        _bubble_size[index] = size_order[index];
-        _bubble_float_amplitude[index] = amplitude_order[index];
-        _bubble_shake_strength[index] = static_cast<uint8_t>(lv_rand(88, 112));
-        _bubble_phase[index] = static_cast<float>(lv_rand(0, 628)) / 100.0f;
-        _bubble_speed[index] = speed_order[index] / 1000.0f;
-        const uint8_t opacity = opacity_order[index];
-        const uint32_t bubble_color = kBubbleColors[color_order[index]];
-
-        _band_bubbles[index] = lv_obj_create(_panel);
-        lv_obj_set_size(_band_bubbles[index], _bubble_size[index], _bubble_size[index]);
-        lv_obj_set_style_bg_color(_band_bubbles[index], lv_color_hex(bubble_color), 0);
-        lv_obj_set_style_bg_opa(_band_bubbles[index], opacity, 0);
-        lv_obj_set_style_border_width(_band_bubbles[index], 2, 0);
-        lv_obj_set_style_border_color(_band_bubbles[index], lv_color_hex(bubble_color), 0);
-        lv_obj_set_style_border_opa(_band_bubbles[index], std::min(150, opacity + 22), 0);
-        lv_obj_set_style_radius(_band_bubbles[index], LV_RADIUS_CIRCLE, 0);
-        lv_obj_set_style_pad_all(_band_bubbles[index], 0, 0);
-        lv_obj_remove_flag(_band_bubbles[index], LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_pos(_band_bubbles[index], _bubble_x[index] - _bubble_size[index] / 2,
-                       _bubble_y[index] - _bubble_size[index] / 2);
+        const float t = index / 7.0f;
+        const float rad = (kStartDeg + t * (kEndDeg - kStartDeg)) * kDeg2Rad;
+        _dot_x[index] = static_cast<int16_t>(kCenter + kDotRadius * std::cos(rad));
+        _dot_y[index] = static_cast<int16_t>(kCenter + kDotRadius * std::sin(rad));
+        _band_dots[index] = makeDot(_panel);
+        lv_obj_set_pos(_band_dots[index], _dot_x[index] - 5, _dot_y[index] - 5);
     }
+
+    _meta = lv_label_create(_panel);
+    lv_label_set_text(_meta, "RUVIEW");
+    styleLabel(_meta, &lv_font_montserrat_16, kMuted, LV_TEXT_ALIGN_LEFT);
+    pinLeftColumn(_meta, kMetaY);
 
     _score = lv_label_create(_panel);
-    lv_label_set_text(_score, "--");
-    styleLabel(_score, &lv_font_montserrat_36, 0xFFFFFF);
-    lv_obj_align(_score, LV_ALIGN_CENTER, 0, -40);
+    styleLabel(_score, &CommissionerMedium108, kText, LV_TEXT_ALIGN_RIGHT);
+    lv_obj_set_size(_score, lv_font_get_glyph_width(&CommissionerMedium108, '0', 0) * 2,
+                    CommissionerMedium108.line_height);
+    lv_label_set_long_mode(_score, LV_LABEL_LONG_CLIP);
+    lv_obj_set_pos(_score, kScoreLeft, kScoreY);
+    lv_label_set_text(_score, "0");
 
-    _state = lv_label_create(_panel);
-    lv_label_set_text(_state, "STARTING");
-    styleLabel(_state, &lv_font_montserrat_22, 0xFFFFFF);
-    lv_obj_set_width(_state, 330);
-    lv_obj_align(_state, LV_ALIGN_CENTER, 0, 12);
+    _unit = lv_label_create(_panel);
+    lv_label_set_text(_unit, "%");
+    styleLabel(_unit, &lv_font_maple_mono_medium_48, kMuted, LV_TEXT_ALIGN_LEFT);
+    lv_obj_add_flag(_unit, LV_OBJ_FLAG_HIDDEN);
+
+    _alert = lv_obj_create(_panel);
+    lv_obj_set_size(_alert, 16, 16);
+    lv_obj_set_style_bg_color(_alert, lv_color_hex(kText), 0);
+    lv_obj_set_style_bg_opa(_alert, 200, 0);
+    lv_obj_set_style_border_width(_alert, 0, 0);
+    lv_obj_set_style_radius(_alert, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_pad_all(_alert, 0, 0);
+    lv_obj_remove_flag(_alert, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(_alert, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(_alert, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_align_to(_alert, _score, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
 
     _detail = lv_label_create(_panel);
-    lv_label_set_text(_detail, "Preparing Wi-Fi CSI");
-    styleLabel(_detail, &lv_font_montserrat_14, 0x9AA6BB);
-    lv_obj_set_width(_detail, 252);
+    lv_label_set_text(_detail, "Preparing Wi-Fi CSI.");
+    styleLabel(_detail, &lv_font_montserrat_16, kMuted, LV_TEXT_ALIGN_LEFT);
     lv_label_set_long_mode(_detail, LV_LABEL_LONG_WRAP);
-    lv_obj_align(_detail, LV_ALIGN_CENTER, 0, 55);
+    lv_obj_set_style_text_line_space(_detail, 6, 0);
+    pinLeftColumn(_detail, kDetailY);
 
     _stats = lv_label_create(_panel);
-    lv_label_set_text(_stats, "0 fps   RSSI --   0 frames");
-    styleLabel(_stats, &lv_font_montserrat_14, 0x69758A);
-    lv_obj_set_width(_stats, 370);
-    lv_obj_align(_stats, LV_ALIGN_BOTTOM_MID, 0, -64);
+    lv_label_set_text(_stats, "");
+    styleLabel(_stats, &lv_font_montserrat_14, kFaint, LV_TEXT_ALIGN_LEFT);
+    pinLeftColumn(_stats, kDetailY + 52);
 
     _hint = lv_label_create(_panel);
-    lv_label_set_text(_hint, "A RECAL   B SENS   A+B EXIT");
-    styleLabel(_hint, &lv_font_montserrat_14, 0x7F8DA8);
-    lv_obj_align(_hint, LV_ALIGN_BOTTOM_MID, 0, -34);
+    lv_label_set_text(_hint, "A RECAL     MED     B SENS");
+    styleLabel(_hint, &lv_font_montserrat_14, kFaint, LV_TEXT_ALIGN_CENTER);
+    lv_obj_set_width(_hint, kCanvas);
+    lv_obj_align(_hint, LV_ALIGN_BOTTOM_MID, 0, -36);
 
-    _animation_timer = lv_timer_create(animationTimerCallback, 33, this);
+    setScore("--", false);
+    _animation_timer = lv_timer_create(animationTimerCallback, 40, this);
 }
 
 void RuViewView::update(const ruview::SentinelSnapshot& snapshot, const char* error_message)
 {
     if (!_panel) return;
 
-    const uint32_t color = stateColor(snapshot.state);
-    const bool calibrating = snapshot.state == ruview::SentinelState::Calibrating ||
-                             snapshot.state == ruview::SentinelState::AdaptingBaseline;
+    const bool calibrating = isCalibratingState(snapshot.state);
+    const bool active = snapshot.state == ruview::SentinelState::Activity;
     const int meter_value = calibrating
                                 ? static_cast<int>(snapshot.calibration_progress * 100.0f)
                                 : static_cast<int>(std::clamp(snapshot.activity_score, 0.0f, 100.0f));
+    const int display_value = std::clamp(meter_value, 0, 99);
     lv_arc_set_value(_meter, meter_value);
-    const uint32_t meter_color = snapshot.state == ruview::SentinelState::Activity ? 0x6377DC : color;
-    const uint32_t state_text_color = snapshot.state == ruview::SentinelState::Activity ? 0xFFFFFF : color;
-    lv_obj_set_style_arc_color(_meter, lv_color_hex(meter_color), LV_PART_INDICATOR);
-    lv_obj_set_style_text_color(_state, lv_color_hex(state_text_color), 0);
     _visual_snapshot = snapshot;
     _has_visual_snapshot = true;
 
-    char score[16];
-    if (snapshot.state == ruview::SentinelState::WaitingForWifi ||
-        snapshot.state == ruview::SentinelState::WaitingForSignal ||
-        snapshot.state == ruview::SentinelState::Error) {
-        std::snprintf(score, sizeof(score), "--");
-    } else if (calibrating) {
-        std::snprintf(score, sizeof(score), "%d%%", meter_value);
-    } else if (snapshot.state == ruview::SentinelState::DeviceMoving) {
-        std::snprintf(score, sizeof(score), "HOLD");
+    setLabelIfChanged(_meta, shortStateLabel(snapshot.state));
+    lv_obj_set_style_text_font(_meta, active ? &lv_font_montserrat_22 : &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_color(_meta, lv_color_hex(active ? kActiveText : kMuted), 0);
+    pinLeftColumn(_meta, kMetaY);
+
+    char score[8];
+    if (isNumericScoreState(snapshot.state)) {
+        std::snprintf(score, sizeof(score), "%d", display_value);
+        setScore(score, true, calibrating);
+        lv_obj_set_style_text_color(_score, lv_color_hex(active ? kActiveText : (calibrating ? kText : 0xC8C8C8)), 0);
+        lv_obj_set_style_text_color(_unit, lv_color_hex(active ? kActiveText : kMuted), 0);
     } else {
-        std::snprintf(score, sizeof(score), "%d", meter_value);
+        setScore("--", false);
+        lv_obj_set_style_text_color(_score, lv_color_hex(kMuted), 0);
     }
-    lv_label_set_text(_score, score);
-    lv_label_set_text(_state, ruview::sentinelStateTitle(snapshot.state));
+
+    const bool show_alert = active || snapshot.state == ruview::SentinelState::Error ||
+                            snapshot.state == ruview::SentinelState::DeviceMoving;
+    if (show_alert) {
+        lv_obj_remove_flag(_alert, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(_alert, LV_OBJ_FLAG_HIDDEN);
+    }
+
     char detail[96];
     if (error_message) {
         std::snprintf(detail, sizeof(detail), "%s", error_message);
-    } else if (snapshot.activity_event_active) {
-        std::snprintf(detail, sizeof(detail), "Peak %.0f   %.1fs   #%lu", snapshot.activity_peak_score,
-                      snapshot.activity_duration_ms / 1000.0f,
-                      static_cast<unsigned long>(snapshot.activity_event_count));
+    } else if (snapshot.state == ruview::SentinelState::Activity) {
+        std::snprintf(detail, sizeof(detail), "RF environment changed.");
     } else if (snapshot.state == ruview::SentinelState::Still && snapshot.has_activity_event) {
-        std::snprintf(detail, sizeof(detail), "Last %lus ago   peak %.0f   #%lu",
-                      static_cast<unsigned long>(snapshot.last_activity_age_ms / 1000),
-                      snapshot.activity_peak_score,
-                      static_cast<unsigned long>(snapshot.activity_event_count));
+        std::snprintf(detail, sizeof(detail), "The room is still again.");
     } else {
-        std::snprintf(detail, sizeof(detail), "%s", ruview::sentinelStateDetail(snapshot.state));
+        std::snprintf(detail, sizeof(detail), "%s.", ruview::sentinelStateDetail(snapshot.state));
     }
-    lv_label_set_text(_detail, detail);
+    setLabelIfChanged(_detail, detail);
+    lv_obj_set_style_text_color(_detail, lv_color_hex(active ? kActiveText : kMuted), 0);
+    pinLeftColumn(_detail, kDetailY);
 
-    char stats[96];
-    std::snprintf(stats, sizeof(stats), "%.0f fps   RSSI %d   %s   T%.0f", snapshot.frame_rate_hz,
-                  snapshot.rssi_dbm, ruview::sensitivityName(snapshot.sensitivity),
-                  snapshot.trigger_score);
-    lv_label_set_text(_stats, stats);
-
-    if (_last_state != snapshot.state && snapshot.state == ruview::SentinelState::Activity) {
-        _pulse_progress = 0.0f;
-        _pulse_active = true;
-        _shock_progress = 0.0f;
-        _shock_active = true;
-        lv_obj_remove_flag(_pulse, LV_OBJ_FLAG_HIDDEN);
+    char stats[32];
+    if (snapshot.state == ruview::SentinelState::Still || active ||
+        snapshot.state == ruview::SentinelState::DeviceMoving) {
+        int rssi = snapshot.rssi_dbm;
+        if (_have_rssi && rssi - _last_rssi_dbm < 3 && _last_rssi_dbm - rssi < 3) {
+            rssi = _last_rssi_dbm;
+        } else {
+            _last_rssi_dbm = rssi;
+            _have_rssi = true;
+        }
+        std::snprintf(stats, sizeof(stats), "%d dBm", rssi);
+    } else {
+        _have_rssi = false;
+        stats[0] = '\0';
     }
-    _last_state = snapshot.state;
+    setLabelIfChanged(_stats, stats);
+
+    char hint[40];
+    std::snprintf(hint, sizeof(hint), "A RECAL     %s     B SENS",
+                  ruview::sensitivityName(snapshot.sensitivity));
+    setLabelIfChanged(_hint, hint);
 }
 
 }  // namespace view

@@ -8,6 +8,7 @@
 #include "drivers/rx8130/rx8130.h"
 #include <mooncake_log.h>
 #include <memory>
+#include <string_view>
 #include <sys/time.h>
 #include <ctime>
 
@@ -43,6 +44,13 @@ bool _apply_local_time(struct tm& tm_curr)
     return true;
 }
 
+constexpr const char* kDefaultTimezone = "CST-8";
+
+bool is_legacy_utc_timezone(std::string_view tz)
+{
+    return tz.empty() || tz == "GMT0" || tz == "UTC0" || tz == "UTC" || tz == "GMT";
+}
+
 }  // namespace
 
 void Hal::rtc_init()
@@ -56,11 +64,22 @@ void Hal::rtc_init()
         return;
     }
 
-    // Load timezone from settings
+    // Load timezone from settings. Legacy GMT0/UTC defaults are treated as unset
+    // because Settings has no timezone picker and NTP stores UTC in the RTC.
     std::string tz = getTimezone();
     setenv("TZ", tz.c_str(), 1);
     tzset();
     mclog::tagInfo(_tag, "load timezone from nvs: {}", tz);
+
+    {
+        Settings settings("system", false);
+        const std::string stored = settings.GetString("tz", "");
+        if (stored != tz) {
+            Settings writable("system", true);
+            writable.SetString("tz", tz);
+            mclog::tagInfo(_tag, "migrated timezone {} -> {}", stored.empty() ? "(empty)" : stored, tz);
+        }
+    }
 
     syncRtcTimeToSystem();
 }
@@ -116,17 +135,22 @@ void Hal::syncSystemTimeToRtc()
 
 void Hal::setTimezone(std::string_view tz)
 {
-    setenv("TZ", tz.data(), 1);
+    const std::string tz_str(tz);
+    setenv("TZ", tz_str.c_str(), 1);
     tzset();
     Settings settings("system", true);
-    settings.SetString("tz", std::string(tz));
-    mclog::tagInfo(_tag, "timezone updated to: {}", tz);
+    settings.SetString("tz", tz_str);
+    mclog::tagInfo(_tag, "timezone updated to: {}", tz_str);
 }
 
 std::string Hal::getTimezone()
 {
     Settings settings("system", false);
-    return settings.GetString("tz", "GMT0");
+    std::string tz = settings.GetString("tz", kDefaultTimezone);
+    if (is_legacy_utc_timezone(tz)) {
+        return kDefaultTimezone;
+    }
+    return tz;
 }
 
 DateYmd Hal::getDateYmd()
