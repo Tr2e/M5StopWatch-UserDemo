@@ -14,9 +14,10 @@ constexpr uint32_t kTouchSampleIntervalMs = 10;
 constexpr uint32_t kColorUpdateIntervalMs = 40;
 constexpr uint32_t kColorPreviewSlowIntervalMs = 320;
 constexpr uint32_t kColorPreviewFastIntervalMs = 220;
-constexpr uint32_t kColorCruiseStepMs = 500;
+constexpr uint32_t kColorCruiseLapMs = 8000;
+constexpr uint32_t kColorCruisePreviewIntervalMs = 500;
 constexpr uint32_t kRippleRetriggerGuardMs = 180;
-constexpr int kRippleRetriggerGuardRadius = 48;
+constexpr int kRippleRetriggerGuardRadius = 62;
 constexpr float kPi = 3.14159265358979323846f;
 constexpr uint8_t kHueSlots = 24;
 
@@ -151,27 +152,29 @@ void AppGlowField::setSelectedHue(float hue)
     _selectedHue = static_cast<uint16_t>(_selectedHueFine + 0.5f) % 360u;
 }
 
-void AppGlowField::stepColorClockwise(uint32_t nowMs, bool haptic)
+void AppGlowField::stepColorClockwise(uint32_t nowMs)
 {
     const uint8_t nextSlot = static_cast<uint8_t>((colorIndex(_selectedHue) + 1) % kHueSlots);
     setSelectedHue(static_cast<float>(nextSlot * 360u / kHueSlots + 360u / (kHueSlots * 2)));
     spawnColorPreview(nowMs, 1);
     _lastColorPreviewMs = nowMs;
-    if (haptic) GetHAL().vibrate(18, 40);
+    GetHAL().vibrate(18, 40);
 }
 
 void AppGlowField::updateColorSelectionButtons(uint32_t nowMs)
 {
     if (GetHAL().btnA.wasClicked()) {
         _colorCruising = false;
-        stepColorClockwise(nowMs, true);
+        stepColorClockwise(nowMs);
         return;
     }
 
     if (GetHAL().btnA.wasHold()) {
         _colorCruising = true;
         _lastColorCruiseMs = nowMs;
-        stepColorClockwise(nowMs, true);
+        spawnColorPreview(nowMs, 1);
+        _lastColorPreviewMs = nowMs;
+        GetHAL().vibrate(18, 40);
     }
 
     if (!_colorCruising) return;
@@ -180,9 +183,15 @@ void AppGlowField::updateColorSelectionButtons(uint32_t nowMs)
         return;
     }
 
-    if (nowMs - _lastColorCruiseMs >= kColorCruiseStepMs) {
-        _lastColorCruiseMs = nowMs;
-        stepColorClockwise(nowMs, false);
+    const uint32_t elapsedMs = nowMs - _lastColorCruiseMs;
+    if (elapsedMs == 0) return;
+    _lastColorCruiseMs = nowMs;
+    setSelectedHue(_selectedHueFine + static_cast<float>(elapsedMs) * 360.0f /
+                                          static_cast<float>(kColorCruiseLapMs));
+
+    if (nowMs - _lastColorPreviewMs >= kColorCruisePreviewIntervalMs) {
+        spawnColorPreview(nowMs, 1);
+        _lastColorPreviewMs = nowMs;
     }
 }
 

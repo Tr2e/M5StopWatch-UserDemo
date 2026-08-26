@@ -50,7 +50,7 @@ private:
     void cycleBenchmarkScene();
     void toggleColorSelection(uint32_t nowMs);
     void updateColorSelectionButtons(uint32_t nowMs);
-    void stepColorClockwise(uint32_t nowMs, bool haptic = true);
+    void stepColorClockwise(uint32_t nowMs);
     void setSelectedHue(float hue);
     void updateColorSelectionTouch(uint32_t nowMs);
     void spawnColorPreview(uint32_t nowMs, int count);

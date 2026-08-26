@@ -6,16 +6,16 @@
 namespace glow_field {
 namespace {
 
-constexpr int kGridSpacingX = 22;
-constexpr int kGridSpacingY = 19;
-constexpr int kTouchRadius = 62;
+constexpr int kGridSpacingX = 29;
+constexpr int kGridSpacingY = 25;
+constexpr int kTouchRadius = 81;
 constexpr int kPathStep = kGridSpacingX / 2;
 constexpr uint32_t kSimulationStepMs = 16;
 constexpr uint32_t kDecayPerSecond = 180;
 constexpr uint32_t kRippleTravelMs = 880;
 constexpr uint32_t kRippleAfterglowMs = 680;
 constexpr uint32_t kRippleDurationMs = kRippleTravelMs + kRippleAfterglowMs;
-constexpr int kImpactRadius = 32;
+constexpr int kImpactRadius = 42;
 constexpr uint32_t kRippleAttackMs = 48;
 constexpr int kScatterTimeMs = 55;
 constexpr int kReflectionStrength = 72;

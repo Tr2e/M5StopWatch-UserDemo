@@ -11,7 +11,7 @@ namespace {
 
 constexpr uint32_t kFrameIntervalMs = 33;
 constexpr int kDirtyBandHeight = 19;
-constexpr int kMaxDotRadius = 14;
+constexpr int kMaxDotRadius = 18;
 constexpr int kRingThickness = 5;
 // Previous 20px ring sat flush to the bezel; its midline is the selector path.
 // Collapse the thinner band onto that orbit instead of sliding it outward.
@@ -71,6 +71,11 @@ uint8_t mixWithWhite(uint8_t channel, uint8_t saturation)
 {
     return static_cast<uint8_t>(255u -
                                 (static_cast<uint16_t>(255u - channel) * saturation) / 255u);
+}
+
+int scaledSize(int pixels)
+{
+    return (pixels * 13 + 5) / 10;
 }
 
 const char* sceneName(RenderScene scene)
@@ -257,17 +262,19 @@ uint8_t Renderer::colorIndexForDot(const Dot& dot, RenderScene scene) const
 void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint16_t idleColor) const
 {
     if (level == 0) {
-        drawStar(target, dot.x, dot.y, 7, 3, idleColor);
+        drawStar(target, dot.x, dot.y, scaledSize(7), scaledSize(3), idleColor);
         return;
     }
     const uint8_t colorIndex = dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0
                                    ? dot.rippleColorIndex
                                    : dot.colorIndex;
     const GlowColors& colors = _palettes[colorIndex % _palettes.size()][level];
-    target.fillCircle(dot.x, dot.y, 7 + level / 3, colors.outer);
-    target.fillCircle(dot.x, dot.y, 5 + level / 5, colors.middle);
-    drawStar(target, dot.x, dot.y, 6 + level / 4, 2 + level / 6, colors.inner);
-    drawStar(target, dot.x, dot.y, 5 + level / 5, 2 + level / 10, colors.core);
+    target.fillCircle(dot.x, dot.y, scaledSize(7 + level / 3), colors.outer);
+    target.fillCircle(dot.x, dot.y, scaledSize(5 + level / 5), colors.middle);
+    drawStar(target, dot.x, dot.y, scaledSize(6 + level / 4), scaledSize(2 + level / 6),
+             colors.inner);
+    drawStar(target, dot.x, dot.y, scaledSize(5 + level / 5), scaledSize(2 + level / 10),
+             colors.core);
 }
 
 void Renderer::drawHint(LGFX_Device& target, bool rippleMode) const
