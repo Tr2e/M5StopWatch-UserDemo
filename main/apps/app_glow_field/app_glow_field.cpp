@@ -40,8 +40,6 @@ void AppGlowField::onOpen()
     _engine->reset(display.width(), display.height());
     _renderer->open(display.width(), display.height(), _engine->dotCount());
     _modeNoticeUntilMs = GetHAL().millis() + 900;
-    GetHAL().getCanvas().fillScreen(TFT_BLACK);
-    GetHAL().updateCanvas();
 }
 
 void AppGlowField::onRunning()
@@ -132,11 +130,9 @@ void AppGlowField::onClose()
 {
     mclog::tagInfo(getAppInfo().name, "on close");
     GetHAL().stopVibrate();
+    if (_renderer) _renderer->close();
     _renderer.reset();
     _engine.reset();
-    GetHAL().getCanvas().fillScreen(TFT_BLACK);
-    GetHAL().updateCanvas();
-    GetHAL().getDisplay().fillScreen(TFT_BLACK);
     GetHAL().startLvglUpdate();
     _keys.reset();
 }

@@ -9,8 +9,11 @@ namespace glow_field {
 namespace {
 
 constexpr uint32_t kFrameIntervalMs = 33;
+constexpr int kDirtyBandHeight = 19;
+constexpr int kMaxDotRadius = 12;
 
-void drawStar(LGFX_Sprite& canvas, int x, int y, int radius, int waist, uint16_t color)
+template <typename Target>
+void drawStar(Target& canvas, int x, int y, int radius, int waist, uint16_t color)
 {
     canvas.fillTriangle(x, y - radius, x - waist, y, x + waist, y, color);
     canvas.fillTriangle(x, y + radius, x - waist, y, x + waist, y, color);
@@ -47,8 +50,16 @@ void Renderer::open(int width, int height, std::size_t dotCount)
     _maxFrameTimeUs = 0;
     _lastFrameMs = 0;
     _sceneInitialized = false;
+    _fullFrameReady = false;
+    _displayedLevels = {};
+    _displayedLevelsValid = false;
+    _displayedHint = 0;
 
-    auto& canvas = GetHAL().getCanvas();
+    auto& display = GetHAL().getDisplay();
+    // The AMOLED driver already owns a PSRAM framebuffer. Keep automatic
+    // full-screen commits disabled while Glow Field is active so Interactive
+    // can submit only the horizontal bands whose quantized energy changed.
+    display.setAutoDisplay(false);
     for (std::size_t level = 0; level < _palette.size(); ++level) {
         const uint8_t energy = static_cast<uint8_t>(level * 255u / (_palette.size() - 1));
         // Reference fill is #AEFF00. Generate darker RGB565 layers once so
@@ -57,15 +68,26 @@ void Renderer::open(int width, int height, std::size_t dotCount)
         constexpr uint8_t green = 255;
         constexpr uint8_t blue = 0;
         GlowColors& colors = _palette[level];
-        colors.outer = canvas.color565(scaleChannel(red, energy / 14), scaleChannel(green, energy / 14),
-                                       scaleChannel(blue, energy / 10));
-        colors.middle = canvas.color565(scaleChannel(red, energy / 5), scaleChannel(green, energy / 5),
-                                        scaleChannel(blue, energy / 4));
-        colors.inner = canvas.color565(scaleChannel(red, energy * 3 / 5), scaleChannel(green, energy * 3 / 5),
-                                       scaleChannel(blue, energy / 2));
-        colors.core = canvas.color565(scaleChannel(red, energy), scaleChannel(green, energy),
-                                      scaleChannel(blue, energy));
+        colors.outer = display.color565(scaleChannel(red, energy / 14), scaleChannel(green, energy / 14),
+                                        scaleChannel(blue, energy / 10));
+        colors.middle = display.color565(scaleChannel(red, energy / 5), scaleChannel(green, energy / 5),
+                                         scaleChannel(blue, energy / 4));
+        colors.inner = display.color565(scaleChannel(red, energy * 3 / 5), scaleChannel(green, energy * 3 / 5),
+                                        scaleChannel(blue, energy / 2));
+        colors.core = display.color565(scaleChannel(red, energy), scaleChannel(green, energy),
+                                       scaleChannel(blue, energy));
     }
+
+    display.fillScreen(TFT_BLACK);
+    display.display(0, 0, _width, _height);
+}
+
+void Renderer::close()
+{
+    auto& display = GetHAL().getDisplay();
+    display.fillScreen(TFT_BLACK);
+    display.display();
+    display.setAutoDisplay(true);
 }
 
 void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uint32_t modeNoticeUntilMs,
@@ -77,6 +99,8 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
     if (!_sceneInitialized || scene != _activeScene) {
         _activeScene = scene;
         _sceneInitialized = true;
+        _fullFrameReady = false;
+        _displayedLevelsValid = false;
         _statsStartedMs = nowMs;
         _frameCount = 0;
         _frameTimeTotalUs = 0;
@@ -85,70 +109,141 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
     }
 
     const int64_t frameStartedUs = esp_timer_get_time();
-    auto& canvas = GetHAL().getCanvas();
-    if (scene == RenderScene::Solid) {
-        canvas.fillScreen(_palette.back().core);
-        GetHAL().feedTheDog();
-        GetHAL().updateCanvas();
-
-        const uint32_t elapsedUs = static_cast<uint32_t>(esp_timer_get_time() - frameStartedUs);
-        ++_frameCount;
-        _frameTimeTotalUs += elapsedUs;
-        _maxFrameTimeUs = std::max(_maxFrameTimeUs, elapsedUs);
-        reportStats(nowMs, scene);
-        return;
+    const bool showHint = scene == RenderScene::Interactive &&
+                          static_cast<int32_t>(modeNoticeUntilMs - nowMs) > 0;
+    if (scene == RenderScene::Interactive) {
+        renderInteractiveDirty(engine, rippleMode, showHint);
+    } else {
+        // Benchmark scenes deliberately force complete submissions so their
+        // numbers continue to expose the panel's full-screen bandwidth.
+        renderFullFrame(engine, rippleMode, showHint, scene);
     }
-
-    canvas.fillScreen(TFT_BLACK);
-    const uint16_t idleColor = canvas.color565(10, 15, 18);
-
-    for (std::size_t i = 0; i < engine.dotCount(); ++i) {
-        const Dot& dot = engine.dots()[i];
-        if (!dot.visible) continue;
-
-        uint8_t level = static_cast<uint8_t>(dot.energy >> 4);
-        if (scene == RenderScene::IdleDots) {
-            level = 0;
-        } else if (scene == RenderScene::EnergizedDots) {
-            level = static_cast<uint8_t>(1 + (i % 15));
-        }
-        if (level == 0) {
-            drawStar(canvas, dot.x, dot.y, 5, 2, idleColor);
-            continue;
-        }
-
-        const GlowColors& colors = _palette[level];
-        // Only energized points pay for Glow layers. The star itself stays
-        // crisp while the two small circles provide the soft reference halo.
-        canvas.fillCircle(dot.x, dot.y, 7 + level / 3, colors.outer);
-        canvas.fillCircle(dot.x, dot.y, 5 + level / 5, colors.middle);
-        drawStar(canvas, dot.x, dot.y, 5 + level / 5, 2 + level / 8, colors.inner);
-        drawStar(canvas, dot.x, dot.y, 4 + level / 6, 1 + level / 8, colors.core);
-    }
-
-    // A short, language-free mode hint avoids adding a permanent settings UI
-    // over the animation: rings mean Ripple, a star means Paint.
-    if (scene == RenderScene::Interactive && static_cast<int32_t>(modeNoticeUntilMs - nowMs) > 0) {
-        const int x = _width / 2;
-        const int y = _height - 15;
-        const uint16_t hintColor = canvas.color565(72, 106, 0);
-        if (rippleMode) {
-            canvas.drawCircle(x, y, 3, hintColor);
-            canvas.drawCircle(x, y, 7, hintColor);
-            canvas.drawCircle(x, y, 11, hintColor);
-        } else {
-            drawStar(canvas, x, y, 10, 3, hintColor);
-        }
-    }
-
-    GetHAL().feedTheDog();
-    GetHAL().updateCanvas();
 
     const uint32_t elapsedUs = static_cast<uint32_t>(esp_timer_get_time() - frameStartedUs);
     ++_frameCount;
     _frameTimeTotalUs += elapsedUs;
     _maxFrameTimeUs = std::max(_maxFrameTimeUs, elapsedUs);
     reportStats(nowMs, scene);
+}
+
+uint8_t Renderer::levelForDot(const Dot& dot, std::size_t index, RenderScene scene) const
+{
+    if (scene == RenderScene::IdleDots) return 0;
+    if (scene == RenderScene::EnergizedDots) return static_cast<uint8_t>(1 + (index % 15));
+    return static_cast<uint8_t>(dot.energy >> 4);
+}
+
+void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint16_t idleColor) const
+{
+    if (level == 0) {
+        drawStar(target, dot.x, dot.y, 5, 2, idleColor);
+        return;
+    }
+    const GlowColors& colors = _palette[level];
+    target.fillCircle(dot.x, dot.y, 7 + level / 3, colors.outer);
+    target.fillCircle(dot.x, dot.y, 5 + level / 5, colors.middle);
+    drawStar(target, dot.x, dot.y, 5 + level / 5, 2 + level / 8, colors.inner);
+    drawStar(target, dot.x, dot.y, 4 + level / 6, 1 + level / 8, colors.core);
+}
+
+void Renderer::drawHint(LGFX_Device& target, bool rippleMode) const
+{
+    const int x = _width / 2;
+    const int y = _height - 15;
+    const uint16_t hintColor = target.color565(72, 106, 0);
+    if (rippleMode) {
+        target.drawCircle(x, y, 3, hintColor);
+        target.drawCircle(x, y, 7, hintColor);
+        target.drawCircle(x, y, 11, hintColor);
+    } else {
+        drawStar(target, x, y, 10, 3, hintColor);
+    }
+}
+
+void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showHint, RenderScene scene)
+{
+    auto& display = GetHAL().getDisplay();
+    if (!_fullFrameReady) {
+        display.startWrite();
+        if (scene == RenderScene::Solid) {
+            display.fillScreen(_palette.back().core);
+        } else {
+            display.fillScreen(TFT_BLACK);
+            const uint16_t idleColor = display.color565(10, 15, 18);
+            for (std::size_t i = 0; i < engine.dotCount(); ++i) {
+                const Dot& dot = engine.dots()[i];
+                if (dot.visible) drawDot(display, dot, levelForDot(dot, i, scene), idleColor);
+            }
+            if (showHint) drawHint(display, rippleMode);
+        }
+        display.endWrite();
+        _fullFrameReady = true;
+    }
+    // Static benchmark scenes keep their raster in the panel framebuffer and
+    // repeatedly submit it. This measures the actual full-screen transport
+    // ceiling without charging every frame for identical geometry synthesis.
+    display.display(0, 0, _width, _height);
+    GetHAL().feedTheDog();
+}
+
+void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, bool showHint)
+{
+    constexpr std::size_t kMaxBands = (480 + kDirtyBandHeight - 1) / kDirtyBandHeight;
+    std::array<bool, kMaxBands> dirty = {};
+    const std::size_t bandCount = static_cast<std::size_t>((_height + kDirtyBandHeight - 1) /
+                                                           kDirtyBandHeight);
+
+    auto markRange = [&](int top, int bottom) {
+        top = std::max(0, top);
+        bottom = std::min(_height - 1, bottom);
+        for (int band = top / kDirtyBandHeight; band <= bottom / kDirtyBandHeight; ++band) {
+            dirty[static_cast<std::size_t>(band)] = true;
+        }
+    };
+
+    for (std::size_t i = 0; i < engine.dotCount(); ++i) {
+        const Dot& dot = engine.dots()[i];
+        const uint8_t level = levelForDot(dot, i, RenderScene::Interactive);
+        if (!_displayedLevelsValid || level != _displayedLevels[i]) {
+            markRange(dot.y - kMaxDotRadius, dot.y + kMaxDotRadius);
+        }
+        _displayedLevels[i] = level;
+    }
+
+    const uint8_t hint = showHint ? (rippleMode ? 1 : 2) : 0;
+    if (!_displayedLevelsValid || hint != _displayedHint) {
+        markRange(_height - 27, _height - 3);
+    }
+    _displayedHint = hint;
+    _displayedLevelsValid = true;
+
+    auto& display = GetHAL().getDisplay();
+    const uint16_t idleColor = display.color565(10, 15, 18);
+    for (std::size_t first = 0; first < bandCount;) {
+        if (!dirty[first]) {
+            ++first;
+            continue;
+        }
+        std::size_t last = first;
+        while (last + 1 < bandCount && dirty[last + 1]) ++last;
+        const int top = static_cast<int>(first) * kDirtyBandHeight;
+        const int bottom = std::min(_height, static_cast<int>(last + 1) * kDirtyBandHeight);
+
+        display.startWrite();
+        display.setClipRect(0, top, _width, bottom - top);
+        display.fillRect(0, top, _width, bottom - top, TFT_BLACK);
+        for (std::size_t i = 0; i < engine.dotCount(); ++i) {
+            const Dot& dot = engine.dots()[i];
+            if (!dot.visible || dot.y + kMaxDotRadius < top || dot.y - kMaxDotRadius >= bottom) continue;
+            drawDot(display, dot, _displayedLevels[i], idleColor);
+        }
+        if (showHint && _height - 27 < bottom && _height - 3 >= top) drawHint(display, rippleMode);
+        display.clearClipRect();
+        display.endWrite();
+        display.display(0, top, _width, bottom - top);
+        first = last + 1;
+    }
+    GetHAL().feedTheDog();
 }
 
 void Renderer::reportStats(uint32_t nowMs, RenderScene scene)

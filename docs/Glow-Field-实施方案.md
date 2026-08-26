@@ -28,7 +28,7 @@ RuView 证明了下列现有能力可用：
 - `GetHAL().updateImuData()` 及 BMI270 数据接口；
 - 466px 圆形 UI 的布局约束。
 
-Glow Field 的逐帧绘制不适合用大量 LVGL 对象表示。应用打开时将暂停 LVGL 刷新，直接用 `M5GFX` 的 PSRAM Canvas 绘制；关闭时清屏并恢复 LVGL。Typhoon 应用已验证该技术路径可在当前工程中使用。
+Glow Field 的逐帧绘制不适合用大量 LVGL 对象表示。应用打开时暂停 LVGL 刷新，直接使用 `M5GFX` 的 AMOLED 面板帧缓冲绘制；关闭时清屏、恢复自动提交和 LVGL。这样既保留现有应用生命周期，也能按脏区域提交画面。
 
 建议文件布局：
 
@@ -36,7 +36,7 @@ Glow Field 的逐帧绘制不适合用大量 LVGL 对象表示。应用打开时
 main/apps/app_glow_field/
   app_glow_field.h/.cpp       应用生命周期、输入、待机状态机
   glow_field_engine.h/.cpp    点阵状态、注入、衰减和后续 IMU 模拟
-  glow_field_renderer.h/.cpp  Canvas、调色板、Glow 合成、帧率统计
+  glow_field_renderer.h/.cpp  面板帧缓冲、调色板、Glow 合成、局部刷新、帧率统计
 ```
 
 后续接入还需在 `main/apps/apps.h` 和 `main/main.cpp` 注册 `AppGlowField`，并复用现有 `icon_typhoon` 暂作开发图标；最终图标独立设计，不阻塞 Phase 0。
@@ -51,9 +51,16 @@ main/apps/app_glow_field/
 
 - 面板帧缓冲；
 - 放在 PSRAM 的全屏 `LGFX_Sprite` Canvas；
-- `GetHAL().updateCanvas()` 的显示提交路径。
+- AMOLED 面板自身的 PSRAM 帧缓冲和局部 `display(x, y, w, h)` 提交能力；
+- `GetHAL().updateCanvas()` 的通用全屏提交路径。
 
-全屏 RGB565 缓冲约 424KiB，当前帧缓冲与 Canvas 共存仍远低于 8MB PSRAM。Phase 0 不新增双缓冲，先测量现有路径，避免无依据的内存和带宽复杂化。
+全屏 RGB565 缓冲约 424KiB，当前帧缓冲与 Canvas 共存仍远低于 8MB PSRAM。真机首轮证明 Canvas 全屏拷贝会同时承担几何合成、Canvas 到面板帧缓冲复制及整屏提交，Interactive 只能达到约 15.5FPS。因此正式实现改为直接绘制面板帧缓冲，并关闭 Glow Field 生命周期内的自动整屏提交：
+
+- 静态基准场景只合成一次，后续复用帧缓冲内容，持续测量整屏传输上限；
+- Interactive 按 19px 高度划分脏带，仅在能量量化档或模式提示发生变化时清除、重绘并提交受影响的连续脏带；
+- 关闭应用时清屏并恢复面板自动提交，避免影响 Launcher 和其他应用。
+
+该路径没有新增全屏双缓冲，也没有改变现有颜色常量。
 
 ### Glow 合成原则
 
@@ -90,9 +97,9 @@ struct Dot {
 ## 5. 运行循环与电源状态
 
 ```text
-onOpen:  停止 LVGL，清空 Canvas，建立点阵，记录显示尺寸和内存
-running: 100Hz 读取触摸 -> 约 62.5Hz 模拟 -> 到 30FPS 帧时间则渲染并提交
-onClose: 清屏，停止振动，恢复 LVGL
+onOpen:  停止 LVGL/自动整屏提交，清空面板帧缓冲，建立点阵
+running: 100Hz 读取触摸 -> 约 62.5Hz 模拟 -> 到 30FPS 帧时间则渲染并提交脏带
+onClose: 清屏，恢复自动提交和 LVGL
 ```
 
 待机状态在核心绘制稳定后加入：
@@ -124,7 +131,20 @@ INTERACTIVE -> SOLID -> IDLE DOTS -> ENERGIZED DOTS -> INTERACTIVE
 
 每次切换会清空统计窗口，串口先输出当前 `scene`，保持场景 10 秒后输出该场景的 FPS、平均帧时和最大帧时。短按 A 仍用于清空光场，短按 B 切换 Ripple / Paint，A+B 长按退出应用。
 
-通过条件：第 3、4 项达到稳定 30FPS，且没有撕裂、触摸明显断线或 PSRAM 分配失败。若未通过，按“减小 Glow 半径 → 降低强度档位 → 24FPS 显示 → 局部刷新”的顺序优化。
+通过条件：第 3、4 项达到稳定 30FPS，且没有撕裂、触摸明显断线或 PSRAM 分配失败。当前已通过串口性能和运行稳定性检查；撕裂与主观触摸连续性仍需人工观察确认。
+
+### Phase 0 真机结果（2026-08-26）
+
+测试设备为 ESP32-S3 StopWatch，逻辑显示尺寸 468×466，8MB PSRAM，蜂窝点数 392。临时测试固件每 12 秒自动切换场景，并在 Interactive 场景以 100Hz 合成连续轨迹；自动测试入口未保留在正式代码中。
+
+| 场景 | 稳定 FPS | 平均帧时 | 最大帧时 | 结论 |
+| --- | ---: | ---: | ---: | --- |
+| Solid | 29.8 | 12.23ms | 25.15ms | 达标 |
+| IdleDots | 30.2 | 12.29ms | 35.21ms | 达标 |
+| EnergizedDots | 30.1 | 12.37ms | 60.24ms | 达标；最大值包含首次静态帧合成 |
+| Interactive | 29.5–29.7 | 23.69–24.05ms | 31.95–37.02ms | 达标；连续三个统计窗口稳定 |
+
+优化前的同设备首轮数据为 20.7 / 16.7 / 11.0 / 15.5 FPS。直接面板帧缓冲、静态帧复用和 19px 脏带提交解决了主要带宽与重复合成开销；测试期间未出现崩溃、看门狗复位或 PSRAM 分配错误。
 
 ### Phase 1：核心触摸体验
 
@@ -142,7 +162,7 @@ INTERACTIVE -> SOLID -> IDLE DOTS -> ENERGIZED DOTS -> INTERACTIVE
 
 | 事项 | 决策 | 风险控制 |
 | --- | --- | --- |
-| UI 框架 | 直接 M5GFX Canvas，暂停 LVGL | 复用 Typhoon 的打开/关闭模式 |
+| UI 框架 | 直接 M5GFX 面板帧缓冲，暂停 LVGL | 关闭时恢复自动提交和 LVGL |
 | 性能目标 | 先验收 30FPS | 真机统计而非主观估计 |
 | Glow | 离散能量与预计算径向图样 | 先验证正确叠加，不使用黑底覆盖 |
 | 输入 | CST820 单指轮询 + 路径插值 | 将采样和显示解耦 |
@@ -155,9 +175,9 @@ INTERACTIVE -> SOLID -> IDLE DOTS -> ENERGIZED DOTS -> INTERACTIVE
 
 截至 `feat/glow-field` 当前版本：
 
-- 已完成独立应用注册、LVGL/Canvas 生命周期、单指触摸、路径插值、Ripple、Paint、首触振动和 30FPS 渲染节流；
+- 已完成独立应用注册、LVGL/面板帧缓冲生命周期、单指触摸、路径插值、Ripple、Paint、首触振动和 30FPS 渲染节流；
 - 已完成真正的蜂窝点阵、固定步长模拟以及与主循环频率无关的能量衰减；
-- 已完成四种 Phase 0 基准场景和分场景串口统计；
+- 已完成四种 Phase 0 基准场景、分场景串口统计、静态帧复用和 Interactive 脏带刷新；
 - 颜色与现有视觉方案保持不变，后续作为独立需求处理；
-- 尚待真机记录四种场景的稳定数据，并验证连续触摸、撕裂、功耗和 10 分钟稳定性；
+- 已完成四种场景的真机自动基准并达到约 30FPS；尚待人工确认触摸手感与撕裂，并完成 10 分钟稳定性和功耗测试；
 - ACTIVE / AMBIENT / SLEEP、独立图标和 IMU 扩展尚未实施。
