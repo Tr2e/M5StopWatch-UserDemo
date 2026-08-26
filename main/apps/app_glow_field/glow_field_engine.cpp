@@ -6,10 +6,13 @@
 namespace glow_field {
 namespace {
 
-constexpr int kGridSpacing = 22;
+constexpr int kGridSpacingX = 22;
+constexpr int kGridSpacingY = 19;
 constexpr int kTouchRadius = 62;
 constexpr int kTouchRadiusSquared = kTouchRadius * kTouchRadius;
-constexpr int kPathStep = kGridSpacing / 2;
+constexpr int kPathStep = kGridSpacingX / 2;
+constexpr uint32_t kSimulationStepMs = 16;
+constexpr uint32_t kDecayPerSecond = 180;
 constexpr uint32_t kRippleDurationMs = 1050;
 constexpr int kRippleHalfWidth = 17;
 
@@ -22,9 +25,11 @@ void Engine::reset(int width, int height)
     _ripples = {};
     _nextRipple = 0;
     _lastUpdateMs = 0;
+    _simulationAccumulatorMs = 0;
+    _decayRemainder = 0;
     _touching = false;
     _maxRippleRadius = static_cast<int>(std::sqrt(static_cast<float>(width * width + height * height))) +
-                       kGridSpacing;
+                       kGridSpacingX;
 
     const int centerX = width / 2;
     const int centerY = height / 2;
@@ -32,10 +37,11 @@ void Engine::reset(int width, int height)
     const int visibleRadiusSquared = visibleRadius * visibleRadius;
 
     int row = 0;
-    const int startX = (width % kGridSpacing) / 2;
-    const int startY = (height % kGridSpacing) / 2;
-    for (int y = startY; y < height && _dotCount < kMaxDots; y += kGridSpacing, ++row) {
-        for (int x = startX; x < width && _dotCount < kMaxDots; x += kGridSpacing) {
+    const int startX = (width % kGridSpacingX) / 2;
+    const int startY = (height % kGridSpacingY) / 2;
+    for (int y = startY; y < height && _dotCount < kMaxDots; y += kGridSpacingY, ++row) {
+        const int rowOffset = (row & 1) ? kGridSpacingX / 2 : 0;
+        for (int x = startX + rowOffset; x < width && _dotCount < kMaxDots; x += kGridSpacingX) {
             const int dx = x - centerX;
             const int dy = y - centerY;
             if (dx * dx + dy * dy > visibleRadiusSquared) continue;
@@ -43,7 +49,7 @@ void Engine::reset(int width, int height)
             Dot& dot = _dots[_dotCount++];
             dot.x = static_cast<int16_t>(x);
             dot.y = static_cast<int16_t>(y);
-            dot.hueIndex = static_cast<uint8_t>((x / kGridSpacing + row) & 0x0F);
+            dot.hueIndex = static_cast<uint8_t>((x / kGridSpacingX + row) & 0x0F);
             dot.visible = true;
         }
     }
@@ -56,6 +62,7 @@ void Engine::clear()
     }
     _ripples = {};
     _nextRipple = 0;
+    _decayRemainder = 0;
     _touching = false;
 }
 
@@ -69,19 +76,30 @@ void Engine::update(uint32_t nowMs)
 
     const uint32_t elapsedMs = std::min<uint32_t>(nowMs - _lastUpdateMs, 100);
     _lastUpdateMs = nowMs;
-    if (elapsedMs == 0) {
-        updateRipples(nowMs);
-        return;
+    _simulationAccumulatorMs += elapsedMs;
+    bool stepped = false;
+    while (_simulationAccumulatorMs >= kSimulationStepMs) {
+        _simulationAccumulatorMs -= kSimulationStepMs;
+        stepSimulation();
+        stepped = true;
     }
+    if (stepped) updateRipples(nowMs);
+}
 
-    // About 1.4 seconds from full energy to the visible cutoff. Keeping the
-    // update integer-only makes the decay cost independent of the frame rate.
-    const uint16_t decay = static_cast<uint16_t>((elapsedMs * 180u + 999u) / 1000u);
-    for (std::size_t i = 0; i < _dotCount; ++i) {
-        Dot& dot = _dots[i];
-        dot.energy = dot.energy > decay ? static_cast<uint8_t>(dot.energy - decay) : 0;
+void Engine::stepSimulation()
+{
+    // Keep the fractional decay shared by all dots. This preserves the intended
+    // 180 energy units per second without rounding every main-loop iteration up
+    // to one unit, so the trail lifetime is independent of loop frequency.
+    _decayRemainder += kSimulationStepMs * kDecayPerSecond;
+    const uint16_t decay = static_cast<uint16_t>(_decayRemainder / 1000u);
+    _decayRemainder %= 1000u;
+    if (decay > 0) {
+        for (std::size_t i = 0; i < _dotCount; ++i) {
+            Dot& dot = _dots[i];
+            dot.energy = dot.energy > decay ? static_cast<uint8_t>(dot.energy - decay) : 0;
+        }
     }
-    updateRipples(nowMs);
 }
 
 void Engine::triggerRipple(int x, int y, uint32_t nowMs)

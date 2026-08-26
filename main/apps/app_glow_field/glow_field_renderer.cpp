@@ -23,6 +23,17 @@ uint8_t scaleChannel(uint8_t channel, uint8_t level)
     return static_cast<uint8_t>((static_cast<uint16_t>(channel) * level) / 255u);
 }
 
+const char* sceneName(RenderScene scene)
+{
+    switch (scene) {
+        case RenderScene::Interactive: return "interactive";
+        case RenderScene::Solid: return "solid";
+        case RenderScene::IdleDots: return "idle-dots";
+        case RenderScene::EnergizedDots: return "energized-dots";
+    }
+    return "unknown";
+}
+
 }  // namespace
 
 void Renderer::open(int width, int height, std::size_t dotCount)
@@ -35,6 +46,7 @@ void Renderer::open(int width, int height, std::size_t dotCount)
     _frameTimeTotalUs = 0;
     _maxFrameTimeUs = 0;
     _lastFrameMs = 0;
+    _sceneInitialized = false;
 
     auto& canvas = GetHAL().getCanvas();
     for (std::size_t level = 0; level < _palette.size(); ++level) {
@@ -56,13 +68,37 @@ void Renderer::open(int width, int height, std::size_t dotCount)
     }
 }
 
-void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uint32_t modeNoticeUntilMs)
+void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uint32_t modeNoticeUntilMs,
+                      RenderScene scene)
 {
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
 
+    if (!_sceneInitialized || scene != _activeScene) {
+        _activeScene = scene;
+        _sceneInitialized = true;
+        _statsStartedMs = nowMs;
+        _frameCount = 0;
+        _frameTimeTotalUs = 0;
+        _maxFrameTimeUs = 0;
+        mclog::tagInfo("GlowField", "benchmark scene={}", sceneName(scene));
+    }
+
     const int64_t frameStartedUs = esp_timer_get_time();
     auto& canvas = GetHAL().getCanvas();
+    if (scene == RenderScene::Solid) {
+        canvas.fillScreen(_palette.back().core);
+        GetHAL().feedTheDog();
+        GetHAL().updateCanvas();
+
+        const uint32_t elapsedUs = static_cast<uint32_t>(esp_timer_get_time() - frameStartedUs);
+        ++_frameCount;
+        _frameTimeTotalUs += elapsedUs;
+        _maxFrameTimeUs = std::max(_maxFrameTimeUs, elapsedUs);
+        reportStats(nowMs, scene);
+        return;
+    }
+
     canvas.fillScreen(TFT_BLACK);
     const uint16_t idleColor = canvas.color565(10, 15, 18);
 
@@ -70,7 +106,12 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
         const Dot& dot = engine.dots()[i];
         if (!dot.visible) continue;
 
-        const uint8_t level = static_cast<uint8_t>(dot.energy >> 4);
+        uint8_t level = static_cast<uint8_t>(dot.energy >> 4);
+        if (scene == RenderScene::IdleDots) {
+            level = 0;
+        } else if (scene == RenderScene::EnergizedDots) {
+            level = static_cast<uint8_t>(1 + (i % 15));
+        }
         if (level == 0) {
             drawStar(canvas, dot.x, dot.y, 5, 2, idleColor);
             continue;
@@ -87,7 +128,7 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
 
     // A short, language-free mode hint avoids adding a permanent settings UI
     // over the animation: rings mean Ripple, a star means Paint.
-    if (static_cast<int32_t>(modeNoticeUntilMs - nowMs) > 0) {
+    if (scene == RenderScene::Interactive && static_cast<int32_t>(modeNoticeUntilMs - nowMs) > 0) {
         const int x = _width / 2;
         const int y = _height - 15;
         const uint16_t hintColor = canvas.color565(72, 106, 0);
@@ -107,10 +148,10 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
     ++_frameCount;
     _frameTimeTotalUs += elapsedUs;
     _maxFrameTimeUs = std::max(_maxFrameTimeUs, elapsedUs);
-    reportStats(nowMs);
+    reportStats(nowMs, scene);
 }
 
-void Renderer::reportStats(uint32_t nowMs)
+void Renderer::reportStats(uint32_t nowMs, RenderScene scene)
 {
     if (_statsStartedMs == 0) {
         _statsStartedMs = nowMs;
@@ -121,8 +162,9 @@ void Renderer::reportStats(uint32_t nowMs)
 
     const float fps = static_cast<float>(_frameCount) * 1000.0f / static_cast<float>(elapsedMs);
     const float averageMs = static_cast<float>(_frameTimeTotalUs) / static_cast<float>(_frameCount) / 1000.0f;
-    mclog::tagInfo("GlowField", "{}x{} dots={} fps={:.1f} avg={:.2f}ms max={:.2f}ms", _width, _height,
-                   _dotCount, fps, averageMs, static_cast<float>(_maxFrameTimeUs) / 1000.0f);
+    mclog::tagInfo("GlowField", "scene={} {}x{} dots={} fps={:.1f} avg={:.2f}ms max={:.2f}ms",
+                   sceneName(scene), _width, _height, _dotCount, fps, averageMs,
+                   static_cast<float>(_maxFrameTimeUs) / 1000.0f);
 
     _statsStartedMs = nowMs;
     _frameCount = 0;

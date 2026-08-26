@@ -25,7 +25,12 @@ private:
     std::unique_ptr<glow_field::Engine> _engine;
     std::unique_ptr<glow_field::Renderer> _renderer;
     uint32_t _lastHapticMs = 0;
+    uint32_t _lastTouchSampleMs = 0;
     uint32_t _modeNoticeUntilMs = 0;
     InteractionMode _mode = InteractionMode::Ripple;
+    glow_field::RenderScene _renderScene = glow_field::RenderScene::Interactive;
     bool _touching = false;
+
+    void cycleBenchmarkScene();
+    void updateTouch(uint32_t nowMs);
 };

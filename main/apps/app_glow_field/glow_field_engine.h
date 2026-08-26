@@ -40,6 +40,7 @@ private:
     };
 
     void injectPoint(int x, int y, uint32_t nowMs);
+    void stepSimulation();
     void updateRipples(uint32_t nowMs);
 
     std::array<Dot, kMaxDots> _dots = {};
@@ -47,6 +48,8 @@ private:
     std::size_t _dotCount = 0;
     std::size_t _nextRipple = 0;
     uint32_t _lastUpdateMs = 0;
+    uint32_t _simulationAccumulatorMs = 0;
+    uint32_t _decayRemainder = 0;
     int _maxRippleRadius = 0;
     int _lastTouchX = 0;
     int _lastTouchY = 0;

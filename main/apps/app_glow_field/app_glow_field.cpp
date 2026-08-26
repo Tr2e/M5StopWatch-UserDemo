@@ -6,6 +6,12 @@
 
 using namespace mooncake;
 
+namespace {
+
+constexpr uint32_t kTouchSampleIntervalMs = 10;
+
+}  // namespace
+
 AppGlowField::AppGlowField()
 {
     setAppInfo().name = "Glow Field";
@@ -25,7 +31,9 @@ void AppGlowField::onOpen()
     _renderer = std::make_unique<glow_field::Renderer>();
     _touching = false;
     _lastHapticMs = 0;
+    _lastTouchSampleMs = 0;
     _mode = InteractionMode::Ripple;
+    _renderScene = glow_field::RenderScene::Interactive;
 
     GetHAL().stopLvglUpdate();
     auto& display = GetHAL().getDisplay();
@@ -47,7 +55,10 @@ void AppGlowField::onRunning()
     if (!_engine || !_renderer) return;
 
     const uint32_t nowMs = GetHAL().millis();
-    if (keyEvent == input::KeyEvent::GoPrevious) {
+    if (GetHAL().btnA.wasHold()) {
+        cycleBenchmarkScene();
+        _modeNoticeUntilMs = nowMs + 900;
+    } else if (keyEvent == input::KeyEvent::GoPrevious) {
         _engine->clear();
         _touching = false;
     } else if (keyEvent == input::KeyEvent::GoNext) {
@@ -59,6 +70,22 @@ void AppGlowField::onRunning()
                        _mode == InteractionMode::Ripple ? "ripple" : "paint");
     }
 
+    if (_renderScene == glow_field::RenderScene::Interactive &&
+        (_lastTouchSampleMs == 0 || nowMs - _lastTouchSampleMs >= kTouchSampleIntervalMs)) {
+        _lastTouchSampleMs = nowMs;
+        updateTouch(nowMs);
+    } else if (_renderScene != glow_field::RenderScene::Interactive && _touching) {
+        _engine->endTouch();
+        _touching = false;
+    }
+
+    _engine->update(nowMs);
+    _renderer->render(*_engine, nowMs, _mode == InteractionMode::Ripple, _modeNoticeUntilMs,
+                      _renderScene);
+}
+
+void AppGlowField::updateTouch(uint32_t nowMs)
+{
     const Hal::TouchPoint touch = GetHAL().getTouchPoint();
     if (touch.num > 0 && touch.x >= 0 && touch.y >= 0) {
         if (!_touching) {
@@ -79,9 +106,26 @@ void AppGlowField::onRunning()
         _engine->endTouch();
         _touching = false;
     }
+}
 
-    _engine->update(nowMs);
-    _renderer->render(*_engine, nowMs, _mode == InteractionMode::Ripple, _modeNoticeUntilMs);
+void AppGlowField::cycleBenchmarkScene()
+{
+    switch (_renderScene) {
+        case glow_field::RenderScene::Interactive:
+            _renderScene = glow_field::RenderScene::Solid;
+            break;
+        case glow_field::RenderScene::Solid:
+            _renderScene = glow_field::RenderScene::IdleDots;
+            break;
+        case glow_field::RenderScene::IdleDots:
+            _renderScene = glow_field::RenderScene::EnergizedDots;
+            break;
+        case glow_field::RenderScene::EnergizedDots:
+            _renderScene = glow_field::RenderScene::Interactive;
+            break;
+    }
+    _engine->clear();
+    _touching = false;
 }
 
 void AppGlowField::onClose()
