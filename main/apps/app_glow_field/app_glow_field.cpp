@@ -17,7 +17,11 @@ constexpr uint32_t kColorPreviewFastIntervalMs = 220;
 constexpr uint32_t kColorCruiseLapMs = 8000;
 constexpr uint32_t kColorCruisePreviewIntervalMs = 500;
 constexpr uint32_t kRippleRetriggerGuardMs = 180;
+constexpr uint32_t kAppearanceScaleRepeatMs = 160;
 constexpr int kRippleRetriggerGuardRadius = 62;
+constexpr uint8_t kMinShapeScalePercent = 80;
+constexpr uint8_t kMaxShapeScalePercent = 150;
+constexpr uint8_t kShapeScaleStepPercent = 5;
 constexpr float kPi = 3.14159265358979323846f;
 constexpr uint8_t kHueSlots = 24;
 
@@ -60,6 +64,7 @@ void AppGlowField::onOpen()
     _lastColorTouchMs = 0;
     _lastColorCruiseMs = 0;
     _lastRippleTriggerMs = 0;
+    _lastAppearanceScaleMs = 0;
     _rngState = GetHAL().millis() ^ 0x9E3779B9u;
     _mode = InteractionMode::Ripple;
     _renderScene = glow_field::RenderScene::Interactive;
@@ -67,6 +72,10 @@ void AppGlowField::onOpen()
     _colorTouching = false;
     _colorMovedSincePreview = false;
     _colorCruising = false;
+    _appearanceMode = false;
+    _appearanceScaleRepeating = false;
+    _dotShape = glow_field::DotShape::Star;
+    _shapeScalePercent = 100;
     _selectedHue = 79;
     _selectedHueFine = 79.0f;
     _lastRippleX = 0;
@@ -91,13 +100,18 @@ void AppGlowField::onRunning()
     if (!_engine || !_renderer) return;
 
     const uint32_t nowMs = GetHAL().millis();
-    if (GetHAL().btnB.wasHold()) {
+    if (_appearanceMode) {
+        if (GetHAL().btnA.wasHold()) {
+            toggleAppearanceMode(nowMs);
+        } else {
+            updateAppearanceButtons(nowMs, keyEvent);
+        }
+    } else if (GetHAL().btnB.wasHold()) {
         toggleColorSelection(nowMs);
     } else if (_colorSelectionMode) {
         updateColorSelectionButtons(nowMs);
     } else if (GetHAL().btnA.wasHold()) {
-        cycleBenchmarkScene();
-        _modeNoticeUntilMs = nowMs + 900;
+        toggleAppearanceMode(nowMs);
     } else if (keyEvent == input::KeyEvent::GoPrevious) {
         _engine->clear();
         _touching = false;
@@ -110,7 +124,12 @@ void AppGlowField::onRunning()
                        _mode == InteractionMode::Ripple ? "ripple" : "paint");
     }
 
-    if (_colorSelectionMode) {
+    if (_appearanceMode) {
+        if (_touching) {
+            _engine->endTouch();
+            _touching = false;
+        }
+    } else if (_colorSelectionMode) {
         if (!_colorCruising && _renderScene == glow_field::RenderScene::Interactive &&
             (_lastTouchSampleMs == 0 || nowMs - _lastTouchSampleMs >= kTouchSampleIntervalMs)) {
             _lastTouchSampleMs = nowMs;
@@ -127,7 +146,8 @@ void AppGlowField::onRunning()
 
     _engine->update(nowMs);
     _renderer->render(*_engine, nowMs, _mode == InteractionMode::Ripple, _modeNoticeUntilMs,
-                      _renderScene, _colorSelectionMode, _selectedHue);
+                      _renderScene, _colorSelectionMode, _selectedHue, _dotShape,
+                      _shapeScalePercent, _appearanceMode);
 }
 
 void AppGlowField::toggleColorSelection(uint32_t nowMs)
@@ -144,6 +164,82 @@ void AppGlowField::toggleColorSelection(uint32_t nowMs)
     _lastColorPreviewMs = nowMs;
     GetHAL().vibrate(24, 55);
     mclog::tagInfo(getAppInfo().name, "color-selection={}", _colorSelectionMode ? "on" : "off");
+}
+
+void AppGlowField::toggleAppearanceMode(uint32_t nowMs)
+{
+    _appearanceMode = !_appearanceMode;
+    _renderScene = glow_field::RenderScene::Interactive;
+    _engine->endTouch();
+    _touching = false;
+    _appearanceScaleRepeating = false;
+    _lastAppearanceScaleMs = nowMs;
+    GetHAL().vibrate(24, 55);
+    mclog::tagInfo(getAppInfo().name, "appearance={}", _appearanceMode ? "on" : "off");
+}
+
+void AppGlowField::updateAppearanceButtons(uint32_t nowMs, input::KeyEvent keyEvent)
+{
+    if (keyEvent == input::KeyEvent::GoPrevious) {
+        cycleDotShape();
+        GetHAL().vibrate(18, 40);
+        return;
+    }
+
+    if (GetHAL().btnB.wasHold()) {
+        _appearanceScaleRepeating = true;
+        _lastAppearanceScaleMs = nowMs;
+        adjustShapeScale(-kShapeScaleStepPercent);
+        return;
+    }
+
+    if (_appearanceScaleRepeating) {
+        if (!GetHAL().btnB.isHolding()) {
+            _appearanceScaleRepeating = false;
+        } else if (nowMs - _lastAppearanceScaleMs >= kAppearanceScaleRepeatMs) {
+            _lastAppearanceScaleMs = nowMs;
+            adjustShapeScale(-kShapeScaleStepPercent);
+        }
+        return;
+    }
+
+    if (keyEvent == input::KeyEvent::GoNext) {
+        adjustShapeScale(kShapeScaleStepPercent);
+    }
+}
+
+void AppGlowField::cycleDotShape()
+{
+    switch (_dotShape) {
+        case glow_field::DotShape::Star:
+            _dotShape = glow_field::DotShape::Hexagon;
+            break;
+        case glow_field::DotShape::Hexagon:
+            _dotShape = glow_field::DotShape::Circle;
+            break;
+        case glow_field::DotShape::Circle:
+            _dotShape = glow_field::DotShape::Triangle;
+            break;
+        case glow_field::DotShape::Triangle:
+            _dotShape = glow_field::DotShape::Star;
+            break;
+    }
+    mclog::tagInfo(getAppInfo().name, "shape={}",
+                   _dotShape == glow_field::DotShape::Star
+                       ? "star"
+                       : (_dotShape == glow_field::DotShape::Hexagon
+                              ? "hexagon"
+                              : (_dotShape == glow_field::DotShape::Circle ? "circle" : "triangle")));
+}
+
+void AppGlowField::adjustShapeScale(int delta)
+{
+    const int next = std::clamp<int>(static_cast<int>(_shapeScalePercent) + delta,
+                                     kMinShapeScalePercent, kMaxShapeScalePercent);
+    if (next == _shapeScalePercent) return;
+    _shapeScalePercent = static_cast<uint8_t>(next);
+    GetHAL().vibrate(14, 32);
+    mclog::tagInfo(getAppInfo().name, "shape-scale={}%", _shapeScalePercent);
 }
 
 void AppGlowField::setSelectedHue(float hue)
@@ -333,26 +429,6 @@ void AppGlowField::updateTouch(uint32_t nowMs)
         _engine->endTouch();
         _touching = false;
     }
-}
-
-void AppGlowField::cycleBenchmarkScene()
-{
-    switch (_renderScene) {
-        case glow_field::RenderScene::Interactive:
-            _renderScene = glow_field::RenderScene::Solid;
-            break;
-        case glow_field::RenderScene::Solid:
-            _renderScene = glow_field::RenderScene::IdleDots;
-            break;
-        case glow_field::RenderScene::IdleDots:
-            _renderScene = glow_field::RenderScene::EnergizedDots;
-            break;
-        case glow_field::RenderScene::EnergizedDots:
-            _renderScene = glow_field::RenderScene::Interactive;
-            break;
-    }
-    _engine->clear();
-    _touching = false;
 }
 
 void AppGlowField::onClose()

@@ -32,6 +32,7 @@ private:
     uint32_t _lastColorTouchMs = 0;
     uint32_t _lastColorCruiseMs = 0;
     uint32_t _lastRippleTriggerMs = 0;
+    uint32_t _lastAppearanceScaleMs = 0;
     uint32_t _rngState = 1;
     InteractionMode _mode = InteractionMode::Ripple;
     glow_field::RenderScene _renderScene = glow_field::RenderScene::Interactive;
@@ -40,6 +41,10 @@ private:
     bool _colorTouching = false;
     bool _colorMovedSincePreview = false;
     bool _colorCruising = false;
+    bool _appearanceMode = false;
+    bool _appearanceScaleRepeating = false;
+    glow_field::DotShape _dotShape = glow_field::DotShape::Star;
+    uint8_t _shapeScalePercent = 100;
     uint16_t _selectedHue = 79;
     int16_t _lastRippleX = 0;
     int16_t _lastRippleY = 0;
@@ -47,8 +52,11 @@ private:
     float _colorAngularSpeed = 0.0f;
     float _selectedHueFine = 79.0f;
 
-    void cycleBenchmarkScene();
     void toggleColorSelection(uint32_t nowMs);
+    void toggleAppearanceMode(uint32_t nowMs);
+    void updateAppearanceButtons(uint32_t nowMs, input::KeyEvent keyEvent);
+    void cycleDotShape();
+    void adjustShapeScale(int delta);
     void updateColorSelectionButtons(uint32_t nowMs);
     void stepColorClockwise(uint32_t nowMs);
     void setSelectedHue(float hue);

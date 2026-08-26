@@ -15,12 +15,20 @@ enum class RenderScene : uint8_t {
     EnergizedDots,
 };
 
+enum class DotShape : uint8_t {
+    Star,
+    Hexagon,
+    Circle,
+    Triangle,
+};
+
 class Renderer {
 public:
     void open(int width, int height, std::size_t dotCount);
     void close();
     void render(const Engine& engine, uint32_t nowMs, bool rippleMode, uint32_t modeNoticeUntilMs,
-                RenderScene scene, bool colorSelectionMode, uint16_t selectedHue);
+                RenderScene scene, bool colorSelectionMode, uint16_t selectedHue,
+                DotShape dotShape, uint8_t shapeScalePercent, bool appearanceMode);
 
 private:
     struct GlowColors {
@@ -45,6 +53,9 @@ private:
     };
 
     std::array<std::array<GlowColors, 16>, kHueSlots> _palettes = {};
+    std::array<uint16_t, kHueSlots> _selectionColors = {};
+    std::array<uint16_t, kHueSlots> _selectionGlowInnerColors = {};
+    std::array<uint16_t, kHueSlots> _selectionGlowOuterColors = {};
     std::array<RingSegment, kRingSegments> _ringSegments = {};
     uint32_t _statsStartedMs = 0;
     uint32_t _frameCount = 0;
@@ -63,19 +74,28 @@ private:
     uint8_t _displayedHint = 0;
     bool _colorSelectionMode = false;
     bool _ringNeedsFullRefresh = false;
+    bool _appearanceNeedsFullRefresh = false;
     uint16_t _selectedHue = 79;
     uint16_t _displayedSelectorHue = 79;
+    DotShape _dotShape = DotShape::Star;
+    uint8_t _shapeScalePercent = 100;
+    bool _appearanceMode = false;
 
     void reportStats(uint32_t nowMs, RenderScene scene);
     void buildPalettes();
     void updateColorSelection(bool enabled, uint16_t selectedHue);
+    void updateAppearance(DotShape dotShape, uint8_t shapeScalePercent, bool appearanceMode);
     uint8_t levelForDot(const Dot& dot, std::size_t index, RenderScene scene) const;
     uint8_t colorIndexForDot(const Dot& dot, RenderScene scene) const;
+    int shapeSize(int pixels) const;
     void drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint16_t idleColor) const;
     void drawHint(LGFX_Device& target, bool rippleMode) const;
+    void drawAppearanceHint(LGFX_Device& target) const;
     void drawColorRing(LGFX_Device& target, int top, int bottom) const;
-    void renderFullFrame(const Engine& engine, bool rippleMode, bool showHint, RenderScene scene);
-    void renderInteractiveDirty(const Engine& engine, bool rippleMode, bool showHint);
+    void renderFullFrame(const Engine& engine, bool rippleMode, bool showHint,
+                         bool showAppearanceHint, RenderScene scene);
+    void renderInteractiveDirty(const Engine& engine, bool rippleMode, bool showHint,
+                                bool showAppearanceHint);
 };
 
 }  // namespace glow_field

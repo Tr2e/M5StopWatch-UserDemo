@@ -11,12 +11,19 @@ namespace {
 
 constexpr uint32_t kFrameIntervalMs = 33;
 constexpr int kDirtyBandHeight = 19;
-constexpr int kMaxDotRadius = 18;
+constexpr int kMaxDotRadius = 24;
+constexpr uint8_t kMinShapeScale = 80;
+constexpr uint8_t kMaxShapeScale = 150;
 constexpr int kRingThickness = 5;
 // Previous 20px ring sat flush to the bezel; its midline is the selector path.
 // Collapse the thinner band onto that orbit instead of sliding it outward.
 constexpr int kRingPathInset = 12;
 constexpr uint8_t kThemeSaturation = 191;  // 75%, softer than a fully saturated wheel.
+constexpr uint8_t kRingOpacity = 51;       // 20%, pre-blended against the black field.
+constexpr uint8_t kSelectorOpacity = 153;  // 60% core.
+constexpr uint8_t kSelectorGlowInnerOpacity = 82;  // 32% inner halo.
+constexpr uint8_t kSelectorGlowOuterOpacity = 36;  // 14% outer halo.
+constexpr int kSelectorGlowRadius = 17;
 constexpr float kPi = 3.14159265358979323846f;
 
 struct RingLayout {
@@ -62,6 +69,43 @@ void drawStar(Target& canvas, int x, int y, int radius, int waist, uint16_t colo
     canvas.fillTriangle(x + radius, y, x, y - waist, x, y + waist, color);
 }
 
+template <typename Target>
+void drawTriangle(Target& canvas, int x, int y, int radius, uint16_t color)
+{
+    const int halfWidth = radius * 7 / 8;
+    canvas.fillTriangle(x, y - radius, x - halfWidth, y + radius / 2,
+                        x + halfWidth, y + radius / 2, color);
+}
+
+template <typename Target>
+void drawGlyph(Target& canvas, DotShape shape, int x, int y, int radius, int waist, uint16_t color)
+{
+    radius = std::max(1, radius);
+    waist = std::max(1, waist);
+    switch (shape) {
+        case DotShape::Star:
+            drawStar(canvas, x, y, radius, waist, color);
+            break;
+        case DotShape::Hexagon: {
+            const int halfWidth = std::max(1, radius * 7 / 8);
+            const int halfMiddle = std::max(1, radius / 2);
+            canvas.fillRect(x - halfWidth, y - halfMiddle, halfWidth * 2 + 1,
+                            halfMiddle * 2 + 1, color);
+            canvas.fillTriangle(x, y - radius, x - halfWidth, y - halfMiddle,
+                                x + halfWidth, y - halfMiddle, color);
+            canvas.fillTriangle(x, y + radius, x - halfWidth, y + halfMiddle,
+                                x + halfWidth, y + halfMiddle, color);
+            break;
+        }
+        case DotShape::Circle:
+            canvas.fillCircle(x, y, std::max(1, radius * 3 / 4), color);
+            break;
+        case DotShape::Triangle:
+            drawTriangle(canvas, x, y, radius, color);
+            break;
+    }
+}
+
 uint8_t scaleChannel(uint8_t channel, uint8_t level)
 {
     return static_cast<uint8_t>((static_cast<uint16_t>(channel) * level) / 255u);
@@ -73,7 +117,7 @@ uint8_t mixWithWhite(uint8_t channel, uint8_t saturation)
                                 (static_cast<uint16_t>(255u - channel) * saturation) / 255u);
 }
 
-int scaledSize(int pixels)
+int baseScaledSize(int pixels)
 {
     return (pixels * 13 + 5) / 10;
 }
@@ -109,8 +153,12 @@ void Renderer::open(int width, int height, std::size_t dotCount)
     _displayedHint = 0;
     _colorSelectionMode = false;
     _ringNeedsFullRefresh = false;
+    _appearanceNeedsFullRefresh = false;
     _selectedHue = 79;
     _displayedSelectorHue = _selectedHue;
+    _dotShape = DotShape::Star;
+    _shapeScalePercent = 100;
+    _appearanceMode = false;
 
     auto& display = GetHAL().getDisplay();
     // The AMOLED driver already owns a PSRAM framebuffer. Keep automatic
@@ -148,9 +196,10 @@ void Renderer::open(int width, int height, std::size_t dotCount)
                                         std::max(ringSegment.startY[boundary],
                                                  ringSegment.endY[boundary]));
         }
-        ringSegment.colors[0] = display.color565(mixWithWhite(hueRgb.red, kThemeSaturation),
-                                                 mixWithWhite(hueRgb.green, kThemeSaturation),
-                                                 mixWithWhite(hueRgb.blue, kThemeSaturation));
+        ringSegment.colors[0] = display.color565(
+            scaleChannel(mixWithWhite(hueRgb.red, kThemeSaturation), kRingOpacity),
+            scaleChannel(mixWithWhite(hueRgb.green, kThemeSaturation), kRingOpacity),
+            scaleChannel(mixWithWhite(hueRgb.blue, kThemeSaturation), kRingOpacity));
     }
 
     display.fillScreen(TFT_BLACK);
@@ -167,6 +216,17 @@ void Renderer::buildPalettes()
         const Rgb8 rgb = {mixWithWhite(hueRgb.red, kThemeSaturation),
                           mixWithWhite(hueRgb.green, kThemeSaturation),
                           mixWithWhite(hueRgb.blue, kThemeSaturation)};
+        _selectionColors[hueSlot] = display.color565(scaleChannel(rgb.red, kSelectorOpacity),
+                                                     scaleChannel(rgb.green, kSelectorOpacity),
+                                                     scaleChannel(rgb.blue, kSelectorOpacity));
+        _selectionGlowInnerColors[hueSlot] = display.color565(
+            scaleChannel(rgb.red, kSelectorGlowInnerOpacity),
+            scaleChannel(rgb.green, kSelectorGlowInnerOpacity),
+            scaleChannel(rgb.blue, kSelectorGlowInnerOpacity));
+        _selectionGlowOuterColors[hueSlot] = display.color565(
+            scaleChannel(rgb.red, kSelectorGlowOuterOpacity),
+            scaleChannel(rgb.green, kSelectorGlowOuterOpacity),
+            scaleChannel(rgb.blue, kSelectorGlowOuterOpacity));
         for (std::size_t level = 0; level < _palettes[hueSlot].size(); ++level) {
             const uint8_t energy = static_cast<uint8_t>(
                 level * 255u / (_palettes[hueSlot].size() - 1));
@@ -207,10 +267,27 @@ void Renderer::updateColorSelection(bool enabled, uint16_t selectedHue)
     _fullFrameReady = false;
 }
 
+void Renderer::updateAppearance(DotShape dotShape, uint8_t shapeScalePercent, bool appearanceMode)
+{
+    shapeScalePercent = std::clamp<uint8_t>(shapeScalePercent, kMinShapeScale, kMaxShapeScale);
+    if (dotShape == _dotShape && shapeScalePercent == _shapeScalePercent &&
+        appearanceMode == _appearanceMode) {
+        return;
+    }
+
+    _dotShape = dotShape;
+    _shapeScalePercent = shapeScalePercent;
+    _appearanceMode = appearanceMode;
+    _appearanceNeedsFullRefresh = true;
+    _fullFrameReady = false;
+}
+
 void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uint32_t modeNoticeUntilMs,
-                      RenderScene scene, bool colorSelectionMode, uint16_t selectedHue)
+                      RenderScene scene, bool colorSelectionMode, uint16_t selectedHue,
+                      DotShape dotShape, uint8_t shapeScalePercent, bool appearanceMode)
 {
     updateColorSelection(colorSelectionMode, selectedHue);
+    updateAppearance(dotShape, shapeScalePercent, appearanceMode);
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
 
@@ -227,14 +304,15 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
     }
 
     const int64_t frameStartedUs = esp_timer_get_time();
-    const bool showHint = scene == RenderScene::Interactive && !colorSelectionMode &&
+    const bool showHint = scene == RenderScene::Interactive && !colorSelectionMode && !appearanceMode &&
                           static_cast<int32_t>(modeNoticeUntilMs - nowMs) > 0;
+    const bool showAppearanceHint = scene == RenderScene::Interactive && appearanceMode;
     if (scene == RenderScene::Interactive) {
-        renderInteractiveDirty(engine, rippleMode, showHint);
+        renderInteractiveDirty(engine, rippleMode, showHint, showAppearanceHint);
     } else {
         // Benchmark scenes deliberately force complete submissions so their
         // numbers continue to expose the panel's full-screen bandwidth.
-        renderFullFrame(engine, rippleMode, showHint, scene);
+        renderFullFrame(engine, rippleMode, showHint, showAppearanceHint, scene);
     }
 
     const uint32_t elapsedUs = static_cast<uint32_t>(esp_timer_get_time() - frameStartedUs);
@@ -242,6 +320,11 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
     _frameTimeTotalUs += elapsedUs;
     _maxFrameTimeUs = std::max(_maxFrameTimeUs, elapsedUs);
     reportStats(nowMs, scene);
+}
+
+int Renderer::shapeSize(int pixels) const
+{
+    return std::max(1, (baseScaledSize(pixels) * _shapeScalePercent + 50) / 100);
 }
 
 uint8_t Renderer::levelForDot(const Dot& dot, std::size_t index, RenderScene scene) const
@@ -262,19 +345,19 @@ uint8_t Renderer::colorIndexForDot(const Dot& dot, RenderScene scene) const
 void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint16_t idleColor) const
 {
     if (level == 0) {
-        drawStar(target, dot.x, dot.y, scaledSize(7), scaledSize(3), idleColor);
+        drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(7), shapeSize(3), idleColor);
         return;
     }
     const uint8_t colorIndex = dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0
                                    ? dot.rippleColorIndex
                                    : dot.colorIndex;
     const GlowColors& colors = _palettes[colorIndex % _palettes.size()][level];
-    target.fillCircle(dot.x, dot.y, scaledSize(7 + level / 3), colors.outer);
-    target.fillCircle(dot.x, dot.y, scaledSize(5 + level / 5), colors.middle);
-    drawStar(target, dot.x, dot.y, scaledSize(6 + level / 4), scaledSize(2 + level / 6),
-             colors.inner);
-    drawStar(target, dot.x, dot.y, scaledSize(5 + level / 5), scaledSize(2 + level / 10),
-             colors.core);
+    target.fillCircle(dot.x, dot.y, shapeSize(7 + level / 3), colors.outer);
+    target.fillCircle(dot.x, dot.y, shapeSize(5 + level / 5), colors.middle);
+    drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(6 + level / 4),
+              shapeSize(2 + level / 6), colors.inner);
+    drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(5 + level / 5),
+              shapeSize(2 + level / 10), colors.core);
 }
 
 void Renderer::drawHint(LGFX_Device& target, bool rippleMode) const
@@ -288,8 +371,26 @@ void Renderer::drawHint(LGFX_Device& target, bool rippleMode) const
         target.drawCircle(x, y, 7, hintColor);
         target.drawCircle(x, y, 11, hintColor);
     } else {
-        drawStar(target, x, y, 10, 3, hintColor);
+        drawGlyph(target, _dotShape, x, y, 10, 3, hintColor);
     }
+}
+
+void Renderer::drawAppearanceHint(LGFX_Device& target) const
+{
+    const int y = _height - 18;
+    const int glyphX = _width / 2 - 32;
+    const int lineStart = _width / 2 - 12;
+    const int lineEnd = _width / 2 + 38;
+    const std::size_t hueSlot = static_cast<std::size_t>(_selectedHue) * kHueSlots / 360u;
+    const uint16_t color = _palettes[hueSlot].back().core;
+    const uint16_t track = GetHAL().getDisplay().color565(35, 45, 48);
+
+    drawGlyph(target, _dotShape, glyphX, y, 9, 3, color);
+    target.fillRect(lineStart, y - 1, lineEnd - lineStart + 1, 3, track);
+    const int thumbX = lineStart + static_cast<int>(_shapeScalePercent - kMinShapeScale) *
+                                       (lineEnd - lineStart) /
+                                       (kMaxShapeScale - kMinShapeScale);
+    target.fillCircle(thumbX, y, 5, color);
 }
 
 void Renderer::drawColorRing(LGFX_Device& target, int top, int bottom) const
@@ -314,12 +415,16 @@ void Renderer::drawColorRing(LGFX_Device& target, int top, int bottom) const
     const int selectedX = centerX + static_cast<int>(std::cos(selectedAngle) * pathRadius);
     const int selectedY = centerY + static_cast<int>(std::sin(selectedAngle) * pathRadius);
     const std::size_t hueSlot = static_cast<std::size_t>(_selectedHue) * kHueSlots / 360u;
-    if (selectedY + 10 >= top && selectedY - 10 < bottom) {
-        target.fillCircle(selectedX, selectedY, 10, _palettes[hueSlot].back().core);
+    if (selectedY + kSelectorGlowRadius >= top && selectedY - kSelectorGlowRadius < bottom) {
+        target.fillCircle(selectedX, selectedY, kSelectorGlowRadius,
+                          _selectionGlowOuterColors[hueSlot]);
+        target.fillCircle(selectedX, selectedY, 13, _selectionGlowInnerColors[hueSlot]);
+        target.fillCircle(selectedX, selectedY, 10, _selectionColors[hueSlot]);
     }
 }
 
-void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showHint, RenderScene scene)
+void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showHint,
+                               bool showAppearanceHint, RenderScene scene)
 {
     auto& display = GetHAL().getDisplay();
     if (!_fullFrameReady) {
@@ -335,6 +440,7 @@ void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showH
                 if (dot.visible) drawDot(display, dot, levelForDot(dot, i, scene), idleColor);
             }
             if (showHint) drawHint(display, rippleMode);
+            if (showAppearanceHint) drawAppearanceHint(display);
         }
         display.endWrite();
         _fullFrameReady = true;
@@ -346,7 +452,8 @@ void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showH
     GetHAL().feedTheDog();
 }
 
-void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, bool showHint)
+void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, bool showHint,
+                                      bool showAppearanceHint)
 {
     constexpr std::size_t kMaxBands = (480 + kDirtyBandHeight - 1) / kDirtyBandHeight;
     std::array<bool, kMaxBands> dirty = {};
@@ -362,6 +469,7 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
     };
 
     if (_ringNeedsFullRefresh) markRange(0, _height - 1);
+    if (_appearanceNeedsFullRefresh) markRange(0, _height - 1);
     if (_colorSelectionMode && _displayedSelectorHue != _selectedHue) {
         const int centerY = _height / 2;
         const int pathRadius = ringLayout(_width, _height).pathRadius;
@@ -373,8 +481,8 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
         // two positions. These two small, disjoint bands are all that changed.
         const int oldY = selectorY(_displayedSelectorHue);
         const int newY = selectorY(_selectedHue);
-        markRange(oldY - 11, oldY + 11);
-        markRange(newY - 11, newY + 11);
+        markRange(oldY - kSelectorGlowRadius - 1, oldY + kSelectorGlowRadius + 1);
+        markRange(newY - kSelectorGlowRadius - 1, newY + kSelectorGlowRadius + 1);
     }
 
     for (std::size_t i = 0; i < engine.dotCount(); ++i) {
@@ -389,7 +497,7 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
         _displayedColorIndexes[i] = colorIndex;
     }
 
-    const uint8_t hint = showHint ? (rippleMode ? 1 : 2) : 0;
+    const uint8_t hint = showAppearanceHint ? 3 : (showHint ? (rippleMode ? 1 : 2) : 0);
     if (!_displayedLevelsValid || hint != _displayedHint) {
         markRange(_height - 27, _height - 3);
     }
@@ -417,6 +525,9 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
             drawDot(display, dot, _displayedLevels[i], idleColor);
         }
         if (showHint && _height - 27 < bottom && _height - 3 >= top) drawHint(display, rippleMode);
+        if (showAppearanceHint && _height - 31 < bottom && _height - 3 >= top) {
+            drawAppearanceHint(display);
+        }
         if (_colorSelectionMode) drawColorRing(display, top, bottom);
         display.clearClipRect();
         display.endWrite();
@@ -424,6 +535,7 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
         first = last + 1;
     }
     _ringNeedsFullRefresh = false;
+    _appearanceNeedsFullRefresh = false;
     _displayedSelectorHue = _selectedHue;
     GetHAL().feedTheDog();
 }
