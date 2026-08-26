@@ -9,12 +9,36 @@ namespace {
 constexpr int kGridSpacingX = 22;
 constexpr int kGridSpacingY = 19;
 constexpr int kTouchRadius = 62;
-constexpr int kTouchRadiusSquared = kTouchRadius * kTouchRadius;
 constexpr int kPathStep = kGridSpacingX / 2;
 constexpr uint32_t kSimulationStepMs = 16;
 constexpr uint32_t kDecayPerSecond = 180;
-constexpr uint32_t kRippleDurationMs = 1050;
-constexpr int kRippleHalfWidth = 17;
+constexpr uint32_t kRippleTravelMs = 880;
+constexpr uint32_t kRippleAfterglowMs = 680;
+constexpr uint32_t kRippleDurationMs = kRippleTravelMs + kRippleAfterglowMs;
+constexpr int kImpactRadius = 32;
+constexpr uint32_t kRippleAttackMs = 48;
+constexpr int kScatterTimeMs = 55;
+constexpr int kReflectionStrength = 72;
+
+int approximateDistance(int dx, int dy)
+{
+    const int absoluteX = std::abs(dx);
+    const int absoluteY = std::abs(dy);
+    const int larger = std::max(absoluteX, absoluteY);
+    const int smaller = std::min(absoluteX, absoluteY);
+    // Within a few percent of Euclidean distance and substantially cheaper
+    // than running sqrt for every dot of every concurrent ripple.
+    return larger + (smaller * 3) / 8;
+}
+
+uint32_t mixHash(uint32_t value)
+{
+    value ^= value >> 16;
+    value *= 0x7FEB352Du;
+    value ^= value >> 15;
+    value *= 0x846CA68Bu;
+    return value ^ (value >> 16);
+}
 
 }  // namespace
 
@@ -28,12 +52,14 @@ void Engine::reset(int width, int height)
     _simulationAccumulatorMs = 0;
     _decayRemainder = 0;
     _touching = false;
-    _maxRippleRadius = static_cast<int>(std::sqrt(static_cast<float>(width * width + height * height))) +
-                       kGridSpacingX;
+    _maxRippleRadius = std::max(width, height) + kGridSpacingX;
+    _centerX = width / 2;
+    _centerY = height / 2;
+    _fieldRadius = std::min(width, height) / 2 - 5;
 
-    const int centerX = width / 2;
-    const int centerY = height / 2;
-    const int visibleRadius = std::min(width, height) / 2 - 5;
+    const int centerX = _centerX;
+    const int centerY = _centerY;
+    const int visibleRadius = _fieldRadius;
     const int visibleRadiusSquared = visibleRadius * visibleRadius;
 
     int row = 0;
@@ -49,7 +75,8 @@ void Engine::reset(int width, int height)
             Dot& dot = _dots[_dotCount++];
             dot.x = static_cast<int16_t>(x);
             dot.y = static_cast<int16_t>(y);
-            dot.hueIndex = static_cast<uint8_t>((x / kGridSpacingX + row) & 0x0F);
+            dot.colorIndex = 5;
+            dot.rippleColorIndex = 5;
             dot.visible = true;
         }
     }
@@ -59,6 +86,7 @@ void Engine::clear()
 {
     for (std::size_t i = 0; i < _dotCount; ++i) {
         _dots[i].energy = 0;
+        _dots[i].rippleEnergy = 0;
     }
     _ripples = {};
     _nextRipple = 0;
@@ -102,31 +130,63 @@ void Engine::stepSimulation()
     }
 }
 
-void Engine::triggerRipple(int x, int y, uint32_t nowMs)
+void Engine::triggerRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex)
+{
+    startRipple(x, y, nowMs, colorIndex, kRippleDurationMs,
+                static_cast<uint16_t>(_maxRippleRadius));
+}
+
+void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint16_t durationMs,
+                         uint16_t maxRadius)
 {
     Ripple& ripple = _ripples[_nextRipple];
     ripple.x = static_cast<int16_t>(x);
     ripple.y = static_cast<int16_t>(y);
+    ripple.reflectedX = ripple.x;
+    ripple.reflectedY = ripple.y;
     ripple.startedMs = nowMs;
+    ripple.seed = mixHash(nowMs ^ (static_cast<uint32_t>(x) << 16) ^
+                          static_cast<uint32_t>(y));
+    ripple.durationMs = durationMs;
+    ripple.maxRadius = maxRadius;
+    ripple.colorIndex = colorIndex;
+    ripple.hasReflection = false;
+
+    // Mirror a near-edge source across the circular boundary. The weaker image
+    // source makes the returning motion visible without drawing a hard second
+    // ring or requiring per-pixel clipping/reflection math.
+    const int centerDx = x - _centerX;
+    const int centerDy = y - _centerY;
+    const int centerDistance = approximateDistance(centerDx, centerDy);
+    if (centerDistance > _fieldRadius * 2 / 3 && centerDistance > 0) {
+        const int boundaryX = _centerX + centerDx * _fieldRadius / centerDistance;
+        const int boundaryY = _centerY + centerDy * _fieldRadius / centerDistance;
+        ripple.reflectedX = static_cast<int16_t>(2 * boundaryX - x);
+        ripple.reflectedY = static_cast<int16_t>(2 * boundaryY - y);
+        ripple.hasReflection = true;
+    }
     ripple.active = true;
     _nextRipple = (_nextRipple + 1) % kMaxRipples;
 
-    // A compact flash anchors the click while the ring starts expanding.
-    injectPoint(x, y, nowMs);
+    // Keep a restrained distance-weighted cluster at the source while the
+    // travelling field lights nearby dots on subsequent simulation steps.
+    injectImpact(x, y, colorIndex);
 }
 
-void Engine::beginTouch(int x, int y, uint32_t nowMs)
+void Engine::beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex)
 {
+    (void)nowMs;
     _touching = true;
     _lastTouchX = x;
     _lastTouchY = y;
-    injectPoint(x, y, nowMs);
+    _touchColorIndex = colorIndex;
+    injectPoint(x, y, _touchColorIndex, kTouchRadius);
 }
 
 void Engine::moveTouch(int x, int y, uint32_t nowMs)
 {
     if (!_touching) {
-        beginTouch(x, y, nowMs);
+        beginTouch(x, y, nowMs, _touchColorIndex);
         return;
     }
 
@@ -135,7 +195,8 @@ void Engine::moveTouch(int x, int y, uint32_t nowMs)
     const int distance = static_cast<int>(std::sqrt(static_cast<float>(dx * dx + dy * dy)));
     const int steps = std::max(1, (distance + kPathStep - 1) / kPathStep);
     for (int step = 1; step <= steps; ++step) {
-        injectPoint(_lastTouchX + dx * step / steps, _lastTouchY + dy * step / steps, nowMs);
+        injectPoint(_lastTouchX + dx * step / steps, _lastTouchY + dy * step / steps,
+                    _touchColorIndex, kTouchRadius);
     }
 
     _lastTouchX = x;
@@ -147,58 +208,103 @@ void Engine::endTouch()
     _touching = false;
 }
 
-void Engine::injectPoint(int x, int y, uint32_t nowMs)
+void Engine::injectPoint(int x, int y, uint8_t colorIndex, int radius)
 {
+    const int radiusSquared = radius * radius;
     for (std::size_t i = 0; i < _dotCount; ++i) {
         Dot& dot = _dots[i];
         const int dx = static_cast<int>(dot.x) - x;
         const int dy = static_cast<int>(dot.y) - y;
         const int distanceSquared = dx * dx + dy * dy;
-        if (distanceSquared > kTouchRadiusSquared) continue;
+        if (distanceSquared > radiusSquared) continue;
 
-        const int falloff = kTouchRadiusSquared - distanceSquared;
-        const int curved = (falloff * falloff) / kTouchRadiusSquared;
-        const int injected = 42 + curved * 213 / kTouchRadiusSquared;
+        const int falloff = radiusSquared - distanceSquared;
+        const int curved = (falloff * falloff) / radiusSquared;
+        const int injected = 42 + curved * 213 / radiusSquared;
         dot.energy = static_cast<uint8_t>(std::max<int>(dot.energy, injected));
-        dot.hueIndex = static_cast<uint8_t>(((nowMs / 180u) + i) & 0x0F);
+        dot.colorIndex = colorIndex;
+    }
+}
+
+void Engine::injectImpact(int x, int y, uint8_t colorIndex)
+{
+    const int radiusSquared = kImpactRadius * kImpactRadius;
+    for (std::size_t i = 0; i < _dotCount; ++i) {
+        Dot& dot = _dots[i];
+        const int dx = static_cast<int>(dot.x) - x;
+        const int dy = static_cast<int>(dot.y) - y;
+        const int distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared > radiusSquared) continue;
+        const int energy = 80 + (radiusSquared - distanceSquared) * 145 / radiusSquared;
+        dot.energy = static_cast<uint8_t>(std::max<int>(dot.energy, energy));
+        dot.colorIndex = colorIndex;
     }
 }
 
 void Engine::updateRipples(uint32_t nowMs)
 {
+    // Ripple stays transient and is recomputed from time, but each dot retains
+    // a soft afterglow after the travelling front reaches it. This produces a
+    // coherent energy field instead of several disconnected geometric rings.
+    for (std::size_t i = 0; i < _dotCount; ++i) {
+        _dots[i].rippleEnergy = 0;
+    }
+
     for (Ripple& ripple : _ripples) {
         if (!ripple.active) continue;
 
         const uint32_t ageMs = nowMs - ripple.startedMs;
-        if (ageMs >= kRippleDurationMs) {
+        const uint32_t durationMs = std::max<uint32_t>(1, ripple.durationMs);
+        if (ageMs >= durationMs) {
             ripple.active = false;
             continue;
         }
-
-        const int radius = static_cast<int>(ageMs * static_cast<uint32_t>(_maxRippleRadius) /
-                                            kRippleDurationMs);
-        const int innerRadius = std::max(0, radius - kRippleHalfWidth);
-        const int outerRadius = radius + kRippleHalfWidth;
-        const int innerSquared = innerRadius * innerRadius;
-        const int outerSquared = outerRadius * outerRadius;
-        const int radiusSquared = radius * radius;
-        const int bandSquared = std::max(1, outerSquared - radiusSquared);
-        const int baseEnergy = 72 + static_cast<int>((kRippleDurationMs - ageMs) * 183u /
-                                                     kRippleDurationMs);
 
         for (std::size_t i = 0; i < _dotCount; ++i) {
             Dot& dot = _dots[i];
             const int dx = static_cast<int>(dot.x) - ripple.x;
             const int dy = static_cast<int>(dot.y) - ripple.y;
-            const int distanceSquared = dx * dx + dy * dy;
-            if (distanceSquared < innerSquared || distanceSquared > outerSquared) continue;
+            const int distance = approximateDistance(dx, dy);
+            const uint32_t hash = mixHash(ripple.seed ^ static_cast<uint32_t>(i) * 0x9E3779B9u);
+            const int jitterMs = static_cast<int>(hash % (kScatterTimeMs * 2 + 1)) -
+                                 kScatterTimeMs;
+            const int arrivalMs = std::max(0, distance * static_cast<int>(kRippleTravelMs) /
+                                                  std::max<int>(1, ripple.maxRadius) +
+                                                  jitterMs);
 
-            // Brightest at the wave front, softer at both edges of the band.
-            // Squared distances keep the per-frame ripple pass free of sqrt.
-            const int frontDistance = std::abs(distanceSquared - radiusSquared);
-            const int energy = baseEnergy * std::max(0, bandSquared - frontDistance) / bandSquared;
-            dot.energy = static_cast<uint8_t>(std::max<int>(dot.energy, std::max(30, energy)));
-            dot.hueIndex = static_cast<uint8_t>(((ripple.startedMs / 180u) + i) & 0x0F);
+            auto energyAfterArrival = [&](int sourceAgeMs, int sourceDistance,
+                                          int strength) -> int {
+                if (sourceAgeMs < 0 || sourceAgeMs >= static_cast<int>(kRippleAfterglowMs)) return 0;
+                const int distanceScale = std::max(145, 245 - sourceDistance * 90 /
+                                                               std::max<int>(1, ripple.maxRadius));
+                const int scatterScale = 184 + static_cast<int>((hash >> 8) & 0x2F);
+                int envelope = 255;
+                if (sourceAgeMs < static_cast<int>(kRippleAttackMs)) {
+                    envelope = 72 + sourceAgeMs * 183 / static_cast<int>(kRippleAttackMs);
+                } else {
+                    const int remaining = static_cast<int>(kRippleAfterglowMs) - sourceAgeMs;
+                    const int fadeDuration = static_cast<int>(kRippleAfterglowMs - kRippleAttackMs);
+                    envelope = remaining * remaining * 255 / (fadeDuration * fadeDuration);
+                }
+                return envelope * distanceScale / 255 * scatterScale / 255 * strength / 255;
+            };
+
+            int energy = energyAfterArrival(static_cast<int>(ageMs) - arrivalMs, distance, 255);
+            if (ripple.hasReflection) {
+                const int reflectedDx = static_cast<int>(dot.x) - ripple.reflectedX;
+                const int reflectedDy = static_cast<int>(dot.y) - ripple.reflectedY;
+                const int reflectedDistance = approximateDistance(reflectedDx, reflectedDy);
+                const int reflectedArrival = reflectedDistance * static_cast<int>(kRippleTravelMs) /
+                                             std::max<int>(1, ripple.maxRadius) - jitterMs / 2;
+                energy = std::max(energy,
+                                  energyAfterArrival(static_cast<int>(ageMs) - reflectedArrival,
+                                                     reflectedDistance, kReflectionStrength));
+            }
+
+            if (energy > dot.rippleEnergy) {
+                dot.rippleEnergy = static_cast<uint8_t>(std::min(255, energy));
+                dot.rippleColorIndex = ripple.colorIndex;
+            }
         }
     }
 }
