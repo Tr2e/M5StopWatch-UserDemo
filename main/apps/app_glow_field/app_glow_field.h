@@ -43,7 +43,7 @@ private:
     bool _colorCruising = false;
     bool _appearanceMode = false;
     bool _appearanceScaleRepeating = false;
-    glow_field::DotShape _dotShape = glow_field::DotShape::Star;
+    glow_field::DotShape _dotShape = glow_field::DotShape::SymbolMix;
     uint8_t _shapeScalePercent = 100;
     uint16_t _selectedHue = 79;
     int16_t _lastRippleX = 0;

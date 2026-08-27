@@ -8,7 +8,7 @@ namespace {
 
 constexpr int kGridSpacingX = 29;
 constexpr int kGridSpacingY = 25;
-constexpr int kTouchRadius = 81;
+constexpr int kTouchRadius = 68;
 constexpr int kPathStep = kGridSpacingX / 2;
 constexpr uint32_t kSimulationStepMs = 16;
 constexpr uint32_t kDecayPerSecond = 180;
@@ -42,6 +42,48 @@ uint32_t mixHash(uint32_t value)
     return value ^ (value >> 16);
 }
 
+uint8_t activeSymbolColor(uint32_t hash, bool allowYellow)
+{
+    const uint32_t roll = hash % 100u;
+    if (roll < 34u) return 0;  // cyber cyan
+    if (roll < 68u) return 1;  // neon magenta
+    if (roll < 90u || !allowYellow) return 2;  // proton green
+    return 3;  // electric yellow highlight
+}
+
+uint8_t paintSymbolColor(uint32_t hash)
+{
+    const uint32_t roll = hash % 100u;
+    if (roll < 30u) return 0;
+    if (roll < 58u) return 1;
+    if (roll < 82u) return 2;
+    return 3;  // stable yellow sparks in touch Paint
+}
+
+uint8_t rippleSymbolColor(int distance, int maxRadius, uint32_t hash, bool mutateSymbols)
+{
+    if (distance <= kImpactRadius) {
+        // Yellow is most effective as a compact warm spark against the
+        // magenta impact core. It participates in both touch and K1 ripples.
+        const uint32_t yellowChance = mutateSymbols ? 16u : 24u;
+        if (((hash >> 16) % 100u) < yellowChance) return 3;
+        return 1;
+    }
+    if (distance * 3 >= maxRadius * 2) {
+        // The far field reads primarily as a clean cyan expansion, with a
+        // little green and yellow variation so it does not become a hard ring.
+        const uint32_t roll = (hash >> 11) % 100u;
+        if (roll < 68u) return 0;
+        if (roll < 88u) return 2;
+        return 3;
+    }
+    const uint32_t roll = (hash >> 8) % 100u;
+    if (roll < 30u) return 0;
+    if (roll < 58u) return 1;
+    if (roll < 84u) return 2;
+    return 3;
+}
+
 }  // namespace
 
 void Engine::reset(int width, int height)
@@ -54,6 +96,7 @@ void Engine::reset(int width, int height)
     _simulationAccumulatorMs = 0;
     _decayRemainder = 0;
     _touching = false;
+    _touchSymbolMix = false;
     _maxRippleRadius = std::max(width, height) + kGridSpacingX;
     _centerX = width / 2;
     _centerY = height / 2;
@@ -82,7 +125,7 @@ void Engine::reset(int width, int height)
             const uint32_t symbolSeed = mixHash(static_cast<uint32_t>(_dotCount) * 0x9E3779B9u ^
                                                 static_cast<uint32_t>(x * 257 + y));
             dot.symbolIndex = static_cast<uint8_t>(symbolSeed % kSymbolCount);
-            dot.symbolColorIndex = static_cast<uint8_t>((symbolSeed >> 8) % kSymbolCount);
+            dot.symbolColorIndex = activeSymbolColor(symbolSeed >> 8, false);
             dot.energySymbolIndex = dot.symbolIndex;
             dot.energySymbolColorIndex = dot.symbolColorIndex;
             dot.rippleSymbolIndex = dot.symbolIndex;
@@ -128,13 +171,13 @@ void Engine::update(uint32_t nowMs)
     // changes from stepping in lockstep.
     for (std::size_t i = 0; i < _dotCount; ++i) {
         Dot& dot = _dots[i];
-        if (dot.energy == 0 || !dot.energyUsesSymbolPalette) continue;
+        if (dot.energy == 0 || !dot.energyMutatesSymbols) continue;
         const uint32_t seed = mixHash(static_cast<uint32_t>(i + 1) * 0x9E3779B9u);
         const uint32_t mutationStep = (nowMs + seed % kSymbolMutationStepMs) /
                                       kSymbolMutationStepMs;
         const uint32_t mutationHash = mixHash(seed ^ (mutationStep * 0xA511E9B3u));
         dot.energySymbolIndex = static_cast<uint8_t>(mutationHash % kSymbolCount);
-        dot.energySymbolColorIndex = static_cast<uint8_t>((mutationHash >> 9) % kSymbolCount);
+        dot.energySymbolColorIndex = activeSymbolColor(mutationHash >> 9, true);
     }
 }
 
@@ -207,19 +250,20 @@ void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint1
     if (!symbolMix) injectImpact(x, y, colorIndex);
 }
 
-void Engine::beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex)
+void Engine::beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex, bool symbolMix)
 {
     _touching = true;
     _lastTouchX = x;
     _lastTouchY = y;
     _touchColorIndex = colorIndex;
-    injectPoint(x, y, _touchColorIndex, kTouchRadius, nowMs, false, false);
+    _touchSymbolMix = symbolMix;
+    injectPoint(x, y, _touchColorIndex, kTouchRadius, nowMs, _touchSymbolMix, false);
 }
 
 void Engine::moveTouch(int x, int y, uint32_t nowMs)
 {
     if (!_touching) {
-        beginTouch(x, y, nowMs, _touchColorIndex);
+        beginTouch(x, y, nowMs, _touchColorIndex, _touchSymbolMix);
         return;
     }
 
@@ -229,7 +273,7 @@ void Engine::moveTouch(int x, int y, uint32_t nowMs)
     const int steps = std::max(1, (distance + kPathStep - 1) / kPathStep);
     for (int step = 1; step <= steps; ++step) {
         injectPoint(_lastTouchX + dx * step / steps, _lastTouchY + dy * step / steps,
-                    _touchColorIndex, kTouchRadius, nowMs, false, false);
+                    _touchColorIndex, kTouchRadius, nowMs, _touchSymbolMix, false);
     }
 
     _lastTouchX = x;
@@ -257,14 +301,21 @@ void Engine::injectPoint(int x, int y, uint8_t colorIndex, int radius, uint32_t 
         const int injected = 42 + curved * 213 / radiusSquared;
         dot.energy = static_cast<uint8_t>(std::max<int>(dot.energy, injected));
         dot.colorIndex = colorIndex;
-        dot.energyUsesSymbolPalette = symbolMix && mutateSymbols;
+        dot.energyUsesSymbolPalette = symbolMix;
+        dot.energyMutatesSymbols = symbolMix && mutateSymbols;
         if (dot.energyUsesSymbolPalette) {
-            const uint32_t seed = mixHash(static_cast<uint32_t>(i + 1) * 0x9E3779B9u);
+            const uint32_t seed = mixHash(static_cast<uint32_t>(i + 1) * 0x9E3779B9u ^
+                                          static_cast<uint32_t>(x * 257 + y));
             const uint32_t mutationStep = (nowMs + seed % kSymbolMutationStepMs) /
                                           kSymbolMutationStepMs;
             const uint32_t mutationHash = mixHash(seed ^ (mutationStep * 0xA511E9B3u));
-            dot.energySymbolIndex = static_cast<uint8_t>(mutationHash % kSymbolCount);
-            dot.energySymbolColorIndex = static_cast<uint8_t>((mutationHash >> 9) % kSymbolCount);
+            if (mutateSymbols) {
+                dot.energySymbolIndex = static_cast<uint8_t>(mutationHash % kSymbolCount);
+                dot.energySymbolColorIndex = activeSymbolColor(mutationHash >> 9, true);
+            } else {
+                dot.energySymbolIndex = dot.symbolIndex;
+                dot.energySymbolColorIndex = paintSymbolColor(seed >> 7);
+            }
         }
     }
 }
@@ -353,9 +404,8 @@ void Engine::updateRipples(uint32_t nowMs)
             }
 
             uint8_t symbolIndex = static_cast<uint8_t>(hash % kSymbolCount);
-            uint8_t symbolColorIndex = static_cast<uint8_t>(((hash >> 8) + ripple.paletteOffset +
-                                                             distance / 58) %
-                                                            kSymbolCount);
+            uint8_t symbolColorIndex = rippleSymbolColor(distance, ripple.maxRadius, hash,
+                                                         ripple.mutateSymbols);
             if (ripple.symbolMix) {
                 if (distance <= kImpactRadius && ageMs < 360u) {
                     const int impactFalloff = (kImpactRadius * kImpactRadius - distance * distance) *
@@ -379,7 +429,7 @@ void Engine::updateRipples(uint32_t nowMs)
                     const uint32_t mutationHash = mixHash(
                         hash ^ ((mutationStep + 1u) * 0xA511E9B3u));
                     symbolIndex = static_cast<uint8_t>(mutationHash % kSymbolCount);
-                    symbolColorIndex = static_cast<uint8_t>((mutationHash >> 9) % kSymbolCount);
+                    symbolColorIndex = activeSymbolColor(mutationHash >> 9, true);
                 }
             }
 

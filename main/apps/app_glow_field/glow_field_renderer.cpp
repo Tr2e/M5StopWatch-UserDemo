@@ -46,10 +46,10 @@ struct Rgb8 {
 };
 
 constexpr std::array<Rgb8, kSymbolGlyphCount> kSymbolColors = {
-    Rgb8{255, 209, 102},  // sunny yellow #FFD166
-    Rgb8{6, 214, 160},    // mint green   #06D6A0
-    Rgb8{17, 138, 178},   // sky blue     #118AB2
-    Rgb8{239, 71, 111},   // coral pink   #EF476F
+    Rgb8{0, 240, 255},    // cyber cyan    #00F0FF
+    Rgb8{255, 0, 127},    // neon magenta  #FF007F
+    Rgb8{0, 255, 102},    // proton green  #00FF66
+    Rgb8{255, 234, 0},    // electric yellow #FFEA00
 };
 
 Rgb8 hueToRgb(uint16_t hue)
@@ -209,7 +209,7 @@ void Renderer::open(int width, int height, std::size_t dotCount)
     _appearanceNeedsFullRefresh = false;
     _selectedHue = 79;
     _displayedSelectorHue = _selectedHue;
-    _dotShape = DotShape::Star;
+    _dotShape = DotShape::SymbolMix;
     _shapeScalePercent = 100;
     _appearanceMode = false;
 
@@ -300,16 +300,19 @@ void Renderer::buildPalettes()
     }
     for (std::size_t accent = 0; accent < _symbolPalettes.size(); ++accent) {
         const Rgb8 rgb = kSymbolColors[accent];
+        const bool brightHighlight = accent == 3;
         for (std::size_t level = 0; level < _symbolPalettes[accent].size(); ++level) {
             const uint8_t energy = static_cast<uint8_t>(
                 level * 255u / (_symbolPalettes[accent].size() - 1));
             GlowColors& colors = _symbolPalettes[accent][level];
-            colors.outer = display.color565(scaleChannel(rgb.red, energy / 18),
-                                            scaleChannel(rgb.green, energy / 18),
-                                            scaleChannel(rgb.blue, energy / 13));
-            colors.middle = display.color565(scaleChannel(rgb.red, energy / 6),
-                                             scaleChannel(rgb.green, energy / 6),
-                                             scaleChannel(rgb.blue, energy / 5));
+            colors.outer = display.color565(
+                scaleChannel(rgb.red, energy / (brightHighlight ? 24 : 18)),
+                scaleChannel(rgb.green, energy / (brightHighlight ? 24 : 18)),
+                scaleChannel(rgb.blue, energy / (brightHighlight ? 18 : 13)));
+            colors.middle = display.color565(
+                scaleChannel(rgb.red, energy / (brightHighlight ? 8 : 6)),
+                scaleChannel(rgb.green, energy / (brightHighlight ? 8 : 6)),
+                scaleChannel(rgb.blue, energy / (brightHighlight ? 7 : 5)));
             colors.inner = display.color565(scaleChannel(rgb.red, energy * 3 / 5),
                                             scaleChannel(rgb.green, energy * 3 / 5),
                                             scaleChannel(rgb.blue, energy / 2));
@@ -417,10 +420,10 @@ uint8_t Renderer::visualKeyForDot(const Dot& dot, RenderScene scene) const
     }
     if (rippleDominates) return static_cast<uint8_t>(dot.rippleColorIndex & 0x1Fu);
     if (_dotShape == DotShape::SymbolMix) {
-        const bool energyMutates = dot.energy > 0 && dot.energyUsesSymbolPalette;
-        const uint8_t symbolIndex = energyMutates ? dot.energySymbolIndex : dot.symbolIndex;
-        const uint8_t colorIndex = energyMutates ? dot.energySymbolColorIndex
-                                                 : dot.symbolColorIndex;
+        const bool energyUsesSymbols = dot.energy > 0 && dot.energyUsesSymbolPalette;
+        const uint8_t symbolIndex = energyUsesSymbols ? dot.energySymbolIndex : dot.symbolIndex;
+        const uint8_t colorIndex = energyUsesSymbols ? dot.energySymbolColorIndex
+                                                     : dot.symbolColorIndex;
         return static_cast<uint8_t>(0x40u | ((colorIndex & 0x03u) << 2) |
                                     (symbolIndex & 0x03u));
     }
@@ -439,14 +442,14 @@ void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint1
         return;
     }
     const bool rippleDominates = dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0;
-    const bool energyMutates = !rippleDominates && dot.energy > 0 &&
-                               dot.energyUsesSymbolPalette;
+    const bool energyUsesSymbols = !rippleDominates && dot.energy > 0 &&
+                                   dot.energyUsesSymbolPalette;
     const bool useSymbolPalette = rippleDominates ? dot.rippleUsesSymbolPalette
                                                    : _dotShape == DotShape::SymbolMix;
     const uint8_t colorIndex = useSymbolPalette
                                    ? (rippleDominates ? dot.rippleSymbolColorIndex
-                                      : energyMutates ? dot.energySymbolColorIndex
-                                                      : dot.symbolColorIndex)
+                                      : energyUsesSymbols ? dot.energySymbolColorIndex
+                                                          : dot.symbolColorIndex)
                                    : (rippleDominates ? dot.rippleColorIndex : dot.colorIndex);
     const GlowColors& colors = useSymbolPalette
                                    ? _symbolPalettes[colorIndex % _symbolPalettes.size()][level]
@@ -455,8 +458,8 @@ void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint1
     target.fillCircle(dot.x, dot.y, shapeSize(5 + level / 5), colors.middle);
     if (useSymbolPalette) {
         const uint8_t symbolIndex = rippleDominates ? dot.rippleSymbolIndex
-                                    : energyMutates ? dot.energySymbolIndex
-                                                    : dot.symbolIndex;
+                                    : energyUsesSymbols ? dot.energySymbolIndex
+                                                        : dot.symbolIndex;
         drawSymbolGlyph(target, symbolIndex, dot.x, dot.y, shapeSize(6 + level / 4),
                         shapeSize(2 + level / 6), colors.inner);
         drawSymbolGlyph(target, symbolIndex, dot.x, dot.y, shapeSize(5 + level / 5),

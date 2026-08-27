@@ -80,7 +80,7 @@ private:
     bool _appearanceNeedsFullRefresh = false;
     uint16_t _selectedHue = 79;
     uint16_t _displayedSelectorHue = 79;
-    DotShape _dotShape = DotShape::Star;
+    DotShape _dotShape = DotShape::SymbolMix;
     uint8_t _shapeScalePercent = 100;
     bool _appearanceMode = false;
 

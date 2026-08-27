@@ -1,5 +1,4 @@
 #include "app_glow_field.h"
-
 #include <algorithm>
 #include <assets/assets.h>
 #include <cmath>
@@ -54,7 +53,7 @@ const char* dotShapeName(glow_field::DotShape shape)
 AppGlowField::AppGlowField()
 {
     setAppInfo().name = "Glow Field";
-    setAppInfo().icon = (void*)&icon_typhoon;
+    setAppInfo().icon = (void*)&icon_glow_field;
 }
 
 void AppGlowField::onCreate()
@@ -86,7 +85,7 @@ void AppGlowField::onOpen()
     _colorCruising = false;
     _appearanceMode = false;
     _appearanceScaleRepeating = false;
-    _dotShape = glow_field::DotShape::Star;
+    _dotShape = glow_field::DotShape::SymbolMix;
     _shapeScalePercent = 100;
     _selectedHue = 79;
     _selectedHueFine = 79.0f;
@@ -486,7 +485,8 @@ void AppGlowField::updateTouch(uint32_t nowMs)
                     accepted = false;
                 }
             } else {
-                _engine->beginTouch(touch.x, touch.y, nowMs, colorIndex(_selectedHue));
+                _engine->beginTouch(touch.x, touch.y, nowMs, colorIndex(_selectedHue),
+                                    _dotShape == glow_field::DotShape::SymbolMix);
             }
             _touching = true;
             if (accepted && (_lastHapticMs == 0 || nowMs - _lastHapticMs >= 75)) {

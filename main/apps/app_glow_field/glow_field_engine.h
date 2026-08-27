@@ -29,6 +29,7 @@ struct Dot {
     uint8_t rippleSymbolIndex = 0;
     uint8_t rippleSymbolColorIndex = 0;
     bool energyUsesSymbolPalette = false;
+    bool energyMutatesSymbols = false;
     bool rippleUsesSymbolPalette = false;
     bool visible = false;
 };
@@ -45,7 +46,8 @@ public:
                        bool symbolMix = false, bool mutateSymbols = false);
     void triggerPaintPoint(int x, int y, uint32_t nowMs, uint8_t colorIndex,
                            bool symbolMix = false, bool mutateSymbols = false);
-    void beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex);
+    void beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex,
+                    bool symbolMix = false);
     void moveTouch(int x, int y, uint32_t nowMs);
     void endTouch();
 
@@ -93,6 +95,7 @@ private:
     int _lastTouchX = 0;
     int _lastTouchY = 0;
     uint8_t _touchColorIndex = 5;
+    bool _touchSymbolMix = false;
     bool _touching = false;
 };
 
