@@ -45,6 +45,13 @@ struct Rgb8 {
     uint8_t blue;
 };
 
+constexpr std::array<Rgb8, kSymbolGlyphCount> kSymbolColors = {
+    Rgb8{255, 209, 102},  // sunny yellow #FFD166
+    Rgb8{6, 214, 160},    // mint green   #06D6A0
+    Rgb8{17, 138, 178},   // sky blue     #118AB2
+    Rgb8{239, 71, 111},   // coral pink   #EF476F
+};
+
 Rgb8 hueToRgb(uint16_t hue)
 {
     const uint16_t normalized = hue % 360u;
@@ -103,6 +110,52 @@ void drawGlyph(Target& canvas, DotShape shape, int x, int y, int radius, int wai
         case DotShape::Triangle:
             drawTriangle(canvas, x, y, radius, color);
             break;
+        case DotShape::SymbolMix:
+            drawStar(canvas, x, y, radius, waist, color);
+            break;
+    }
+}
+
+template <typename Target>
+void drawCross(Target& canvas, int x, int y, int radius, int waist, uint16_t color)
+{
+    const int thickness = std::max(1, waist);
+    canvas.fillTriangle(x - radius, y - radius + thickness,
+                        x - radius + thickness, y - radius,
+                        x + radius, y + radius - thickness, color);
+    canvas.fillTriangle(x - radius, y - radius + thickness,
+                        x + radius, y + radius - thickness,
+                        x + radius - thickness, y + radius, color);
+    canvas.fillTriangle(x + radius - thickness, y - radius,
+                        x + radius, y - radius + thickness,
+                        x - radius + thickness, y + radius, color);
+    canvas.fillTriangle(x + radius - thickness, y - radius,
+                        x - radius + thickness, y + radius,
+                        x - radius, y + radius - thickness, color);
+}
+
+template <typename Target>
+void drawSymbolGlyph(Target& canvas, uint8_t symbolIndex, int x, int y, int radius, int waist,
+                     uint16_t color)
+{
+    radius = std::max(1, radius);
+    waist = std::max(1, waist);
+    switch (static_cast<SymbolGlyph>(symbolIndex % kSymbolGlyphCount)) {
+        case SymbolGlyph::Triangle:
+            drawTriangle(canvas, x, y, radius, color);
+            break;
+        case SymbolGlyph::Circle:
+            canvas.fillCircle(x, y, std::max(1, radius * 3 / 4), color);
+            break;
+        case SymbolGlyph::Cross:
+            drawCross(canvas, x, y, radius, waist, color);
+            break;
+        case SymbolGlyph::Square: {
+            const int halfSize = std::max(1, radius * 3 / 4);
+            canvas.fillRect(x - halfSize, y - halfSize, halfSize * 2 + 1,
+                            halfSize * 2 + 1, color);
+            break;
+        }
     }
 }
 
@@ -245,6 +298,26 @@ void Renderer::buildPalettes()
                                            scaleChannel(rgb.blue, energy));
         }
     }
+    for (std::size_t accent = 0; accent < _symbolPalettes.size(); ++accent) {
+        const Rgb8 rgb = kSymbolColors[accent];
+        for (std::size_t level = 0; level < _symbolPalettes[accent].size(); ++level) {
+            const uint8_t energy = static_cast<uint8_t>(
+                level * 255u / (_symbolPalettes[accent].size() - 1));
+            GlowColors& colors = _symbolPalettes[accent][level];
+            colors.outer = display.color565(scaleChannel(rgb.red, energy / 18),
+                                            scaleChannel(rgb.green, energy / 18),
+                                            scaleChannel(rgb.blue, energy / 13));
+            colors.middle = display.color565(scaleChannel(rgb.red, energy / 6),
+                                             scaleChannel(rgb.green, energy / 6),
+                                             scaleChannel(rgb.blue, energy / 5));
+            colors.inner = display.color565(scaleChannel(rgb.red, energy * 3 / 5),
+                                            scaleChannel(rgb.green, energy * 3 / 5),
+                                            scaleChannel(rgb.blue, energy / 2));
+            colors.core = display.color565(scaleChannel(rgb.red, energy),
+                                           scaleChannel(rgb.green, energy),
+                                           scaleChannel(rgb.blue, energy));
+        }
+    }
 }
 
 void Renderer::close()
@@ -334,36 +407,89 @@ uint8_t Renderer::levelForDot(const Dot& dot, std::size_t index, RenderScene sce
     return static_cast<uint8_t>(std::max(dot.energy, dot.rippleEnergy) >> 4);
 }
 
-uint8_t Renderer::colorIndexForDot(const Dot& dot, RenderScene scene) const
+uint8_t Renderer::visualKeyForDot(const Dot& dot, RenderScene scene) const
 {
-    if (scene == RenderScene::Interactive && dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0) {
-        return dot.rippleColorIndex;
+    const bool rippleDominates = scene == RenderScene::Interactive &&
+                                 dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0;
+    if (rippleDominates && dot.rippleUsesSymbolPalette) {
+        return static_cast<uint8_t>(0x80u | ((dot.rippleSymbolColorIndex & 0x03u) << 2) |
+                                    (dot.rippleSymbolIndex & 0x03u));
     }
-    return dot.colorIndex;
+    if (rippleDominates) return static_cast<uint8_t>(dot.rippleColorIndex & 0x1Fu);
+    if (_dotShape == DotShape::SymbolMix) {
+        const bool energyMutates = dot.energy > 0 && dot.energyUsesSymbolPalette;
+        const uint8_t symbolIndex = energyMutates ? dot.energySymbolIndex : dot.symbolIndex;
+        const uint8_t colorIndex = energyMutates ? dot.energySymbolColorIndex
+                                                 : dot.symbolColorIndex;
+        return static_cast<uint8_t>(0x40u | ((colorIndex & 0x03u) << 2) |
+                                    (symbolIndex & 0x03u));
+    }
+    return static_cast<uint8_t>(dot.colorIndex & 0x1Fu);
 }
 
 void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint16_t idleColor) const
 {
     if (level == 0) {
-        drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(7), shapeSize(3), idleColor);
+        if (_dotShape == DotShape::SymbolMix) {
+            drawSymbolGlyph(target, dot.symbolIndex, dot.x, dot.y, shapeSize(7), shapeSize(3),
+                            idleColor);
+        } else {
+            drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(7), shapeSize(3), idleColor);
+        }
         return;
     }
-    const uint8_t colorIndex = dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0
-                                   ? dot.rippleColorIndex
-                                   : dot.colorIndex;
-    const GlowColors& colors = _palettes[colorIndex % _palettes.size()][level];
+    const bool rippleDominates = dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0;
+    const bool energyMutates = !rippleDominates && dot.energy > 0 &&
+                               dot.energyUsesSymbolPalette;
+    const bool useSymbolPalette = rippleDominates ? dot.rippleUsesSymbolPalette
+                                                   : _dotShape == DotShape::SymbolMix;
+    const uint8_t colorIndex = useSymbolPalette
+                                   ? (rippleDominates ? dot.rippleSymbolColorIndex
+                                      : energyMutates ? dot.energySymbolColorIndex
+                                                      : dot.symbolColorIndex)
+                                   : (rippleDominates ? dot.rippleColorIndex : dot.colorIndex);
+    const GlowColors& colors = useSymbolPalette
+                                   ? _symbolPalettes[colorIndex % _symbolPalettes.size()][level]
+                                   : _palettes[colorIndex % _palettes.size()][level];
     target.fillCircle(dot.x, dot.y, shapeSize(7 + level / 3), colors.outer);
     target.fillCircle(dot.x, dot.y, shapeSize(5 + level / 5), colors.middle);
-    drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(6 + level / 4),
-              shapeSize(2 + level / 6), colors.inner);
-    drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(5 + level / 5),
-              shapeSize(2 + level / 10), colors.core);
+    if (useSymbolPalette) {
+        const uint8_t symbolIndex = rippleDominates ? dot.rippleSymbolIndex
+                                    : energyMutates ? dot.energySymbolIndex
+                                                    : dot.symbolIndex;
+        drawSymbolGlyph(target, symbolIndex, dot.x, dot.y, shapeSize(6 + level / 4),
+                        shapeSize(2 + level / 6), colors.inner);
+        drawSymbolGlyph(target, symbolIndex, dot.x, dot.y, shapeSize(5 + level / 5),
+                        shapeSize(2 + level / 10), colors.core);
+    } else {
+        drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(6 + level / 4),
+                  shapeSize(2 + level / 6), colors.inner);
+        drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(5 + level / 5),
+                  shapeSize(2 + level / 10), colors.core);
+    }
 }
 
 void Renderer::drawHint(LGFX_Device& target, bool rippleMode) const
 {
     const int x = _width / 2;
     const int y = _height - 15;
+    if (_dotShape == DotShape::SymbolMix) {
+        if (rippleMode) {
+            target.drawCircle(x, y, 3, _symbolPalettes[0].back().core);
+            target.drawCircle(x, y, 7, _symbolPalettes[2].back().core);
+            target.drawCircle(x, y, 11, _symbolPalettes[3].back().core);
+        } else {
+            drawSymbolGlyph(target, 0, x - 6, y - 6, 4, 1,
+                            _symbolPalettes[0].back().core);
+            drawSymbolGlyph(target, 1, x + 6, y - 6, 4, 1,
+                            _symbolPalettes[1].back().core);
+            drawSymbolGlyph(target, 2, x - 6, y + 6, 4, 2,
+                            _symbolPalettes[2].back().core);
+            drawSymbolGlyph(target, 3, x + 6, y + 6, 4, 1,
+                            _symbolPalettes[3].back().core);
+        }
+        return;
+    }
     const std::size_t hueSlot = static_cast<std::size_t>(_selectedHue) * kHueSlots / 360u;
     const uint16_t hintColor = _palettes[hueSlot].back().core;
     if (rippleMode) {
@@ -382,10 +508,23 @@ void Renderer::drawAppearanceHint(LGFX_Device& target) const
     const int lineStart = _width / 2 - 12;
     const int lineEnd = _width / 2 + 38;
     const std::size_t hueSlot = static_cast<std::size_t>(_selectedHue) * kHueSlots / 360u;
-    const uint16_t color = _palettes[hueSlot].back().core;
+    const uint16_t color = _dotShape == DotShape::SymbolMix
+                               ? _symbolPalettes[2].back().core
+                               : _palettes[hueSlot].back().core;
     const uint16_t track = GetHAL().getDisplay().color565(35, 45, 48);
 
-    drawGlyph(target, _dotShape, glyphX, y, 9, 3, color);
+    if (_dotShape == DotShape::SymbolMix) {
+        drawSymbolGlyph(target, 0, glyphX - 6, y - 6, 4, 1,
+                        _symbolPalettes[0].back().core);
+        drawSymbolGlyph(target, 1, glyphX + 6, y - 6, 4, 1,
+                        _symbolPalettes[1].back().core);
+        drawSymbolGlyph(target, 2, glyphX - 6, y + 6, 4, 2,
+                        _symbolPalettes[2].back().core);
+        drawSymbolGlyph(target, 3, glyphX + 6, y + 6, 4, 1,
+                        _symbolPalettes[3].back().core);
+    } else {
+        drawGlyph(target, _dotShape, glyphX, y, 9, 3, color);
+    }
     target.fillRect(lineStart, y - 1, lineEnd - lineStart + 1, 3, track);
     const int thumbX = lineStart + static_cast<int>(_shapeScalePercent - kMinShapeScale) *
                                        (lineEnd - lineStart) /
@@ -488,7 +627,7 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
     for (std::size_t i = 0; i < engine.dotCount(); ++i) {
         const Dot& dot = engine.dots()[i];
         const uint8_t level = levelForDot(dot, i, RenderScene::Interactive);
-        const uint8_t colorIndex = colorIndexForDot(dot, RenderScene::Interactive);
+        const uint8_t colorIndex = visualKeyForDot(dot, RenderScene::Interactive);
         if (!_displayedLevelsValid || level != _displayedLevels[i] ||
             colorIndex != _displayedColorIndexes[i]) {
             markRange(dot.y - kMaxDotRadius, dot.y + kMaxDotRadius);

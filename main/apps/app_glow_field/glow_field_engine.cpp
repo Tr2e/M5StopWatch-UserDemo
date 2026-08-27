@@ -19,6 +19,8 @@ constexpr int kImpactRadius = 42;
 constexpr uint32_t kRippleAttackMs = 48;
 constexpr int kScatterTimeMs = 55;
 constexpr int kReflectionStrength = 72;
+constexpr int kSymbolCount = static_cast<int>(kSymbolGlyphCount);
+constexpr uint32_t kSymbolMutationStepMs = 72;
 
 int approximateDistance(int dx, int dy)
 {
@@ -77,6 +79,14 @@ void Engine::reset(int width, int height)
             dot.y = static_cast<int16_t>(y);
             dot.colorIndex = 5;
             dot.rippleColorIndex = 5;
+            const uint32_t symbolSeed = mixHash(static_cast<uint32_t>(_dotCount) * 0x9E3779B9u ^
+                                                static_cast<uint32_t>(x * 257 + y));
+            dot.symbolIndex = static_cast<uint8_t>(symbolSeed % kSymbolCount);
+            dot.symbolColorIndex = static_cast<uint8_t>((symbolSeed >> 8) % kSymbolCount);
+            dot.energySymbolIndex = dot.symbolIndex;
+            dot.energySymbolColorIndex = dot.symbolColorIndex;
+            dot.rippleSymbolIndex = dot.symbolIndex;
+            dot.rippleSymbolColorIndex = dot.symbolColorIndex;
             dot.visible = true;
         }
     }
@@ -112,6 +122,20 @@ void Engine::update(uint32_t nowMs)
         stepped = true;
     }
     if (stepped) updateRipples(nowMs);
+
+    // Only button-generated SymbolMix paint points opt into mutation. Their
+    // Paint energy envelope remains untouched, while the per-dot phase keeps
+    // changes from stepping in lockstep.
+    for (std::size_t i = 0; i < _dotCount; ++i) {
+        Dot& dot = _dots[i];
+        if (dot.energy == 0 || !dot.energyUsesSymbolPalette) continue;
+        const uint32_t seed = mixHash(static_cast<uint32_t>(i + 1) * 0x9E3779B9u);
+        const uint32_t mutationStep = (nowMs + seed % kSymbolMutationStepMs) /
+                                      kSymbolMutationStepMs;
+        const uint32_t mutationHash = mixHash(seed ^ (mutationStep * 0xA511E9B3u));
+        dot.energySymbolIndex = static_cast<uint8_t>(mutationHash % kSymbolCount);
+        dot.energySymbolColorIndex = static_cast<uint8_t>((mutationHash >> 9) % kSymbolCount);
+    }
 }
 
 void Engine::stepSimulation()
@@ -130,14 +154,21 @@ void Engine::stepSimulation()
     }
 }
 
-void Engine::triggerRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex)
+void Engine::triggerRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, bool symbolMix,
+                           bool mutateSymbols)
 {
     startRipple(x, y, nowMs, colorIndex, kRippleDurationMs,
-                static_cast<uint16_t>(_maxRippleRadius));
+                static_cast<uint16_t>(_maxRippleRadius), symbolMix, mutateSymbols);
+}
+
+void Engine::triggerPaintPoint(int x, int y, uint32_t nowMs, uint8_t colorIndex,
+                               bool symbolMix, bool mutateSymbols)
+{
+    injectPoint(x, y, colorIndex, kTouchRadius, nowMs, symbolMix, mutateSymbols);
 }
 
 void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint16_t durationMs,
-                         uint16_t maxRadius)
+                         uint16_t maxRadius, bool symbolMix, bool mutateSymbols)
 {
     Ripple& ripple = _ripples[_nextRipple];
     ripple.x = static_cast<int16_t>(x);
@@ -150,7 +181,10 @@ void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint1
     ripple.durationMs = durationMs;
     ripple.maxRadius = maxRadius;
     ripple.colorIndex = colorIndex;
+    ripple.paletteOffset = static_cast<uint8_t>((ripple.seed >> 24) % kSymbolCount);
     ripple.hasReflection = false;
+    ripple.symbolMix = symbolMix;
+    ripple.mutateSymbols = symbolMix && mutateSymbols;
 
     // Mirror a near-edge source across the circular boundary. The weaker image
     // source makes the returning motion visible without drawing a hard second
@@ -170,17 +204,16 @@ void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint1
 
     // Keep a restrained distance-weighted cluster at the source while the
     // travelling field lights nearby dots on subsequent simulation steps.
-    injectImpact(x, y, colorIndex);
+    if (!symbolMix) injectImpact(x, y, colorIndex);
 }
 
 void Engine::beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex)
 {
-    (void)nowMs;
     _touching = true;
     _lastTouchX = x;
     _lastTouchY = y;
     _touchColorIndex = colorIndex;
-    injectPoint(x, y, _touchColorIndex, kTouchRadius);
+    injectPoint(x, y, _touchColorIndex, kTouchRadius, nowMs, false, false);
 }
 
 void Engine::moveTouch(int x, int y, uint32_t nowMs)
@@ -196,7 +229,7 @@ void Engine::moveTouch(int x, int y, uint32_t nowMs)
     const int steps = std::max(1, (distance + kPathStep - 1) / kPathStep);
     for (int step = 1; step <= steps; ++step) {
         injectPoint(_lastTouchX + dx * step / steps, _lastTouchY + dy * step / steps,
-                    _touchColorIndex, kTouchRadius);
+                    _touchColorIndex, kTouchRadius, nowMs, false, false);
     }
 
     _lastTouchX = x;
@@ -208,7 +241,8 @@ void Engine::endTouch()
     _touching = false;
 }
 
-void Engine::injectPoint(int x, int y, uint8_t colorIndex, int radius)
+void Engine::injectPoint(int x, int y, uint8_t colorIndex, int radius, uint32_t nowMs,
+                         bool symbolMix, bool mutateSymbols)
 {
     const int radiusSquared = radius * radius;
     for (std::size_t i = 0; i < _dotCount; ++i) {
@@ -223,6 +257,15 @@ void Engine::injectPoint(int x, int y, uint8_t colorIndex, int radius)
         const int injected = 42 + curved * 213 / radiusSquared;
         dot.energy = static_cast<uint8_t>(std::max<int>(dot.energy, injected));
         dot.colorIndex = colorIndex;
+        dot.energyUsesSymbolPalette = symbolMix && mutateSymbols;
+        if (dot.energyUsesSymbolPalette) {
+            const uint32_t seed = mixHash(static_cast<uint32_t>(i + 1) * 0x9E3779B9u);
+            const uint32_t mutationStep = (nowMs + seed % kSymbolMutationStepMs) /
+                                          kSymbolMutationStepMs;
+            const uint32_t mutationHash = mixHash(seed ^ (mutationStep * 0xA511E9B3u));
+            dot.energySymbolIndex = static_cast<uint8_t>(mutationHash % kSymbolCount);
+            dot.energySymbolColorIndex = static_cast<uint8_t>((mutationHash >> 9) % kSymbolCount);
+        }
     }
 }
 
@@ -248,6 +291,7 @@ void Engine::updateRipples(uint32_t nowMs)
     // coherent energy field instead of several disconnected geometric rings.
     for (std::size_t i = 0; i < _dotCount; ++i) {
         _dots[i].rippleEnergy = 0;
+        _dots[i].rippleUsesSymbolPalette = false;
     }
 
     for (Ripple& ripple : _ripples) {
@@ -271,6 +315,7 @@ void Engine::updateRipples(uint32_t nowMs)
             const int arrivalMs = std::max(0, distance * static_cast<int>(kRippleTravelMs) /
                                                   std::max<int>(1, ripple.maxRadius) +
                                                   jitterMs);
+            const int primarySourceAgeMs = static_cast<int>(ageMs) - arrivalMs;
 
             auto energyAfterArrival = [&](int sourceAgeMs, int sourceDistance,
                                           int strength) -> int {
@@ -289,21 +334,61 @@ void Engine::updateRipples(uint32_t nowMs)
                 return envelope * distanceScale / 255 * scatterScale / 255 * strength / 255;
             };
 
-            int energy = energyAfterArrival(static_cast<int>(ageMs) - arrivalMs, distance, 255);
+            int symbolSourceAgeMs = primarySourceAgeMs;
+            int energy = energyAfterArrival(primarySourceAgeMs, distance, 255);
             if (ripple.hasReflection) {
                 const int reflectedDx = static_cast<int>(dot.x) - ripple.reflectedX;
                 const int reflectedDy = static_cast<int>(dot.y) - ripple.reflectedY;
                 const int reflectedDistance = approximateDistance(reflectedDx, reflectedDy);
                 const int reflectedArrival = reflectedDistance * static_cast<int>(kRippleTravelMs) /
                                              std::max<int>(1, ripple.maxRadius) - jitterMs / 2;
-                energy = std::max(energy,
-                                  energyAfterArrival(static_cast<int>(ageMs) - reflectedArrival,
-                                                     reflectedDistance, kReflectionStrength));
+                const int reflectedSourceAgeMs = static_cast<int>(ageMs) - reflectedArrival;
+                const int reflectedEnergy = energyAfterArrival(reflectedSourceAgeMs,
+                                                               reflectedDistance,
+                                                               kReflectionStrength);
+                if (reflectedEnergy > energy) {
+                    energy = reflectedEnergy;
+                    symbolSourceAgeMs = reflectedSourceAgeMs;
+                }
+            }
+
+            uint8_t symbolIndex = static_cast<uint8_t>(hash % kSymbolCount);
+            uint8_t symbolColorIndex = static_cast<uint8_t>(((hash >> 8) + ripple.paletteOffset +
+                                                             distance / 58) %
+                                                            kSymbolCount);
+            if (ripple.symbolMix) {
+                if (distance <= kImpactRadius && ageMs < 360u) {
+                    const int impactFalloff = (kImpactRadius * kImpactRadius - distance * distance) *
+                                              145 / (kImpactRadius * kImpactRadius);
+                    const int impactEnergy = std::max(0, 225 - static_cast<int>(ageMs) * 145 / 360) *
+                                             (110 + impactFalloff) / 255;
+                    energy = std::max(energy, impactEnergy);
+                    symbolSourceAgeMs = static_cast<int>(ageMs);
+                }
+
+                // Preserve the original stationary fade envelope. During that
+                // fade, only the glyph identity changes: each illuminated dot
+                // walks its own deterministic pseudo-random symbol/color
+                // sequence without injecting extra brightness or movement.
+                if (ripple.mutateSymbols &&
+                    symbolSourceAgeMs >= static_cast<int>(kRippleAttackMs) &&
+                    symbolSourceAgeMs < static_cast<int>(kRippleAfterglowMs)) {
+                    const uint32_t mutationStep = static_cast<uint32_t>(
+                        symbolSourceAgeMs - static_cast<int>(kRippleAttackMs)) /
+                        kSymbolMutationStepMs;
+                    const uint32_t mutationHash = mixHash(
+                        hash ^ ((mutationStep + 1u) * 0xA511E9B3u));
+                    symbolIndex = static_cast<uint8_t>(mutationHash % kSymbolCount);
+                    symbolColorIndex = static_cast<uint8_t>((mutationHash >> 9) % kSymbolCount);
+                }
             }
 
             if (energy > dot.rippleEnergy) {
                 dot.rippleEnergy = static_cast<uint8_t>(std::min(255, energy));
                 dot.rippleColorIndex = ripple.colorIndex;
+                dot.rippleUsesSymbolPalette = ripple.symbolMix;
+                dot.rippleSymbolIndex = symbolIndex;
+                dot.rippleSymbolColorIndex = symbolColorIndex;
             }
         }
     }

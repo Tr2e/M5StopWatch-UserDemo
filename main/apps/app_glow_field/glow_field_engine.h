@@ -6,6 +6,15 @@
 
 namespace glow_field {
 
+enum class SymbolGlyph : uint8_t {
+    Triangle,
+    Circle,
+    Cross,
+    Square,
+};
+
+inline constexpr std::size_t kSymbolGlyphCount = 4;
+
 struct Dot {
     int16_t x = 0;
     int16_t y = 0;
@@ -13,6 +22,14 @@ struct Dot {
     uint8_t colorIndex = 5;
     uint8_t rippleEnergy = 0;
     uint8_t rippleColorIndex = 5;
+    uint8_t symbolIndex = 0;
+    uint8_t symbolColorIndex = 0;
+    uint8_t energySymbolIndex = 0;
+    uint8_t energySymbolColorIndex = 0;
+    uint8_t rippleSymbolIndex = 0;
+    uint8_t rippleSymbolColorIndex = 0;
+    bool energyUsesSymbolPalette = false;
+    bool rippleUsesSymbolPalette = false;
     bool visible = false;
 };
 
@@ -24,7 +41,10 @@ public:
     void reset(int width, int height);
     void clear();
     void update(uint32_t nowMs);
-    void triggerRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex);
+    void triggerRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex,
+                       bool symbolMix = false, bool mutateSymbols = false);
+    void triggerPaintPoint(int x, int y, uint32_t nowMs, uint8_t colorIndex,
+                           bool symbolMix = false, bool mutateSymbols = false);
     void beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex);
     void moveTouch(int x, int y, uint32_t nowMs);
     void endTouch();
@@ -44,13 +64,17 @@ private:
         uint16_t durationMs = 0;
         uint16_t maxRadius = 0;
         uint8_t colorIndex = 5;
+        uint8_t paletteOffset = 0;
         bool hasReflection = false;
+        bool symbolMix = false;
+        bool mutateSymbols = false;
         bool active = false;
     };
 
     void startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint16_t durationMs,
-                     uint16_t maxRadius);
-    void injectPoint(int x, int y, uint8_t colorIndex, int radius);
+                     uint16_t maxRadius, bool symbolMix, bool mutateSymbols);
+    void injectPoint(int x, int y, uint8_t colorIndex, int radius, uint32_t nowMs,
+                     bool symbolMix, bool mutateSymbols);
     void injectImpact(int x, int y, uint8_t colorIndex);
     void stepSimulation();
     void updateRipples(uint32_t nowMs);

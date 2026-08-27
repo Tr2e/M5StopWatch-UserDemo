@@ -37,6 +37,18 @@ float wrapHue(float hue)
     return hue;
 }
 
+const char* dotShapeName(glow_field::DotShape shape)
+{
+    switch (shape) {
+        case glow_field::DotShape::Star: return "star";
+        case glow_field::DotShape::Hexagon: return "hexagon";
+        case glow_field::DotShape::Circle: return "circle";
+        case glow_field::DotShape::Triangle: return "triangle";
+        case glow_field::DotShape::SymbolMix: return "symbol-mix";
+    }
+    return "unknown";
+}
+
 }  // namespace
 
 AppGlowField::AppGlowField()
@@ -113,8 +125,11 @@ void AppGlowField::onRunning()
     } else if (GetHAL().btnA.wasHold()) {
         toggleAppearanceMode(nowMs);
     } else if (keyEvent == input::KeyEvent::GoPrevious) {
-        _engine->clear();
-        _touching = false;
+        if (_mode == InteractionMode::Ripple) {
+            triggerRandomRipple(nowMs);
+        } else {
+            triggerRandomPaint(nowMs);
+        }
     } else if (keyEvent == input::KeyEvent::GoNext) {
         _engine->endTouch();
         _touching = false;
@@ -221,15 +236,13 @@ void AppGlowField::cycleDotShape()
             _dotShape = glow_field::DotShape::Triangle;
             break;
         case glow_field::DotShape::Triangle:
+            _dotShape = glow_field::DotShape::SymbolMix;
+            break;
+        case glow_field::DotShape::SymbolMix:
             _dotShape = glow_field::DotShape::Star;
             break;
     }
-    mclog::tagInfo(getAppInfo().name, "shape={}",
-                   _dotShape == glow_field::DotShape::Star
-                       ? "star"
-                       : (_dotShape == glow_field::DotShape::Hexagon
-                              ? "hexagon"
-                              : (_dotShape == glow_field::DotShape::Circle ? "circle" : "triangle")));
+    mclog::tagInfo(getAppInfo().name, "shape={}", dotShapeName(_dotShape));
 }
 
 void AppGlowField::adjustShapeScale(int delta)
@@ -370,6 +383,22 @@ void AppGlowField::spawnColorPreview(uint32_t nowMs, int count)
     // Stay inside the circular field and off the color ring itself.
     const int maxRadius = std::min(width, height) / 2 - 48;
     const int minRadius = 24;
+    const bool symbolMix = _dotShape == glow_field::DotShape::SymbolMix;
+    if (symbolMix) {
+        const int diameter = maxRadius * 2 + 1;
+        for (int i = 0; i < count; ++i) {
+            int offsetX = 0;
+            int offsetY = 0;
+            do {
+                offsetX = static_cast<int>(nextRandom() % static_cast<uint32_t>(diameter)) -
+                          maxRadius;
+                offsetY = static_cast<int>(nextRandom() % static_cast<uint32_t>(diameter)) -
+                          maxRadius;
+            } while (offsetX * offsetX + offsetY * offsetY > maxRadius * maxRadius);
+            _engine->triggerRipple(centerX + offsetX, centerY + offsetY, nowMs, 0, true, false);
+        }
+        return;
+    }
     const float angle = (_selectedHueFine - 90.0f) * kPi / 180.0f;
     const float dirX = std::cos(angle);
     const float dirY = std::sin(angle);
@@ -378,7 +407,7 @@ void AppGlowField::spawnColorPreview(uint32_t nowMs, int count)
         const int radius = minRadius + static_cast<int>(nextRandom() % span);
         _engine->triggerRipple(centerX + static_cast<int>(dirX * radius),
                                centerY + static_cast<int>(dirY * radius), nowMs,
-                               colorIndex(_selectedHue));
+                               colorIndex(_selectedHue), false);
     }
 }
 
@@ -388,6 +417,48 @@ uint32_t AppGlowField::nextRandom()
     _rngState ^= _rngState >> 17;
     _rngState ^= _rngState << 5;
     return _rngState;
+}
+
+void AppGlowField::triggerRandomRipple(uint32_t nowMs)
+{
+    const int width = GetHAL().getDisplay().width();
+    const int height = GetHAL().getDisplay().height();
+    const int centerX = width / 2;
+    const int centerY = height / 2;
+    const int maxRadius = std::min(width, height) / 2 - 28;
+    const int diameter = maxRadius * 2 + 1;
+    int offsetX = 0;
+    int offsetY = 0;
+    do {
+        offsetX = static_cast<int>(nextRandom() % static_cast<uint32_t>(diameter)) - maxRadius;
+        offsetY = static_cast<int>(nextRandom() % static_cast<uint32_t>(diameter)) - maxRadius;
+    } while (offsetX * offsetX + offsetY * offsetY > maxRadius * maxRadius);
+
+    const bool symbolMix = _dotShape == glow_field::DotShape::SymbolMix;
+    _engine->triggerRipple(centerX + offsetX, centerY + offsetY, nowMs,
+                           colorIndex(_selectedHue), symbolMix, symbolMix);
+    GetHAL().vibrate(26, 58);
+}
+
+void AppGlowField::triggerRandomPaint(uint32_t nowMs)
+{
+    const int width = GetHAL().getDisplay().width();
+    const int height = GetHAL().getDisplay().height();
+    const int centerX = width / 2;
+    const int centerY = height / 2;
+    const int maxRadius = std::min(width, height) / 2 - 28;
+    const int diameter = maxRadius * 2 + 1;
+    int offsetX = 0;
+    int offsetY = 0;
+    do {
+        offsetX = static_cast<int>(nextRandom() % static_cast<uint32_t>(diameter)) - maxRadius;
+        offsetY = static_cast<int>(nextRandom() % static_cast<uint32_t>(diameter)) - maxRadius;
+    } while (offsetX * offsetX + offsetY * offsetY > maxRadius * maxRadius);
+
+    const bool symbolMix = _dotShape == glow_field::DotShape::SymbolMix;
+    _engine->triggerPaintPoint(centerX + offsetX, centerY + offsetY, nowMs,
+                               colorIndex(_selectedHue), symbolMix, symbolMix);
+    GetHAL().vibrate(26, 58);
 }
 
 void AppGlowField::updateTouch(uint32_t nowMs)
@@ -406,7 +477,8 @@ void AppGlowField::updateTouch(uint32_t nowMs)
                                                  kRippleRetriggerGuardRadius *
                                                      kRippleRetriggerGuardRadius;
                 if (!likelyDuplicate) {
-                    _engine->triggerRipple(touch.x, touch.y, nowMs, colorIndex(_selectedHue));
+                    _engine->triggerRipple(touch.x, touch.y, nowMs, colorIndex(_selectedHue),
+                                           _dotShape == glow_field::DotShape::SymbolMix, false);
                     _lastRippleTriggerMs = nowMs;
                     _lastRippleX = static_cast<int16_t>(touch.x);
                     _lastRippleY = static_cast<int16_t>(touch.y);
@@ -414,8 +486,7 @@ void AppGlowField::updateTouch(uint32_t nowMs)
                     accepted = false;
                 }
             } else {
-                _engine->beginTouch(touch.x, touch.y, nowMs,
-                                    colorIndex(_selectedHue));
+                _engine->beginTouch(touch.x, touch.y, nowMs, colorIndex(_selectedHue));
             }
             _touching = true;
             if (accepted && (_lastHapticMs == 0 || nowMs - _lastHapticMs >= 75)) {

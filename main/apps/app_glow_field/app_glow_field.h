@@ -62,6 +62,8 @@ private:
     void setSelectedHue(float hue);
     void updateColorSelectionTouch(uint32_t nowMs);
     void spawnColorPreview(uint32_t nowMs, int count);
+    void triggerRandomRipple(uint32_t nowMs);
+    void triggerRandomPaint(uint32_t nowMs);
     uint32_t nextRandom();
     void updateTouch(uint32_t nowMs);
 };

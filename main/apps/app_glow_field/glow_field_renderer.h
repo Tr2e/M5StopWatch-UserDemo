@@ -20,6 +20,7 @@ enum class DotShape : uint8_t {
     Hexagon,
     Circle,
     Triangle,
+    SymbolMix,
 };
 
 class Renderer {
@@ -40,6 +41,7 @@ private:
 
     static constexpr std::size_t kRingSegments = 120;
     static constexpr std::size_t kHueSlots = 24;
+    static constexpr std::size_t kSymbolPaletteCount = kSymbolGlyphCount;
     static constexpr std::size_t kRingRadialBands = 1;
 
     struct RingSegment {
@@ -53,6 +55,7 @@ private:
     };
 
     std::array<std::array<GlowColors, 16>, kHueSlots> _palettes = {};
+    std::array<std::array<GlowColors, 16>, kSymbolPaletteCount> _symbolPalettes = {};
     std::array<uint16_t, kHueSlots> _selectionColors = {};
     std::array<uint16_t, kHueSlots> _selectionGlowInnerColors = {};
     std::array<uint16_t, kHueSlots> _selectionGlowOuterColors = {};
@@ -86,7 +89,7 @@ private:
     void updateColorSelection(bool enabled, uint16_t selectedHue);
     void updateAppearance(DotShape dotShape, uint8_t shapeScalePercent, bool appearanceMode);
     uint8_t levelForDot(const Dot& dot, std::size_t index, RenderScene scene) const;
-    uint8_t colorIndexForDot(const Dot& dot, RenderScene scene) const;
+    uint8_t visualKeyForDot(const Dot& dot, RenderScene scene) const;
     int shapeSize(int pixels) const;
     void drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint16_t idleColor) const;
     void drawHint(LGFX_Device& target, bool rippleMode) const;
