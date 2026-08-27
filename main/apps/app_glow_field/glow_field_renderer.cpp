@@ -186,6 +186,40 @@ const char* sceneName(RenderScene scene)
     return "unknown";
 }
 
+enum class VisualSource : uint8_t {
+    Idle,
+    AudioField,
+    AudioRipple,
+    Paint,
+    FingerRipple,
+};
+
+VisualSource visualSource(const Dot& dot)
+{
+    const uint8_t fingerRipple = (!dot.rippleFromAudio && dot.rippleEnergy > 0) ? dot.rippleEnergy : 0;
+    const uint8_t audioRipple = (dot.rippleFromAudio && dot.rippleEnergy > 0) ? dot.rippleEnergy : 0;
+    const uint8_t paint = dot.energy;
+    const uint8_t audio = dot.audioEnergy;
+    const uint8_t best = std::max(std::max(fingerRipple, paint), std::max(audioRipple, audio));
+    if (best == 0) return VisualSource::Idle;
+    if (fingerRipple == best) return VisualSource::FingerRipple;
+    if (paint == best) return VisualSource::Paint;
+    if (audioRipple == best) return VisualSource::AudioRipple;
+    return VisualSource::AudioField;
+}
+
+uint8_t hintCode(bool showAppearanceHint, bool showHint, InteractionMode mode)
+{
+    if (showAppearanceHint) return 3;
+    if (!showHint) return 0;
+    switch (mode) {
+        case InteractionMode::Ripple: return 1;
+        case InteractionMode::Paint: return 2;
+        case InteractionMode::AudioReactive: return 4;
+    }
+    return 0;
+}
+
 }  // namespace
 
 void Renderer::open(int width, int height, std::size_t dotCount)
@@ -197,6 +231,8 @@ void Renderer::open(int width, int height, std::size_t dotCount)
     _frameCount = 0;
     _frameTimeTotalUs = 0;
     _maxFrameTimeUs = 0;
+    _dirtyBandTotal = 0;
+    _dirtyBandSamples = 0;
     _lastFrameMs = 0;
     _sceneInitialized = false;
     _fullFrameReady = false;
@@ -358,7 +394,7 @@ void Renderer::updateAppearance(DotShape dotShape, uint8_t shapeScalePercent, bo
     _fullFrameReady = false;
 }
 
-void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uint32_t modeNoticeUntilMs,
+void Renderer::render(const Engine& engine, uint32_t nowMs, InteractionMode mode, uint32_t modeNoticeUntilMs,
                       RenderScene scene, bool colorSelectionMode, uint16_t selectedHue,
                       DotShape dotShape, uint8_t shapeScalePercent, bool appearanceMode)
 {
@@ -376,6 +412,8 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
         _frameCount = 0;
         _frameTimeTotalUs = 0;
         _maxFrameTimeUs = 0;
+        _dirtyBandTotal = 0;
+        _dirtyBandSamples = 0;
         mclog::tagInfo("GlowField", "benchmark scene={}", sceneName(scene));
     }
 
@@ -384,11 +422,11 @@ void Renderer::render(const Engine& engine, uint32_t nowMs, bool rippleMode, uin
                           static_cast<int32_t>(modeNoticeUntilMs - nowMs) > 0;
     const bool showAppearanceHint = scene == RenderScene::Interactive && appearanceMode;
     if (scene == RenderScene::Interactive) {
-        renderInteractiveDirty(engine, rippleMode, showHint, showAppearanceHint);
+        renderInteractiveDirty(engine, mode, showHint, showAppearanceHint);
     } else {
         // Benchmark scenes deliberately force complete submissions so their
         // numbers continue to expose the panel's full-screen bandwidth.
-        renderFullFrame(engine, rippleMode, showHint, showAppearanceHint, scene);
+        renderFullFrame(engine, mode, showHint, showAppearanceHint, scene);
     }
 
     const uint32_t elapsedUs = static_cast<uint32_t>(esp_timer_get_time() - frameStartedUs);
@@ -407,25 +445,42 @@ uint8_t Renderer::levelForDot(const Dot& dot, std::size_t index, RenderScene sce
 {
     if (scene == RenderScene::IdleDots) return 0;
     if (scene == RenderScene::EnergizedDots) return static_cast<uint8_t>(1 + (index % 15));
-    return static_cast<uint8_t>(std::max(dot.energy, dot.rippleEnergy) >> 4);
+    return static_cast<uint8_t>(
+        std::max(std::max(dot.energy, dot.rippleEnergy), dot.audioEnergy) >> 4);
 }
 
 uint8_t Renderer::visualKeyForDot(const Dot& dot, RenderScene scene) const
 {
-    const bool rippleDominates = scene == RenderScene::Interactive &&
-                                 dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0;
-    if (rippleDominates && dot.rippleUsesSymbolPalette) {
-        return static_cast<uint8_t>(0x80u | ((dot.rippleSymbolColorIndex & 0x03u) << 2) |
-                                    (dot.rippleSymbolIndex & 0x03u));
+    const VisualSource source = scene == RenderScene::Interactive ? visualSource(dot)
+                                                                  : VisualSource::Idle;
+    if (source == VisualSource::FingerRipple || source == VisualSource::AudioRipple) {
+        if (dot.rippleUsesSymbolPalette) {
+            return static_cast<uint8_t>(0x80u | ((dot.rippleSymbolColorIndex & 0x03u) << 2) |
+                                        (dot.rippleSymbolIndex & 0x03u));
+        }
+        return static_cast<uint8_t>(dot.rippleColorIndex & 0x1Fu);
     }
-    if (rippleDominates) return static_cast<uint8_t>(dot.rippleColorIndex & 0x1Fu);
+    if (source == VisualSource::Paint) {
+        if (_dotShape == DotShape::SymbolMix) {
+            const bool energyUsesSymbols = dot.energy > 0 && dot.energyUsesSymbolPalette;
+            const uint8_t symbolIndex = energyUsesSymbols ? dot.energySymbolIndex : dot.symbolIndex;
+            const uint8_t colorIndex = energyUsesSymbols ? dot.energySymbolColorIndex
+                                                         : dot.symbolColorIndex;
+            return static_cast<uint8_t>(0x40u | ((colorIndex & 0x03u) << 2) |
+                                        (symbolIndex & 0x03u));
+        }
+        return static_cast<uint8_t>(dot.colorIndex & 0x1Fu);
+    }
+    if (source == VisualSource::AudioField) {
+        if (dot.audioUsesSymbolPalette) {
+            return static_cast<uint8_t>(0xC0u | ((dot.audioColorIndex & 0x03u) << 2) |
+                                        (dot.audioSymbolIndex & 0x03u));
+        }
+        return static_cast<uint8_t>(0x20u | (dot.audioColorIndex & 0x1Fu));
+    }
     if (_dotShape == DotShape::SymbolMix) {
-        const bool energyUsesSymbols = dot.energy > 0 && dot.energyUsesSymbolPalette;
-        const uint8_t symbolIndex = energyUsesSymbols ? dot.energySymbolIndex : dot.symbolIndex;
-        const uint8_t colorIndex = energyUsesSymbols ? dot.energySymbolColorIndex
-                                                     : dot.symbolColorIndex;
-        return static_cast<uint8_t>(0x40u | ((colorIndex & 0x03u) << 2) |
-                                    (symbolIndex & 0x03u));
+        return static_cast<uint8_t>(0x40u | ((dot.symbolColorIndex & 0x03u) << 2) |
+                                    (dot.symbolIndex & 0x03u));
     }
     return static_cast<uint8_t>(dot.colorIndex & 0x1Fu);
 }
@@ -441,28 +496,46 @@ void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint1
         }
         return;
     }
-    const bool rippleDominates = dot.rippleEnergy >= dot.energy && dot.rippleEnergy > 0;
-    const bool energyUsesSymbols = !rippleDominates && dot.energy > 0 &&
-                                   dot.energyUsesSymbolPalette;
-    const bool useSymbolPalette = rippleDominates ? dot.rippleUsesSymbolPalette
-                                                   : _dotShape == DotShape::SymbolMix;
-    const uint8_t colorIndex = useSymbolPalette
-                                   ? (rippleDominates ? dot.rippleSymbolColorIndex
-                                      : energyUsesSymbols ? dot.energySymbolColorIndex
-                                                          : dot.symbolColorIndex)
-                                   : (rippleDominates ? dot.rippleColorIndex : dot.colorIndex);
+    const VisualSource source = visualSource(dot);
+    bool useSymbolPalette = false;
+    uint8_t colorIndex = dot.colorIndex;
+    uint8_t symbolIndex = dot.symbolIndex;
+    switch (source) {
+        case VisualSource::FingerRipple:
+        case VisualSource::AudioRipple:
+            useSymbolPalette = dot.rippleUsesSymbolPalette;
+            colorIndex = useSymbolPalette ? dot.rippleSymbolColorIndex : dot.rippleColorIndex;
+            symbolIndex = dot.rippleSymbolIndex;
+            break;
+        case VisualSource::Paint:
+            useSymbolPalette = _dotShape == DotShape::SymbolMix;
+            colorIndex = useSymbolPalette
+                             ? (dot.energyUsesSymbolPalette ? dot.energySymbolColorIndex
+                                                            : dot.symbolColorIndex)
+                             : dot.colorIndex;
+            symbolIndex = dot.energyUsesSymbolPalette ? dot.energySymbolIndex : dot.symbolIndex;
+            break;
+        case VisualSource::AudioField:
+            useSymbolPalette = dot.audioUsesSymbolPalette;
+            colorIndex = dot.audioColorIndex;
+            symbolIndex = dot.audioSymbolIndex;
+            break;
+        case VisualSource::Idle:
+            useSymbolPalette = _dotShape == DotShape::SymbolMix;
+            colorIndex = useSymbolPalette ? dot.symbolColorIndex : dot.colorIndex;
+            symbolIndex = dot.symbolIndex;
+            break;
+    }
     const GlowColors& colors = useSymbolPalette
                                    ? _symbolPalettes[colorIndex % _symbolPalettes.size()][level]
                                    : _palettes[colorIndex % _palettes.size()][level];
     target.fillCircle(dot.x, dot.y, shapeSize(7 + level / 3), colors.outer);
     target.fillCircle(dot.x, dot.y, shapeSize(5 + level / 5), colors.middle);
     if (useSymbolPalette) {
-        const uint8_t symbolIndex = rippleDominates ? dot.rippleSymbolIndex
-                                    : energyUsesSymbols ? dot.energySymbolIndex
-                                                        : dot.symbolIndex;
-        drawSymbolGlyph(target, symbolIndex, dot.x, dot.y, shapeSize(6 + level / 4),
+        const uint8_t glyphIndex = useSymbolPalette ? symbolIndex : dot.symbolIndex;
+        drawSymbolGlyph(target, glyphIndex, dot.x, dot.y, shapeSize(6 + level / 4),
                         shapeSize(2 + level / 6), colors.inner);
-        drawSymbolGlyph(target, symbolIndex, dot.x, dot.y, shapeSize(5 + level / 5),
+        drawSymbolGlyph(target, glyphIndex, dot.x, dot.y, shapeSize(5 + level / 5),
                         shapeSize(2 + level / 10), colors.core);
     } else {
         drawGlyph(target, _dotShape, dot.x, dot.y, shapeSize(6 + level / 4),
@@ -472,10 +545,27 @@ void Renderer::drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint1
     }
 }
 
-void Renderer::drawHint(LGFX_Device& target, bool rippleMode) const
+void Renderer::drawHint(LGFX_Device& target, InteractionMode mode) const
 {
     const int x = _width / 2;
     const int y = _height - 15;
+    if (mode == InteractionMode::AudioReactive) {
+        constexpr std::array<int, 5> kBarHeights = {5, 11, 7, 13, 6};
+        for (std::size_t i = 0; i < kBarHeights.size(); ++i) {
+            const uint16_t color = _dotShape == DotShape::SymbolMix
+                                       ? _symbolPalettes[i % _symbolPalettes.size()].back().core
+                                       : _palettes[static_cast<std::size_t>(_selectedHue) *
+                                                   kHueSlots / 360u]
+                                             .back()
+                                             .core;
+            const int barX = x - 10 + static_cast<int>(i) * 5;
+            const int height = kBarHeights[i];
+            target.fillRect(barX, y - height / 2, 2, height, color);
+        }
+        return;
+    }
+
+    const bool rippleMode = mode == InteractionMode::Ripple;
     if (_dotShape == DotShape::SymbolMix) {
         if (rippleMode) {
             target.drawCircle(x, y, 3, _symbolPalettes[0].back().core);
@@ -565,7 +655,7 @@ void Renderer::drawColorRing(LGFX_Device& target, int top, int bottom) const
     }
 }
 
-void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showHint,
+void Renderer::renderFullFrame(const Engine& engine, InteractionMode mode, bool showHint,
                                bool showAppearanceHint, RenderScene scene)
 {
     auto& display = GetHAL().getDisplay();
@@ -581,7 +671,7 @@ void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showH
                 const Dot& dot = engine.dots()[i];
                 if (dot.visible) drawDot(display, dot, levelForDot(dot, i, scene), idleColor);
             }
-            if (showHint) drawHint(display, rippleMode);
+            if (showHint) drawHint(display, mode);
             if (showAppearanceHint) drawAppearanceHint(display);
         }
         display.endWrite();
@@ -594,7 +684,7 @@ void Renderer::renderFullFrame(const Engine& engine, bool rippleMode, bool showH
     GetHAL().feedTheDog();
 }
 
-void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, bool showHint,
+void Renderer::renderInteractiveDirty(const Engine& engine, InteractionMode mode, bool showHint,
                                       bool showAppearanceHint)
 {
     constexpr std::size_t kMaxBands = (480 + kDirtyBandHeight - 1) / kDirtyBandHeight;
@@ -639,12 +729,23 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
         _displayedColorIndexes[i] = colorIndex;
     }
 
-    const uint8_t hint = showAppearanceHint ? 3 : (showHint ? (rippleMode ? 1 : 2) : 0);
+    const uint8_t hint = hintCode(showAppearanceHint, showHint, mode);
     if (!_displayedLevelsValid || hint != _displayedHint) {
         markRange(_height - 27, _height - 3);
     }
     _displayedHint = hint;
     _displayedLevelsValid = true;
+
+    std::size_t dirtyCount = 0;
+    for (std::size_t i = 0; i < bandCount; ++i) {
+        if (dirty[i]) ++dirtyCount;
+    }
+    if (dirtyCount * 10 >= bandCount * 7) {
+        dirty.fill(true);
+        dirtyCount = bandCount;
+    }
+    _dirtyBandTotal += dirtyCount;
+    ++_dirtyBandSamples;
 
     auto& display = GetHAL().getDisplay();
     const uint16_t idleColor = display.color565(10, 15, 18);
@@ -666,7 +767,7 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
             if (!dot.visible || dot.y + kMaxDotRadius < top || dot.y - kMaxDotRadius >= bottom) continue;
             drawDot(display, dot, _displayedLevels[i], idleColor);
         }
-        if (showHint && _height - 27 < bottom && _height - 3 >= top) drawHint(display, rippleMode);
+        if (showHint && _height - 27 < bottom && _height - 3 >= top) drawHint(display, mode);
         if (showAppearanceHint && _height - 31 < bottom && _height - 3 >= top) {
             drawAppearanceHint(display);
         }
@@ -682,6 +783,12 @@ void Renderer::renderInteractiveDirty(const Engine& engine, bool rippleMode, boo
     GetHAL().feedTheDog();
 }
 
+float Renderer::dirtyBandsAverage() const
+{
+    if (_dirtyBandSamples == 0) return 0.0f;
+    return static_cast<float>(_dirtyBandTotal) / static_cast<float>(_dirtyBandSamples);
+}
+
 void Renderer::reportStats(uint32_t nowMs, RenderScene scene)
 {
     if (_statsStartedMs == 0) {
@@ -693,14 +800,21 @@ void Renderer::reportStats(uint32_t nowMs, RenderScene scene)
 
     const float fps = static_cast<float>(_frameCount) * 1000.0f / static_cast<float>(elapsedMs);
     const float averageMs = static_cast<float>(_frameTimeTotalUs) / static_cast<float>(_frameCount) / 1000.0f;
-    mclog::tagInfo("GlowField", "scene={} {}x{} dots={} fps={:.1f} avg={:.2f}ms max={:.2f}ms",
+    const float dirtyBandsAvg = _dirtyBandSamples == 0
+                                    ? 0.0f
+                                    : static_cast<float>(_dirtyBandTotal) /
+                                          static_cast<float>(_dirtyBandSamples);
+    mclog::tagInfo("GlowField",
+                   "scene={} {}x{} dots={} fps={:.1f} avg={:.2f}ms max={:.2f}ms dirtyBandsAvg={:.1f}",
                    sceneName(scene), _width, _height, _dotCount, fps, averageMs,
-                   static_cast<float>(_maxFrameTimeUs) / 1000.0f);
+                   static_cast<float>(_maxFrameTimeUs) / 1000.0f, dirtyBandsAvg);
 
     _statsStartedMs = nowMs;
     _frameCount = 0;
     _frameTimeTotalUs = 0;
     _maxFrameTimeUs = 0;
+    _dirtyBandTotal = 0;
+    _dirtyBandSamples = 0;
 }
 
 }  // namespace glow_field

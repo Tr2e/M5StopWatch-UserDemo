@@ -194,7 +194,15 @@ public:
     struct AudioSpectrumFrame {
         static constexpr std::size_t bandCount = 20;
         std::array<float, bandCount> bands     = {};
+        std::array<float, bandCount> transientBands = {};
         float peakFrequencyHz                  = 0.0f;
+        float inputRmsDbfs                     = -120.0f;
+        float noiseFloorDbfs                   = -90.0f;
+        float signalToNoiseDb                  = 0.0f;
+        float signalConfidence                 = 0.0f;
+        bool signalActive                      = false;
+        uint32_t sequence                      = 0;
+        uint32_t processUs                     = 0;
     };
     void updateAudioSpectrum();
     const AudioSpectrumFrame& getAudioSpectrum() const

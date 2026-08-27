@@ -27,9 +27,10 @@ class Renderer {
 public:
     void open(int width, int height, std::size_t dotCount);
     void close();
-    void render(const Engine& engine, uint32_t nowMs, bool rippleMode, uint32_t modeNoticeUntilMs,
+    void render(const Engine& engine, uint32_t nowMs, InteractionMode mode, uint32_t modeNoticeUntilMs,
                 RenderScene scene, bool colorSelectionMode, uint16_t selectedHue,
                 DotShape dotShape, uint8_t shapeScalePercent, bool appearanceMode);
+    float dirtyBandsAverage() const;
 
 private:
     struct GlowColors {
@@ -64,6 +65,8 @@ private:
     uint32_t _frameCount = 0;
     uint64_t _frameTimeTotalUs = 0;
     uint32_t _maxFrameTimeUs = 0;
+    uint64_t _dirtyBandTotal = 0;
+    uint32_t _dirtyBandSamples = 0;
     RenderScene _activeScene = RenderScene::Interactive;
     bool _sceneInitialized = false;
     bool _fullFrameReady = false;
@@ -92,12 +95,12 @@ private:
     uint8_t visualKeyForDot(const Dot& dot, RenderScene scene) const;
     int shapeSize(int pixels) const;
     void drawDot(LGFX_Device& target, const Dot& dot, uint8_t level, uint16_t idleColor) const;
-    void drawHint(LGFX_Device& target, bool rippleMode) const;
+    void drawHint(LGFX_Device& target, InteractionMode mode) const;
     void drawAppearanceHint(LGFX_Device& target) const;
     void drawColorRing(LGFX_Device& target, int top, int bottom) const;
-    void renderFullFrame(const Engine& engine, bool rippleMode, bool showHint,
+    void renderFullFrame(const Engine& engine, InteractionMode mode, bool showHint,
                          bool showAppearanceHint, RenderScene scene);
-    void renderInteractiveDirty(const Engine& engine, bool rippleMode, bool showHint,
+    void renderInteractiveDirty(const Engine& engine, InteractionMode mode, bool showHint,
                                 bool showAppearanceHint);
 };
 

@@ -13,6 +13,7 @@
 #include <esp_dsp.h>
 #include <esp_codec_dev.h>
 #include <esp_codec_dev_defaults.h>
+#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <mutex>
@@ -82,19 +83,26 @@ public:
 
     void updateSpectrum(Hal::AudioSpectrumFrame& frame)
     {
+        const int64_t startedUs = esp_timer_get_time();
         if (_spectrum_available == false) {
+            frame.processUs = static_cast<uint32_t>(esp_timer_get_time() - startedUs);
             return;
         }
 
         if (_read_spectrum_hop() == false) {
+            frame.processUs = static_cast<uint32_t>(esp_timer_get_time() - startedUs);
             return;
         }
 
         if (_spectrum_samples_ready < spectrum_fft_size) {
+            frame.processUs = static_cast<uint32_t>(esp_timer_get_time() - startedUs);
             return;
         }
 
-        _process_spectrum_frame(frame);
+        if (_process_spectrum_frame(frame)) {
+            ++frame.sequence;
+        }
+        frame.processUs = static_cast<uint32_t>(esp_timer_get_time() - startedUs);
     }
 
     void setVolume(int volume)
@@ -298,13 +306,74 @@ private:
         return true;
     }
 
-    void _process_spectrum_frame(Hal::AudioSpectrumFrame& frame)
+    bool _process_spectrum_frame(Hal::AudioSpectrumFrame& frame)
     {
         float mean = 0.0f;
         for (float sample : _spectrum_time_domain) {
             mean += sample;
         }
         mean /= static_cast<float>(spectrum_fft_size);
+
+        float inputEnergy = 0.0f;
+        for (float sample : _spectrum_time_domain) {
+            const float centered = sample - mean;
+            inputEnergy += centered * centered;
+        }
+        const float inputRms = std::sqrt(inputEnergy / static_cast<float>(spectrum_fft_size));
+        const float safeRms = std::max(inputRms, 1.0e-6f);
+
+        // Track the broadband input floor much more slowly upward than downward so
+        // sustained music does not teach the gate that music itself is noise.
+        const int64_t nowUs = esp_timer_get_time();
+        if (_gate_warmup_until_us == 0) _gate_warmup_until_us = nowUs + 450000;
+        const bool gateWarmingUp = nowUs < _gate_warmup_until_us;
+        float noiseAlpha = 0.0f;
+        if (gateWarmingUp) {
+            noiseAlpha = 0.08f;
+        } else if (!_input_signal_active && safeRms < _input_noise_rms) {
+            noiseAlpha = 0.08f;
+        } else if (!_input_signal_active) {
+            noiseAlpha = safeRms < _input_noise_rms * 1.5f ? 0.006f : 0.0025f;
+        }
+        _input_noise_rms += (safeRms - _input_noise_rms) * noiseAlpha;
+        _input_noise_rms = std::clamp(_input_noise_rms, 1.0e-6f, 0.25f);
+
+        const float inputDbfs = 20.0f * std::log10(safeRms);
+        const float noiseDbfs = 20.0f * std::log10(_input_noise_rms);
+        const float snrDb = inputDbfs - noiseDbfs;
+        if (!_input_signal_active && !gateWarmingUp) {
+            if (inputDbfs > -50.0f && snrDb > 8.0f) {
+                if (_gate_open_candidate_us == 0) _gate_open_candidate_us = nowUs;
+                if (nowUs - _gate_open_candidate_us >= 60000) {
+                    _input_signal_active = true;
+                    _gate_open_candidate_us = 0;
+                    _gate_close_candidate_us = 0;
+                }
+            } else {
+                _gate_open_candidate_us = 0;
+            }
+        } else {
+            if (snrDb < 4.0f || inputDbfs < -58.0f) {
+                if (_gate_close_candidate_us == 0) _gate_close_candidate_us = nowUs;
+                if (nowUs - _gate_close_candidate_us >= 380000) {
+                    _input_signal_active = false;
+                    _gate_close_candidate_us = 0;
+                    _gate_open_candidate_us = 0;
+                }
+            } else {
+                _gate_close_candidate_us = 0;
+            }
+        }
+
+        const float snrConfidence = std::clamp((snrDb - 4.0f) / 6.0f, 0.0f, 1.0f);
+        const float levelConfidence = std::clamp((inputDbfs + 54.0f) / 8.0f, 0.0f, 1.0f);
+        frame.inputRmsDbfs = inputDbfs;
+        frame.noiseFloorDbfs = noiseDbfs;
+        frame.signalToNoiseDb = snrDb;
+        frame.signalConfidence = _input_signal_active
+                                     ? std::clamp(snrConfidence * 0.65f + levelConfidence * 0.35f, 0.0f, 1.0f)
+                                     : 0.0f;
+        frame.signalActive = _input_signal_active;
 
         for (int i = 0; i < spectrum_fft_size; ++i) {
             float sample                    = (_spectrum_time_domain[i] - mean) * _spectrum_window[i];
@@ -313,10 +382,10 @@ private:
         }
 
         if (dsps_fft2r_fc32(_spectrum_fft_buffer.data(), spectrum_fft_size) != ESP_OK) {
-            return;
+            return false;
         }
         if (dsps_bit_rev_fc32(_spectrum_fft_buffer.data(), spectrum_fft_size) != ESP_OK) {
-            return;
+            return false;
         }
 
         float peak_bin_magnitude = 0.0f;
@@ -351,7 +420,12 @@ private:
                 1.12f - 0.22f * (static_cast<float>(band) / static_cast<float>(Hal::AudioSpectrumFrame::bandCount - 1));
             raw *= low_emphasis;
 
-            float floor_alpha = raw < _spectrum_noise_floor[band] ? 0.45f : 0.004f;
+            // While the broadband gate is open, do not let sustained notes become
+            // the per-band noise floor. Downward tracking remains fast so a later
+            // quiet calibration can recover immediately.
+            float floor_alpha = raw < _spectrum_noise_floor[band]
+                                    ? 0.45f
+                                    : (_input_signal_active ? 0.0f : 0.004f);
             _spectrum_noise_floor[band] += (raw - _spectrum_noise_floor[band]) * floor_alpha;
             raw                       = std::max(raw - (_spectrum_noise_floor[band] * 2.20f + 0.0018f), 0.0f);
             _spectrum_raw_bands[band] = raw;
@@ -403,10 +477,14 @@ private:
                 normalized = 0.0f;
             }
 
-            float smooth_alpha = normalized > _spectrum_smoothed_bands[band] ? 0.82f : 0.40f;
-            _spectrum_smoothed_bands[band] += (normalized - _spectrum_smoothed_bands[band]) * smooth_alpha;
+            frame.transientBands[band] = frame.signalActive ? normalized : 0.0f;
+            const float target = frame.signalActive ? normalized : 0.0f;
+            float smooth_alpha = target > _spectrum_smoothed_bands[band] ? 0.82f : 0.40f;
+            _spectrum_smoothed_bands[band] += (target - _spectrum_smoothed_bands[band]) * smooth_alpha;
             frame.bands[band] = std::clamp(_spectrum_smoothed_bands[band], 0.0f, 1.0f);
         }
+        if (!frame.signalActive) frame.peakFrequencyHz = 0.0f;
+        return true;
     }
 
     i2s_chan_handle_t _tx_handle          = NULL;
@@ -431,6 +509,11 @@ private:
     std::array<int, Hal::AudioSpectrumFrame::bandCount + 1> _band_bin_edges        = {};
     std::size_t _spectrum_samples_ready                                            = 0;
     float _spectrum_normalization_level                                            = 0.03f;
+    float _input_noise_rms                                                         = 0.0015f;
+    int64_t _gate_open_candidate_us                                                = 0;
+    int64_t _gate_close_candidate_us                                               = 0;
+    int64_t _gate_warmup_until_us                                                  = 0;
+    bool _input_signal_active                                                      = false;
     bool _spectrum_available                                                       = false;
     bool _is_playing                                                               = false;
 } _audio_codec;

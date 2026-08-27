@@ -84,6 +84,77 @@ uint8_t rippleSymbolColor(int distance, int maxRadius, uint32_t hash, bool mutat
     return 3;
 }
 
+constexpr float kPi = 3.14159265358979323846f;
+constexpr uint8_t kAudioYellowCapPercent = 18;
+constexpr uint8_t kHueSlots = 24;
+
+uint8_t assignAudioBand(int x, int y, int centerX, int centerY, int fieldRadius, uint32_t hash)
+{
+    const int dist = approximateDistance(x - centerX, y - centerY);
+    const float radial = std::min(1.0f, static_cast<float>(dist) /
+                                            static_cast<float>(std::max(1, fieldRadius)));
+    const float jitter = (static_cast<float>(hash % 1000u) / 1000.0f - 0.5f) * 0.32f;
+    const float r = std::clamp(radial + jitter, 0.0f, 1.0f);
+    const uint32_t roll = (hash >> 11) % 100u;
+    const uint32_t diag = mixHash(static_cast<uint32_t>(x + y) * 0x85EBCA6Bu);
+    const bool midCluster = ((diag >> 8) % 100u) < 38u;
+
+    uint8_t group = 1;
+    if (r < 0.34f) {
+        if (roll < 62u) group = 0;
+        else if (roll < 88u) group = 1;
+        else group = midCluster ? 2 : 1;
+    } else if (r < 0.68f) {
+        if (midCluster && roll < 40u) group = 2;
+        else if (roll < 18u) group = 0;
+        else if (roll < 72u) group = 1;
+        else group = 2;
+    } else {
+        if (roll < 22u) group = 1;
+        else if (roll < 48u && midCluster) group = 2;
+        else if (roll < 58u) group = 2;
+        else group = 3;
+    }
+    if (group == 3 && ((hash >> 5) % 100u) > 70u) group = 1;
+
+    const uint32_t localRoll = (hash >> 3) % 100u;
+    const uint8_t local = localRoll < 28u ? 0 : localRoll < 52u ? 1
+                                               : localRoll < 72u ? 2
+                                               : localRoll < 88u ? 3
+                                                                 : 4;
+    return static_cast<uint8_t>(group * 5 + local);
+}
+
+uint8_t audioFieldSymbolColor(uint8_t group, float energy, uint32_t hash)
+{
+    switch (group) {
+        case 0:
+            return energy > 0.72f && ((hash >> 16) % 100u) < 16u ? 3 : 1;
+        case 1:
+            return ((hash >> 9) % 100u) < 48u ? 2 : 1;
+        case 2:
+            return ((hash >> 9) % 100u) < 55u ? 2 : 0;
+        default:
+            return ((hash >> 12) % 100u) < 14u ? 3 : 0;
+    }
+}
+
+uint8_t audioHueColor(uint8_t baseColorIndex, uint8_t group)
+{
+    static constexpr int8_t kOffsets[] = {0, 1, 2, 4};
+    return static_cast<uint8_t>((baseColorIndex + kOffsets[group % 4]) % kHueSlots);
+}
+
+uint8_t quantizeAudioEnergy(uint8_t previous, int target)
+{
+    target = std::clamp(target, 0, 255);
+    if (target == 0) return previous <= 18 ? 0 : static_cast<uint8_t>(std::max(0, previous - 18));
+    if (std::abs(target - static_cast<int>(previous)) < 10 && (target >> 4) == (previous >> 4)) {
+        return previous;
+    }
+    return static_cast<uint8_t>((target >> 4) << 4);
+}
+
 }  // namespace
 
 void Engine::reset(int width, int height)
@@ -97,6 +168,25 @@ void Engine::reset(int width, int height)
     _decayRemainder = 0;
     _touching = false;
     _touchSymbolMix = false;
+    _audioSparks = {};
+    _lastAppliedAudioSequence = 0;
+    _audioGainStartedMs = 0;
+    _audioGainDurationMs = 0;
+    _lastSparkMs = 0;
+    _lastBloomMs = 0;
+    _lastAudioFieldMapMs = 0;
+    _audioMutationUntilMs = 0;
+    _lastAudioRippleX = 0;
+    _lastAudioRippleY = 0;
+    _audioGain = 0;
+    _audioGainFrom = 0;
+    _audioGainTarget = 0;
+    _lastAudioRippleColor = 1;
+    _audioBaseColorIndex = 5;
+    _audioActiveDotRatio = 0.0f;
+    _audioEnabled = false;
+    _audioVisualPaused = false;
+    _audioNeedsClear = false;
     _maxRippleRadius = std::max(width, height) + kGridSpacingX;
     _centerX = width / 2;
     _centerY = height / 2;
@@ -130,6 +220,13 @@ void Engine::reset(int width, int height)
             dot.energySymbolColorIndex = dot.symbolColorIndex;
             dot.rippleSymbolIndex = dot.symbolIndex;
             dot.rippleSymbolColorIndex = dot.symbolColorIndex;
+            const uint32_t audioSeed = mixHash(symbolSeed ^ 0xC2B2AE35u);
+            dot.audioBandIndex = assignAudioBand(x, y, centerX, centerY, visibleRadius, audioSeed);
+            dot.audioSymbolIndex = dot.symbolIndex;
+            dot.audioColorIndex = dot.symbolColorIndex;
+            dot.audioEnergy = 0;
+            dot.audioUsesSymbolPalette = false;
+            dot.rippleFromAudio = false;
             dot.visible = true;
         }
     }
@@ -140,15 +237,30 @@ void Engine::clear()
     for (std::size_t i = 0; i < _dotCount; ++i) {
         _dots[i].energy = 0;
         _dots[i].rippleEnergy = 0;
+        _dots[i].audioEnergy = 0;
+        _dots[i].rippleFromAudio = false;
     }
     _ripples = {};
+    _audioSparks = {};
     _nextRipple = 0;
     _decayRemainder = 0;
     _touching = false;
+    _audioGain = 0;
+    _audioGainTarget = 0;
+    _audioActiveDotRatio = 0.0f;
+    _audioMutationUntilMs = 0;
+    _audioEnabled = false;
+    _audioVisualPaused = false;
+    _audioNeedsClear = false;
 }
 
 void Engine::update(uint32_t nowMs)
 {
+    updateAudioGain(nowMs);
+    if (!_audioEnabled && _audioGain == 0 && _audioNeedsClear) {
+        clearAudioReaction(true);
+    }
+
     if (_lastUpdateMs == 0) {
         _lastUpdateMs = nowMs;
         updateRipples(nowMs);
@@ -211,9 +323,12 @@ void Engine::triggerPaintPoint(int x, int y, uint32_t nowMs, uint8_t colorIndex,
 }
 
 void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint16_t durationMs,
-                         uint16_t maxRadius, bool symbolMix, bool mutateSymbols)
+                         uint16_t maxRadius, bool symbolMix, bool mutateSymbols, bool fromAudio,
+                         uint8_t strength, uint16_t travelMs, uint16_t afterglowMs)
 {
-    Ripple& ripple = _ripples[_nextRipple];
+    const std::size_t slot = acquireRippleSlot(fromAudio);
+    if (slot >= kMaxRipples) return;
+    Ripple& ripple = _ripples[slot];
     ripple.x = static_cast<int16_t>(x);
     ripple.y = static_cast<int16_t>(y);
     ripple.reflectedX = ripple.x;
@@ -223,11 +338,16 @@ void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint1
                           static_cast<uint32_t>(y));
     ripple.durationMs = durationMs;
     ripple.maxRadius = maxRadius;
+    ripple.travelMs = travelMs == 0 ? static_cast<uint16_t>(kRippleTravelMs) : travelMs;
+    ripple.afterglowMs = afterglowMs == 0 ? static_cast<uint16_t>(kRippleAfterglowMs)
+                                          : afterglowMs;
     ripple.colorIndex = colorIndex;
     ripple.paletteOffset = static_cast<uint8_t>((ripple.seed >> 24) % kSymbolCount);
+    ripple.strength = strength;
     ripple.hasReflection = false;
     ripple.symbolMix = symbolMix;
     ripple.mutateSymbols = symbolMix && mutateSymbols;
+    ripple.fromAudio = fromAudio;
 
     // Mirror a near-edge source across the circular boundary. The weaker image
     // source makes the returning motion visible without drawing a hard second
@@ -243,11 +363,10 @@ void Engine::startRipple(int x, int y, uint32_t nowMs, uint8_t colorIndex, uint1
         ripple.hasReflection = true;
     }
     ripple.active = true;
-    _nextRipple = (_nextRipple + 1) % kMaxRipples;
 
     // Keep a restrained distance-weighted cluster at the source while the
     // travelling field lights nearby dots on subsequent simulation steps.
-    if (!symbolMix) injectImpact(x, y, colorIndex);
+    if (!symbolMix && !fromAudio) injectImpact(x, y, colorIndex);
 }
 
 void Engine::beginTouch(int x, int y, uint32_t nowMs, uint8_t colorIndex, bool symbolMix)
@@ -343,6 +462,7 @@ void Engine::updateRipples(uint32_t nowMs)
     for (std::size_t i = 0; i < _dotCount; ++i) {
         _dots[i].rippleEnergy = 0;
         _dots[i].rippleUsesSymbolPalette = false;
+        _dots[i].rippleFromAudio = false;
     }
 
     for (Ripple& ripple : _ripples) {
@@ -363,14 +483,16 @@ void Engine::updateRipples(uint32_t nowMs)
             const uint32_t hash = mixHash(ripple.seed ^ static_cast<uint32_t>(i) * 0x9E3779B9u);
             const int jitterMs = static_cast<int>(hash % (kScatterTimeMs * 2 + 1)) -
                                  kScatterTimeMs;
-            const int arrivalMs = std::max(0, distance * static_cast<int>(kRippleTravelMs) /
+            const int travelMs = std::max<int>(1, ripple.travelMs);
+            const int afterglowMs = std::max<int>(1, ripple.afterglowMs);
+            const int arrivalMs = std::max(0, distance * travelMs /
                                                   std::max<int>(1, ripple.maxRadius) +
                                                   jitterMs);
             const int primarySourceAgeMs = static_cast<int>(ageMs) - arrivalMs;
 
             auto energyAfterArrival = [&](int sourceAgeMs, int sourceDistance,
                                           int strength) -> int {
-                if (sourceAgeMs < 0 || sourceAgeMs >= static_cast<int>(kRippleAfterglowMs)) return 0;
+                if (sourceAgeMs < 0 || sourceAgeMs >= afterglowMs) return 0;
                 const int distanceScale = std::max(145, 245 - sourceDistance * 90 /
                                                                std::max<int>(1, ripple.maxRadius));
                 const int scatterScale = 184 + static_cast<int>((hash >> 8) & 0x2F);
@@ -378,20 +500,20 @@ void Engine::updateRipples(uint32_t nowMs)
                 if (sourceAgeMs < static_cast<int>(kRippleAttackMs)) {
                     envelope = 72 + sourceAgeMs * 183 / static_cast<int>(kRippleAttackMs);
                 } else {
-                    const int remaining = static_cast<int>(kRippleAfterglowMs) - sourceAgeMs;
-                    const int fadeDuration = static_cast<int>(kRippleAfterglowMs - kRippleAttackMs);
+                    const int remaining = afterglowMs - sourceAgeMs;
+                    const int fadeDuration = std::max(1, afterglowMs - static_cast<int>(kRippleAttackMs));
                     envelope = remaining * remaining * 255 / (fadeDuration * fadeDuration);
                 }
                 return envelope * distanceScale / 255 * scatterScale / 255 * strength / 255;
             };
 
             int symbolSourceAgeMs = primarySourceAgeMs;
-            int energy = energyAfterArrival(primarySourceAgeMs, distance, 255);
+            int energy = energyAfterArrival(primarySourceAgeMs, distance, ripple.strength);
             if (ripple.hasReflection) {
                 const int reflectedDx = static_cast<int>(dot.x) - ripple.reflectedX;
                 const int reflectedDy = static_cast<int>(dot.y) - ripple.reflectedY;
                 const int reflectedDistance = approximateDistance(reflectedDx, reflectedDy);
-                const int reflectedArrival = reflectedDistance * static_cast<int>(kRippleTravelMs) /
+                const int reflectedArrival = reflectedDistance * travelMs /
                                              std::max<int>(1, ripple.maxRadius) - jitterMs / 2;
                 const int reflectedSourceAgeMs = static_cast<int>(ageMs) - reflectedArrival;
                 const int reflectedEnergy = energyAfterArrival(reflectedSourceAgeMs,
@@ -422,7 +544,7 @@ void Engine::updateRipples(uint32_t nowMs)
                 // sequence without injecting extra brightness or movement.
                 if (ripple.mutateSymbols &&
                     symbolSourceAgeMs >= static_cast<int>(kRippleAttackMs) &&
-                    symbolSourceAgeMs < static_cast<int>(kRippleAfterglowMs)) {
+                    symbolSourceAgeMs < afterglowMs) {
                     const uint32_t mutationStep = static_cast<uint32_t>(
                         symbolSourceAgeMs - static_cast<int>(kRippleAttackMs)) /
                         kSymbolMutationStepMs;
@@ -433,15 +555,449 @@ void Engine::updateRipples(uint32_t nowMs)
                 }
             }
 
-            if (energy > dot.rippleEnergy) {
+            const bool replace = energy > dot.rippleEnergy ||
+                                 (energy == dot.rippleEnergy && energy > 0 && !ripple.fromAudio);
+            if (replace) {
                 dot.rippleEnergy = static_cast<uint8_t>(std::min(255, energy));
                 dot.rippleColorIndex = ripple.colorIndex;
                 dot.rippleUsesSymbolPalette = ripple.symbolMix;
                 dot.rippleSymbolIndex = symbolIndex;
                 dot.rippleSymbolColorIndex = symbolColorIndex;
+                dot.rippleFromAudio = ripple.fromAudio;
             }
         }
     }
+}
+
+std::size_t Engine::acquireRippleSlot(bool fromAudio)
+{
+    if (fromAudio) {
+        std::size_t audioCount = 0;
+        std::size_t oldestAudio = kMaxRipples;
+        std::size_t firstInactive = kMaxRipples;
+        uint32_t oldestStarted = 0;
+        for (std::size_t i = 0; i < kMaxRipples; ++i) {
+            if (!_ripples[i].active) {
+                if (firstInactive == kMaxRipples) firstInactive = i;
+                continue;
+            }
+            if (!_ripples[i].fromAudio) continue;
+            ++audioCount;
+            if (oldestAudio == kMaxRipples || _ripples[i].startedMs < oldestStarted) {
+                oldestAudio = i;
+                oldestStarted = _ripples[i].startedMs;
+            }
+        }
+        if (audioCount >= AudioReactiveParams::maxAudioRipples && oldestAudio < kMaxRipples) {
+            return oldestAudio;
+        }
+        if (firstInactive < kMaxRipples) {
+            _nextRipple = (firstInactive + 1) % kMaxRipples;
+            return firstInactive;
+        }
+        // Music must never evict a touch ripple. If all slots are occupied,
+        // recycle an existing audio ripple or drop this onset.
+        return oldestAudio;
+    }
+
+    for (std::size_t i = 0; i < kMaxRipples; ++i) {
+        const std::size_t slot = (_nextRipple + i) % kMaxRipples;
+        if (!_ripples[slot].active) {
+            _nextRipple = (slot + 1) % kMaxRipples;
+            return slot;
+        }
+    }
+
+    const std::size_t slot = _nextRipple;
+    _nextRipple = (_nextRipple + 1) % kMaxRipples;
+    return slot;
+}
+
+bool Engine::audioOutputActive() const
+{
+    return _audioEnabled || _audioGain > 0 || _audioGain != _audioGainTarget;
+}
+
+void Engine::updateAudioGain(uint32_t nowMs)
+{
+    if (_audioGain == _audioGainTarget) return;
+    if (_audioGainDurationMs == 0) {
+        _audioGain = _audioGainTarget;
+        return;
+    }
+    const uint32_t elapsedMs = nowMs - _audioGainStartedMs;
+    if (elapsedMs >= _audioGainDurationMs) {
+        _audioGain = _audioGainTarget;
+        return;
+    }
+    const int delta = static_cast<int>(_audioGainTarget) - static_cast<int>(_audioGainFrom);
+    _audioGain = static_cast<uint8_t>(_audioGainFrom + delta * static_cast<int>(elapsedMs) /
+                                                           static_cast<int>(_audioGainDurationMs));
+}
+
+void Engine::setAudioReactionEnabled(bool enabled, uint32_t nowMs)
+{
+    if (_audioEnabled == enabled) return;
+    _audioEnabled = enabled;
+    _audioGainStartedMs = nowMs;
+    _audioGainFrom = _audioGain;
+    if (enabled) {
+        _audioGainTarget = _audioVisualPaused ? 0 : 255;
+        _audioGainDurationMs = AudioReactiveParams::fadeInMs;
+        _audioNeedsClear = false;
+    } else {
+        _audioGainTarget = 0;
+        _audioGainDurationMs = AudioReactiveParams::fadeOutMs;
+        _audioNeedsClear = true;
+        _audioSparks = {};
+        for (Ripple& ripple : _ripples) {
+            if (ripple.fromAudio) ripple.active = false;
+        }
+    }
+}
+
+void Engine::setAudioVisualPaused(bool paused, uint32_t nowMs)
+{
+    if (_audioVisualPaused == paused) return;
+    _audioVisualPaused = paused;
+    if (!_audioEnabled) return;
+    _audioGainStartedMs = nowMs;
+    _audioGainFrom = _audioGain;
+    _audioGainTarget = paused ? 0 : 255;
+    _audioGainDurationMs = paused ? AudioReactiveParams::pauseFadeMs
+                                  : AudioReactiveParams::fadeInMs;
+    if (paused) {
+        _audioSparks = {};
+        for (Ripple& ripple : _ripples) {
+            if (ripple.fromAudio) ripple.active = false;
+        }
+    }
+}
+
+void Engine::clearAudioReaction(bool immediate)
+{
+    if (!immediate) {
+        setAudioReactionEnabled(false, _lastUpdateMs);
+        return;
+    }
+    for (std::size_t i = 0; i < _dotCount; ++i) {
+        _dots[i].audioEnergy = 0;
+        _dots[i].rippleFromAudio = _dots[i].rippleFromAudio && _dots[i].rippleEnergy > 0;
+        if (_dots[i].rippleFromAudio) {
+            _dots[i].rippleEnergy = 0;
+            _dots[i].rippleFromAudio = false;
+        }
+    }
+    for (Ripple& ripple : _ripples) {
+        if (ripple.fromAudio) ripple.active = false;
+    }
+    _audioSparks = {};
+    _audioGain = 0;
+    _audioGainFrom = 0;
+    _audioGainTarget = 0;
+    _audioActiveDotRatio = 0.0f;
+    _audioMutationUntilMs = 0;
+    _audioEnabled = false;
+    _audioVisualPaused = false;
+    _audioNeedsClear = false;
+}
+
+void Engine::triggerAudioRipple(int x, int y, uint32_t nowMs, uint8_t strength, bool symbolMix)
+{
+    const int dx = x - _lastAudioRippleX;
+    const int dy = y - _lastAudioRippleY;
+    if (_lastAudioRippleX != 0 && dx * dx + dy * dy < 20 * 20) {
+        const uint32_t hash = mixHash(nowMs ^ static_cast<uint32_t>(x * 131 + y));
+        const float angle = static_cast<float>((hash % 360u)) * kPi / 180.0f;
+        const int offset = 18 + static_cast<int>(hash % 16u);
+        x = _centerX + static_cast<int>(std::cos(angle) * offset);
+        y = _centerY + static_cast<int>(std::sin(angle) * offset);
+    }
+
+    uint8_t colorIndex = _audioBaseColorIndex;
+    if (symbolMix) {
+        colorIndex = strength > 180 ? 1 : (strength > 120 ? 2 : 0);
+        if (colorIndex == _lastAudioRippleColor) {
+            colorIndex = static_cast<uint8_t>((colorIndex + 1) % 3);
+        }
+        _lastAudioRippleColor = colorIndex;
+    }
+
+    const uint16_t durationMs = static_cast<uint16_t>(
+        AudioReactiveParams::audioRippleMinDurationMs +
+        (AudioReactiveParams::audioRippleMaxDurationMs -
+         AudioReactiveParams::audioRippleMinDurationMs) *
+            strength / 255);
+    const uint16_t travelMs = static_cast<uint16_t>(durationMs * kRippleTravelMs / kRippleDurationMs);
+    const uint16_t afterglowMs = static_cast<uint16_t>(std::max(1, durationMs - travelMs));
+    const uint16_t maxRadius = static_cast<uint16_t>(_maxRippleRadius * 3 / 4);
+    startRipple(x, y, nowMs, colorIndex, durationMs, maxRadius, symbolMix, false, true,
+                std::max<uint8_t>(96, strength), travelMs, afterglowMs);
+    _lastAudioRippleX = static_cast<int16_t>(x);
+    _lastAudioRippleY = static_cast<int16_t>(y);
+}
+
+uint8_t Engine::spawnAudioSparks(const AudioReactiveFrame& frame, uint32_t nowMs, bool symbolMix)
+{
+    if (frame.trebleTransient <= 0.04f) return 0;
+    if (_lastSparkMs != 0 && nowMs - _lastSparkMs < AudioReactiveParams::sparkMinIntervalMs) return 0;
+    if (_audioGain < 80 || _audioVisualPaused) return 0;
+
+    const uint32_t seed = mixHash(nowMs ^ (frame.sequence * 0xA511E9B3u));
+    const uint8_t clusterCount = frame.trebleTransient > 0.58f ? 2 : 1;
+    const uint8_t pointsPerCluster = static_cast<uint8_t>(2 + frame.trebleTransient * 3.5f);
+    uint8_t spawned = 0;
+    for (uint8_t cluster = 0; cluster < clusterCount; ++cluster) {
+        std::size_t center = _dotCount;
+        for (uint8_t attempt = 0; attempt < 12 && center == _dotCount; ++attempt) {
+            const uint32_t hash = mixHash(seed ^ (static_cast<uint32_t>(cluster + 1) << 12) ^ attempt);
+            const std::size_t candidate = hash % std::max<std::size_t>(1, _dotCount);
+            if (_dots[candidate].audioBandIndex >= 14) center = candidate;
+        }
+        if (center == _dotCount) center = mixHash(seed ^ (cluster + 17u)) % std::max<std::size_t>(1, _dotCount);
+
+        for (uint8_t point = 0; point < pointsPerCluster; ++point) {
+            std::size_t sparkSlot = kMaxAudioSparks;
+            for (std::size_t i = 0; i < kMaxAudioSparks; ++i) {
+                if (!_audioSparks[i].active) { sparkSlot = i; break; }
+            }
+            if (sparkSlot == kMaxAudioSparks) break;
+
+            std::size_t chosen = _dotCount;
+            int bestScore = 100000;
+            for (std::size_t i = 0; i < _dotCount; ++i) {
+                bool occupied = false;
+                for (const AudioSpark& active : _audioSparks) {
+                    if (active.active && active.index == i) { occupied = true; break; }
+                }
+                if (occupied || _dots[i].audioBandIndex < 13) continue;
+                const int distance = approximateDistance(_dots[i].x - _dots[center].x,
+                                                         _dots[i].y - _dots[center].y);
+                if (distance > 58) continue;
+                const uint32_t hash = mixHash(seed ^ static_cast<uint32_t>(i * 31 + point * 131));
+                const int score = distance + static_cast<int>(hash % 18u);
+                if (score < bestScore) { bestScore = score; chosen = i; }
+            }
+            if (chosen == _dotCount) break;
+
+            const uint32_t hash = mixHash(seed ^ static_cast<uint32_t>(chosen));
+            AudioSpark& spark = _audioSparks[sparkSlot];
+            spark.index = static_cast<uint16_t>(chosen);
+            spark.startedMs = nowMs + point * 9u;
+            spark.durationMs = static_cast<uint16_t>(
+                AudioReactiveParams::sparkMinDurationMs +
+                hash % (AudioReactiveParams::sparkMaxDurationMs - AudioReactiveParams::sparkMinDurationMs + 1));
+            spark.peakEnergy = static_cast<uint8_t>(185 + std::min(70, static_cast<int>(frame.trebleTransient * 70.0f)));
+            spark.colorIndex = symbolMix ? (point == 0 ? 3 : 0)
+                                         : audioHueColor(_audioBaseColorIndex, 3);
+            spark.symbolIndex = static_cast<uint8_t>(hash % kSymbolCount);
+            spark.active = true;
+            ++spawned;
+        }
+    }
+    if (spawned > 0) _lastSparkMs = nowMs;
+    return spawned;
+}
+
+uint8_t Engine::spawnAudioBloom(const AudioReactiveFrame& frame, uint32_t nowMs, bool symbolMix)
+{
+    if (frame.midTransient <= 0.04f || _audioGain < 80 || _audioVisualPaused) return 0;
+    if (_lastBloomMs != 0 && nowMs - _lastBloomMs < AudioReactiveParams::midTransientCooldownMs) return 0;
+
+    const uint32_t seed = mixHash(nowMs ^ (frame.sequence * 0x6C8E9CF5u));
+    std::size_t center = _dotCount;
+    for (uint8_t attempt = 0; attempt < 12 && center == _dotCount; ++attempt) {
+        const std::size_t candidate = mixHash(seed ^ attempt) % std::max<std::size_t>(1, _dotCount);
+        const uint8_t group = _dots[candidate].audioBandIndex / 5;
+        if (group == 1 || group == 2) center = candidate;
+    }
+    if (center == _dotCount) center = seed % std::max<std::size_t>(1, _dotCount);
+
+    const uint8_t wanted = static_cast<uint8_t>(4 + frame.midTransient * 5.0f);
+    uint8_t spawned = 0;
+    for (uint8_t point = 0; point < wanted; ++point) {
+        std::size_t sparkSlot = kMaxAudioSparks;
+        for (std::size_t i = 0; i < kMaxAudioSparks; ++i) {
+            if (!_audioSparks[i].active) { sparkSlot = i; break; }
+        }
+        if (sparkSlot == kMaxAudioSparks) break;
+
+        std::size_t chosen = _dotCount;
+        int bestScore = 100000;
+        for (std::size_t i = 0; i < _dotCount; ++i) {
+            bool occupied = false;
+            for (const AudioSpark& active : _audioSparks) {
+                if (active.active && active.index == i) { occupied = true; break; }
+            }
+            if (occupied) continue;
+            const int distance = approximateDistance(_dots[i].x - _dots[center].x,
+                                                     _dots[i].y - _dots[center].y);
+            if (distance > 52) continue;
+            const int score = distance + static_cast<int>(mixHash(seed ^ static_cast<uint32_t>(i * 17 + point)) % 15u);
+            if (score < bestScore) { bestScore = score; chosen = i; }
+        }
+        if (chosen == _dotCount) break;
+
+        const uint32_t hash = mixHash(seed ^ static_cast<uint32_t>(chosen));
+        AudioSpark& spark = _audioSparks[sparkSlot];
+        spark.index = static_cast<uint16_t>(chosen);
+        spark.startedMs = nowMs + point * 12u;
+        spark.durationMs = static_cast<uint16_t>(170 + hash % 150u);
+        spark.peakEnergy = static_cast<uint8_t>(160 + frame.midTransient * 80.0f);
+        spark.colorIndex = symbolMix ? ((point & 1u) ? 1 : 2)
+                                     : audioHueColor(_audioBaseColorIndex, 2);
+        spark.symbolIndex = static_cast<uint8_t>((hash + point) % kSymbolCount);
+        spark.active = true;
+        ++spawned;
+    }
+    if (spawned > 0) {
+        _lastBloomMs = nowMs;
+        _audioMutationUntilMs = nowMs + static_cast<uint32_t>(180 + frame.midTransient * 220.0f);
+    }
+    return spawned;
+}
+
+void Engine::overlayAudioSparks(uint32_t nowMs)
+{
+    for (AudioSpark& spark : _audioSparks) {
+        if (!spark.active) continue;
+        if (nowMs < spark.startedMs) continue;
+        const uint32_t ageMs = nowMs - spark.startedMs;
+        if (ageMs >= spark.durationMs || spark.index >= _dotCount) {
+            spark.active = false;
+            continue;
+        }
+        const int remaining = static_cast<int>(spark.durationMs - ageMs);
+        const int energy = spark.peakEnergy * remaining / std::max(1, static_cast<int>(spark.durationMs));
+        Dot& dot = _dots[spark.index];
+        if (energy > dot.audioEnergy) {
+            dot.audioEnergy = static_cast<uint8_t>(std::min(255, energy));
+            dot.audioColorIndex = spark.colorIndex;
+            dot.audioSymbolIndex = spark.symbolIndex;
+        }
+    }
+}
+
+AudioApplyResult Engine::applyAudioFrame(const AudioReactiveFrame& frame, uint32_t nowMs,
+                                         bool symbolMix, uint8_t baseColorIndex)
+{
+    AudioApplyResult result;
+    updateAudioGain(nowMs);
+    _audioBaseColorIndex = baseColorIndex;
+
+    if (!_audioEnabled && _audioGain == 0) {
+        if (_audioNeedsClear) clearAudioReaction(true);
+        return result;
+    }
+
+    const float gain = static_cast<float>(_audioGain) / 255.0f;
+    const bool newFrame = frame.sequence != _lastAppliedAudioSequence;
+    _lastAppliedAudioSequence = frame.sequence;
+
+    const bool shouldMapField = newFrame &&
+                                (_lastAudioFieldMapMs == 0 || nowMs - _lastAudioFieldMapMs >= 16);
+    if (shouldMapField) {
+        _lastAudioFieldMapMs = nowMs;
+        const float density = frame.signalActive
+                                  ? std::clamp(frame.signalConfidence *
+                                                   (0.08f + frame.overallEnergy * 0.18f +
+                                                    frame.grooveEnergy * 0.16f +
+                                                    frame.slowEnergy * 0.12f +
+                                                    frame.groovePulse * 0.08f),
+                                               0.0f, 0.60f)
+                                  : 0.0f;
+        uint32_t yellowActive = 0;
+        uint32_t audioActive = 0;
+        const uint8_t densityLimit = static_cast<uint8_t>(density * 255.0f);
+        const uint8_t centroidOffset = static_cast<uint8_t>(
+            std::clamp(frame.spectralCentroid / 19.0f, 0.0f, 1.0f) * 96.0f);
+
+        for (std::size_t i = 0; i < _dotCount; ++i) {
+            Dot& dot = _dots[i];
+            const uint8_t group = static_cast<uint8_t>(dot.audioBandIndex / 5);
+            const uint32_t seed = mixHash(static_cast<uint32_t>(i + 1) * 0x9E3779B9u ^
+                                          static_cast<uint32_t>(dot.x * 257 + dot.y));
+            const uint8_t stableRank = static_cast<uint8_t>(seed & 0xFFu);
+            const uint8_t wave = static_cast<uint8_t>(dot.x * 3 + dot.y * 2 + nowMs / 12u +
+                                                      centroidOffset);
+            const uint8_t triangle = static_cast<uint8_t>(std::min(
+                255, std::abs(static_cast<int>(wave) - 128) * 2));
+            const uint8_t flowRank = static_cast<uint8_t>((stableRank * 3u + triangle) / 4u);
+
+            const float band = frame.bands[dot.audioBandIndex];
+            const float groupEnergy = frame.groups[group];
+            const float activation = std::clamp(band * 0.46f + groupEnergy * 0.27f +
+                                                    frame.grooveEnergy * 0.17f +
+                                                    frame.groovePulse * 0.10f,
+                                                0.0f, 1.0f);
+            int energy = 0;
+            if (flowRank <= densityLimit) {
+                energy = static_cast<int>((52.0f + activation * 183.0f) * gain);
+            }
+            dot.audioEnergy = quantizeAudioEnergy(dot.audioEnergy, energy);
+            dot.audioUsesSymbolPalette = symbolMix;
+
+            if (dot.audioEnergy > 0) {
+                ++audioActive;
+                if (symbolMix) {
+                    uint8_t color = audioFieldSymbolColor(group, groupEnergy, seed);
+                    if (color == 3 && audioActive > 0 &&
+                        yellowActive * 100 >= audioActive * kAudioYellowCapPercent) {
+                        color = group >= 2 ? 0 : 1;
+                    }
+                    if (color == 3) ++yellowActive;
+
+                    uint8_t symbol = dot.symbolIndex;
+                    if (nowMs < _audioMutationUntilMs) {
+                        const uint32_t period = AudioReactiveParams::symbolMutationMinMs +
+                                                (seed % (AudioReactiveParams::symbolMutationMaxMs -
+                                                         AudioReactiveParams::symbolMutationMinMs + 1));
+                        const uint32_t mutationStep = (nowMs + (seed % period)) / period;
+                        const uint32_t mutationHash = mixHash(seed ^ (mutationStep * 0xA511E9B3u));
+                        if ((mutationHash % 100u) < 42u) {
+                            symbol = static_cast<uint8_t>(mutationHash % kSymbolCount);
+                        }
+                    }
+                    dot.audioColorIndex = color;
+                    dot.audioSymbolIndex = symbol;
+                } else {
+                    dot.audioColorIndex = audioHueColor(baseColorIndex, group);
+                    dot.audioSymbolIndex = 0;
+                }
+            } else {
+                dot.audioColorIndex = symbolMix ? dot.symbolColorIndex : baseColorIndex;
+                dot.audioSymbolIndex = dot.symbolIndex;
+            }
+        }
+        _audioActiveDotRatio = _dotCount > 0
+                                   ? static_cast<float>(audioActive) / static_cast<float>(_dotCount)
+                                   : 0.0f;
+    }
+
+    if (newFrame && frame.midTransient > 0.0f) {
+        result.bloomsSpawned = spawnAudioBloom(frame, nowMs, symbolMix);
+    }
+    if (newFrame && frame.trebleTransient > 0.0f) {
+        result.sparksSpawned = spawnAudioSparks(frame, nowMs, symbolMix);
+    }
+    overlayAudioSparks(nowMs);
+
+    if (newFrame && frame.onset && _audioEnabled && !_audioVisualPaused && _audioGain >= 140) {
+        const uint8_t strength = static_cast<uint8_t>(std::clamp(
+            frame.onsetStrength * 180.0f + frame.groups[0] * 50.0f + frame.groups[1] * 25.0f,
+            80.0f, 255.0f));
+        const int originRadius = AudioReactiveParams::audioRippleOriginRadius *
+                                 (270 - static_cast<int>(strength)) / 255;
+        const uint32_t hash = mixHash(nowMs ^ (frame.sequence * 0x9E3779B9u));
+        const float angle = static_cast<float>(hash % 360u) * kPi / 180.0f;
+        const int radius = std::clamp(originRadius, 0, AudioReactiveParams::audioRippleOriginRadius);
+        triggerAudioRipple(_centerX + static_cast<int>(std::cos(angle) * radius),
+                           _centerY + static_cast<int>(std::sin(angle) * radius), nowMs, strength,
+                           symbolMix);
+        result.onsetTriggered = true;
+    }
+
+    return result;
 }
 
 }  // namespace glow_field

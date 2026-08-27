@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glow_field_audio_reactive.h"
 #include "glow_field_engine.h"
 #include "glow_field_renderer.h"
 
@@ -16,14 +17,10 @@ public:
     void onClose() override;
 
 private:
-    enum class InteractionMode : uint8_t {
-        Paint,
-        Ripple,
-    };
-
     std::unique_ptr<input::KeyManager> _keys;
     std::unique_ptr<glow_field::Engine> _engine;
     std::unique_ptr<glow_field::Renderer> _renderer;
+    std::unique_ptr<glow_field::AudioReactiveController> _audio;
     uint32_t _lastHapticMs = 0;
     uint32_t _lastTouchSampleMs = 0;
     uint32_t _modeNoticeUntilMs = 0;
@@ -33,9 +30,23 @@ private:
     uint32_t _lastColorCruiseMs = 0;
     uint32_t _lastRippleTriggerMs = 0;
     uint32_t _lastAppearanceScaleMs = 0;
+    uint32_t _audioStatsStartedMs = 0;
+    uint32_t _lastAudioSpectrumSequence = 0;
+    uint32_t _audioHopCount = 0;
+    uint32_t _engineAudioApplyCount = 0;
+    uint32_t _audioHopTimeMaxUs = 0;
+    uint32_t _controllerTimeMaxUs = 0;
+    uint32_t _engineAudioTimeMaxUs = 0;
+    uint32_t _onsetCount = 0;
+    uint32_t _sparkCount = 0;
+    uint32_t _bloomCount = 0;
+    uint64_t _audioHopTimeTotalUs = 0;
+    uint64_t _controllerTimeTotalUs = 0;
+    uint64_t _engineAudioTimeTotalUs = 0;
     uint32_t _rngState = 1;
-    InteractionMode _mode = InteractionMode::Ripple;
+    glow_field::InteractionMode _mode = glow_field::InteractionMode::Ripple;
     glow_field::RenderScene _renderScene = glow_field::RenderScene::Interactive;
+    glow_field::AudioReactiveFrame _audioFrame = {};
     bool _touching = false;
     bool _colorSelectionMode = false;
     bool _colorTouching = false;
@@ -66,4 +77,9 @@ private:
     void triggerRandomPaint(uint32_t nowMs);
     uint32_t nextRandom();
     void updateTouch(uint32_t nowMs);
+    void cycleInteractionMode(uint32_t nowMs);
+    void syncAudioVisualPause(uint32_t nowMs);
+    void updateAudioReactive(uint32_t nowMs);
+    void applyAudioVisual(uint32_t nowMs);
+    void reportAudioStats(uint32_t nowMs);
 };

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <assets/assets.h>
 #include <cmath>
+#include <esp_timer.h>
 #include <hal/hal.h>
 #include <mooncake_log.h>
 
@@ -48,6 +49,16 @@ const char* dotShapeName(glow_field::DotShape shape)
     return "unknown";
 }
 
+const char* interactionModeName(glow_field::InteractionMode mode)
+{
+    switch (mode) {
+        case glow_field::InteractionMode::Ripple: return "ripple";
+        case glow_field::InteractionMode::Paint: return "paint";
+        case glow_field::InteractionMode::AudioReactive: return "audio";
+    }
+    return "unknown";
+}
+
 }  // namespace
 
 AppGlowField::AppGlowField()
@@ -67,6 +78,7 @@ void AppGlowField::onOpen()
     _keys = std::make_unique<input::KeyManager>();
     _engine = std::make_unique<glow_field::Engine>();
     _renderer = std::make_unique<glow_field::Renderer>();
+    _audio = std::make_unique<glow_field::AudioReactiveController>();
     _touching = false;
     _lastHapticMs = 0;
     _lastTouchSampleMs = 0;
@@ -77,8 +89,22 @@ void AppGlowField::onOpen()
     _lastRippleTriggerMs = 0;
     _lastAppearanceScaleMs = 0;
     _rngState = GetHAL().millis() ^ 0x9E3779B9u;
-    _mode = InteractionMode::Ripple;
+    _mode = glow_field::InteractionMode::Ripple;
     _renderScene = glow_field::RenderScene::Interactive;
+    _audioFrame = {};
+    _audioStatsStartedMs = 0;
+    _lastAudioSpectrumSequence = GetHAL().getAudioSpectrum().sequence;
+    _audioHopCount = 0;
+    _engineAudioApplyCount = 0;
+    _audioHopTimeMaxUs = 0;
+    _controllerTimeMaxUs = 0;
+    _engineAudioTimeMaxUs = 0;
+    _onsetCount = 0;
+    _sparkCount = 0;
+    _bloomCount = 0;
+    _audioHopTimeTotalUs = 0;
+    _controllerTimeTotalUs = 0;
+    _engineAudioTimeTotalUs = 0;
     _colorSelectionMode = false;
     _colorTouching = false;
     _colorMovedSincePreview = false;
@@ -97,6 +123,7 @@ void AppGlowField::onOpen()
     auto& display = GetHAL().getDisplay();
     _engine->reset(display.width(), display.height());
     _renderer->open(display.width(), display.height(), _engine->dotCount());
+    _audio->reset(GetHAL().millis());
     _modeNoticeUntilMs = GetHAL().millis() + 900;
 }
 
@@ -124,19 +151,18 @@ void AppGlowField::onRunning()
     } else if (GetHAL().btnA.wasHold()) {
         toggleAppearanceMode(nowMs);
     } else if (keyEvent == input::KeyEvent::GoPrevious) {
-        if (_mode == InteractionMode::Ripple) {
-            triggerRandomRipple(nowMs);
-        } else {
+        if (_mode == glow_field::InteractionMode::Paint) {
             triggerRandomPaint(nowMs);
+        } else {
+            triggerRandomRipple(nowMs);
         }
     } else if (keyEvent == input::KeyEvent::GoNext) {
-        _engine->endTouch();
-        _touching = false;
-        _mode = _mode == InteractionMode::Ripple ? InteractionMode::Paint : InteractionMode::Ripple;
-        _modeNoticeUntilMs = nowMs + 900;
-        mclog::tagInfo(getAppInfo().name, "mode={}",
-                       _mode == InteractionMode::Ripple ? "ripple" : "paint");
+        cycleInteractionMode(nowMs);
     }
+
+    const bool audioActive = _mode == glow_field::InteractionMode::AudioReactive ||
+                             (_engine && _engine->audioOutputActive());
+    if (audioActive) updateAudioReactive(nowMs);
 
     if (_appearanceMode) {
         if (_touching) {
@@ -158,10 +184,13 @@ void AppGlowField::onRunning()
         _touching = false;
     }
 
+    if (audioActive) applyAudioVisual(nowMs);
+
     _engine->update(nowMs);
-    _renderer->render(*_engine, nowMs, _mode == InteractionMode::Ripple, _modeNoticeUntilMs,
+    _renderer->render(*_engine, nowMs, _mode, _modeNoticeUntilMs,
                       _renderScene, _colorSelectionMode, _selectedHue, _dotShape,
                       _shapeScalePercent, _appearanceMode);
+    reportAudioStats(nowMs);
 }
 
 void AppGlowField::toggleColorSelection(uint32_t nowMs)
@@ -177,6 +206,7 @@ void AppGlowField::toggleColorSelection(uint32_t nowMs)
     _lastColorTouchMs = 0;
     _lastColorPreviewMs = nowMs;
     GetHAL().vibrate(24, 55);
+    syncAudioVisualPause(nowMs);
     mclog::tagInfo(getAppInfo().name, "color-selection={}", _colorSelectionMode ? "on" : "off");
 }
 
@@ -189,6 +219,7 @@ void AppGlowField::toggleAppearanceMode(uint32_t nowMs)
     _appearanceScaleRepeating = false;
     _lastAppearanceScaleMs = nowMs;
     GetHAL().vibrate(24, 55);
+    syncAudioVisualPause(nowMs);
     mclog::tagInfo(getAppInfo().name, "appearance={}", _appearanceMode ? "on" : "off");
 }
 
@@ -466,7 +497,10 @@ void AppGlowField::updateTouch(uint32_t nowMs)
     if (touch.num > 0 && touch.x >= 0 && touch.y >= 0) {
         if (!_touching) {
             bool accepted = true;
-            if (_mode == InteractionMode::Ripple) {
+            if (_mode == glow_field::InteractionMode::Paint) {
+                _engine->beginTouch(touch.x, touch.y, nowMs, colorIndex(_selectedHue),
+                                    _dotShape == glow_field::DotShape::SymbolMix);
+            } else {
                 const int dx = touch.x - _lastRippleX;
                 const int dy = touch.y - _lastRippleY;
                 const bool likelyDuplicate = _lastRippleTriggerMs != 0 &&
@@ -484,16 +518,13 @@ void AppGlowField::updateTouch(uint32_t nowMs)
                 } else {
                     accepted = false;
                 }
-            } else {
-                _engine->beginTouch(touch.x, touch.y, nowMs, colorIndex(_selectedHue),
-                                    _dotShape == glow_field::DotShape::SymbolMix);
             }
             _touching = true;
             if (accepted && (_lastHapticMs == 0 || nowMs - _lastHapticMs >= 75)) {
                 GetHAL().vibrate(30, 65);
                 _lastHapticMs = nowMs;
             }
-        } else if (_mode == InteractionMode::Paint) {
+        } else if (_mode == glow_field::InteractionMode::Paint) {
             _engine->moveTouch(touch.x, touch.y, nowMs);
         }
     } else if (_touching) {
@@ -506,9 +537,157 @@ void AppGlowField::onClose()
 {
     mclog::tagInfo(getAppInfo().name, "on close");
     GetHAL().stopVibrate();
+    if (_engine) _engine->clearAudioReaction(true);
     if (_renderer) _renderer->close();
     _renderer.reset();
     _engine.reset();
+    _audio.reset();
     GetHAL().startLvglUpdate();
     _keys.reset();
+}
+
+void AppGlowField::cycleInteractionMode(uint32_t nowMs)
+{
+    _engine->endTouch();
+    _touching = false;
+    glow_field::InteractionMode next = glow_field::InteractionMode::Ripple;
+    switch (_mode) {
+        case glow_field::InteractionMode::Ripple:
+            next = glow_field::InteractionMode::Paint;
+            break;
+        case glow_field::InteractionMode::Paint:
+            next = glow_field::InteractionMode::AudioReactive;
+            break;
+        case glow_field::InteractionMode::AudioReactive:
+            next = glow_field::InteractionMode::Ripple;
+            break;
+    }
+
+    if (_mode == glow_field::InteractionMode::AudioReactive &&
+        next != glow_field::InteractionMode::AudioReactive) {
+        _engine->setAudioReactionEnabled(false, nowMs);
+    }
+    if (next == glow_field::InteractionMode::AudioReactive) {
+        _audio->reset(nowMs);
+        _audio->setVisualPaused(_colorSelectionMode || _appearanceMode, nowMs);
+        _engine->setAudioReactionEnabled(true, nowMs);
+        _engine->setAudioVisualPaused(_colorSelectionMode || _appearanceMode, nowMs);
+        _audioStatsStartedMs = nowMs;
+        _lastAudioSpectrumSequence = GetHAL().getAudioSpectrum().sequence;
+        _audioHopCount = 0;
+        _engineAudioApplyCount = 0;
+        _audioHopTimeTotalUs = 0;
+        _audioHopTimeMaxUs = 0;
+        _controllerTimeTotalUs = 0;
+        _controllerTimeMaxUs = 0;
+        _engineAudioTimeTotalUs = 0;
+        _engineAudioTimeMaxUs = 0;
+        _onsetCount = 0;
+        _sparkCount = 0;
+        _bloomCount = 0;
+    }
+
+    _mode = next;
+    _modeNoticeUntilMs = nowMs + 900;
+    mclog::tagInfo(getAppInfo().name, "mode={}", interactionModeName(_mode));
+}
+
+void AppGlowField::syncAudioVisualPause(uint32_t nowMs)
+{
+    const bool paused = _colorSelectionMode || _appearanceMode;
+    if (_audio) _audio->setVisualPaused(paused, nowMs);
+    if (_engine) _engine->setAudioVisualPaused(paused, nowMs);
+}
+
+void AppGlowField::updateAudioReactive(uint32_t nowMs)
+{
+    if (!_audio || !_engine) return;
+
+    const int64_t hopStartedUs = esp_timer_get_time();
+    GetHAL().updateAudioSpectrum();
+    const auto& spectrum = GetHAL().getAudioSpectrum();
+    if (spectrum.sequence == _lastAudioSpectrumSequence) return;
+    _lastAudioSpectrumSequence = spectrum.sequence;
+    const uint32_t hopUs = spectrum.processUs != 0
+                               ? spectrum.processUs
+                               : static_cast<uint32_t>(esp_timer_get_time() - hopStartedUs);
+    ++_audioHopCount;
+    _audioHopTimeTotalUs += hopUs;
+    _audioHopTimeMaxUs = std::max(_audioHopTimeMaxUs, hopUs);
+
+    const int64_t controllerStartedUs = esp_timer_get_time();
+    _audioFrame = _audio->update(spectrum.bands, spectrum.transientBands,
+                                 spectrum.peakFrequencyHz, spectrum.signalActive,
+                                 spectrum.signalConfidence, spectrum.inputRmsDbfs,
+                                 spectrum.signalToNoiseDb, nowMs);
+    const uint32_t controllerUs = static_cast<uint32_t>(esp_timer_get_time() - controllerStartedUs);
+    _controllerTimeTotalUs += controllerUs;
+    _controllerTimeMaxUs = std::max(_controllerTimeMaxUs, controllerUs);
+}
+
+void AppGlowField::applyAudioVisual(uint32_t nowMs)
+{
+    if (!_engine) return;
+    const bool symbolMix = _dotShape == glow_field::DotShape::SymbolMix;
+    const int64_t engineStartedUs = esp_timer_get_time();
+    const glow_field::AudioApplyResult applied =
+        _engine->applyAudioFrame(_audioFrame, nowMs, symbolMix, colorIndex(_selectedHue));
+    const uint32_t engineUs = static_cast<uint32_t>(esp_timer_get_time() - engineStartedUs);
+    ++_engineAudioApplyCount;
+    _engineAudioTimeTotalUs += engineUs;
+    _engineAudioTimeMaxUs = std::max(_engineAudioTimeMaxUs, engineUs);
+    if (applied.onsetTriggered) ++_onsetCount;
+    _sparkCount += applied.sparksSpawned;
+    _bloomCount += applied.bloomsSpawned;
+}
+
+void AppGlowField::reportAudioStats(uint32_t nowMs)
+{
+    if (_mode != glow_field::InteractionMode::AudioReactive &&
+        !(_engine && _engine->audioOutputActive())) {
+        return;
+    }
+    if (_audioStatsStartedMs == 0) {
+        _audioStatsStartedMs = nowMs;
+        return;
+    }
+    const uint32_t elapsedMs = nowMs - _audioStatsStartedMs;
+    if (elapsedMs < 10000 || _audioHopCount == 0) return;
+
+    const float audioFps = static_cast<float>(_audioHopCount) * 1000.0f / static_cast<float>(elapsedMs);
+    const float audioAvg = static_cast<float>(_audioHopTimeTotalUs) /
+                           static_cast<float>(_audioHopCount) / 1000.0f;
+    const float controllerAvg = static_cast<float>(_controllerTimeTotalUs) /
+                                static_cast<float>(_audioHopCount) / 1000.0f;
+    const float engineAvg = _engineAudioApplyCount == 0
+                                ? 0.0f
+                                : static_cast<float>(_engineAudioTimeTotalUs) /
+                                      static_cast<float>(_engineAudioApplyCount) / 1000.0f;
+    mclog::tagInfo("GlowField.Audio",
+                   "audioFps={:.1f} audioAvg={:.2f}ms audioMax={:.2f}ms "
+                   "ctrlAvg={:.2f}ms ctrlMax={:.2f}ms mapAvg={:.2f}ms mapMax={:.2f}ms "
+                   "gate={} input={:.1f}dB snr={:.1f}dB conf={:.2f} activeDots={:.1f}% "
+                   "onsets={} blooms={} sparks={} dirtyBandsAvg={:.1f} bass={:.2f} overall={:.2f}",
+                   audioFps, audioAvg, static_cast<float>(_audioHopTimeMaxUs) / 1000.0f,
+                   controllerAvg, static_cast<float>(_controllerTimeMaxUs) / 1000.0f, engineAvg,
+                   static_cast<float>(_engineAudioTimeMaxUs) / 1000.0f,
+                   _audioFrame.signalActive ? "open" : "closed", _audioFrame.inputRmsDbfs,
+                   _audioFrame.signalToNoiseDb, _audioFrame.signalConfidence,
+                   _engine ? _engine->audioActiveDotRatio() * 100.0f : 0.0f,
+                   _onsetCount, _bloomCount, _sparkCount,
+                   _renderer ? _renderer->dirtyBandsAverage() : 0.0f, _audioFrame.groups[0],
+                   _audioFrame.overallEnergy);
+
+    _audioStatsStartedMs = nowMs;
+    _audioHopCount = 0;
+    _engineAudioApplyCount = 0;
+    _audioHopTimeTotalUs = 0;
+    _audioHopTimeMaxUs = 0;
+    _controllerTimeTotalUs = 0;
+    _controllerTimeMaxUs = 0;
+    _engineAudioTimeTotalUs = 0;
+    _engineAudioTimeMaxUs = 0;
+    _onsetCount = 0;
+    _sparkCount = 0;
+    _bloomCount = 0;
 }
