@@ -34,3 +34,36 @@
 
 - **真机视觉门禁仍待执行**：刷入 StopWatch 后确认圆屏裁切、线条亮度、文字边距和战机实际占比；未完成前不把 G3 整体标记为完成。
 - G3.2 将引入固定步长的 `FlightInput` / `FlightModel` 与可循环的地形推进，但仍只使用 IMU 与表体按键平替输入。
+
+## 切片 G3.2：确定性推进与地形流
+
+**范围**：以固定步长推进飞行距离，使用固定容量、固定种子的峡谷切片构成可循环的空间流；此切片仍不读取 IMU、GPIO 或 I2C。
+
+### 交付物
+
+- `FlightInput`：冻结的规范化输入数据契约。
+- `FlightModel`：以 1/60 秒固定步长平滑更新速度、横移、高度、滚转、俯仰与推进状态。
+- `TerrainStream`：8 个固定容量切片；按固定种子和段编号生成，近裁切面后复用到远端，无逐帧动态堆分配。
+- Renderer 改为只读 `FlightState` 和 `TerrainStream`，以简化透视投影生成动态峡谷，并让战机姿态与速度 HUD 读取飞行状态。
+
+### 设计校准审查
+
+| 检查项 | 结论 | 证据 |
+| --- | --- | --- |
+| 地形是持续推进的空间而非静态背景 | 通过 | 每个模拟步以 `forwardDistance` 推进；近端切片循环到远端。 |
+| 可重现性 | 通过 | 固定种子 `0xC4A71001` 和段编号决定切片参数；不依赖帧号或运行时随机数。 |
+| 模型与硬件隔离 | 通过 | `FlightModel`、`TerrainStream` 无 HAL/GPIO/I2C/LVGL 依赖。 |
+| 渲染器只读场景数据 | 通过 | Renderer 接收 `const FlightState&` 与 `const TerrainStream&`，不修改模型。 |
+| 低预算仍受控 | 通过 | 固定 8 切片，单帧无容器增长；保留小比例战机与必要 HUD。 |
+| 输入功能是否被伪装为完成 | 通过 | 应用目前只注入中性巡航输入；IMU/按键明确留给 G3.3。 |
+
+### 构建验证与发现
+
+- 初次定向编译发现 `TerrainStream` 漏引入 `<cstddef>`，导致 `size_t` 未定义；已修正，未提交带错误版本。
+- 修正后，`flight_model.cpp`、`terrain_stream.cpp`、`vector_canyon_renderer.cpp` 与应用入口均完成目标编译，并成功重新链接 `esp-idf/main/libmain.a`。
+- `git diff --check` 通过。
+
+### 待验证与下一切片
+
+- 真机仍需检查：圆周内裁切、实际帧时间、近景切片是否过度跨越屏幕边缘，以及长时间运行时的内存稳定性。
+- G3.3 只实现 `ImuButtonInputProvider`：会话内中性校准、死区与平滑；A/B 调节速度和触发短时推进，A+B 仍返回 Launcher。

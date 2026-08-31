@@ -1,5 +1,8 @@
 #pragma once
 
+#include "model/flight_model.h"
+#include "model/terrain_stream.h"
+
 #include <cstdint>
 
 namespace vector_canyon_fighter {
@@ -8,7 +11,7 @@ class Renderer {
 public:
     void open(int width, int height);
     void close();
-    void renderStaticScene();
+    void render(const FlightState& flight, const TerrainStream& terrain);
 
 private:
     int _width = 0;
