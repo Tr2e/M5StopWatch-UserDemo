@@ -29,8 +29,12 @@ void FlightModel::reset()
 
 void FlightModel::step(const FlightInput& input, float deltaSeconds)
 {
+    if (_state.collided) {
+        if (input.pausePressed) reset();
+        return;
+    }
     if (input.pausePressed) _state.paused = !_state.paused;
-    if (_state.paused || _state.collided) return;
+    if (_state.paused) return;
 
     const float safeSteer = input.valid ? std::clamp(input.steer, -1.0f, 1.0f) : 0.0f;
     const float safePitch = input.valid ? std::clamp(input.pitch, -1.0f, 1.0f) : 0.0f;
@@ -49,6 +53,11 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     if (input.boostPressed) _state.boostAmount = 1.0f;
     _state.boostAmount = std::max(0.0f, _state.boostAmount - 1.8f * deltaSeconds);
     _state.forwardDistance += (_state.speed + 44.0f * _state.boostAmount) * deltaSeconds;
+}
+
+void FlightModel::setCollided(bool collided)
+{
+    if (collided) _state.collided = true;
 }
 
 }  // namespace vector_canyon_fighter

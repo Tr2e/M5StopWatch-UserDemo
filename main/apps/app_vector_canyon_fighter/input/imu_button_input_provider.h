@@ -20,6 +20,7 @@ private:
     uint32_t _openedAtMs = 0;
     bool _calibrated = false;
     bool _boostLatched = false;
+    bool _pauseLatched = false;
 };
 
 }  // namespace vector_canyon_fighter

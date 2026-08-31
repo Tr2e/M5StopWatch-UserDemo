@@ -1,6 +1,7 @@
 #pragma once
 
 #include "model/flight_model.h"
+#include "model/collision_model.h"
 #include "model/terrain_stream.h"
 
 #include <cstdint>
@@ -11,7 +12,7 @@ class Renderer {
 public:
     void open(int width, int height);
     void close();
-    void render(const FlightState& flight, const TerrainStream& terrain, bool inputReady);
+    void render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, bool inputReady);
 
 private:
     int _width = 0;

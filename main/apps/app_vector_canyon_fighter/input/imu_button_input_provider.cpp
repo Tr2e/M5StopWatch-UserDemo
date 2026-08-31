@@ -33,6 +33,7 @@ void ImuButtonInputProvider::open()
     _openedAtMs = GetHAL().millis();
     _calibrated = false;
     _boostLatched = false;
+    _pauseLatched = false;
 }
 
 FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
@@ -66,6 +67,12 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
     } else if (!_boostLatched) {
         input.boostPressed = true;
         _boostLatched = true;
+    }
+    if (!GetHAL().btnA.isHolding()) {
+        _pauseLatched = false;
+    } else if (!_pauseLatched) {
+        input.pausePressed = true;
+        _pauseLatched = true;
     }
     return input;
 }

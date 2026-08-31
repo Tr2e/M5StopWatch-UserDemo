@@ -44,7 +44,7 @@ void Renderer::close()
     _height = 0;
 }
 
-void Renderer::render(const FlightState& flight, const TerrainStream& terrain, bool inputReady)
+void Renderer::render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, bool inputReady)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -57,6 +57,7 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, b
     const uint16_t shipDim = display.color565(49, 93, 116);
     const uint16_t exhaust = display.color565(255, 156, 62);
     const uint16_t hudColor = display.color565(138, 198, 185);
+    const uint16_t caution = display.color565(255, 156, 62);
 
     canvas.fillScreen(TFT_BLACK);
 
@@ -124,6 +125,19 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, b
     canvas.print(flight.boostAmount > 0.0f ? "BOOST" : "CRUISE");
     canvas.setCursor(_width - 126, _height - 64);
     canvas.print(inputReady ? "IMU READY" : "IMU CAL");
+    if (flight.collided) {
+        canvas.setTextColor(caution, TFT_BLACK);
+        canvas.setCursor(centerX - 37, 202);
+        canvas.print("IMPACT: A HOLD");
+    } else if (flight.paused) {
+        canvas.setTextColor(hudColor, TFT_BLACK);
+        canvas.setCursor(centerX - 20, 202);
+        canvas.print("PAUSED");
+    } else if (collision.warning) {
+        canvas.setTextColor(caution, TFT_BLACK);
+        canvas.setCursor(centerX - 23, 202);
+        canvas.print("TERRAIN");
+    }
 
     GetHAL().updateCanvas();
 }
