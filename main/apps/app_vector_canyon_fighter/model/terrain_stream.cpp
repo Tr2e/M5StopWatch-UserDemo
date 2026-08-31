@@ -1,11 +1,185 @@
 #include "terrain_stream.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace vector_canyon_fighter {
 namespace {
 
-constexpr float kSliceSpacing = 2.15f;
+constexpr float kSliceSpacing = 0.78f;
+constexpr float kControlSpacing = 3.4f;
+constexpr int kSkeletonCount = 7;
+constexpr int kCurveSubdivisions = 4;
+
+struct DistanceSample {
+    float distance;
+    float amplitude;
+};
+
+uint32_t mixBits(uint32_t value)
+{
+    value ^= value >> 16;
+    value *= 0x7feb352du;
+    value ^= value >> 15;
+    value *= 0x846ca68bu;
+    return value ^ (value >> 16);
+}
+
+float hashSigned(int x, int z, uint32_t seed)
+{
+    const uint32_t value = mixBits(static_cast<uint32_t>(x) * 0x9e3779b9u ^
+                                   static_cast<uint32_t>(z) * 0x85ebca6bu ^ seed);
+    return static_cast<float>(value & 0xffffu) / 32767.5f - 1.0f;
+}
+
+float smoothStep(float value)
+{
+    const float t = std::clamp(value, 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+float valueNoise(float x, float z, uint32_t seed)
+{
+    const int x0 = static_cast<int>(std::floor(x));
+    const int z0 = static_cast<int>(std::floor(z));
+    const float tx = smoothStep(x - static_cast<float>(x0));
+    const float tz = smoothStep(z - static_cast<float>(z0));
+    const float a = hashSigned(x0, z0, seed);
+    const float b = hashSigned(x0 + 1, z0, seed);
+    const float c = hashSigned(x0, z0 + 1, seed);
+    const float d = hashSigned(x0 + 1, z0 + 1, seed);
+    const float top = a + (b - a) * tx;
+    const float bottom = c + (d - c) * tx;
+    return top + (bottom - top) * tz;
+}
+
+float controlNoise(int index, uint32_t seed)
+{
+    return hashSigned(index - 1, 0, seed) * 0.18f + hashSigned(index, 0, seed) * 0.64f +
+           hashSigned(index + 1, 0, seed) * 0.18f;
+}
+
+float centerControl(int index, uint32_t seed)
+{
+    const float i = static_cast<float>(index);
+    const float seedPhase = static_cast<float>(seed & 255u) * 0.013f;
+    return std::sin(i * 0.43f + seedPhase) * 0.78f + std::sin(i * 0.17f - seedPhase * 0.7f) * 0.34f +
+           controlNoise(index, seed ^ 0xa511e9b3u) * 0.22f;
+}
+
+float catmullRom(float p0, float p1, float p2, float p3, float t)
+{
+    const float t2 = t * t;
+    const float t3 = t2 * t;
+    return 0.5f * ((2.0f * p1) + (-p0 + p2) * t +
+                   (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+                   (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3);
+}
+
+float skeletonControlX(int skeleton, int index, uint32_t seed)
+{
+    const float center = centerControl(index, seed);
+    if (skeleton == 0) return center;
+
+    const bool left = skeleton <= 3;
+    const int layer = left ? skeleton : skeleton - 3;
+    constexpr float kOffsets[] = {0.0f, 2.35f, 3.70f, 4.82f};
+    const float side = left ? -1.0f : 1.0f;
+    constexpr float kCenterCoupling[] = {0.0f, 0.84f, 0.48f, 0.22f};
+    constexpr float kDriftScale[] = {0.0f, 0.34f, 0.49f, 0.62f};
+    const float independentDrift = controlNoise(index, seed ^ (0x6d2b79f5u * static_cast<uint32_t>(skeleton))) *
+                                   kDriftScale[layer];
+    const float slowFold = std::sin(static_cast<float>(index) * (0.31f + layer * 0.037f) + skeleton * 0.83f) *
+                           (0.14f + layer * 0.07f);
+    return center * kCenterCoupling[layer] + side * (kOffsets[layer] + independentDrift + slowFold);
+}
+
+float skeletonCurveX(int skeleton, float controlPosition, uint32_t seed)
+{
+    const int index = static_cast<int>(std::floor(controlPosition));
+    const float t = controlPosition - static_cast<float>(index);
+    return catmullRom(skeletonControlX(skeleton, index - 1, seed), skeletonControlX(skeleton, index, seed),
+                      skeletonControlX(skeleton, index + 1, seed), skeletonControlX(skeleton, index + 2, seed), t);
+}
+
+float amplitudeControl(int skeleton, int index, uint32_t seed)
+{
+    if (skeleton == 0) return -1.55f;
+    const int layer = skeleton <= 3 ? skeleton : skeleton - 3;
+    constexpr float kBaseAmplitude[] = {0.0f, 2.18f, 1.88f, 2.42f};
+    const float pulse = 0.56f + 0.44f * std::sin(static_cast<float>(index) * (0.69f + layer * 0.08f) +
+                                                 static_cast<float>(skeleton) * 1.17f);
+    const float variation = controlNoise(index, seed ^ (0x27d4eb2du * static_cast<uint32_t>(skeleton))) * 0.28f;
+    return std::max(0.32f, kBaseAmplitude[layer] * pulse + variation);
+}
+
+float skeletonAmplitude(int skeleton, float controlPosition, uint32_t seed)
+{
+    if (skeleton == 0) return -1.55f;
+    const int index = static_cast<int>(std::floor(controlPosition));
+    const float t = controlPosition - static_cast<float>(index);
+    return std::max(0.32f, catmullRom(amplitudeControl(skeleton, index - 1, seed),
+                                      amplitudeControl(skeleton, index, seed),
+                                      amplitudeControl(skeleton, index + 1, seed),
+                                      amplitudeControl(skeleton, index + 2, seed), t));
+}
+
+DistanceSample distanceToSkeleton(float x, float z, int skeleton, uint32_t seed)
+{
+    const float controlPosition = z / kControlSpacing;
+    const int centerSpan = static_cast<int>(std::floor(controlPosition));
+    DistanceSample best{std::numeric_limits<float>::max(), 0.0f};
+
+    for (int span = centerSpan - 2; span <= centerSpan + 1; ++span) {
+        for (int subdivision = 0; subdivision < kCurveSubdivisions; ++subdivision) {
+            const float aPosition = static_cast<float>(span) +
+                                    static_cast<float>(subdivision) / static_cast<float>(kCurveSubdivisions);
+            const float bPosition = static_cast<float>(span) +
+                                    static_cast<float>(subdivision + 1) / static_cast<float>(kCurveSubdivisions);
+            const float ax = skeletonCurveX(skeleton, aPosition, seed);
+            const float az = aPosition * kControlSpacing;
+            const float bx = skeletonCurveX(skeleton, bPosition, seed);
+            const float bz = bPosition * kControlSpacing;
+            const float dx = bx - ax;
+            const float dz = bz - az;
+            const float lengthSquared = dx * dx + dz * dz;
+            const float t = std::clamp(((x - ax) * dx + (z - az) * dz) / lengthSquared, 0.0f, 1.0f);
+            const float nearestX = ax + dx * t;
+            const float nearestZ = az + dz * t;
+            const float deltaX = x - nearestX;
+            const float deltaZ = z - nearestZ;
+            const float distance = std::sqrt(deltaX * deltaX + deltaZ * deltaZ);
+            if (distance < best.distance) {
+                best.distance = distance;
+                best.amplitude = skeletonAmplitude(skeleton, aPosition + (bPosition - aPosition) * t, seed);
+            }
+        }
+    }
+    return best;
+}
+
+float centerAt(float worldZ, uint32_t seed)
+{
+    return skeletonCurveX(0, worldZ / kControlSpacing, seed);
+}
+
+float terrainHeight(float x, float worldZ, uint32_t seed)
+{
+    float height = valueNoise(x * 0.43f, worldZ * 0.22f, seed ^ 0x68bc21ebu) * 0.17f +
+                   valueNoise(x * 0.91f, worldZ * 0.47f, seed ^ 0x02e5be93u) * 0.07f;
+
+    for (int skeleton = 0; skeleton < kSkeletonCount; ++skeleton) {
+        const DistanceSample sample = distanceToSkeleton(x, worldZ, skeleton, seed);
+        const int layer = skeleton == 0 ? 0 : (skeleton <= 3 ? skeleton : skeleton - 3);
+        constexpr float kRadius[] = {1.95f, 1.88f, 1.68f, 1.98f};
+        constexpr float kSharpness[] = {1.82f, 1.46f, 1.62f, 1.48f};
+        const float effectiveDistance = skeleton == 0 ? std::max(0.0f, sample.distance - 1.15f) : sample.distance;
+        const float envelope = std::max(0.0f, 1.0f - effectiveDistance / kRadius[layer]);
+        if (envelope > 0.0f) height += sample.amplitude * std::pow(envelope, kSharpness[layer]);
+    }
+    return height;
+}
 
 }  // namespace
 
@@ -16,7 +190,7 @@ void TerrainStream::reset(uint32_t seed)
     _lastForwardDistance = 0.0f;
     for (size_t i = 0; i < _slices.size(); ++i) {
         _slices[i] = makeSlice(static_cast<uint32_t>(i));
-        _slices[i].z = 1.15f + static_cast<float>(i) * kSliceSpacing;
+        _slices[i].z = 1.18f + static_cast<float>(i) * kSliceSpacing;
     }
 }
 
@@ -24,9 +198,9 @@ void TerrainStream::update(float forwardDistance)
 {
     const float traveled = forwardDistance - _lastForwardDistance;
     _lastForwardDistance = forwardDistance;
-    for (auto& slice : _slices) slice.z -= traveled * 0.035f;
+    for (auto& slice : _slices) slice.z -= traveled * 0.018f;
 
-    while (_slices.front().z < 0.8f) {
+    while (_slices.front().z < 0.98f) {
         for (size_t i = 1; i < _slices.size(); ++i) _slices[i - 1] = _slices[i];
         ++_firstSegment;
         _slices.back() = makeSlice(_firstSegment + static_cast<uint32_t>(_slices.size() - 1));
@@ -36,13 +210,25 @@ void TerrainStream::update(float forwardDistance)
 
 TerrainSlice TerrainStream::makeSlice(uint32_t segment) const
 {
-    const float phase = static_cast<float>((segment + _seed) % 97u) * 0.19f;
     TerrainSlice slice;
-    slice.center = std::sin(phase) * 0.72f + std::sin(phase * 0.37f) * 0.28f;
-    slice.halfWidth = 2.15f + std::sin(phase * 0.73f) * 0.42f;
-    slice.floor = -1.05f + std::sin(phase * 1.27f) * 0.46f;
-    slice.leftWall = 2.05f + std::sin(phase * 0.51f) * 0.35f;
-    slice.rightWall = 2.15f + std::cos(phase * 0.57f) * 0.38f;
+    slice.worldZ = static_cast<float>(segment) * kSliceSpacing;
+    slice.center = centerAt(slice.worldZ, _seed);
+    slice.halfWidth = 1.42f + valueNoise(slice.worldZ * 0.19f, 0.0f, _seed ^ 0x9e3779b9u) * 0.18f;
+    slice.floor = terrainHeight(slice.center, slice.worldZ, _seed);
+    slice.floorTilt = 0.0f;
+    slice.floorCrown = 0.0f;
+
+    float leftPeak = slice.floor;
+    float rightPeak = slice.floor;
+    for (size_t column = 0; column < slice.surfaceHeights.size(); ++column) {
+        const float x = TerrainStream::columnX(column);
+        const float height = terrainHeight(x, slice.worldZ, _seed);
+        slice.surfaceHeights[column] = height;
+        if (x < slice.center) leftPeak = std::max(leftPeak, height);
+        if (x > slice.center) rightPeak = std::max(rightPeak, height);
+    }
+    slice.leftWall = leftPeak;
+    slice.rightWall = rightPeak;
     return slice;
 }
 

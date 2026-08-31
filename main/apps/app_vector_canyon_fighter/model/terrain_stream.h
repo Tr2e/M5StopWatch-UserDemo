@@ -6,18 +6,35 @@
 
 namespace vector_canyon_fighter {
 
+inline constexpr std::size_t kTerrainColumnCount = 37;
+
 struct TerrainSlice {
     float z = 0.0f;
+    float worldZ = 0.0f;
     float center = 0.0f;
     float halfWidth = 2.0f;
     float floor = -1.0f;
+    float floorTilt = 0.0f;
+    float floorCrown = 0.0f;
     float leftWall = 2.0f;
     float rightWall = 2.0f;
+    float leftRidgeOutset = 0.5f;
+    float rightRidgeOutset = 0.5f;
+    std::array<float, kTerrainColumnCount> surfaceHeights = {};
 };
 
 class TerrainStream {
 public:
-    static constexpr size_t kSliceCount = 8;
+    static constexpr size_t kSliceCount = 26;
+    static constexpr size_t kColumnCount = kTerrainColumnCount;
+    static constexpr float kTerrainMinX = -5.6f;
+    static constexpr float kTerrainMaxX = 5.6f;
+
+    static constexpr float columnX(size_t column)
+    {
+        return kTerrainMinX + (kTerrainMaxX - kTerrainMinX) * static_cast<float>(column) /
+                                  static_cast<float>(kColumnCount - 1);
+    }
 
     void reset(uint32_t seed);
     void update(float forwardDistance);
