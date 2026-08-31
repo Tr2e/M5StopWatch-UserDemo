@@ -35,6 +35,7 @@ extern "C" void app_main(void)
     GetMooncake().installApp(std::make_unique<AppTyphoon>());
     GetMooncake().installApp(std::make_unique<AppGrokBotLab>());
     GetMooncake().installApp(std::make_unique<AppGlowField>());
+    GetMooncake().installApp(std::make_unique<AppVectorCanyonFighter>());
     GetMooncake().installApp(std::make_unique<AppRuView>());
     GetMooncake().installApp(std::make_unique<AppAlarmClock>());
     GetMooncake().installApp(std::make_unique<AppWatchFace>());
