@@ -4,6 +4,7 @@
 #include <mooncake_log.h>
 
 #include "input/flight_input.h"
+#include "input/imu_button_input_provider.h"
 
 namespace {
 constexpr uint32_t kFrameIntervalMs = 33;
@@ -25,6 +26,8 @@ void AppVectorCanyonFighter::onOpen()
 {
     mclog::tagInfo(getAppInfo().name, "on open");
     _keys = std::make_unique<input::KeyManager>();
+    _inputProvider = std::make_unique<vector_canyon_fighter::ImuButtonInputProvider>();
+    _inputProvider->open();
     GetHAL().stopLvglUpdate();
 
     const auto& display = GetHAL().getDisplay();
@@ -50,10 +53,10 @@ void AppVectorCanyonFighter::onRunning()
     _lastSimulationMs = nowMs;
     _simulationAccumulator += static_cast<float>(elapsedMs) / 1000.0f;
 
-    vector_canyon_fighter::FlightInput cruiseInput;
+    const auto flightInput = _inputProvider ? _inputProvider->sample(nowMs) : vector_canyon_fighter::FlightInput{};
     int simulatedSteps = 0;
     while (_simulationAccumulator >= kSimulationStepSeconds && simulatedSteps < 3) {
-        _flightModel.step(cruiseInput, kSimulationStepSeconds);
+        _flightModel.step(flightInput, kSimulationStepSeconds);
         _simulationAccumulator -= kSimulationStepSeconds;
         ++simulatedSteps;
     }
@@ -62,13 +65,15 @@ void AppVectorCanyonFighter::onRunning()
 
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
-    _renderer.render(_flightModel.state(), _terrain);
+    _renderer.render(_flightModel.state(), _terrain, flightInput.valid);
 }
 
 void AppVectorCanyonFighter::onClose()
 {
     mclog::tagInfo(getAppInfo().name, "on close");
     _renderer.close();
+    if (_inputProvider) _inputProvider->close();
+    _inputProvider.reset();
     _keys.reset();
     GetHAL().startLvglUpdate();
 }

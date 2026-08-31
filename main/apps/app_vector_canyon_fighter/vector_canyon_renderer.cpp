@@ -44,7 +44,7 @@ void Renderer::close()
     _height = 0;
 }
 
-void Renderer::render(const FlightState& flight, const TerrainStream& terrain)
+void Renderer::render(const FlightState& flight, const TerrainStream& terrain, bool inputReady)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -123,7 +123,7 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain)
     canvas.setCursor(50, _height - 46);
     canvas.print(flight.boostAmount > 0.0f ? "BOOST" : "CRUISE");
     canvas.setCursor(_width - 126, _height - 64);
-    canvas.print("IMU READY");
+    canvas.print(inputReady ? "IMU READY" : "IMU CAL");
 
     GetHAL().updateCanvas();
 }

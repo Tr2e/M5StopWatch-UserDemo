@@ -11,7 +11,7 @@ class Renderer {
 public:
     void open(int width, int height);
     void close();
-    void render(const FlightState& flight, const TerrainStream& terrain);
+    void render(const FlightState& flight, const TerrainStream& terrain, bool inputReady);
 
 private:
     int _width = 0;
