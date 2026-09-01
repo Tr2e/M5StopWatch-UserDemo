@@ -19,7 +19,8 @@ CollisionStatus CollisionModel::evaluate(const FlightState& flight, const Terrai
         if (slice.z > 4.8f) continue;
 
         const float lateralClearance = slice.halfWidth - std::fabs(flight.lateralOffset - slice.center) - kShipHalfWidth;
-        const float floorClearance = flight.altitude - slice.floor - kShipFloorClearance;
+        const float highestFloor = slice.floor + std::fabs(slice.floorTilt) + std::max(slice.floorCrown, 0.0f);
+        const float floorClearance = flight.altitude - highestFloor - kShipFloorClearance;
         status.clearance = std::min(status.clearance, std::min(lateralClearance, floorClearance));
     }
     status.warning = status.clearance < kWarningClearance;

@@ -12,9 +12,9 @@ namespace {
 constexpr int kWidth = 450;
 constexpr int kHeight = 450;
 constexpr int kCenterX = kWidth / 2;
-constexpr int kHorizonY = 160;
-constexpr float kFocalLength = 150.0f;
-constexpr float kVerticalScale = 108.0f;
+constexpr int kHorizonY = 150;
+constexpr float kFocalLength = 112.0f;
+constexpr float kVerticalScale = 94.0f;
 
 struct Pixel {
     uint8_t r = 0;
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 {
     if (argc != 2) return 2;
     vector_canyon_fighter::TerrainStream terrain;
-    terrain.reset(0x4d355f31u);
+    terrain.reset(0xC4A71001u);
     render(terrain, std::string(argv[1]) + "/terrain-r1-a.ppm");
     terrain.update(240.0f);
     render(terrain, std::string(argv[1]) + "/terrain-r1-b.ppm");
