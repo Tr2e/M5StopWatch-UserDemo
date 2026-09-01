@@ -15,6 +15,7 @@ constexpr int kCenterX = kWidth / 2;
 constexpr int kHorizonY = 150;
 constexpr float kFocalLength = 112.0f;
 constexpr float kVerticalScale = 94.0f;
+constexpr float kNearPlane = 0.22f;
 
 struct Pixel {
     uint8_t r = 0;
@@ -62,34 +63,85 @@ int projectY(float height, float z)
     return kHorizonY - static_cast<int>(kVerticalScale * height / z);
 }
 
+size_t columnStride(size_t sourceRow)
+{
+    if (sourceRow > 17) return 3;
+    if (sourceRow > 7) return 2;
+    return 1;
+}
+
 void render(const vector_canyon_fighter::TerrainStream& terrain, const std::string& path)
 {
     using vector_canyon_fighter::TerrainStream;
     Image image{};
-    std::array<std::array<int16_t, TerrainStream::kColumnCount>, TerrainStream::kSliceCount> xs{};
-    std::array<std::array<int16_t, TerrainStream::kColumnCount>, TerrainStream::kSliceCount> ys{};
+    std::array<std::array<int16_t, TerrainStream::kColumnCount>, TerrainStream::kSliceCount + 1> xs{};
+    std::array<std::array<int16_t, TerrainStream::kColumnCount>, TerrainStream::kSliceCount + 1> ys{};
+    std::array<size_t, TerrainStream::kSliceCount + 1> sourceRows{};
     const auto& slices = terrain.slices();
+    size_t rowCount = 0;
 
-    for (size_t row = 0; row < slices.size(); ++row) {
+    size_t firstVisible = 0;
+    while (firstVisible < slices.size() && slices[firstVisible].z < kNearPlane) ++firstVisible;
+
+    if (firstVisible > 0 && firstVisible < slices.size()) {
+        const auto& behind = slices[firstVisible - 1];
+        const auto& ahead = slices[firstVisible];
+        const float blend = std::clamp((kNearPlane - behind.z) / (ahead.z - behind.z), 0.0f, 1.0f);
+        const float center = behind.center + (ahead.center - behind.center) * blend;
         for (size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
-            xs[row][column] = static_cast<int16_t>(projectX(TerrainStream::columnX(column), slices[row].z));
-            ys[row][column] =
-                static_cast<int16_t>(projectY(slices[row].surfaceHeights[column], slices[row].z));
+            const float height = behind.surfaceHeights[column] +
+                                 (ahead.surfaceHeights[column] - behind.surfaceHeights[column]) * blend;
+            xs[rowCount][column] =
+                static_cast<int16_t>(projectX(TerrainStream::columnWorldX(center, column), kNearPlane));
+            ys[rowCount][column] = static_cast<int16_t>(projectY(height, kNearPlane));
         }
+        sourceRows[rowCount] = firstVisible;
+        ++rowCount;
     }
 
-    for (size_t reverse = slices.size(); reverse-- > 0;) {
-        const Pixel color = reverse > 17 ? Pixel{20, 82, 55} :
-                            reverse > 7  ? Pixel{40, 154, 98} : Pixel{82, 238, 157};
-        for (size_t column = 1; column < TerrainStream::kColumnCount; ++column) {
-            drawLine(image, xs[reverse][column - 1], ys[reverse][column - 1], xs[reverse][column],
-                     ys[reverse][column], color);
+    for (size_t row = firstVisible; row < slices.size(); ++row) {
+        for (size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
+            xs[rowCount][column] = static_cast<int16_t>(
+                projectX(TerrainStream::columnWorldX(slices[row].center, column), slices[row].z));
+            ys[rowCount][column] =
+                static_cast<int16_t>(projectY(slices[row].surfaceHeights[column], slices[row].z));
         }
-        if (reverse + 1 < slices.size()) {
-            for (size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
-                drawLine(image, xs[reverse][column], ys[reverse][column], xs[reverse + 1][column],
-                         ys[reverse + 1][column], color);
-            }
+        sourceRows[rowCount] = row;
+        ++rowCount;
+    }
+
+    auto rowColor = [&](size_t row) {
+        return sourceRows[row] > 17 ? Pixel{20, 82, 55} :
+               sourceRows[row] > 7  ? Pixel{40, 154, 98} : Pixel{82, 238, 157};
+    };
+    auto drawRow = [&](size_t row) {
+        const size_t stride = columnStride(sourceRows[row]);
+        size_t previous = 0;
+        const Pixel color = rowColor(row);
+        for (size_t column = stride; column < TerrainStream::kColumnCount; column += stride) {
+            drawLine(image, xs[row][previous], ys[row][previous], xs[row][column], ys[row][column], color);
+            previous = column;
+        }
+        const size_t last = TerrainStream::kColumnCount - 1;
+        if (previous != last) {
+            drawLine(image, xs[row][previous], ys[row][previous], xs[row][last], ys[row][last], color);
+        }
+    };
+
+    if (rowCount == 0) return;
+    drawRow(rowCount - 1);
+    for (size_t farRow = rowCount - 1; farRow > 0; --farRow) {
+        const size_t nearRow = farRow - 1;
+        drawRow(nearRow);
+        const Pixel color = rowColor(nearRow);
+        const size_t stride = std::max(columnStride(sourceRows[nearRow]), columnStride(sourceRows[farRow]));
+        const size_t last = TerrainStream::kColumnCount - 1;
+        for (size_t column = 0; column < TerrainStream::kColumnCount; column += stride) {
+            drawLine(image, xs[nearRow][column], ys[nearRow][column], xs[farRow][column], ys[farRow][column],
+                     color);
+        }
+        if (last % stride != 0) {
+            drawLine(image, xs[nearRow][last], ys[nearRow][last], xs[farRow][last], ys[farRow][last], color);
         }
     }
 

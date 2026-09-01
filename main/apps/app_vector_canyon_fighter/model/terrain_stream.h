@@ -27,6 +27,8 @@ class TerrainStream {
 public:
     static constexpr size_t kSliceCount = 26;
     static constexpr size_t kColumnCount = kTerrainColumnCount;
+    // Column samples are local offsets from each slice's canyon center so
+    // longitudinal lines follow the flight channel instead of world X.
     static constexpr float kTerrainMinX = -5.6f;
     static constexpr float kTerrainMaxX = 5.6f;
 
@@ -35,6 +37,8 @@ public:
         return kTerrainMinX + (kTerrainMaxX - kTerrainMinX) * static_cast<float>(column) /
                                   static_cast<float>(kColumnCount - 1);
     }
+
+    static constexpr float columnWorldX(float center, size_t column) { return center + columnX(column); }
 
     void reset(uint32_t seed);
     void update(float forwardDistance);

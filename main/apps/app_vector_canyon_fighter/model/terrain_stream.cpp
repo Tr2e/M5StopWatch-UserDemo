@@ -140,11 +140,17 @@ float terrainHeight(float x, float worldZ, uint32_t seed, const SliceSkeletons& 
     float height = valueNoise(x * 0.43f, worldZ * 0.22f, seed ^ 0x68bc21ebu) * 0.17f +
                    valueNoise(x * 0.91f, worldZ * 0.47f, seed ^ 0x02e5be93u) * 0.07f;
 
-    // Broad, continuous relief belongs to the mountain masses, not the flight
-    // channel. Masking it away from the valley keeps the widened groove readable
-    // while making successive ridge sections rise and fall in depth.
     const float sideDistance = std::abs(x - skeletons.x[0]);
     const float mountainMask = smoothStep((sideDistance - 1.30f) / 1.90f);
+    const float floorMask = 1.0f - mountainMask;
+
+    // Keep the widened groove, but let the floor roll. Masking all relief out of
+    // the channel left a planar strip that reads as a runway in the near field.
+    height += floorMask *
+              (valueNoise(0.0f, worldZ * 0.08f, seed ^ 0x4f6a3c21u) * 0.36f +
+               valueNoise(0.0f, worldZ * 0.26f, seed ^ 0xa7c15d9bu) * 0.22f +
+               valueNoise(x * 0.48f, worldZ * 0.21f, seed ^ 0x13d4e8f7u) * 0.16f);
+
     height += mountainMask *
               (valueNoise(x * 0.24f, worldZ * 0.16f, seed ^ 0xb5297a4du) * 0.72f +
                valueNoise(x * 0.51f, worldZ * 0.34f, seed ^ 0x1b56c4e9u) * 0.28f);
@@ -199,14 +205,21 @@ TerrainSlice TerrainStream::makeSlice(uint32_t segment) const
     slice.center = skeletons.x[0];
     slice.halfWidth = 1.42f + valueNoise(slice.worldZ * 0.19f, 0.0f, _seed ^ 0x9e3779b9u) * 0.18f;
     slice.floor = terrainHeight(slice.center, slice.worldZ, _seed, skeletons);
-    slice.floorTilt = 0.0f;
-    slice.floorCrown = 0.0f;
+    slice.floorTilt = valueNoise(slice.worldZ * 0.13f, 0.0f, _seed ^ 0xc2b2ae35u) * 0.18f;
+    slice.floorCrown = valueNoise(slice.worldZ * 0.27f, 1.0f, _seed ^ 0x27d4eb2du) * 0.12f;
 
     float leftPeak = slice.floor;
     float rightPeak = slice.floor;
     for (size_t column = 0; column < slice.surfaceHeights.size(); ++column) {
-        const float x = TerrainStream::columnX(column);
-        const float height = terrainHeight(x, slice.worldZ, _seed, skeletons);
+        const float localX = TerrainStream::columnX(column);
+        const float x = TerrainStream::columnWorldX(slice.center, column);
+        float height = terrainHeight(x, slice.worldZ, _seed, skeletons);
+        const float floorBand = std::max(slice.halfWidth, 0.2f);
+        const float absLocal = std::abs(localX);
+        if (absLocal < floorBand) {
+            const float weight = 1.0f - absLocal / floorBand;
+            height += slice.floorTilt * localX * weight + slice.floorCrown * weight;
+        }
         slice.surfaceHeights[column] = height;
         if (x < slice.center) leftPeak = std::max(leftPeak, height);
         if (x > slice.center) rightPeak = std::max(rightPeak, height);

@@ -87,6 +87,13 @@ int projectY(float worldY, float z)
     return kHorizonY - static_cast<int>(kTerrainVerticalScale * worldY / z);
 }
 
+std::size_t columnStride(std::size_t sourceRow)
+{
+    if (sourceRow > 17) return 3;
+    if (sourceRow > 7) return 2;
+    return 1;
+}
+
 }  // namespace
 
 void Renderer::open(int width, int height)
@@ -140,11 +147,12 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         const auto& behind = slices[firstVisible - 1];
         const auto& ahead = slices[firstVisible];
         const float blend = std::clamp((kTerrainNearPlane - behind.z) / (ahead.z - behind.z), 0.0f, 1.0f);
+        const float center = behind.center + (ahead.center - behind.center) * blend;
         for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
             const float height = behind.surfaceHeights[column] +
                                  (ahead.surfaceHeights[column] - behind.surfaceHeights[column]) * blend;
-            rows[rowCount].x[column] =
-                projectX(centerX, TerrainStream::columnX(column) - flight.lateralOffset, kTerrainNearPlane);
+            rows[rowCount].x[column] = projectX(
+                centerX, TerrainStream::columnWorldX(center, column) - flight.lateralOffset, kTerrainNearPlane);
             rows[rowCount].y[column] = projectY(height - flight.altitude, kTerrainNearPlane);
         }
         sourceRows[rowCount] = firstVisible;
@@ -154,7 +162,8 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     for (std::size_t row = firstVisible; row < slices.size(); ++row) {
         for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
             rows[rowCount].x[column] =
-                projectX(centerX, TerrainStream::columnX(column) - flight.lateralOffset, slices[row].z);
+                projectX(centerX, TerrainStream::columnWorldX(slices[row].center, column) - flight.lateralOffset,
+                         slices[row].z);
             rows[rowCount].y[column] = projectY(slices[row].surfaceHeights[column] - flight.altitude, slices[row].z);
         }
         sourceRows[rowCount] = row;
@@ -166,9 +175,17 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         return sourceRows[row] > 17 ? terrainSecondary : (sourceRows[row] > 7 ? terrainMid : terrainPrimary);
     };
     const auto drawRow = [&](std::size_t row) {
-        for (std::size_t column = 1; column < TerrainStream::kColumnCount; ++column) {
-            canvas.drawLine(rows[row].x[column - 1], rows[row].y[column - 1], rows[row].x[column],
-                            rows[row].y[column], rowColor(row));
+        const std::size_t stride = columnStride(sourceRows[row]);
+        std::size_t previous = 0;
+        for (std::size_t column = stride; column < TerrainStream::kColumnCount; column += stride) {
+            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[column], rows[row].y[column],
+                            rowColor(row));
+            previous = column;
+        }
+        const std::size_t last = TerrainStream::kColumnCount - 1;
+        if (previous != last) {
+            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[last], rows[row].y[last],
+                            rowColor(row));
         }
     };
 
@@ -180,9 +197,15 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     for (std::size_t farRow = rowCount - 1; farRow > 0; --farRow) {
         const std::size_t nearRow = farRow - 1;
         drawRow(nearRow);
-        for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
+        const std::size_t stride = std::max(columnStride(sourceRows[nearRow]), columnStride(sourceRows[farRow]));
+        for (std::size_t column = 0; column < TerrainStream::kColumnCount; column += stride) {
             canvas.drawLine(rows[nearRow].x[column], rows[nearRow].y[column], rows[farRow].x[column],
                             rows[farRow].y[column], rowColor(nearRow));
+        }
+        const std::size_t last = TerrainStream::kColumnCount - 1;
+        if (last % stride != 0) {
+            canvas.drawLine(rows[nearRow].x[last], rows[nearRow].y[last], rows[farRow].x[last], rows[farRow].y[last],
+                            rowColor(nearRow));
         }
     }
 
