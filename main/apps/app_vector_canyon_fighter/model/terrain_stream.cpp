@@ -7,6 +7,7 @@ namespace vector_canyon_fighter {
 namespace {
 
 constexpr float kSliceSpacing = 0.78f;
+constexpr float kRecycleZ = -0.56f;
 constexpr float kControlSpacing = 3.4f;
 constexpr int kSkeletonCount = 7;
 
@@ -179,7 +180,10 @@ void TerrainStream::update(float forwardDistance)
     _lastForwardDistance = forwardDistance;
     for (auto& slice : _slices) slice.z -= traveled * 0.018f;
 
-    while (_slices.front().z < 0.98f) {
+    // Keep one slice behind the camera. The renderer interpolates its crossing
+    // with the next slice onto a fixed near plane, so recycling cannot make the
+    // foreground jump forward by one full slice spacing.
+    while (_slices.front().z < kRecycleZ) {
         for (size_t i = 1; i < _slices.size(); ++i) _slices[i - 1] = _slices[i];
         ++_firstSegment;
         _slices.back() = makeSlice(_firstSegment + static_cast<uint32_t>(_slices.size() - 1));

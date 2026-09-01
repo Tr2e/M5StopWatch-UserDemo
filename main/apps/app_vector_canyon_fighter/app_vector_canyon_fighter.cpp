@@ -7,7 +7,7 @@
 #include "input/imu_button_input_provider.h"
 
 namespace {
-constexpr uint32_t kFrameIntervalMs = 33;
+constexpr uint32_t kFrameIntervalMs = 50;
 constexpr float kSimulationStepSeconds = 1.0f / 60.0f;
 constexpr uint32_t kTerrainSeed = 0xC4A71001u;
 }
@@ -54,7 +54,7 @@ void AppVectorCanyonFighter::onRunning()
     _lastSimulationMs = nowMs;
     _simulationAccumulator += static_cast<float>(elapsedMs) / 1000.0f;
 
-    const auto flightInput = _inputProvider ? _inputProvider->sample(nowMs) : vector_canyon_fighter::FlightInput{};
+    auto flightInput = _inputProvider ? _inputProvider->sample(nowMs) : vector_canyon_fighter::FlightInput{};
     const bool wasCollided = _flightModel.state().collided;
     int simulatedSteps = 0;
     while (_simulationAccumulator >= kSimulationStepSeconds && simulatedSteps < 3) {
