@@ -9,6 +9,7 @@ struct FlightState {
     float lateralOffset = 0.0f;
     float altitude = 0.0f;
     float speed = 72.0f;
+    float heading = 0.0f;
     float roll = 0.0f;
     float pitch = 0.0f;
     float boostAmount = 0.0f;

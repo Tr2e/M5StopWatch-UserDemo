@@ -47,6 +47,9 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     _verticalVelocity = approach(_verticalVelocity, safePitch * kMaxVerticalVelocity, response);
     _state.lateralOffset = std::clamp(_state.lateralOffset + _lateralVelocity * deltaSeconds, -1.7f, 1.7f);
     _state.altitude = std::clamp(_state.altitude + _verticalVelocity * deltaSeconds, -1.25f, 1.35f);
+    _state.heading += safeSteer * 24.0f * deltaSeconds;
+    if (_state.heading < 0.0f) _state.heading += 360.0f;
+    if (_state.heading >= 360.0f) _state.heading -= 360.0f;
     _state.roll = approach(_state.roll, -safeSteer * 18.0f, 58.0f * deltaSeconds);
     _state.pitch = approach(_state.pitch, safePitch * 12.0f, 38.0f * deltaSeconds);
 
