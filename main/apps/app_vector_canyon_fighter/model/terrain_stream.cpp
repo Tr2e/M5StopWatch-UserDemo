@@ -58,8 +58,11 @@ float centerControl(int index, uint32_t seed)
 {
     const float i = static_cast<float>(index);
     const float seedPhase = static_cast<float>(seed & 255u) * 0.013f;
-    return std::sin(i * 0.43f + seedPhase) * 0.78f + std::sin(i * 0.17f - seedPhase * 0.7f) * 0.34f +
-           controlNoise(index, seed ^ 0xa511e9b3u) * 0.22f;
+    // Ramp from 0 to 1 over the first 5 control points so the canyon
+    // starts straight and gradually develops winding after reset.
+    const float ramp = std::clamp(i, 0.0f, 5.0f) / 5.0f;
+    return ramp * (std::sin(i * 0.50f + seedPhase) * 1.45f + std::sin(i * 0.21f - seedPhase * 0.7f) * 0.68f +
+                   controlNoise(index, seed ^ 0xa511e9b3u) * 0.38f);
 }
 
 float catmullRom(float p0, float p1, float p2, float p3, float t)
@@ -147,9 +150,9 @@ float terrainHeight(float x, float worldZ, uint32_t seed, const SliceSkeletons& 
     // Keep the widened groove, but let the floor roll. Masking all relief out of
     // the channel left a planar strip that reads as a runway in the near field.
     height += floorMask *
-              (valueNoise(0.0f, worldZ * 0.08f, seed ^ 0x4f6a3c21u) * 0.36f +
-               valueNoise(0.0f, worldZ * 0.26f, seed ^ 0xa7c15d9bu) * 0.22f +
-               valueNoise(x * 0.48f, worldZ * 0.21f, seed ^ 0x13d4e8f7u) * 0.16f);
+              (valueNoise(x * 0.42f, worldZ * 0.16f, seed ^ 0x4f6a3c21u) * 0.36f +
+               valueNoise(x * 0.36f + worldZ * 0.09f, worldZ * 0.28f, seed ^ 0xa7c15d9bu) * 0.22f +
+               valueNoise(x * 0.55f, worldZ * 0.43f, seed ^ 0x13d4e8f7u) * 0.14f);
 
     height += mountainMask *
               (valueNoise(x * 0.24f, worldZ * 0.16f, seed ^ 0xb5297a4du) * 0.72f +
@@ -205,8 +208,11 @@ TerrainSlice TerrainStream::makeSlice(uint32_t segment) const
     slice.center = skeletons.x[0];
     slice.halfWidth = 1.42f + valueNoise(slice.worldZ * 0.19f, 0.0f, _seed ^ 0x9e3779b9u) * 0.18f;
     slice.floor = terrainHeight(slice.center, slice.worldZ, _seed, skeletons);
-    slice.floorTilt = valueNoise(slice.worldZ * 0.13f, 0.0f, _seed ^ 0xc2b2ae35u) * 0.18f;
-    slice.floorCrown = valueNoise(slice.worldZ * 0.27f, 1.0f, _seed ^ 0x27d4eb2du) * 0.12f;
+    slice.floorTilt = valueNoise(slice.worldZ * 0.16f, 0.0f, _seed ^ 0xc2b2ae35u) * 0.22f;
+    // Crown only arches upward; negative values would dig the floor deeper and
+    // the collision model adds |floorTilt|+max(crown,0) to the floor estimate,
+    // so a negative crown silently reduces the safety margin.
+    slice.floorCrown = std::max(0.0f, valueNoise(slice.worldZ * 0.35f, 1.0f, _seed ^ 0x27d4eb2du) * 0.14f);
 
     float leftPeak = slice.floor;
     float rightPeak = slice.floor;

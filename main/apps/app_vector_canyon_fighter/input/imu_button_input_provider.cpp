@@ -10,7 +10,7 @@ namespace {
 constexpr float kDeadZone = 0.08f;
 constexpr float kAxisSensitivity = 0.85f;
 constexpr float kFilterStrength = 0.18f;
-constexpr uint32_t kCalibrationDelayMs = 650;
+constexpr uint32_t kCalibrationDelayMs = 2500;
 
 float normalizeAxis(float value)
 {
@@ -26,13 +26,30 @@ void ImuButtonInputProvider::open()
 {
     _neutralAccelX = 0.0f;
     _neutralAccelY = 0.0f;
-    _filteredSteer = 0.0f;
-    _filteredPitch = 0.0f;
     _throttle = 0.62f;
     _sequence = 0;
     _openedAtMs = GetHAL().millis();
-    _calibrated = false;
     _pauseLatched = false;
+    startCalibration(_openedAtMs);
+}
+
+void ImuButtonInputProvider::startCalibration(uint32_t nowMs)
+{
+    _calibrated = false;
+    _calibStartMs = nowMs;
+    _accumX = 0.0f;
+    _accumY = 0.0f;
+    _accumCount = 0;
+    _filteredSteer = 0.0f;
+    _filteredPitch = 0.0f;
+}
+
+float ImuButtonInputProvider::calibrationProgress(uint32_t nowMs) const
+{
+    if (_calibrated) return 1.0f;
+    if (nowMs <= _calibStartMs) return 0.0f;
+    return std::min(1.0f, static_cast<float>(nowMs - _calibStartMs) /
+                              static_cast<float>(kCalibrationDelayMs));
 }
 
 FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
@@ -40,10 +57,15 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
     GetHAL().updateImuData();
     const auto& imu = GetHAL().getImuData();
 
-    if (!_calibrated && nowMs - _openedAtMs >= kCalibrationDelayMs) {
-        _neutralAccelX = imu.accelX;
-        _neutralAccelY = imu.accelY;
-        _calibrated = true;
+    if (!_calibrated) {
+        _accumX += imu.accelX;
+        _accumY += imu.accelY;
+        ++_accumCount;
+        if (nowMs - _calibStartMs >= kCalibrationDelayMs) {
+            _neutralAccelX = _accumCount > 0 ? _accumX / _accumCount : imu.accelX;
+            _neutralAccelY = _accumCount > 0 ? _accumY / _accumCount : imu.accelY;
+            _calibrated = true;
+        }
     }
 
     if (GetHAL().btnA.wasClicked()) _throttle = std::max(0.0f, _throttle - 0.08f);

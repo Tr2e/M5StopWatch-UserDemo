@@ -14,6 +14,9 @@ struct CollisionStatus {
 class CollisionModel {
 public:
     CollisionStatus evaluate(const FlightState& flight, const TerrainStream& terrain) const;
+
+private:
+    mutable uint32_t _frameCount = 0;
 };
 
 }  // namespace vector_canyon_fighter

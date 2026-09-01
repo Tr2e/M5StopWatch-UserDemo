@@ -39,6 +39,7 @@ void AppVectorCanyonFighter::onOpen()
     _flightModel.reset();
     _terrain.reset(kTerrainSeed);
     _collisionStatus = {};
+    _calibrationPhase = true;
     _lastFrameMs = 0;
     _lastSimulationMs = 0;
     _performanceWindowStartedMs = GetHAL().millis();
@@ -65,7 +66,34 @@ void AppVectorCanyonFighter::onRunning()
     _simulationAccumulator += static_cast<float>(elapsedMs) / 1000.0f;
 
     auto flightInput = _inputProvider ? _inputProvider->sample(nowMs) : vector_canyon_fighter::FlightInput{};
-    const bool wasCollided = _flightModel.state().collided;
+    const float calibProgress = _inputProvider ? _inputProvider->calibrationProgress(nowMs) : 0.0f;
+
+    // ── Calibration phase: wait for IMU to settle before (re)starting ──────
+    if (_calibrationPhase) {
+        _simulationAccumulator = 0.0f;
+        if (_lastFrameMs == 0 || nowMs - _lastFrameMs >= kFrameIntervalMs) {
+            _lastFrameMs = nowMs;
+            _renderer.render(_flightModel.state(), _terrain, _collisionStatus, calibProgress);
+        }
+        if (_inputProvider && _inputProvider->isCalibrated()) {
+            _flightModel.reset();
+            _terrain.reset(kTerrainSeed);
+            _collisionStatus = {};
+            _calibrationPhase = false;
+            _lastSimulationMs = GetHAL().millis();
+        }
+        return;
+    }
+
+    // ── Collision + restart intent → enter calibration ──────────────────────
+    if (_flightModel.state().collided && flightInput.pausePressed) {
+        if (_inputProvider) _inputProvider->startCalibration(nowMs);
+        _calibrationPhase = true;
+        flightInput.pausePressed = false;
+        return;
+    }
+
+    // ── Normal simulation ────────────────────────────────────────────────────
     int simulatedSteps = 0;
     while (_simulationAccumulator >= kSimulationStepSeconds && simulatedSteps < kMaxSimulationSteps) {
         _flightModel.step(flightInput, kSimulationStepSeconds);
@@ -76,7 +104,6 @@ void AppVectorCanyonFighter::onRunning()
         _simulationAccumulator = 0.0f;
         ++_simulationClampCount;
     }
-    if (wasCollided && !_flightModel.state().collided) _terrain.reset(kTerrainSeed);
     _terrain.update(_flightModel.state().forwardDistance);
     _collisionStatus = _collisionModel.evaluate(_flightModel.state(), _terrain);
     _flightModel.setCollided(_collisionStatus.collided);
@@ -84,7 +111,7 @@ void AppVectorCanyonFighter::onRunning()
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
     const uint32_t renderStartedMs = GetHAL().millis();
-    _renderer.render(_flightModel.state(), _terrain, _collisionStatus, flightInput.valid);
+    _renderer.render(_flightModel.state(), _terrain, _collisionStatus, -1.0f);
     const uint32_t renderTimeMs = GetHAL().millis() - renderStartedMs;
     _renderTimeTotalMs += renderTimeMs;
     _renderTimeMaxMs = std::max(_renderTimeMaxMs, renderTimeMs);

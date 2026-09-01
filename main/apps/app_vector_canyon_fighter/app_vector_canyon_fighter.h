@@ -35,4 +35,5 @@ private:
     uint16_t _boostedFrames = 0;
     uint16_t _simulationClampCount = 0;
     float _simulationAccumulator = 0.0f;
+    bool _calibrationPhase = false;
 };

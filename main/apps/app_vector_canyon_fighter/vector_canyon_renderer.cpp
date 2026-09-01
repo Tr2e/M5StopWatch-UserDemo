@@ -33,48 +33,82 @@ struct ShipEdge {
     uint8_t style;
 };
 
-constexpr std::array<Vec3, 50> kShipVertices = {{
+// v0-v13: fuselage  v14-v25: wings (upper L/R, lower L/R)
+// v26-v33: left-outer engine (front: top/bot/inner/outer, rear: top/bot/inner/outer)
+// v34-v41: left-inner engine   v42-v49: right-inner engine   v50-v57: right-outer engine
+// v58-v61: canopy struts   v62-v65: wing-tip weapon pods
+constexpr std::array<Vec3, 66> kShipVertices = {{
+    // Fuselage
     {0.00f, 0.02f, 3.70f},   {0.00f, 0.24f, 2.28f},   {-0.40f, 0.02f, 1.38f},
     {0.40f, 0.02f, 1.38f},   {0.00f, 0.72f, 0.88f},   {0.00f, 0.78f, -0.18f},
-    {-0.44f, 0.34f, -0.08f}, {0.44f, 0.34f, -0.08f}, {-0.56f, -0.04f, 0.02f},
-    {0.56f, -0.04f, 0.02f},  {0.00f, -0.28f, 0.92f}, {0.00f, -0.34f, -1.54f},
+    {-0.44f, 0.34f, -0.08f}, {0.44f, 0.34f, -0.08f},  {-0.56f, -0.04f, 0.02f},
+    {0.56f, -0.04f, 0.02f},  {0.00f, -0.28f, 0.92f},  {0.00f, -0.34f, -1.54f},
     {0.00f, 0.14f, -2.18f},  {0.00f, -0.22f, -2.34f},
-
+    // Wings: upper left, upper right, lower left, lower right
     {-0.62f, 0.16f, 0.55f},  {-1.65f, 0.38f, -0.05f}, {-3.00f, 0.62f, -0.72f},
     {0.62f, 0.16f, 0.55f},   {1.65f, 0.38f, -0.05f},  {3.00f, 0.62f, -0.72f},
-    {-0.62f, -0.14f, 0.10f}, {-1.55f, -0.42f, -0.55f}, {-2.75f, -0.68f, -1.28f},
-    {0.62f, -0.14f, 0.10f},  {1.55f, -0.42f, -0.55f},  {2.75f, -0.68f, -1.28f},
-
-    {-1.65f, 0.48f, -0.25f}, {-1.65f, 0.04f, -0.25f}, {-1.65f, 0.36f, -1.55f},
-    {-1.65f, -0.08f, -1.55f}, {-0.70f, 0.00f, -0.35f}, {-0.70f, -0.44f, -0.35f},
-    {-0.70f, -0.10f, -1.72f}, {-0.70f, -0.54f, -1.72f}, {0.70f, 0.00f, -0.35f},
-    {0.70f, -0.44f, -0.35f}, {0.70f, -0.10f, -1.72f}, {0.70f, -0.54f, -1.72f},
-    {1.65f, 0.48f, -0.25f},  {1.65f, 0.04f, -0.25f},  {1.65f, 0.36f, -1.55f},
-    {1.65f, -0.08f, -1.55f},
-
-    {-0.52f, 0.20f, -1.50f}, {-0.64f, 1.02f, -1.88f}, {0.52f, 0.20f, -1.50f},
-    {0.64f, 1.02f, -1.88f}, {-3.06f, 0.62f, -1.62f}, {3.06f, 0.62f, -1.62f},
-    {-2.80f, -0.68f, -2.04f}, {2.80f, -0.68f, -2.04f},
+    {-0.62f, -0.14f, 0.10f}, {-1.55f, -0.42f, -0.55f},{-2.75f, -0.68f, -1.28f},
+    {0.62f, -0.14f, 0.10f},  {1.55f, -0.42f, -0.55f}, {2.75f, -0.68f, -1.28f},
+    // Left outer engine nacelle – front ring (top, bot, inner x+, outer x-)
+    {-1.65f, 0.48f, -0.28f}, {-1.65f, 0.04f, -0.28f}, {-1.43f, 0.26f, -0.28f}, {-1.87f, 0.26f, -0.28f},
+    // Left outer engine – rear ring
+    {-1.65f, 0.36f, -1.55f}, {-1.65f, -0.08f, -1.55f},{-1.43f, 0.14f, -1.55f}, {-1.87f, 0.14f, -1.55f},
+    // Left inner engine nacelle – front ring
+    {-0.70f, 0.00f, -0.38f}, {-0.70f, -0.44f, -0.38f},{-0.48f, -0.22f, -0.38f},{-0.92f, -0.22f, -0.38f},
+    // Left inner engine – rear ring
+    {-0.70f, -0.10f, -1.72f},{-0.70f, -0.54f, -1.72f},{-0.48f, -0.32f, -1.72f},{-0.92f, -0.32f, -1.72f},
+    // Right inner engine nacelle – front ring
+    {0.70f, 0.00f, -0.38f},  {0.70f, -0.44f, -0.38f}, {0.92f, -0.22f, -0.38f}, {0.48f, -0.22f, -0.38f},
+    // Right inner engine – rear ring
+    {0.70f, -0.10f, -1.72f}, {0.70f, -0.54f, -1.72f}, {0.92f, -0.32f, -1.72f}, {0.48f, -0.32f, -1.72f},
+    // Right outer engine nacelle – front ring
+    {1.65f, 0.48f, -0.28f},  {1.65f, 0.04f, -0.28f},  {1.87f, 0.26f, -0.28f},  {1.43f, 0.26f, -0.28f},
+    // Right outer engine – rear ring
+    {1.65f, 0.36f, -1.55f},  {1.65f, -0.08f, -1.55f}, {1.87f, 0.14f, -1.55f},  {1.43f, 0.14f, -1.55f},
+    // Canopy struts
+    {-0.52f, 0.20f, -1.50f}, {-0.64f, 1.02f, -1.88f}, {0.52f, 0.20f, -1.50f},  {0.64f, 1.02f, -1.88f},
+    // Wing tip weapon pods
+    {-3.06f, 0.62f, -1.62f}, {3.06f, 0.62f, -1.62f},  {-2.80f, -0.68f, -2.04f},{2.80f, -0.68f, -2.04f},
 }};
 
-constexpr std::array<ShipEdge, 78> kShipEdges = {{
+constexpr std::array<ShipEdge, 114> kShipEdges = {{
+    // Fuselage
     {0, 1, 1}, {0, 2, 1}, {0, 3, 1}, {1, 2, 0}, {1, 3, 0}, {1, 4, 2},
     {4, 5, 2}, {4, 6, 2}, {4, 7, 2}, {5, 6, 2}, {5, 7, 2}, {6, 7, 2},
     {2, 8, 1}, {3, 9, 1}, {2, 10, 0}, {3, 10, 0}, {8, 9, 0}, {8, 11, 1},
     {9, 11, 1}, {10, 11, 0}, {8, 12, 1}, {9, 12, 1}, {11, 13, 0}, {12, 13, 1},
-
+    // Upper wings
     {2, 14, 1}, {14, 15, 1}, {15, 16, 1}, {16, 8, 1}, {14, 16, 0}, {15, 8, 0},
     {3, 17, 1}, {17, 18, 1}, {18, 19, 1}, {19, 9, 1}, {17, 19, 0}, {18, 9, 0},
+    // Lower wings
     {8, 20, 1}, {20, 21, 1}, {21, 22, 1}, {22, 11, 1}, {20, 22, 0}, {21, 11, 0},
     {9, 23, 1}, {23, 24, 1}, {24, 25, 1}, {25, 11, 1}, {23, 25, 0}, {24, 11, 0},
-
-    {26, 27, 1}, {26, 28, 1}, {27, 29, 1}, {28, 29, 1}, {15, 26, 0},
-    {38, 39, 1}, {38, 40, 1}, {39, 41, 1}, {40, 41, 1}, {18, 38, 0},
-    {30, 31, 1}, {30, 32, 1}, {31, 33, 1}, {32, 33, 1}, {20, 30, 0},
-    {34, 35, 1}, {34, 36, 1}, {35, 37, 1}, {36, 37, 1}, {23, 34, 0},
-
-    {8, 42, 1}, {42, 43, 1}, {43, 12, 1}, {9, 44, 1}, {44, 45, 1}, {45, 12, 1},
-    {16, 46, 1}, {19, 47, 1}, {22, 48, 1}, {25, 49, 1},
+    // Wing S-foil cross-sections (upper mid/tip ↔ lower mid/tip for thickness)
+    {15, 21, 0}, {16, 22, 0}, {18, 24, 0}, {19, 25, 0},
+    // Left outer engine: front ring (top→inner→bot→outer→top)
+    {26, 28, 0}, {28, 27, 0}, {27, 29, 0}, {29, 26, 0},
+    // rear ring + longitudinals + wing attachment
+    {30, 32, 0}, {32, 31, 0}, {31, 33, 0}, {33, 30, 0},
+    {26, 30, 1}, {27, 31, 1}, {28, 32, 0}, {29, 33, 0}, {15, 26, 0},
+    // Left inner engine: front ring
+    {34, 36, 0}, {36, 35, 0}, {35, 37, 0}, {37, 34, 0},
+    // rear ring + longitudinals + wing attachment
+    {38, 40, 0}, {40, 39, 0}, {39, 41, 0}, {41, 38, 0},
+    {34, 38, 1}, {35, 39, 1}, {36, 40, 0}, {37, 41, 0}, {20, 34, 0},
+    // Right inner engine: front ring
+    {42, 44, 0}, {44, 43, 0}, {43, 45, 0}, {45, 42, 0},
+    // rear ring + longitudinals + wing attachment
+    {46, 48, 0}, {48, 47, 0}, {47, 49, 0}, {49, 46, 0},
+    {42, 46, 1}, {43, 47, 1}, {44, 48, 0}, {45, 49, 0}, {23, 42, 0},
+    // Right outer engine: front ring
+    {50, 52, 0}, {52, 51, 0}, {51, 53, 0}, {53, 50, 0},
+    // rear ring + longitudinals + wing attachment
+    {54, 56, 0}, {56, 55, 0}, {55, 57, 0}, {57, 54, 0},
+    {50, 54, 1}, {51, 55, 1}, {52, 56, 0}, {53, 57, 0}, {18, 50, 0},
+    // Canopy struts
+    {8, 58, 1}, {58, 59, 1}, {59, 12, 1}, {9, 60, 1}, {60, 61, 1}, {61, 12, 1},
+    // Wing tip weapon pods
+    {16, 62, 1}, {19, 63, 1}, {22, 64, 1}, {25, 65, 1},
 }};
 
 int projectX(int centerX, float worldX, float z)
@@ -108,7 +142,7 @@ void Renderer::close()
     _height = 0;
 }
 
-void Renderer::render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, bool inputReady)
+void Renderer::render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, float calibrationProgress)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -121,7 +155,7 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     const uint16_t shipColor = display.color565(233, 242, 242);
     const uint16_t shipDim = display.color565(71, 102, 109);
     const uint16_t canopyColor = display.color565(88, 166, 216);
-    const uint16_t exhaust = display.color565(255, 209, 102);
+    const uint16_t exhaust = display.color565(255, 236, 155);
     const uint16_t hudColor = display.color565(128, 216, 232);
     const uint16_t hudDim = display.color565(39, 95, 105);
     const uint16_t hudAccent = display.color565(227, 251, 255);
@@ -133,6 +167,37 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     // nested drawing calls only update the framebuffer; endWrite submits the
     // completed frame once.
     display.startWrite();
+
+    // Calibration overlay: shown before game starts / after restart
+    if (calibrationProgress >= 0.0f && calibrationProgress < 1.0f) {
+        canvas.fillScreen(TFT_BLACK);
+        const int cx = _width / 2;
+        const int cy = _height / 2;
+        canvas.setTextSize(2);
+        canvas.setTextColor(hudAccent, TFT_BLACK);
+        canvas.setCursor(cx - 88, cy - 48);
+        canvas.print("CALIBRATING");
+        canvas.setTextSize(1);
+        canvas.setTextColor(hudColor, TFT_BLACK);
+        canvas.setCursor(cx - 72, cy - 20);
+        canvas.print("HOLD DEVICE LEVEL");
+        // Progress bar (80px wide, 8px tall)
+        constexpr int kBarW = 160;
+        constexpr int kBarH = 8;
+        const int barX = cx - kBarW / 2;
+        const int barY = cy + 4;
+        canvas.drawRect(barX - 1, barY - 1, kBarW + 2, kBarH + 2, hudDim);
+        const int filled = static_cast<int>(calibrationProgress * kBarW);
+        canvas.fillRect(barX, barY, filled, kBarH, hudColor);
+        // Countdown
+        const float remaining = (1.0f - calibrationProgress) * 2.5f;
+        canvas.setTextColor(hudDim, TFT_BLACK);
+        canvas.setCursor(cx - 14, cy + 22);
+        canvas.printf("%.1fs", remaining);
+        display.endWrite();
+        return;
+    }
+
     canvas.fillScreen(TFT_BLACK);
 
     std::array<ProjectedTerrainRow, TerrainStream::kSliceCount + 1> rows = {};
@@ -246,6 +311,39 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         canvas.drawLine(from[0], from[1], to[0], to[1], exhaust);
     }
 
+    // Mach ring (shock diamond) effect – animated contracting diamond rings along each plume
+    if (flight.boostAmount > 0.08f) {
+        const uint16_t machColor = display.color565(60, 200, 255);
+        const float machPhase = static_cast<float>(GetHAL().millis() % 400u) / 400.0f;
+        const std::array<float, 12> kNozzles = {{
+            -1.65f,  0.14f, -1.55f,
+            -0.70f, -0.32f, -1.72f,
+             0.70f, -0.32f, -1.72f,
+             1.65f,  0.14f, -1.55f,
+        }};
+        for (int eng = 0; eng < 4; ++eng) {
+            const float nx = kNozzles[static_cast<size_t>(eng) * 3];
+            const float ny = kNozzles[static_cast<size_t>(eng) * 3 + 1];
+            const float nz = kNozzles[static_cast<size_t>(eng) * 3 + 2];
+            for (int ring = 0; ring < 2; ++ring) {
+                const float frac = std::fmod(machPhase + ring * 0.5f, 1.0f);
+                const float ringZ = nz - 0.12f - frac * 0.80f;
+                const float r = 0.21f * (0.45f + 0.42f * std::sin(frac * 3.14159f));
+                const std::array<Vec3, 4> pts = {{
+                    {nx,       ny + r, ringZ},
+                    {nx + r,   ny,     ringZ},
+                    {nx,       ny - r, ringZ},
+                    {nx - r,   ny,     ringZ},
+                }};
+                for (int s = 0; s < 4; ++s) {
+                    const auto p1 = projectShip(pts[static_cast<size_t>(s)]);
+                    const auto p2 = projectShip(pts[static_cast<size_t>((s + 1) % 4)]);
+                    canvas.drawLine(p1[0], p1[1], p2[0], p2[1], machColor);
+                }
+            }
+        }
+    }
+
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setTextSize(1);
 
@@ -253,7 +351,7 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     canvas.setCursor(92, 50);
     canvas.print("VR-01");
     canvas.setCursor(_width - 120, 50);
-    canvas.print(inputReady ? "NAV" : "CAL");
+    canvas.print("NAV");
     canvas.setCursor(centerX - 25, 42);
     canvas.print("HDG");
     canvas.setCursor(centerX + 1, 42);
@@ -382,7 +480,7 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     canvas.drawLine(deviationX, kCourseY - 4, deviationX + 4, kCourseY - 9, hudAccent);
 
     canvas.setCursor(92, _height - 48);
-    canvas.print(inputReady ? "IN IMU" : "IN CAL");
+    canvas.print("IN IMU");
     canvas.setCursor(_width - 143, _height - 48);
     canvas.setTextColor(flight.boostAmount > 0.05f ? caution : hudColor, TFT_BLACK);
     canvas.print(flight.boostAmount > 0.05f ? "THR BOOST" : "THR CRZ");

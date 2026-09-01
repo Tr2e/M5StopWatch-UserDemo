@@ -8,7 +8,7 @@ namespace {
 constexpr float kMinSpeed = 42.0f;
 constexpr float kMaxSpeed = 132.0f;
 constexpr float kResponse = 5.2f;
-constexpr float kMaxLateralVelocity = 1.4f;
+constexpr float kMaxLateralVelocity = 1.8f;
 constexpr float kMaxVerticalVelocity = 1.1f;
 
 float approach(float current, float target, float amount)
@@ -23,6 +23,7 @@ void FlightModel::reset()
 {
     _state = {};
     _state.speed = 72.0f;
+    _state.altitude = 0.5f;
     _lateralVelocity = 0.0f;
     _verticalVelocity = 0.0f;
 }
@@ -45,7 +46,7 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     _state.speed = approach(_state.speed, targetSpeed, 42.0f * deltaSeconds);
     _lateralVelocity = approach(_lateralVelocity, safeSteer * kMaxLateralVelocity, response);
     _verticalVelocity = approach(_verticalVelocity, safePitch * kMaxVerticalVelocity, response);
-    _state.lateralOffset = std::clamp(_state.lateralOffset + _lateralVelocity * deltaSeconds, -1.7f, 1.7f);
+    _state.lateralOffset = std::clamp(_state.lateralOffset + _lateralVelocity * deltaSeconds, -3.2f, 3.2f);
     _state.altitude = std::clamp(_state.altitude + _verticalVelocity * deltaSeconds, -1.25f, 1.35f);
     _state.heading += safeSteer * 24.0f * deltaSeconds;
     if (_state.heading < 0.0f) _state.heading += 360.0f;
