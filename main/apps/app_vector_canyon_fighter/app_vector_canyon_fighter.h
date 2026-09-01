@@ -28,5 +28,11 @@ private:
     vector_canyon_fighter::TerrainStream _terrain;
     uint32_t _lastFrameMs = 0;
     uint32_t _lastSimulationMs = 0;
+    uint32_t _performanceWindowStartedMs = 0;
+    uint32_t _renderTimeTotalMs = 0;
+    uint32_t _renderTimeMaxMs = 0;
+    uint16_t _renderedFrames = 0;
+    uint16_t _boostedFrames = 0;
+    uint16_t _simulationClampCount = 0;
     float _simulationAccumulator = 0.0f;
 };

@@ -9,6 +9,7 @@ struct FlightInput {
     float pitch = 0.0f;
     float throttle = 0.62f;
     bool boostPressed = false;
+    bool boostActive = false;
     bool pausePressed = false;
     bool valid = true;
     uint32_t sequence = 0;

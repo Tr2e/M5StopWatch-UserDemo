@@ -3,13 +3,17 @@
 #include <hal/hal.h>
 #include <mooncake_log.h>
 
+#include <algorithm>
+
 #include "input/flight_input.h"
 #include "input/imu_button_input_provider.h"
 
 namespace {
-constexpr uint32_t kFrameIntervalMs = 50;
+constexpr uint32_t kFrameIntervalMs = 33;
 constexpr float kSimulationStepSeconds = 1.0f / 60.0f;
+constexpr int kMaxSimulationSteps = 5;
 constexpr uint32_t kTerrainSeed = 0xC4A71001u;
+constexpr uint32_t kPerformanceWindowMs = 5000;
 }
 
 AppVectorCanyonFighter::AppVectorCanyonFighter()
@@ -37,6 +41,12 @@ void AppVectorCanyonFighter::onOpen()
     _collisionStatus = {};
     _lastFrameMs = 0;
     _lastSimulationMs = 0;
+    _performanceWindowStartedMs = GetHAL().millis();
+    _renderTimeTotalMs = 0;
+    _renderTimeMaxMs = 0;
+    _renderedFrames = 0;
+    _boostedFrames = 0;
+    _simulationClampCount = 0;
     _simulationAccumulator = 0.0f;
 }
 
@@ -57,12 +67,15 @@ void AppVectorCanyonFighter::onRunning()
     auto flightInput = _inputProvider ? _inputProvider->sample(nowMs) : vector_canyon_fighter::FlightInput{};
     const bool wasCollided = _flightModel.state().collided;
     int simulatedSteps = 0;
-    while (_simulationAccumulator >= kSimulationStepSeconds && simulatedSteps < 3) {
+    while (_simulationAccumulator >= kSimulationStepSeconds && simulatedSteps < kMaxSimulationSteps) {
         _flightModel.step(flightInput, kSimulationStepSeconds);
         _simulationAccumulator -= kSimulationStepSeconds;
         ++simulatedSteps;
     }
-    if (simulatedSteps == 3) _simulationAccumulator = 0.0f;
+    if (simulatedSteps == kMaxSimulationSteps && _simulationAccumulator >= kSimulationStepSeconds) {
+        _simulationAccumulator = 0.0f;
+        ++_simulationClampCount;
+    }
     if (wasCollided && !_flightModel.state().collided) _terrain.reset(kTerrainSeed);
     _terrain.update(_flightModel.state().forwardDistance);
     _collisionStatus = _collisionModel.evaluate(_flightModel.state(), _terrain);
@@ -70,7 +83,28 @@ void AppVectorCanyonFighter::onRunning()
 
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
+    const uint32_t renderStartedMs = GetHAL().millis();
     _renderer.render(_flightModel.state(), _terrain, _collisionStatus, flightInput.valid);
+    const uint32_t renderTimeMs = GetHAL().millis() - renderStartedMs;
+    _renderTimeTotalMs += renderTimeMs;
+    _renderTimeMaxMs = std::max(_renderTimeMaxMs, renderTimeMs);
+    ++_renderedFrames;
+    if (_flightModel.state().boostAmount > 0.8f) ++_boostedFrames;
+
+    const uint32_t performanceElapsedMs = GetHAL().millis() - _performanceWindowStartedMs;
+    if (performanceElapsedMs >= kPerformanceWindowMs && _renderedFrames > 0) {
+        const uint32_t fpsTenths = static_cast<uint32_t>(_renderedFrames) * 10000u / performanceElapsedMs;
+        const uint32_t averageRenderMs = _renderTimeTotalMs / _renderedFrames;
+        mclog::tagInfo(getAppInfo().name, "perf fps={}.{} render={}ms max={}ms boost={}/{} clamps={}",
+                       fpsTenths / 10, fpsTenths % 10, averageRenderMs, _renderTimeMaxMs, _boostedFrames,
+                       _renderedFrames, _simulationClampCount);
+        _performanceWindowStartedMs = GetHAL().millis();
+        _renderTimeTotalMs = 0;
+        _renderTimeMaxMs = 0;
+        _renderedFrames = 0;
+        _boostedFrames = 0;
+        _simulationClampCount = 0;
+    }
 }
 
 void AppVectorCanyonFighter::onClose()

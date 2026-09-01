@@ -106,19 +106,26 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     if (_width <= 0 || _height <= 0) return;
 
     auto& display = GetHAL().getDisplay();
-    auto& canvas = GetHAL().getCanvas();
+    auto& canvas = display;
     const int centerX = _width / 2;
-    const uint16_t terrainPrimary = display.color565(255, 106, 51);
-    const uint16_t terrainMid = display.color565(168, 56, 23);
-    const uint16_t terrainSecondary = display.color565(82, 29, 16);
-    const uint16_t shipColor = display.color565(214, 244, 255);
-    const uint16_t shipDim = display.color565(52, 112, 136);
-    const uint16_t canopyColor = display.color565(74, 224, 255);
-    const uint16_t exhaust = display.color565(255, 179, 51);
-    const uint16_t hudColor = display.color565(0, 255, 102);
-    const uint16_t hudDim = display.color565(0, 104, 47);
-    const uint16_t caution = display.color565(255, 234, 0);
+    const uint16_t terrainPrimary = display.color565(255, 113, 56);
+    const uint16_t terrainMid = display.color565(182, 70, 36);
+    const uint16_t terrainSecondary = display.color565(87, 39, 29);
+    const uint16_t shipColor = display.color565(233, 242, 242);
+    const uint16_t shipDim = display.color565(71, 102, 109);
+    const uint16_t canopyColor = display.color565(88, 166, 216);
+    const uint16_t exhaust = display.color565(255, 209, 102);
+    const uint16_t hudColor = display.color565(128, 216, 232);
+    const uint16_t hudDim = display.color565(39, 95, 105);
+    const uint16_t hudAccent = display.color565(227, 251, 255);
+    const uint16_t caution = display.color565(255, 225, 90);
 
+    // The StopWatch display already owns a PSRAM framebuffer. Drawing into a
+    // second full-screen sprite and pushing it duplicated the entire 468x466
+    // memory copy before every panel transfer. Hold one outer transaction so
+    // nested drawing calls only update the framebuffer; endWrite submits the
+    // completed frame once.
+    display.startWrite();
     canvas.fillScreen(TFT_BLACK);
 
     std::array<ProjectedTerrainRow, TerrainStream::kSliceCount + 1> rows = {};
@@ -165,7 +172,10 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         }
     };
 
-    if (rowCount == 0) return;
+    if (rowCount == 0) {
+        display.endWrite();
+        return;
+    }
     drawRow(rowCount - 1);
     for (std::size_t farRow = rowCount - 1; farRow > 0; --farRow) {
         const std::size_t nearRow = farRow - 1;
@@ -217,22 +227,22 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     canvas.setTextSize(1);
 
     const int heading = static_cast<int>(flight.heading + 0.5f) % 360;
-    canvas.setCursor(52, 50);
+    canvas.setCursor(92, 50);
     canvas.print("VR-01");
-    canvas.setCursor(_width - 79, 50);
+    canvas.setCursor(_width - 120, 50);
     canvas.print(inputReady ? "NAV" : "CAL");
     canvas.setCursor(centerX - 25, 42);
     canvas.print("HDG");
     canvas.setCursor(centerX + 1, 42);
     canvas.printf("%03d", heading);
-    canvas.drawLine(centerX - 55, 63, centerX + 55, 63, terrainSecondary);
+    canvas.drawLine(centerX - 55, 63, centerX + 55, 63, hudDim);
     for (int tick = -2; tick <= 2; ++tick) {
         const int x = centerX + tick * 22;
         const int length = tick == 0 ? 8 : 4;
-        canvas.drawLine(x, 63, x, 63 + length, tick == 0 ? canopyColor : hudColor);
+        canvas.drawLine(x, 63, x, 63 + length, tick == 0 ? hudAccent : hudColor);
     }
-    canvas.drawLine(centerX - 4, 75, centerX, 69, canopyColor);
-    canvas.drawLine(centerX, 69, centerX + 4, 75, canopyColor);
+    canvas.drawLine(centerX - 4, 75, centerX, 69, hudAccent);
+    canvas.drawLine(centerX, 69, centerX + 4, 75, hudAccent);
 
     // Bank scale: fixed ticks with a moving cyan pointer.
     constexpr int kBankCenterY = 112;
@@ -249,7 +259,7 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     const float bankPointerRadians = (-flight.roll - 90.0f) * 0.0174532925f;
     const int bankPointerX = centerX + static_cast<int>(std::cos(bankPointerRadians) * (kBankRadius - 10));
     const int bankPointerY = kBankCenterY + static_cast<int>(std::sin(bankPointerRadians) * (kBankRadius - 10));
-    canvas.drawCircle(bankPointerX, bankPointerY, 2, canopyColor);
+    canvas.drawCircle(bankPointerX, bankPointerY, 2, hudAccent);
 
     // Pitch ladder rotates with roll while labels remain upright for legibility.
     const int attitudeY = kHorizonY + static_cast<int>(flight.pitch * 1.25f);
@@ -286,10 +296,10 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
 
     // Flight-path marker follows the canyon vanishing point. The W marker is
     // the fixed aircraft datum, so their separation communicates flight path.
-    canvas.drawCircle(vanishingX, kHorizonY, 5, canopyColor);
-    canvas.drawLine(vanishingX - 14, kHorizonY, vanishingX - 5, kHorizonY, canopyColor);
-    canvas.drawLine(vanishingX + 5, kHorizonY, vanishingX + 14, kHorizonY, canopyColor);
-    canvas.drawLine(vanishingX, kHorizonY - 10, vanishingX, kHorizonY - 5, canopyColor);
+    canvas.drawCircle(vanishingX, kHorizonY, 5, hudAccent);
+    canvas.drawLine(vanishingX - 14, kHorizonY, vanishingX - 5, kHorizonY, hudAccent);
+    canvas.drawLine(vanishingX + 5, kHorizonY, vanishingX + 14, kHorizonY, hudAccent);
+    canvas.drawLine(vanishingX, kHorizonY - 10, vanishingX, kHorizonY - 5, hudAccent);
     constexpr int kDatumY = 188;
     canvas.drawLine(centerX - 24, kDatumY, centerX - 8, kDatumY, hudColor);
     canvas.drawLine(centerX - 8, kDatumY, centerX, kDatumY + 7, hudColor);
@@ -309,9 +319,9 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         const bool major = tick % 2 == 0;
         canvas.drawLine(45, y, major ? 59 : 52, y, major ? hudColor : hudDim);
     }
-    canvas.drawLine(40, speedMarkerY, 61, speedMarkerY, canopyColor);
-    canvas.drawLine(61, speedMarkerY, 65, speedMarkerY - 3, canopyColor);
-    canvas.drawLine(61, speedMarkerY, 65, speedMarkerY + 3, canopyColor);
+    canvas.drawLine(40, speedMarkerY, 61, speedMarkerY, hudAccent);
+    canvas.drawLine(61, speedMarkerY, 65, speedMarkerY - 3, hudAccent);
+    canvas.drawLine(61, speedMarkerY, 65, speedMarkerY + 3, hudAccent);
     canvas.setTextColor(hudDim, TFT_BLACK);
     canvas.setCursor(35, 270);
     canvas.printf("T%02d", std::clamp(static_cast<int>((flight.speed - 42.0f) * 0.67f), 0, 60));
@@ -330,9 +340,9 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         const bool major = tick % 2 == 0;
         canvas.drawLine(_width - 45, y, _width - (major ? 59 : 52), y, major ? hudColor : hudDim);
     }
-    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 40, altitudeMarkerY, canopyColor);
-    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY - 3, canopyColor);
-    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY + 3, canopyColor);
+    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 40, altitudeMarkerY, hudAccent);
+    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY - 3, hudAccent);
+    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY + 3, hudAccent);
     canvas.setTextColor(hudDim, TFT_BLACK);
     canvas.setCursor(_width - 75, 270);
     canvas.printf("P%+03d", static_cast<int>(flight.pitch));
@@ -345,12 +355,12 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         canvas.drawLine(x, kCourseY - 3, x, kCourseY + 3, tick == 0 ? hudColor : hudDim);
     }
     const int deviationX = centerX + std::clamp(static_cast<int>(flight.lateralOffset * 19.0f), -42, 42);
-    canvas.drawLine(deviationX - 4, kCourseY - 9, deviationX, kCourseY - 4, canopyColor);
-    canvas.drawLine(deviationX, kCourseY - 4, deviationX + 4, kCourseY - 9, canopyColor);
+    canvas.drawLine(deviationX - 4, kCourseY - 9, deviationX, kCourseY - 4, hudAccent);
+    canvas.drawLine(deviationX, kCourseY - 4, deviationX + 4, kCourseY - 9, hudAccent);
 
-    canvas.setCursor(48, _height - 48);
+    canvas.setCursor(92, _height - 48);
     canvas.print(inputReady ? "IN IMU" : "IN CAL");
-    canvas.setCursor(_width - 88, _height - 48);
+    canvas.setCursor(_width - 143, _height - 48);
     canvas.setTextColor(flight.boostAmount > 0.05f ? caution : hudColor, TFT_BLACK);
     canvas.print(flight.boostAmount > 0.05f ? "THR BOOST" : "THR CRZ");
     canvas.setTextColor(hudColor, TFT_BLACK);
@@ -372,7 +382,7 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
         canvas.print("TERRAIN");
     }
 
-    GetHAL().updateCanvas();
+    display.endWrite();
 }
 
 }  // namespace vector_canyon_fighter

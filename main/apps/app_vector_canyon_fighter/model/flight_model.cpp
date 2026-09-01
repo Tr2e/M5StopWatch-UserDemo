@@ -54,7 +54,9 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     _state.pitch = approach(_state.pitch, safePitch * 12.0f, 38.0f * deltaSeconds);
 
     if (input.boostPressed) _state.boostAmount = 1.0f;
-    _state.boostAmount = std::max(0.0f, _state.boostAmount - 1.8f * deltaSeconds);
+    const float boostTarget = input.boostActive ? 1.0f : 0.0f;
+    const float boostResponse = (input.boostActive ? 5.5f : 1.8f) * deltaSeconds;
+    _state.boostAmount = approach(_state.boostAmount, boostTarget, boostResponse);
     _state.forwardDistance += (_state.speed + 44.0f * _state.boostAmount) * deltaSeconds;
 }
 
