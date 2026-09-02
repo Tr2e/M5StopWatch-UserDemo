@@ -56,6 +56,27 @@ struct CurveSample {
 
 using CurveSamples = std::array<CurveSample, kSliceCount>;
 
+enum class CanyonSide : uint8_t {
+    Left,
+    Right,
+};
+
+struct ShoulderEvent {
+    CanyonSide side = CanyonSide::Left;
+    float centerArcLength = 0.0f;
+    float halfLength = 1.0f;
+    float amplitude = 0.0f;
+};
+
+struct CanyonBoundary {
+    float leftWidth = kFloorHalfWidth;
+    float rightWidth = kFloorHalfWidth;
+    float leftIntrusion = 0.0f;
+    float rightIntrusion = 0.0f;
+};
+
+using CanyonBoundaries = std::array<CanyonBoundary, kSliceCount>;
+
 constexpr Pixel kNearColor{78, 228, 252};
 constexpr Pixel kMidColor{31, 159, 202};
 constexpr Pixel kFarColor{14, 75, 111};
@@ -353,6 +374,60 @@ CanyonMesh makeCurvedMesh(const Profile& profile, const CurveSamples& samples)
     return mesh;
 }
 
+float compactShoulderBump(float normalizedDistance)
+{
+    const float x = std::clamp(1.0f - std::abs(normalizedDistance), 0.0f, 1.0f);
+    return x * x * x * (10.0f + x * (-15.0f + 6.0f * x));
+}
+
+CanyonBoundaries makeBoundaries(const CurveSamples& samples, const ShoulderEvent& event)
+{
+    CanyonBoundaries boundaries{};
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        const float normalizedDistance = (samples[slice].arcLength - event.centerArcLength) / event.halfLength;
+        const float intrusion = event.amplitude * compactShoulderBump(normalizedDistance);
+        if (event.side == CanyonSide::Left) {
+            boundaries[slice].leftIntrusion = intrusion;
+            boundaries[slice].leftWidth -= intrusion;
+        } else {
+            boundaries[slice].rightIntrusion = intrusion;
+            boundaries[slice].rightWidth -= intrusion;
+        }
+    }
+    return boundaries;
+}
+
+float deformedLateral(const Profile& profile, std::size_t point, const CanyonBoundary& boundary)
+{
+    if (point < 7) return profile[point].lateral + boundary.leftIntrusion;
+    if (point > 17) return profile[point].lateral - boundary.rightIntrusion;
+    if (point <= 12) return profile[point].lateral * boundary.leftWidth / kFloorHalfWidth;
+    return profile[point].lateral * boundary.rightWidth / kFloorHalfWidth;
+}
+
+Profile deformProfile(const Profile& profile, const CanyonBoundary& boundary)
+{
+    Profile deformed = profile;
+    for (std::size_t point = 0; point < profile.size(); ++point) {
+        deformed[point].lateral = deformedLateral(profile, point, boundary);
+    }
+    return deformed;
+}
+
+CanyonMesh makeShoulderMesh(const Profile& profile, const CurveSamples& samples,
+                            const CanyonBoundaries& boundaries)
+{
+    CanyonMesh mesh{};
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        for (std::size_t point = 0; point < profile.size(); ++point) {
+            const float lateral = deformedLateral(profile, point, boundaries[slice]);
+            const Vec2 ground = samples[slice].center + samples[slice].normal * lateral;
+            mesh[slice][point] = {ground.x, profile[point].height, ground.y};
+        }
+    }
+    return mesh;
+}
+
 bool validateCurvedMesh(const CanyonMesh& mesh, const CurveSamples& samples)
 {
     constexpr float kEpsilon = 0.001f;
@@ -384,6 +459,135 @@ bool validateCurvedMesh(const CanyonMesh& mesh, const CurveSamples& samples)
         }
     }
     return maxCenterX - minCenterX >= 2.5f;
+}
+
+float meshLateral(const CanyonMesh& mesh, const CurveSamples& samples, std::size_t slice, std::size_t point)
+{
+    const Vec2 delta{mesh[slice][point].x - samples[slice].center.x,
+                     mesh[slice][point].z - samples[slice].center.y};
+    return dot(delta, samples[slice].normal);
+}
+
+bool validateShoulderMesh(const Profile& profile, const CanyonMesh& mesh, const CurveSamples& samples,
+                          const CanyonBoundaries& boundaries, const ShoulderEvent& event)
+{
+    constexpr float kEpsilon = 0.001f;
+    constexpr float kShipFullWidthWithWarnings = 1.44f;
+    float maximumIntrusion = 0.0f;
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        const CanyonBoundary& boundary = boundaries[slice];
+        const float activeIntrusion = event.side == CanyonSide::Left ? boundary.leftIntrusion : boundary.rightIntrusion;
+        maximumIntrusion = std::max(maximumIntrusion, activeIntrusion);
+        if (boundary.leftWidth + boundary.rightWidth <= kShipFullWidthWithWarnings) return false;
+        if (event.side == CanyonSide::Left &&
+            (std::abs(boundary.rightIntrusion) > kEpsilon || std::abs(boundary.rightWidth - kFloorHalfWidth) > kEpsilon)) {
+            return false;
+        }
+        if (event.side == CanyonSide::Right &&
+            (std::abs(boundary.leftIntrusion) > kEpsilon || std::abs(boundary.leftWidth - kFloorHalfWidth) > kEpsilon)) {
+            return false;
+        }
+
+        const float normalizedDistance = (samples[slice].arcLength - event.centerArcLength) / event.halfLength;
+        if (std::abs(normalizedDistance) >= 1.0f && activeIntrusion != 0.0f) return false;
+        for (std::size_t point = 0; point < profile.size(); ++point) {
+            const float expectedLateral = deformedLateral(profile, point, boundary);
+            if (std::abs(meshLateral(mesh, samples, slice, point) - expectedLateral) > kEpsilon ||
+                std::abs(mesh[slice][point].y - profile[point].height) > kEpsilon) {
+                return false;
+            }
+        }
+
+        const float leftEdge = meshLateral(mesh, samples, slice, 7);
+        const float rightEdge = meshLateral(mesh, samples, slice, 17);
+        if (std::abs(leftEdge + boundary.leftWidth) > kEpsilon ||
+            std::abs(rightEdge - boundary.rightWidth) > kEpsilon) {
+            return false;
+        }
+        for (std::size_t point = 0; point < 7; ++point) {
+            const float expectedOffset = profile[point].lateral - profile[7].lateral;
+            if (std::abs((meshLateral(mesh, samples, slice, point) - leftEdge) - expectedOffset) > kEpsilon) {
+                return false;
+            }
+        }
+        for (std::size_t point = 18; point < profile.size(); ++point) {
+            const float expectedOffset = profile[point].lateral - profile[17].lateral;
+            if (std::abs((meshLateral(mesh, samples, slice, point) - rightEdge) - expectedOffset) > kEpsilon) {
+                return false;
+            }
+        }
+
+        if (slice > 0) {
+            if (std::abs(boundary.leftWidth - boundaries[slice - 1].leftWidth) > 0.40f ||
+                std::abs(boundary.rightWidth - boundaries[slice - 1].rightWidth) > 0.40f) {
+                return false;
+            }
+            const Vec2 averageTangent = normalize(samples[slice - 1].tangent + samples[slice].tangent);
+            for (const std::size_t rail : {std::size_t{0}, std::size_t{24}}) {
+                const Vec2 railDelta{mesh[slice][rail].x - mesh[slice - 1][rail].x,
+                                     mesh[slice][rail].z - mesh[slice - 1][rail].z};
+                if (dot(railDelta, averageTangent) <= 0.0f) return false;
+            }
+        }
+    }
+    return std::abs(maximumIntrusion - event.amplitude) < kEpsilon &&
+           std::abs(boundaries.front().leftWidth - kFloorHalfWidth) < kEpsilon &&
+           std::abs(boundaries.front().rightWidth - kFloorHalfWidth) < kEpsilon &&
+           std::abs(boundaries.back().leftWidth - kFloorHalfWidth) < kEpsilon &&
+           std::abs(boundaries.back().rightWidth - kFloorHalfWidth) < kEpsilon;
+}
+
+void appendShoulderMetrics(std::ofstream& output, const char* name, const Profile& profile, const CanyonMesh& mesh,
+                           const CurveSamples& samples, const CanyonBoundaries& boundaries,
+                           const ShoulderEvent& event)
+{
+    float minimumWidth = 1000.0f;
+    float minimumLeftWidth = 1000.0f;
+    float minimumRightWidth = 1000.0f;
+    float maximumBoundaryStep = 0.0f;
+    float maximumCollisionMismatch = 0.0f;
+    float maximumRigidWallError = 0.0f;
+    float maximumIntrusion = 0.0f;
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        const CanyonBoundary& boundary = boundaries[slice];
+        minimumLeftWidth = std::min(minimumLeftWidth, boundary.leftWidth);
+        minimumRightWidth = std::min(minimumRightWidth, boundary.rightWidth);
+        minimumWidth = std::min(minimumWidth, boundary.leftWidth + boundary.rightWidth);
+        maximumIntrusion = std::max(maximumIntrusion,
+                                    event.side == CanyonSide::Left ? boundary.leftIntrusion : boundary.rightIntrusion);
+        const float leftEdge = meshLateral(mesh, samples, slice, 7);
+        const float rightEdge = meshLateral(mesh, samples, slice, 17);
+        maximumCollisionMismatch =
+            std::max(maximumCollisionMismatch,
+                     std::max(std::abs(leftEdge + boundary.leftWidth), std::abs(rightEdge - boundary.rightWidth)));
+        for (std::size_t point = 0; point < 7; ++point) {
+            const float rigidError = std::abs((meshLateral(mesh, samples, slice, point) - leftEdge) -
+                                              (profile[point].lateral - profile[7].lateral));
+            maximumRigidWallError = std::max(maximumRigidWallError, rigidError);
+        }
+        for (std::size_t point = 18; point < profile.size(); ++point) {
+            const float rigidError = std::abs((meshLateral(mesh, samples, slice, point) - rightEdge) -
+                                              (profile[point].lateral - profile[17].lateral));
+            maximumRigidWallError = std::max(maximumRigidWallError, rigidError);
+        }
+        if (slice > 0) {
+            maximumBoundaryStep =
+                std::max(maximumBoundaryStep,
+                         std::max(std::abs(boundary.leftWidth - boundaries[slice - 1].leftWidth),
+                                  std::abs(boundary.rightWidth - boundaries[slice - 1].rightWidth)));
+        }
+    }
+
+    output << name << ".event_center_arc=" << event.centerArcLength << '\n';
+    output << name << ".event_half_length=" << event.halfLength << '\n';
+    output << name << ".event_amplitude=" << event.amplitude << '\n';
+    output << name << ".maximum_sampled_intrusion=" << maximumIntrusion << '\n';
+    output << name << ".minimum_left_width=" << minimumLeftWidth << '\n';
+    output << name << ".minimum_right_width=" << minimumRightWidth << '\n';
+    output << name << ".minimum_total_width=" << minimumWidth << '\n';
+    output << name << ".maximum_boundary_step=" << maximumBoundaryStep << '\n';
+    output << name << ".maximum_collision_edge_mismatch=" << maximumCollisionMismatch << '\n';
+    output << name << ".maximum_rigid_wall_error=" << maximumRigidWallError << '\n';
 }
 
 void writeCurveMetrics(const CurveSamples& samples, const std::string& path)
@@ -419,6 +623,18 @@ void writeCurveMetrics(const CurveSamples& samples, const std::string& path)
     output << "centerline_lateral_span=" << maximumCenterX - minimumCenterX << '\n';
 }
 
+void writeShoulderMetrics(const Profile& profile, const CanyonMesh& leftMesh, const CanyonMesh& rightMesh,
+                          const CurveSamples& samples, const CanyonBoundaries& leftBoundaries,
+                          const CanyonBoundaries& rightBoundaries, const ShoulderEvent& leftEvent,
+                          const ShoulderEvent& rightEvent, const std::string& path)
+{
+    std::ofstream output(path);
+    output << std::fixed << std::setprecision(6);
+    output << "ship_full_width_with_warning_margins=1.440000\n";
+    appendShoulderMetrics(output, "left", profile, leftMesh, samples, leftBoundaries, leftEvent);
+    appendShoulderMetrics(output, "right", profile, rightMesh, samples, rightBoundaries, rightEvent);
+}
+
 struct Camera {
     Vec3 position;
     Vec3 right;
@@ -431,8 +647,8 @@ Camera makeCamera()
     Camera camera{};
     camera.position = {0.0f, 0.95f, 0.0f};
     camera.forward = normalize(Vec3{0.0f, 0.20f, 14.0f} - camera.position);
-    camera.right = normalize(cross(camera.forward, Vec3{0.0f, 1.0f, 0.0f}));
-    camera.up = normalize(cross(camera.right, camera.forward));
+    camera.right = normalize(cross(Vec3{0.0f, 1.0f, 0.0f}, camera.forward));
+    camera.up = normalize(cross(camera.forward, camera.right));
     return camera;
 }
 
@@ -611,11 +827,12 @@ void renderCrossSection(const Profile& profile, const std::string& path)
 
     // Clear-width dimension line below the floor, with end caps at both collision boundaries.
     constexpr float kDimensionY = 412.0f;
-    drawLine(image, sectionX(-kFloorHalfWidth), kDimensionY, sectionX(kFloorHalfWidth), kDimensionY, kWarningColor);
-    drawLine(image, sectionX(-kFloorHalfWidth), kDimensionY - 7.0f, sectionX(-kFloorHalfWidth), kDimensionY + 7.0f,
+    drawLine(image, sectionX(profile[7].lateral), kDimensionY, sectionX(profile[17].lateral), kDimensionY,
              kWarningColor);
-    drawLine(image, sectionX(kFloorHalfWidth), kDimensionY - 7.0f, sectionX(kFloorHalfWidth), kDimensionY + 7.0f,
-             kWarningColor);
+    drawLine(image, sectionX(profile[7].lateral), kDimensionY - 7.0f, sectionX(profile[7].lateral),
+             kDimensionY + 7.0f, kWarningColor);
+    drawLine(image, sectionX(profile[17].lateral), kDimensionY - 7.0f, sectionX(profile[17].lateral),
+             kDimensionY + 7.0f, kWarningColor);
 
     applyRoundMask(image);
     writePpm(image, path);
@@ -631,15 +848,41 @@ int main(int argc, char** argv)
     if (!validateProfile(profile)) return 3;
 
     const bool renderA2 = argc == 3 && std::string(argv[2]) == "a2";
-    if (argc == 3 && !renderA2) return 2;
-    if (renderA2) {
+    const bool renderA3 = argc == 3 && std::string(argv[2]) == "a3";
+    if (argc == 3 && !renderA2 && !renderA3) return 2;
+    if (renderA2 || renderA3) {
         const CurveSamples samples = makeCurvedSamples();
-        const CanyonMesh mesh = makeCurvedMesh(profile, samples);
-        if (!validateCurvedMesh(mesh, samples)) return 4;
-        renderPerspective(mesh, outputDirectory + "/a2-perspective.ppm");
-        renderCurvedTopDebug(mesh, samples, outputDirectory + "/a2-top-debug.ppm");
-        renderCrossSection(profile, outputDirectory + "/a2-cross-section.ppm");
-        writeCurveMetrics(samples, outputDirectory + "/a2-metrics.txt");
+        const CanyonMesh baseMesh = makeCurvedMesh(profile, samples);
+        if (!validateCurvedMesh(baseMesh, samples)) return 4;
+        if (renderA2) {
+            renderPerspective(baseMesh, outputDirectory + "/a2-perspective.ppm");
+            renderCurvedTopDebug(baseMesh, samples, outputDirectory + "/a2-top-debug.ppm");
+            renderCrossSection(profile, outputDirectory + "/a2-cross-section.ppm");
+            writeCurveMetrics(samples, outputDirectory + "/a2-metrics.txt");
+        } else {
+            constexpr std::size_t kEventCenterSlice = 13;
+            const float halfLength = samples[6].arcLength - samples[0].arcLength;
+            const ShoulderEvent leftEvent{CanyonSide::Left, samples[kEventCenterSlice].arcLength, halfLength, 1.15f};
+            const ShoulderEvent rightEvent{CanyonSide::Right, samples[kEventCenterSlice].arcLength, halfLength, 1.15f};
+            const CanyonBoundaries leftBoundaries = makeBoundaries(samples, leftEvent);
+            const CanyonBoundaries rightBoundaries = makeBoundaries(samples, rightEvent);
+            const CanyonMesh leftMesh = makeShoulderMesh(profile, samples, leftBoundaries);
+            const CanyonMesh rightMesh = makeShoulderMesh(profile, samples, rightBoundaries);
+            if (!validateShoulderMesh(profile, leftMesh, samples, leftBoundaries, leftEvent) ||
+                !validateShoulderMesh(profile, rightMesh, samples, rightBoundaries, rightEvent)) {
+                return 5;
+            }
+            renderPerspective(leftMesh, outputDirectory + "/a3-left-perspective.ppm");
+            renderCurvedTopDebug(leftMesh, samples, outputDirectory + "/a3-left-top-debug.ppm");
+            renderCrossSection(deformProfile(profile, leftBoundaries[kEventCenterSlice]),
+                               outputDirectory + "/a3-left-cross-section.ppm");
+            renderPerspective(rightMesh, outputDirectory + "/a3-right-perspective.ppm");
+            renderCurvedTopDebug(rightMesh, samples, outputDirectory + "/a3-right-top-debug.ppm");
+            renderCrossSection(deformProfile(profile, rightBoundaries[kEventCenterSlice]),
+                               outputDirectory + "/a3-right-cross-section.ppm");
+            writeShoulderMetrics(profile, leftMesh, rightMesh, samples, leftBoundaries, rightBoundaries, leftEvent,
+                                 rightEvent, outputDirectory + "/a3-metrics.txt");
+        }
     } else {
         const CanyonMesh mesh = makeStraightMesh(profile);
         if (!validateStraightMesh(mesh)) return 3;
