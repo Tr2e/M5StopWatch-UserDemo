@@ -1,0 +1,8 @@
+slice_count=34
+arc_length=36.916771
+target_arc_spacing=1.118690
+minimum_chord_spacing=1.117707
+maximum_chord_spacing=1.118690
+maximum_abs_dot_t_n=0.000000
+maximum_curvature_outer_offset_product=0.779578
+centerline_lateral_span=3.284108

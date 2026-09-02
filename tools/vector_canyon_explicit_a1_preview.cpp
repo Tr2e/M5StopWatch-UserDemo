@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <iomanip>
 #include <string>
 
 namespace {
@@ -46,6 +47,15 @@ using Image = std::array<Pixel, kImageWidth * kImageHeight>;
 using Profile = std::array<ProfilePoint, kProfileCount>;
 using CanyonMesh = std::array<std::array<Vec3, kProfileCount>, kSliceCount>;
 
+struct CurveSample {
+    Vec2 center;
+    Vec2 tangent;
+    Vec2 normal;
+    float arcLength = 0.0f;
+};
+
+using CurveSamples = std::array<CurveSample, kSliceCount>;
+
 constexpr Pixel kNearColor{78, 228, 252};
 constexpr Pixel kMidColor{31, 159, 202};
 constexpr Pixel kFarColor{14, 75, 111};
@@ -71,6 +81,22 @@ Vec3 normalize(Vec3 value)
 Vec3 cross(Vec3 a, Vec3 b)
 {
     return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+Vec2 operator+(Vec2 a, Vec2 b) { return {a.x + b.x, a.y + b.y}; }
+
+Vec2 operator-(Vec2 a, Vec2 b) { return {a.x - b.x, a.y - b.y}; }
+
+Vec2 operator*(Vec2 value, float scale) { return {value.x * scale, value.y * scale}; }
+
+float dot(Vec2 a, Vec2 b) { return a.x * b.x + a.y * b.y; }
+
+float length(Vec2 value) { return std::sqrt(dot(value, value)); }
+
+Vec2 normalize(Vec2 value)
+{
+    const float magnitude = length(value);
+    return magnitude > 0.00001f ? value * (1.0f / magnitude) : Vec2{};
 }
 
 void putPixel(Image& image, int x, int y, Pixel color)
@@ -240,6 +266,159 @@ bool validateStraightMesh(const CanyonMesh& mesh)
     return true;
 }
 
+float centripetalKnot(float previousKnot, Vec2 from, Vec2 to)
+{
+    return previousKnot + std::sqrt(std::max(length(to - from), 0.00001f));
+}
+
+Vec2 timedBlend(Vec2 from, Vec2 to, float fromKnot, float toKnot, float knot)
+{
+    const float denominator = std::max(toKnot - fromKnot, 0.00001f);
+    const float weight = (knot - fromKnot) / denominator;
+    return from * (1.0f - weight) + to * weight;
+}
+
+Vec2 centripetalCatmullRom(Vec2 p0, Vec2 p1, Vec2 p2, Vec2 p3, float normalizedT)
+{
+    const float t0 = 0.0f;
+    const float t1 = centripetalKnot(t0, p0, p1);
+    const float t2 = centripetalKnot(t1, p1, p2);
+    const float t3 = centripetalKnot(t2, p2, p3);
+    const float t = t1 + std::clamp(normalizedT, 0.0f, 1.0f) * (t2 - t1);
+    const Vec2 a1 = timedBlend(p0, p1, t0, t1, t);
+    const Vec2 a2 = timedBlend(p1, p2, t1, t2, t);
+    const Vec2 a3 = timedBlend(p2, p3, t2, t3, t);
+    const Vec2 b1 = timedBlend(a1, a2, t0, t2, t);
+    const Vec2 b2 = timedBlend(a2, a3, t1, t3, t);
+    return timedBlend(b1, b2, t1, t2, t);
+}
+
+CurveSamples makeCurvedSamples()
+{
+    constexpr std::array<Vec2, 11> kControls = {{
+        {-0.30f, -2.5f}, {0.00f, 2.0f}, {0.72f, 6.5f}, {0.30f, 11.0f},
+        {-1.00f, 15.5f}, {-1.42f, 20.0f}, {-0.18f, 24.5f}, {1.36f, 29.0f},
+        {1.82f, 33.5f}, {0.78f, 38.0f}, {-0.42f, 42.5f},
+    }};
+    constexpr std::size_t kSamplesPerSegment = 48;
+    constexpr std::size_t kDenseCapacity = 512;
+    std::array<Vec2, kDenseCapacity> dense{};
+    std::array<float, kDenseCapacity> cumulative{};
+    std::size_t denseCount = 0;
+
+    for (std::size_t segment = 0; segment + 3 < kControls.size(); ++segment) {
+        for (std::size_t step = 0; step <= kSamplesPerSegment; ++step) {
+            if (segment > 0 && step == 0) continue;
+            const float t = static_cast<float>(step) / static_cast<float>(kSamplesPerSegment);
+            dense[denseCount++] = centripetalCatmullRom(kControls[segment], kControls[segment + 1],
+                                                        kControls[segment + 2], kControls[segment + 3], t);
+        }
+    }
+
+    cumulative[0] = 0.0f;
+    for (std::size_t point = 1; point < denseCount; ++point) {
+        cumulative[point] = cumulative[point - 1] + length(dense[point] - dense[point - 1]);
+    }
+
+    CurveSamples samples{};
+    const float totalLength = cumulative[denseCount - 1];
+    std::size_t denseCursor = 1;
+    for (std::size_t sample = 0; sample < samples.size(); ++sample) {
+        const float target = totalLength * static_cast<float>(sample) / static_cast<float>(samples.size() - 1);
+        while (denseCursor + 1 < denseCount && cumulative[denseCursor] < target) ++denseCursor;
+        const float segmentLength = std::max(cumulative[denseCursor] - cumulative[denseCursor - 1], 0.00001f);
+        const float blend = (target - cumulative[denseCursor - 1]) / segmentLength;
+        samples[sample].center = dense[denseCursor - 1] * (1.0f - blend) + dense[denseCursor] * blend;
+        samples[sample].arcLength = target;
+    }
+
+    for (std::size_t sample = 0; sample < samples.size(); ++sample) {
+        const Vec2 previous = samples[sample == 0 ? sample : sample - 1].center;
+        const Vec2 next = samples[sample + 1 < samples.size() ? sample + 1 : sample].center;
+        samples[sample].tangent = normalize(next - previous);
+        samples[sample].normal = {samples[sample].tangent.y, -samples[sample].tangent.x};
+    }
+    return samples;
+}
+
+CanyonMesh makeCurvedMesh(const Profile& profile, const CurveSamples& samples)
+{
+    CanyonMesh mesh{};
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        for (std::size_t point = 0; point < profile.size(); ++point) {
+            const Vec2 ground = samples[slice].center + samples[slice].normal * profile[point].lateral;
+            mesh[slice][point] = {ground.x, profile[point].height, ground.y};
+        }
+    }
+    return mesh;
+}
+
+bool validateCurvedMesh(const CanyonMesh& mesh, const CurveSamples& samples)
+{
+    constexpr float kEpsilon = 0.001f;
+    const float targetSpacing = samples.back().arcLength / static_cast<float>(samples.size() - 1);
+    float minCenterX = samples.front().center.x;
+    float maxCenterX = samples.front().center.x;
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        minCenterX = std::min(minCenterX, samples[slice].center.x);
+        maxCenterX = std::max(maxCenterX, samples[slice].center.x);
+        if (std::abs(dot(samples[slice].tangent, samples[slice].normal)) > kEpsilon) return false;
+        if (std::abs(length(samples[slice].tangent) - 1.0f) > kEpsilon ||
+            std::abs(length(samples[slice].normal) - 1.0f) > kEpsilon) {
+            return false;
+        }
+        if (slice > 0) {
+            const float spacing = length(samples[slice].center - samples[slice - 1].center);
+            if (std::abs(spacing - targetSpacing) > 0.02f) return false;
+            if (samples[slice].center.y <= samples[slice - 1].center.y) return false;
+            const float tangentDot = std::clamp(dot(samples[slice - 1].tangent, samples[slice].tangent), -1.0f, 1.0f);
+            const float curvature = std::acos(tangentDot) / std::max(spacing, 0.0001f);
+            if (curvature * 7.0f >= 0.95f) return false;
+
+            for (const std::size_t rail : {std::size_t{0}, std::size_t{24}}) {
+                const Vec2 railDelta{mesh[slice][rail].x - mesh[slice - 1][rail].x,
+                                     mesh[slice][rail].z - mesh[slice - 1][rail].z};
+                const Vec2 averageTangent = normalize(samples[slice - 1].tangent + samples[slice].tangent);
+                if (dot(railDelta, averageTangent) <= 0.0f) return false;
+            }
+        }
+    }
+    return maxCenterX - minCenterX >= 2.5f;
+}
+
+void writeCurveMetrics(const CurveSamples& samples, const std::string& path)
+{
+    float minimumSpacing = 1000.0f;
+    float maximumSpacing = 0.0f;
+    float maximumFrameDot = 0.0f;
+    float maximumCurvatureOffsetProduct = 0.0f;
+    float minimumCenterX = samples.front().center.x;
+    float maximumCenterX = samples.front().center.x;
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        minimumCenterX = std::min(minimumCenterX, samples[slice].center.x);
+        maximumCenterX = std::max(maximumCenterX, samples[slice].center.x);
+        maximumFrameDot = std::max(maximumFrameDot, std::abs(dot(samples[slice].tangent, samples[slice].normal)));
+        if (slice == 0) continue;
+        const float spacing = length(samples[slice].center - samples[slice - 1].center);
+        minimumSpacing = std::min(minimumSpacing, spacing);
+        maximumSpacing = std::max(maximumSpacing, spacing);
+        const float tangentDot = std::clamp(dot(samples[slice - 1].tangent, samples[slice].tangent), -1.0f, 1.0f);
+        const float curvature = std::acos(tangentDot) / std::max(spacing, 0.0001f);
+        maximumCurvatureOffsetProduct = std::max(maximumCurvatureOffsetProduct, curvature * 7.0f);
+    }
+
+    std::ofstream output(path);
+    output << std::fixed << std::setprecision(6);
+    output << "slice_count=" << samples.size() << '\n';
+    output << "arc_length=" << samples.back().arcLength << '\n';
+    output << "target_arc_spacing=" << samples.back().arcLength / static_cast<float>(samples.size() - 1) << '\n';
+    output << "minimum_chord_spacing=" << minimumSpacing << '\n';
+    output << "maximum_chord_spacing=" << maximumSpacing << '\n';
+    output << "maximum_abs_dot_t_n=" << maximumFrameDot << '\n';
+    output << "maximum_curvature_outer_offset_product=" << maximumCurvatureOffsetProduct << '\n';
+    output << "centerline_lateral_span=" << maximumCenterX - minimumCenterX << '\n';
+}
+
 struct Camera {
     Vec3 position;
     Vec3 right;
@@ -371,6 +550,44 @@ void renderTopDebug(const CanyonMesh& mesh, const std::string& path)
     writePpm(image, path);
 }
 
+float curvedTopX(float worldX) { return 225.0f + worldX * 22.0f; }
+
+float curvedTopY(float worldZ) { return 425.0f - (worldZ - 1.5f) * 10.55f; }
+
+void renderCurvedTopDebug(const CanyonMesh& mesh, const CurveSamples& samples, const std::string& path)
+{
+    Image image{};
+    constexpr std::array<std::size_t, 7> kSemanticRails = {0, 3, 7, 12, 17, 21, 24};
+    for (const std::size_t point : kSemanticRails) {
+        const Pixel color = point == 12 ? kAxisColor : ((point == 7 || point == 17) ? kEdgeColor : kMidColor);
+        for (std::size_t slice = 1; slice < mesh.size(); ++slice) {
+            drawLine(image, curvedTopX(mesh[slice - 1][point].x), curvedTopY(mesh[slice - 1][point].z),
+                     curvedTopX(mesh[slice][point].x), curvedTopY(mesh[slice][point].z), color);
+        }
+    }
+
+    for (std::size_t slice = 0; slice < mesh.size(); slice += 4) {
+        drawLine(image, curvedTopX(mesh[slice][0].x), curvedTopY(mesh[slice][0].z),
+                 curvedTopX(mesh[slice][24].x), curvedTopY(mesh[slice][24].z), kGuideColor);
+    }
+
+    constexpr std::array<std::size_t, 4> kFrameSlices = {4, 12, 21, 29};
+    for (const std::size_t slice : kFrameSlices) {
+        const Vec2 center = samples[slice].center;
+        const Vec2 tangentEnd = center + samples[slice].tangent * 2.2f;
+        const Vec2 normalLeft = center - samples[slice].normal * 1.45f;
+        const Vec2 normalRight = center + samples[slice].normal * 1.45f;
+        drawLine(image, curvedTopX(center.x), curvedTopY(center.y), curvedTopX(tangentEnd.x),
+                 curvedTopY(tangentEnd.y), kAxisColor);
+        drawLine(image, curvedTopX(normalLeft.x), curvedTopY(normalLeft.y), curvedTopX(normalRight.x),
+                 curvedTopY(normalRight.y), kWarningColor);
+        drawPoint(image, curvedTopX(center.x), curvedTopY(center.y), kEdgeColor);
+    }
+
+    applyRoundMask(image);
+    writePpm(image, path);
+}
+
 float sectionX(float lateral) { return 225.0f + lateral * 27.0f; }
 
 float sectionY(float height) { return 390.0f - height * 82.0f; }
@@ -408,13 +625,27 @@ void renderCrossSection(const Profile& profile, const std::string& path)
 
 int main(int argc, char** argv)
 {
-    if (argc != 2) return 2;
+    if (argc != 2 && argc != 3) return 2;
     const std::string outputDirectory = argv[1];
     const Profile profile = makeProfile();
-    const CanyonMesh mesh = makeStraightMesh(profile);
-    if (!validateProfile(profile) || !validateStraightMesh(mesh)) return 3;
-    renderPerspective(mesh, outputDirectory + "/a1-perspective.ppm");
-    renderTopDebug(mesh, outputDirectory + "/a1-top-debug.ppm");
-    renderCrossSection(profile, outputDirectory + "/a1-cross-section.ppm");
+    if (!validateProfile(profile)) return 3;
+
+    const bool renderA2 = argc == 3 && std::string(argv[2]) == "a2";
+    if (argc == 3 && !renderA2) return 2;
+    if (renderA2) {
+        const CurveSamples samples = makeCurvedSamples();
+        const CanyonMesh mesh = makeCurvedMesh(profile, samples);
+        if (!validateCurvedMesh(mesh, samples)) return 4;
+        renderPerspective(mesh, outputDirectory + "/a2-perspective.ppm");
+        renderCurvedTopDebug(mesh, samples, outputDirectory + "/a2-top-debug.ppm");
+        renderCrossSection(profile, outputDirectory + "/a2-cross-section.ppm");
+        writeCurveMetrics(samples, outputDirectory + "/a2-metrics.txt");
+    } else {
+        const CanyonMesh mesh = makeStraightMesh(profile);
+        if (!validateStraightMesh(mesh)) return 3;
+        renderPerspective(mesh, outputDirectory + "/a1-perspective.ppm");
+        renderTopDebug(mesh, outputDirectory + "/a1-top-debug.ppm");
+        renderCrossSection(profile, outputDirectory + "/a1-cross-section.ppm");
+    }
     return 0;
 }
