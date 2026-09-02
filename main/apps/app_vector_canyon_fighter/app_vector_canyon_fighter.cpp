@@ -2,11 +2,14 @@
 
 #include <hal/hal.h>
 #include <mooncake_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include <algorithm>
 
 #include "input/flight_input.h"
 #include "input/imu_button_input_provider.h"
+#include "explicit_canyon_preview_schedule.h"
 
 namespace {
 constexpr uint32_t kFrameIntervalMs = 33;
@@ -46,6 +49,8 @@ void AppVectorCanyonFighter::onOpen()
 #if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
 #if VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
     _terrain.resetStraightBaseline();
+#elif VECTOR_CANYON_EXPLICIT_EVENT_STREAM
+    _terrain.reset(kTerrainSeed);
 #else
     _terrain.resetCurvedBaseline(kTerrainSeed);
 #endif
@@ -67,6 +72,8 @@ void AppVectorCanyonFighter::onOpen()
     _boostedFrames = 0;
     _simulationClampCount = 0;
     _simulationAccumulator = 0.0f;
+    _previewForwardDistance = 0.0f;
+    _previewStartedMs = GetHAL().millis();
 }
 
 void AppVectorCanyonFighter::onRunning()
@@ -79,6 +86,20 @@ void AppVectorCanyonFighter::onRunning()
 
 #if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
     const uint32_t nowMs = GetHAL().millis();
+#if VECTOR_CANYON_EXPLICIT_EVENT_STREAM
+    if (_lastSimulationMs == 0) _lastSimulationMs = nowMs;
+    const uint32_t rawElapsedMs = nowMs - _lastSimulationMs;
+    _lastSimulationMs = nowMs;
+    const uint32_t elapsedMs = std::min(rawElapsedMs, static_cast<uint32_t>(250));
+    if (rawElapsedMs > elapsedMs) ++_simulationClampCount;
+    const uint32_t previewElapsedMs = nowMs - _previewStartedMs;
+    const bool previewBoosted = vector_canyon_fighter::isExplicitCanyonPreviewBoosted(previewElapsedMs);
+    const float previewSpeed = vector_canyon_fighter::explicitCanyonPreviewSpeed(previewElapsedMs);
+    _previewForwardDistance += previewSpeed * static_cast<float>(elapsedMs) * 0.001f;
+    _terrain.update(_previewForwardDistance);
+#else
+    constexpr bool previewBoosted = false;
+#endif
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
     const uint32_t renderStartedMs = GetHAL().millis();
@@ -87,17 +108,24 @@ void AppVectorCanyonFighter::onRunning()
     _renderTimeTotalMs += renderTimeMs;
     _renderTimeMaxMs = std::max(_renderTimeMaxMs, renderTimeMs);
     ++_renderedFrames;
+    if (previewBoosted) ++_boostedFrames;
 
     const uint32_t performanceElapsedMs = GetHAL().millis() - _performanceWindowStartedMs;
     if (performanceElapsedMs >= kPerformanceWindowMs && _renderedFrames > 0) {
         const uint32_t fpsTenths = static_cast<uint32_t>(_renderedFrames) * 10000u / performanceElapsedMs;
         const uint32_t averageRenderMs = _renderTimeTotalMs / _renderedFrames;
-        mclog::tagInfo(getAppInfo().name, "M5 curved fps={}.{} render={}ms max={}ms",
-                       fpsTenths / 10, fpsTenths % 10, averageRenderMs, _renderTimeMaxMs);
+        const uint32_t stackWatermark = static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr));
+        mclog::tagInfo(getAppInfo().name,
+                       "M6 stream fps={}.{} render={}ms max={}ms boost={}/{} clamps={} first={} events={} stack={}",
+                       fpsTenths / 10, fpsTenths % 10, averageRenderMs, _renderTimeMaxMs,
+                       _boostedFrames, _renderedFrames, _simulationClampCount, _terrain.firstSegment(),
+                       _terrain.eventWindow().count, stackWatermark);
         _performanceWindowStartedMs = GetHAL().millis();
         _renderTimeTotalMs = 0;
         _renderTimeMaxMs = 0;
         _renderedFrames = 0;
+        _boostedFrames = 0;
+        _simulationClampCount = 0;
     }
     return;
 #else

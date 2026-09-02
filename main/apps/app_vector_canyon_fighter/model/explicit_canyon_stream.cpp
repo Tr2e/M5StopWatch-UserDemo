@@ -110,6 +110,36 @@ float routeParameterAtArcLength(float worldS, uint32_t seed)
     return (low + high) * 0.5f;
 }
 
+float localRouteArcLength(float fromParameter, float toParameter, uint32_t seed)
+{
+    if (toParameter <= fromParameter) return 0.0f;
+    constexpr int kIntegrationSteps = 8;
+    const float step = (toParameter - fromParameter) / static_cast<float>(kIntegrationSteps);
+    Vec2 previous = routePointAtParameter(fromParameter, seed);
+    float arcLength = 0.0f;
+    for (int index = 1; index <= kIntegrationSteps; ++index) {
+        const Vec2 next = routePointAtParameter(fromParameter + step * static_cast<float>(index), seed);
+        arcLength += length(next - previous);
+        previous = next;
+    }
+    return arcLength;
+}
+
+float advanceRouteParameter(float fromParameter, float arcDistance, uint32_t seed)
+{
+    float low = fromParameter;
+    float high = fromParameter + arcDistance;
+    for (int iteration = 0; iteration < 12; ++iteration) {
+        const float middle = (low + high) * 0.5f;
+        if (localRouteArcLength(fromParameter, middle, seed) < arcDistance) {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    return (low + high) * 0.5f;
+}
+
 float compactShoulderBump(float normalizedDistance)
 {
     const float x = std::clamp(1.0f - std::abs(normalizedDistance), 0.0f, 1.0f);
@@ -204,7 +234,9 @@ void ExplicitCanyonStream::update(float flightForwardDistance)
     while (_firstSegment < wantedFirstSegment) {
         for (std::size_t slice = 1; slice < _slices.size(); ++slice) _slices[slice - 1] = _slices[slice];
         ++_firstSegment;
-        _slices.back() = makeSlice(_firstSegment + static_cast<uint32_t>(_slices.size() - 1));
+        _backRouteParameter = advanceRouteParameter(_backRouteParameter, kSliceSpacing, _seed);
+        _slices.back() = makeSliceAtRouteParameter(
+            _firstSegment + static_cast<uint32_t>(_slices.size() - 1), _backRouteParameter);
         recycled = true;
     }
     if (recycled) refreshEventWindow();
@@ -276,6 +308,19 @@ ExplicitCanyonSlice ExplicitCanyonStream::makeSlice(uint32_t segment) const
             boundary.leftWidth, boundary.rightWidth};
 }
 
+ExplicitCanyonSlice ExplicitCanyonStream::makeSliceAtRouteParameter(uint32_t segment,
+                                                                    float routeParameter) const
+{
+    const float worldS = static_cast<float>(segment) * kSliceSpacing;
+    const Vec2 center = routePointAtParameter(routeParameter, _seed);
+    const Vec2 previous = routePointAtParameter(std::max(0.0f, routeParameter - kRouteDerivativeStep), _seed);
+    const Vec2 next = routePointAtParameter(routeParameter + kRouteDerivativeStep, _seed);
+    const Vec2 tangent = normalize(next - previous);
+    const CanyonBoundary boundary = _mode == Mode::Production ? makeBoundary(worldS, _seed) : CanyonBoundary{};
+    return {segment, worldS, center.x, center.z, tangent.x, tangent.z,
+            boundary.leftWidth, boundary.rightWidth};
+}
+
 CanyonRouteFrame ExplicitCanyonStream::calculateRouteFrame(float worldS) const
 {
     const float parameter = routeParameterAtArcLength(worldS, _seed);
@@ -292,6 +337,9 @@ void ExplicitCanyonStream::rebuildSlices(uint32_t firstSegment)
     for (std::size_t slice = 0; slice < _slices.size(); ++slice) {
         _slices[slice] = makeSlice(_firstSegment + static_cast<uint32_t>(slice));
     }
+    _backRouteParameter = _mode == Mode::StraightBaseline
+                              ? _slices.back().worldS
+                              : routeParameterAtArcLength(_slices.back().worldS, _seed);
     refreshEventWindow();
 }
 

@@ -41,6 +41,7 @@ private:
     };
 
     ExplicitCanyonSlice makeSlice(uint32_t segment) const;
+    ExplicitCanyonSlice makeSliceAtRouteParameter(uint32_t segment, float routeParameter) const;
     CanyonRouteFrame calculateRouteFrame(float worldS) const;
     void rebuildSlices(uint32_t firstSegment);
     void refreshEventWindow();
@@ -50,6 +51,7 @@ private:
     uint32_t _seed = 0;
     uint32_t _firstSegment = 0;
     float _playerWorldS = 0.0f;
+    float _backRouteParameter = 0.0f;
     Mode _mode = Mode::Production;
 };
 

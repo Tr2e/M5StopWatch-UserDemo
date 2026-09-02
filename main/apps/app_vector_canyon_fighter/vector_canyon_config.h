@@ -16,6 +16,10 @@
 #define VECTOR_CANYON_EXPLICIT_TOP_DEBUG 0
 #endif
 
+#ifndef VECTOR_CANYON_EXPLICIT_EVENT_STREAM
+#define VECTOR_CANYON_EXPLICIT_EVENT_STREAM 1
+#endif
+
 static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN == 0 || VECTOR_CANYON_EXPLICIT_TERRAIN == 1,
               "VECTOR_CANYON_EXPLICIT_TERRAIN must be 0 or 1");
 static_assert(VECTOR_CANYON_EXPLICIT_STATIC_BASELINE == 0 || VECTOR_CANYON_EXPLICIT_STATIC_BASELINE == 1,
@@ -24,9 +28,15 @@ static_assert(VECTOR_CANYON_EXPLICIT_PREVIEW == 0 || VECTOR_CANYON_EXPLICIT_PREV
               "VECTOR_CANYON_EXPLICIT_PREVIEW must be 0 or 1");
 static_assert(VECTOR_CANYON_EXPLICIT_TOP_DEBUG == 0 || VECTOR_CANYON_EXPLICIT_TOP_DEBUG == 1,
               "VECTOR_CANYON_EXPLICIT_TOP_DEBUG must be 0 or 1");
+static_assert(VECTOR_CANYON_EXPLICIT_EVENT_STREAM == 0 || VECTOR_CANYON_EXPLICIT_EVENT_STREAM == 1,
+              "VECTOR_CANYON_EXPLICIT_EVENT_STREAM must be 0 or 1");
 static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN || !VECTOR_CANYON_EXPLICIT_STATIC_BASELINE,
               "The static explicit baseline requires explicit terrain");
 static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN || !VECTOR_CANYON_EXPLICIT_PREVIEW,
               "The explicit preview requires explicit terrain");
 static_assert(VECTOR_CANYON_EXPLICIT_PREVIEW || !VECTOR_CANYON_EXPLICIT_TOP_DEBUG,
               "The top debug camera requires explicit preview mode");
+static_assert(VECTOR_CANYON_EXPLICIT_PREVIEW || !VECTOR_CANYON_EXPLICIT_EVENT_STREAM,
+              "The isolated event stream requires explicit preview mode");
+static_assert(!VECTOR_CANYON_EXPLICIT_STATIC_BASELINE || !VECTOR_CANYON_EXPLICIT_EVENT_STREAM,
+              "The straight baseline and event stream cannot be enabled together");
