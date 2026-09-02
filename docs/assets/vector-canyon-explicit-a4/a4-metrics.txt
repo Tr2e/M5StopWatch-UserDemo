@@ -1,0 +1,17 @@
+seed=3299282945
+frame_count=1800
+simulation_seconds=60.000000
+worst_terrain_speed=3.168000
+traveled_distance=189.974396
+recycle_count=169
+maximum_window_event_count=3
+event_window_capacity=6
+event_window_overflow_count=0
+minimum_total_width=3.229742
+maximum_cached_recompute_error=0.000000
+maximum_adjacent_boundary_delta=0.393731
+maximum_lod_weight_delta_per_frame=0.031675
+minimum_reachability_margin=2.213046
+stream_hash=17445385684075537385
+repeat_stream_hash=17445385684075537385
+different_seed_stream_hash=7905140194812917043

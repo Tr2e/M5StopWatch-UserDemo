@@ -77,6 +77,14 @@ struct CanyonBoundary {
 
 using CanyonBoundaries = std::array<CanyonBoundary, kSliceCount>;
 
+constexpr std::size_t kEventWindowCapacity = 6;
+
+struct StreamEventWindow {
+    std::array<ShoulderEvent, kEventWindowCapacity> events{};
+    std::size_t count = 0;
+    bool overflow = false;
+};
+
 constexpr Pixel kNearColor{78, 228, 252};
 constexpr Pixel kMidColor{31, 159, 202};
 constexpr Pixel kFarColor{14, 75, 111};
@@ -397,6 +405,64 @@ CanyonBoundaries makeBoundaries(const CurveSamples& samples, const ShoulderEvent
     return boundaries;
 }
 
+uint32_t mixBits(uint32_t value)
+{
+    value ^= value >> 16;
+    value *= 0x7feb352du;
+    value ^= value >> 15;
+    value *= 0x846ca68bu;
+    return value ^ (value >> 16);
+}
+
+float eventRandom01(uint32_t seed, uint32_t eventIndex, uint32_t salt)
+{
+    return static_cast<float>(mixBits(seed ^ (eventIndex * 0x9e3779b9u) ^ salt) & 0xffffu) / 65535.0f;
+}
+
+ShoulderEvent streamEvent(uint32_t seed, uint32_t eventIndex)
+{
+    constexpr float kCycleLength = 44.0f;
+    const uint32_t cycle = eventIndex / 2u;
+    const bool left = (eventIndex & 1u) == 0u;
+    const float centerBase = static_cast<float>(cycle) * kCycleLength + (left ? 10.0f : 28.0f);
+    const float centerJitter = (eventRandom01(seed, eventIndex, 0x68bc21ebu) - 0.5f) * 1.20f;
+    const float halfLength = 5.55f + eventRandom01(seed, eventIndex, 0x02e5be93u) * 0.75f;
+    const float amplitude = 0.88f + eventRandom01(seed, eventIndex, 0xb5297a4du) * 0.27f;
+    return {left ? CanyonSide::Left : CanyonSide::Right, centerBase + centerJitter, halfLength, amplitude};
+}
+
+CanyonBoundary streamBoundaryAt(float worldArcLength, uint32_t seed)
+{
+    constexpr float kCycleLength = 44.0f;
+    CanyonBoundary boundary{};
+    const int baseCycle = std::max(0, static_cast<int>(std::floor(worldArcLength / kCycleLength)) - 1);
+    for (int cycleOffset = 0; cycleOffset < 3; ++cycleOffset) {
+        const uint32_t cycle = static_cast<uint32_t>(baseCycle + cycleOffset);
+        for (uint32_t eventInCycle = 0; eventInCycle < 2; ++eventInCycle) {
+            const ShoulderEvent event = streamEvent(seed, cycle * 2u + eventInCycle);
+            const float normalizedDistance = (worldArcLength - event.centerArcLength) / event.halfLength;
+            const float intrusion = event.amplitude * compactShoulderBump(normalizedDistance);
+            if (event.side == CanyonSide::Left) {
+                boundary.leftIntrusion += intrusion;
+                boundary.leftWidth -= intrusion;
+            } else {
+                boundary.rightIntrusion += intrusion;
+                boundary.rightWidth -= intrusion;
+            }
+        }
+    }
+    return boundary;
+}
+
+CanyonBoundaries makeStreamBoundaries(const CurveSamples& samples, uint32_t seed)
+{
+    CanyonBoundaries boundaries{};
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        boundaries[slice] = streamBoundaryAt(samples[slice].arcLength, seed);
+    }
+    return boundaries;
+}
+
 float deformedLateral(const Profile& profile, std::size_t point, const CanyonBoundary& boundary)
 {
     if (point < 7) return profile[point].lateral + boundary.leftIntrusion;
@@ -537,6 +603,29 @@ bool validateShoulderMesh(const Profile& profile, const CanyonMesh& mesh, const 
            std::abs(boundaries.back().rightWidth - kFloorHalfWidth) < kEpsilon;
 }
 
+bool validateBoundaryMesh(const Profile& profile, const CanyonMesh& mesh, const CurveSamples& samples,
+                          const CanyonBoundaries& boundaries)
+{
+    constexpr float kEpsilon = 0.001f;
+    for (std::size_t slice = 0; slice < samples.size(); ++slice) {
+        if (boundaries[slice].leftWidth + boundaries[slice].rightWidth <= 1.44f) return false;
+        for (std::size_t point = 0; point < profile.size(); ++point) {
+            if (std::abs(meshLateral(mesh, samples, slice, point) -
+                         deformedLateral(profile, point, boundaries[slice])) > kEpsilon) {
+                return false;
+            }
+        }
+        if (slice == 0) continue;
+        const Vec2 averageTangent = normalize(samples[slice - 1].tangent + samples[slice].tangent);
+        for (const std::size_t rail : {std::size_t{0}, std::size_t{24}}) {
+            const Vec2 railDelta{mesh[slice][rail].x - mesh[slice - 1][rail].x,
+                                 mesh[slice][rail].z - mesh[slice - 1][rail].z};
+            if (dot(railDelta, averageTangent) <= 0.0f) return false;
+        }
+    }
+    return true;
+}
+
 void appendShoulderMetrics(std::ofstream& output, const char* name, const Profile& profile, const CanyonMesh& mesh,
                            const CurveSamples& samples, const CanyonBoundaries& boundaries,
                            const ShoulderEvent& event)
@@ -671,6 +760,34 @@ Pixel depthColor(std::size_t slice)
     return kFarColor;
 }
 
+Pixel scaleColor(Pixel color, float weight)
+{
+    const float safeWeight = std::clamp(weight, 0.0f, 1.0f);
+    return {static_cast<uint8_t>(static_cast<float>(color.r) * safeWeight),
+            static_cast<uint8_t>(static_cast<float>(color.g) * safeWeight),
+            static_cast<uint8_t>(static_cast<float>(color.b) * safeWeight)};
+}
+
+float smoothUnit(float value)
+{
+    const float t = std::clamp(value, 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+bool isStructuralRail(std::size_t profileIndex);
+
+bool isMidLodRail(std::size_t profileIndex)
+{
+    return profileIndex == 5 || profileIndex == 9 || profileIndex == 15 || profileIndex == 19;
+}
+
+float railLodWeight(std::size_t profileIndex, float relativeDepth)
+{
+    if (isStructuralRail(profileIndex)) return 1.0f;
+    if (isMidLodRail(profileIndex)) return 1.0f - smoothUnit((relativeDepth - 20.0f) / 5.0f);
+    return 1.0f - smoothUnit((relativeDepth - 9.0f) / 5.0f);
+}
+
 bool isStructuralRail(std::size_t profileIndex)
 {
     return profileIndex == 3 || profileIndex == 7 || profileIndex == 12 || profileIndex == 17 ||
@@ -724,6 +841,221 @@ void renderPerspective(const CanyonMesh& mesh, const std::string& path)
 
     applyRoundMask(image);
     writePpm(image, path);
+}
+
+void renderPerspectiveLod(const CanyonMesh& mesh, const CurveSamples& samples, const std::string& path)
+{
+    Image image{};
+    const Camera camera = makeCamera();
+    std::array<std::array<Vec2, kProfileCount>, kSliceCount> projected{};
+    std::array<std::array<bool, kProfileCount>, kSliceCount> visible{};
+    for (std::size_t slice = 0; slice < kSliceCount; ++slice) {
+        for (std::size_t point = 0; point < kProfileCount; ++point) {
+            visible[slice][point] = project(camera, mesh[slice][point], projected[slice][point]);
+        }
+    }
+
+    for (std::size_t reverse = kSliceCount; reverse > 0; --reverse) {
+        const std::size_t slice = reverse - 1;
+        const Pixel color = depthColor(slice);
+        for (std::size_t point = 1; point < kProfileCount; ++point) {
+            if (!visible[slice][point - 1] || !visible[slice][point]) continue;
+            drawLine(image, projected[slice][point - 1].x, projected[slice][point - 1].y,
+                     projected[slice][point].x, projected[slice][point].y, color);
+        }
+    }
+
+    for (std::size_t point = 0; point < kProfileCount; ++point) {
+        for (std::size_t slice = 1; slice < kSliceCount; ++slice) {
+            if (!visible[slice - 1][point] || !visible[slice][point]) continue;
+            const float relativeDepth = (samples[slice - 1].arcLength + samples[slice].arcLength) * 0.5f;
+            const float weight = railLodWeight(point, relativeDepth);
+            if (weight <= 0.01f) continue;
+            const Pixel baseColor = isStructuralRail(point) ? kEdgeColor : depthColor(slice - 1);
+            drawLine(image, projected[slice - 1][point].x, projected[slice - 1][point].y,
+                     projected[slice][point].x, projected[slice][point].y, scaleColor(baseColor, weight));
+        }
+    }
+
+    constexpr std::array<std::size_t, 4> kFaceStarts = {3, 4, 18, 19};
+    for (std::size_t slice = 0; slice + 1 < kSliceCount; slice += 2) {
+        const float weight = 1.0f - smoothUnit((samples[slice].arcLength - 9.0f) / 5.0f);
+        if (weight <= 0.01f) continue;
+        for (const std::size_t faceStart : kFaceStarts) {
+            if (!visible[slice][faceStart] || !visible[slice + 1][faceStart + 1]) continue;
+            drawLine(image, projected[slice][faceStart].x, projected[slice][faceStart].y,
+                     projected[slice + 1][faceStart + 1].x, projected[slice + 1][faceStart + 1].y,
+                     scaleColor(depthColor(slice), weight));
+        }
+    }
+
+    applyRoundMask(image);
+    writePpm(image, path);
+}
+
+struct A4StreamMetrics {
+    uint64_t streamHash = 1469598103934665603ull;
+    uint32_t frameCount = 0;
+    uint32_t recycleCount = 0;
+    uint32_t maximumWindowEventCount = 0;
+    uint32_t eventWindowOverflowCount = 0;
+    float traveledDistance = 0.0f;
+    float minimumTotalWidth = 1000.0f;
+    float maximumCachedRecomputeError = 0.0f;
+    float maximumAdjacentBoundaryDelta = 0.0f;
+    float maximumLodWeightDeltaPerFrame = 0.0f;
+    float minimumReachabilityMargin = 1000.0f;
+};
+
+struct CachedBoundarySlice {
+    uint32_t segment = 0;
+    CanyonBoundary boundary;
+};
+
+void hashBoundary(uint64_t& hash, const CanyonBoundary& boundary)
+{
+    const std::array<uint32_t, 2> values = {
+        static_cast<uint32_t>(std::lround(boundary.leftWidth * 1000000.0f)),
+        static_cast<uint32_t>(std::lround(boundary.rightWidth * 1000000.0f)),
+    };
+    for (const uint32_t value : values) {
+        hash ^= value;
+        hash *= 1099511628211ull;
+    }
+}
+
+StreamEventWindow makeEventWindow(float startArc, float endArc, uint32_t seed)
+{
+    constexpr float kCycleLength = 44.0f;
+    const int firstCycle = std::max(0, static_cast<int>(std::floor(startArc / kCycleLength)) - 1);
+    const int lastCycle = static_cast<int>(std::floor(endArc / kCycleLength)) + 1;
+    StreamEventWindow window{};
+    for (int cycle = firstCycle; cycle <= lastCycle; ++cycle) {
+        for (uint32_t eventInCycle = 0; eventInCycle < 2; ++eventInCycle) {
+            const ShoulderEvent event = streamEvent(seed, static_cast<uint32_t>(cycle) * 2u + eventInCycle);
+            if (event.centerArcLength + event.halfLength >= startArc &&
+                event.centerArcLength - event.halfLength <= endArc) {
+                if (window.count < window.events.size()) {
+                    window.events[window.count++] = event;
+                } else {
+                    window.overflow = true;
+                }
+            }
+        }
+    }
+    return window;
+}
+
+A4StreamMetrics simulateA4Stream(uint32_t seed)
+{
+    constexpr float kDeltaSeconds = 1.0f / 30.0f;
+    constexpr float kWorstTerrainSpeed = 176.0f * 0.018f;
+    constexpr float kSliceSpacing = 1.118690f;
+    constexpr float kMaxLateralVelocity = 1.8f;
+    constexpr uint32_t kFrameCount = 1800;
+    std::array<CachedBoundarySlice, kSliceCount> cache{};
+    for (std::size_t slice = 0; slice < cache.size(); ++slice) {
+        cache[slice].segment = static_cast<uint32_t>(slice);
+        cache[slice].boundary = streamBoundaryAt(static_cast<float>(slice) * kSliceSpacing, seed);
+    }
+
+    A4StreamMetrics metrics{};
+    metrics.frameCount = kFrameCount;
+    uint32_t firstSegment = 0;
+    for (uint32_t frame = 0; frame < kFrameCount; ++frame) {
+        const float forwardDistance = static_cast<float>(frame) * kWorstTerrainSpeed * kDeltaSeconds;
+        metrics.traveledDistance = forwardDistance;
+        const uint32_t wantedFirstSegment = static_cast<uint32_t>(std::floor(forwardDistance / kSliceSpacing));
+        while (firstSegment < wantedFirstSegment) {
+            for (std::size_t slice = 1; slice < cache.size(); ++slice) cache[slice - 1] = cache[slice];
+            ++firstSegment;
+            cache.back().segment = firstSegment + static_cast<uint32_t>(cache.size() - 1);
+            cache.back().boundary = streamBoundaryAt(static_cast<float>(cache.back().segment) * kSliceSpacing, seed);
+            ++metrics.recycleCount;
+        }
+
+        const float windowStart = static_cast<float>(cache.front().segment) * kSliceSpacing;
+        const float windowEnd = static_cast<float>(cache.back().segment) * kSliceSpacing;
+        const StreamEventWindow eventWindow = makeEventWindow(windowStart, windowEnd, seed);
+        metrics.maximumWindowEventCount =
+            std::max(metrics.maximumWindowEventCount, static_cast<uint32_t>(eventWindow.count));
+        if (eventWindow.overflow) ++metrics.eventWindowOverflowCount;
+        for (std::size_t slice = 0; slice < cache.size(); ++slice) {
+            const float worldArc = static_cast<float>(cache[slice].segment) * kSliceSpacing;
+            const CanyonBoundary recomputed = streamBoundaryAt(worldArc, seed);
+            metrics.maximumCachedRecomputeError =
+                std::max(metrics.maximumCachedRecomputeError,
+                         std::max(std::abs(recomputed.leftWidth - cache[slice].boundary.leftWidth),
+                                  std::abs(recomputed.rightWidth - cache[slice].boundary.rightWidth)));
+            metrics.minimumTotalWidth =
+                std::min(metrics.minimumTotalWidth, cache[slice].boundary.leftWidth + cache[slice].boundary.rightWidth);
+            hashBoundary(metrics.streamHash, cache[slice].boundary);
+            if (slice > 0) {
+                metrics.maximumAdjacentBoundaryDelta =
+                    std::max(metrics.maximumAdjacentBoundaryDelta,
+                             std::max(std::abs(cache[slice].boundary.leftWidth - cache[slice - 1].boundary.leftWidth),
+                                      std::abs(cache[slice].boundary.rightWidth - cache[slice - 1].boundary.rightWidth)));
+            }
+        }
+    }
+
+    const float depthStepPerFrame = kWorstTerrainSpeed * kDeltaSeconds;
+    for (float depth = 0.0f; depth <= 40.0f; depth += 0.02f) {
+        for (const std::size_t rail : {std::size_t{0}, std::size_t{5}, std::size_t{1}}) {
+            const float currentWeight = railLodWeight(rail, depth);
+            const float nextWeight = railLodWeight(rail, depth + depthStepPerFrame);
+            metrics.maximumLodWeightDeltaPerFrame =
+                std::max(metrics.maximumLodWeightDeltaPerFrame, std::abs(nextWeight - currentWeight));
+        }
+    }
+
+    constexpr uint32_t kEvaluatedCycles = 6;
+    for (uint32_t cycle = 0; cycle < kEvaluatedCycles; ++cycle) {
+        const ShoulderEvent left = streamEvent(seed, cycle * 2u);
+        const ShoulderEvent right = streamEvent(seed, cycle * 2u + 1u);
+        const float recoveryDistance =
+            (right.centerArcLength - right.halfLength) - (left.centerArcLength + left.halfLength);
+        const float availableLateralTravel = kMaxLateralVelocity * recoveryDistance / kWorstTerrainSpeed;
+        const float requiredTargetShift = (left.amplitude + right.amplitude) * 0.5f;
+        metrics.minimumReachabilityMargin =
+            std::min(metrics.minimumReachabilityMargin, availableLateralTravel - requiredTargetShift);
+    }
+    return metrics;
+}
+
+bool validateA4Metrics(const A4StreamMetrics& metrics, const A4StreamMetrics& repeat,
+                       const A4StreamMetrics& differentSeed)
+{
+    return metrics.streamHash == repeat.streamHash && metrics.streamHash != differentSeed.streamHash &&
+           metrics.frameCount == 1800u && metrics.recycleCount > 150u &&
+           metrics.maximumWindowEventCount <= kEventWindowCapacity && metrics.eventWindowOverflowCount == 0u &&
+           metrics.minimumTotalWidth > 1.44f && metrics.maximumCachedRecomputeError < 0.000001f &&
+           metrics.maximumAdjacentBoundaryDelta < 0.40f && metrics.maximumLodWeightDeltaPerFrame < 0.05f &&
+           metrics.minimumReachabilityMargin > 0.0f;
+}
+
+void writeA4Metrics(const A4StreamMetrics& metrics, const A4StreamMetrics& repeat,
+                    const A4StreamMetrics& differentSeed, const std::string& path)
+{
+    std::ofstream output(path);
+    output << std::fixed << std::setprecision(6);
+    output << "seed=3299282945\n";
+    output << "frame_count=" << metrics.frameCount << '\n';
+    output << "simulation_seconds=60.000000\n";
+    output << "worst_terrain_speed=3.168000\n";
+    output << "traveled_distance=" << metrics.traveledDistance << '\n';
+    output << "recycle_count=" << metrics.recycleCount << '\n';
+    output << "maximum_window_event_count=" << metrics.maximumWindowEventCount << '\n';
+    output << "event_window_capacity=6\n";
+    output << "event_window_overflow_count=" << metrics.eventWindowOverflowCount << '\n';
+    output << "minimum_total_width=" << metrics.minimumTotalWidth << '\n';
+    output << "maximum_cached_recompute_error=" << metrics.maximumCachedRecomputeError << '\n';
+    output << "maximum_adjacent_boundary_delta=" << metrics.maximumAdjacentBoundaryDelta << '\n';
+    output << "maximum_lod_weight_delta_per_frame=" << metrics.maximumLodWeightDeltaPerFrame << '\n';
+    output << "minimum_reachability_margin=" << metrics.minimumReachabilityMargin << '\n';
+    output << "stream_hash=" << metrics.streamHash << '\n';
+    output << "repeat_stream_hash=" << repeat.streamHash << '\n';
+    output << "different_seed_stream_hash=" << differentSeed.streamHash << '\n';
 }
 
 float topX(float worldX) { return 225.0f + worldX * 28.0f; }
@@ -804,6 +1136,71 @@ void renderCurvedTopDebug(const CanyonMesh& mesh, const CurveSamples& samples, c
     writePpm(image, path);
 }
 
+void renderBoundaryTimeline(uint32_t seed, const std::string& path)
+{
+    Image image{};
+    constexpr float kStartArc = 0.0f;
+    constexpr float kEndArc = 88.0f;
+    const auto timelineX = [=](float worldArc) { return 28.0f + worldArc * 394.0f / (kEndArc - kStartArc); };
+    const auto timelineY = [](float lateral) { return 225.0f - lateral * 65.0f; };
+    drawLine(image, 28.0f, timelineY(0.0f), 422.0f, timelineY(0.0f), kAxisColor);
+    drawLine(image, 28.0f, timelineY(-kFloorHalfWidth), 422.0f, timelineY(-kFloorHalfWidth), kGuideColor);
+    drawLine(image, 28.0f, timelineY(kFloorHalfWidth), 422.0f, timelineY(kFloorHalfWidth), kGuideColor);
+
+    constexpr int kSamples = 440;
+    CanyonBoundary previous = streamBoundaryAt(kStartArc, seed);
+    float previousX = timelineX(kStartArc);
+    for (int sample = 1; sample <= kSamples; ++sample) {
+        const float worldArc = kStartArc + (kEndArc - kStartArc) * static_cast<float>(sample) /
+                                               static_cast<float>(kSamples);
+        const CanyonBoundary current = streamBoundaryAt(worldArc, seed);
+        const float currentX = timelineX(worldArc);
+        drawLine(image, previousX, timelineY(-previous.leftWidth), currentX, timelineY(-current.leftWidth),
+                 kNearColor);
+        drawLine(image, previousX, timelineY(previous.rightWidth), currentX, timelineY(current.rightWidth),
+                 kWarningColor);
+        previous = current;
+        previousX = currentX;
+    }
+
+    for (uint32_t eventIndex = 0; eventIndex < 4; ++eventIndex) {
+        const ShoulderEvent event = streamEvent(seed, eventIndex);
+        const float x = timelineX(event.centerArcLength);
+        drawLine(image, x, 54.0f, x, 396.0f, kGuideColor);
+        drawPoint(image, x, event.side == CanyonSide::Left ? timelineY(-kFloorHalfWidth + event.amplitude)
+                                                           : timelineY(kFloorHalfWidth - event.amplitude),
+                  event.side == CanyonSide::Left ? kEdgeColor : kWarningColor);
+    }
+    applyRoundMask(image);
+    writePpm(image, path);
+}
+
+void renderLodProfile(const std::string& path)
+{
+    Image image{};
+    const auto lodX = [](float depth) { return 28.0f + depth * 394.0f / 38.0f; };
+    const auto lodY = [](float weight) { return 390.0f - weight * 300.0f; };
+    drawLine(image, 28.0f, lodY(0.0f), 422.0f, lodY(0.0f), kGuideColor);
+    drawLine(image, 28.0f, lodY(1.0f), 422.0f, lodY(1.0f), kGuideColor);
+    for (const float threshold : {9.0f, 14.0f, 20.0f, 25.0f}) {
+        drawLine(image, lodX(threshold), 70.0f, lodX(threshold), 410.0f, kGuideColor);
+    }
+
+    float previousDepth = 0.0f;
+    for (int step = 1; step <= 380; ++step) {
+        const float depth = static_cast<float>(step) * 0.1f;
+        drawLine(image, lodX(previousDepth), lodY(railLodWeight(0, previousDepth)), lodX(depth),
+                 lodY(railLodWeight(0, depth)), kAxisColor);
+        drawLine(image, lodX(previousDepth), lodY(railLodWeight(5, previousDepth)), lodX(depth),
+                 lodY(railLodWeight(5, depth)), kNearColor);
+        drawLine(image, lodX(previousDepth), lodY(railLodWeight(1, previousDepth)), lodX(depth),
+                 lodY(railLodWeight(1, depth)), kWarningColor);
+        previousDepth = depth;
+    }
+    applyRoundMask(image);
+    writePpm(image, path);
+}
+
 float sectionX(float lateral) { return 225.0f + lateral * 27.0f; }
 
 float sectionY(float height) { return 390.0f - height * 82.0f; }
@@ -849,8 +1246,9 @@ int main(int argc, char** argv)
 
     const bool renderA2 = argc == 3 && std::string(argv[2]) == "a2";
     const bool renderA3 = argc == 3 && std::string(argv[2]) == "a3";
-    if (argc == 3 && !renderA2 && !renderA3) return 2;
-    if (renderA2 || renderA3) {
+    const bool renderA4 = argc == 3 && std::string(argv[2]) == "a4";
+    if (argc == 3 && !renderA2 && !renderA3 && !renderA4) return 2;
+    if (renderA2 || renderA3 || renderA4) {
         const CurveSamples samples = makeCurvedSamples();
         const CanyonMesh baseMesh = makeCurvedMesh(profile, samples);
         if (!validateCurvedMesh(baseMesh, samples)) return 4;
@@ -859,7 +1257,7 @@ int main(int argc, char** argv)
             renderCurvedTopDebug(baseMesh, samples, outputDirectory + "/a2-top-debug.ppm");
             renderCrossSection(profile, outputDirectory + "/a2-cross-section.ppm");
             writeCurveMetrics(samples, outputDirectory + "/a2-metrics.txt");
-        } else {
+        } else if (renderA3) {
             constexpr std::size_t kEventCenterSlice = 13;
             const float halfLength = samples[6].arcLength - samples[0].arcLength;
             const ShoulderEvent leftEvent{CanyonSide::Left, samples[kEventCenterSlice].arcLength, halfLength, 1.15f};
@@ -882,6 +1280,22 @@ int main(int argc, char** argv)
                                outputDirectory + "/a3-right-cross-section.ppm");
             writeShoulderMetrics(profile, leftMesh, rightMesh, samples, leftBoundaries, rightBoundaries, leftEvent,
                                  rightEvent, outputDirectory + "/a3-metrics.txt");
+        } else {
+            constexpr uint32_t kSeed = 0xC4A71001u;
+            const CanyonBoundaries boundaries = makeStreamBoundaries(samples, kSeed);
+            const CanyonMesh mesh = makeShoulderMesh(profile, samples, boundaries);
+            const A4StreamMetrics metrics = simulateA4Stream(kSeed);
+            const A4StreamMetrics repeat = simulateA4Stream(kSeed);
+            const A4StreamMetrics differentSeed = simulateA4Stream(kSeed ^ 0x9e3779b9u);
+            writeA4Metrics(metrics, repeat, differentSeed, outputDirectory + "/a4-metrics.txt");
+            if (!validateBoundaryMesh(profile, mesh, samples, boundaries) ||
+                !validateA4Metrics(metrics, repeat, differentSeed)) {
+                return 6;
+            }
+            renderPerspectiveLod(mesh, samples, outputDirectory + "/a4-s-gate-perspective.ppm");
+            renderCurvedTopDebug(mesh, samples, outputDirectory + "/a4-s-gate-top-debug.ppm");
+            renderBoundaryTimeline(kSeed, outputDirectory + "/a4-boundary-timeline.ppm");
+            renderLodProfile(outputDirectory + "/a4-lod-profile.ppm");
         }
     } else {
         const CanyonMesh mesh = makeStraightMesh(profile);
