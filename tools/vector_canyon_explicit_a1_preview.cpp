@@ -1,0 +1,420 @@
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <fstream>
+#include <string>
+
+namespace {
+
+constexpr int kImageWidth = 450;
+constexpr int kImageHeight = 450;
+constexpr int kPrincipalX = 225;
+constexpr int kPrincipalY = 156;
+constexpr float kFocalLength = 372.0f;
+constexpr float kNearPlane = 0.20f;
+constexpr std::size_t kSliceCount = 34;
+constexpr std::size_t kProfileCount = 25;
+constexpr float kFirstSliceZ = 1.35f;
+constexpr float kSliceSpacing = 0.86f;
+constexpr float kFloorHalfWidth = 2.18f;
+constexpr float kWallHeight = 3.80f;
+
+struct Pixel {
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+};
+
+struct Vec3 {
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+};
+
+struct Vec2 {
+    float x = 0.0f;
+    float y = 0.0f;
+};
+
+struct ProfilePoint {
+    float lateral = 0.0f;
+    float height = 0.0f;
+};
+
+using Image = std::array<Pixel, kImageWidth * kImageHeight>;
+using Profile = std::array<ProfilePoint, kProfileCount>;
+using CanyonMesh = std::array<std::array<Vec3, kProfileCount>, kSliceCount>;
+
+constexpr Pixel kNearColor{78, 228, 252};
+constexpr Pixel kMidColor{31, 159, 202};
+constexpr Pixel kFarColor{14, 75, 111};
+constexpr Pixel kEdgeColor{119, 244, 255};
+constexpr Pixel kGuideColor{25, 72, 91};
+constexpr Pixel kAxisColor{92, 234, 150};
+constexpr Pixel kWarningColor{255, 170, 70};
+
+float dot(Vec3 a, Vec3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+Vec3 operator-(Vec3 a, Vec3 b) { return {a.x - b.x, a.y - b.y, a.z - b.z}; }
+
+Vec3 operator*(Vec3 value, float scale) { return {value.x * scale, value.y * scale, value.z * scale}; }
+
+float length(Vec3 value) { return std::sqrt(dot(value, value)); }
+
+Vec3 normalize(Vec3 value)
+{
+    const float magnitude = length(value);
+    return magnitude > 0.00001f ? value * (1.0f / magnitude) : Vec3{};
+}
+
+Vec3 cross(Vec3 a, Vec3 b)
+{
+    return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+void putPixel(Image& image, int x, int y, Pixel color)
+{
+    if (x < 0 || x >= kImageWidth || y < 0 || y >= kImageHeight) return;
+    image[static_cast<std::size_t>(y) * kImageWidth + static_cast<std::size_t>(x)] = color;
+}
+
+bool clipTest(float p, float q, float& t0, float& t1)
+{
+    if (std::abs(p) < 0.00001f) return q >= 0.0f;
+    const float ratio = q / p;
+    if (p < 0.0f) {
+        if (ratio > t1) return false;
+        t0 = std::max(t0, ratio);
+    } else {
+        if (ratio < t0) return false;
+        t1 = std::min(t1, ratio);
+    }
+    return true;
+}
+
+bool clipToImage(float& x0, float& y0, float& x1, float& y1)
+{
+    const float dx = x1 - x0;
+    const float dy = y1 - y0;
+    float t0 = 0.0f;
+    float t1 = 1.0f;
+    if (!clipTest(-dx, x0, t0, t1) || !clipTest(dx, static_cast<float>(kImageWidth - 1) - x0, t0, t1) ||
+        !clipTest(-dy, y0, t0, t1) || !clipTest(dy, static_cast<float>(kImageHeight - 1) - y0, t0, t1)) {
+        return false;
+    }
+    const float sourceX = x0;
+    const float sourceY = y0;
+    x0 = sourceX + t0 * dx;
+    y0 = sourceY + t0 * dy;
+    x1 = sourceX + t1 * dx;
+    y1 = sourceY + t1 * dy;
+    return true;
+}
+
+void drawLine(Image& image, float sourceX0, float sourceY0, float sourceX1, float sourceY1, Pixel color)
+{
+    if (!clipToImage(sourceX0, sourceY0, sourceX1, sourceY1)) return;
+    int x0 = static_cast<int>(std::lround(sourceX0));
+    int y0 = static_cast<int>(std::lround(sourceY0));
+    const int x1 = static_cast<int>(std::lround(sourceX1));
+    const int y1 = static_cast<int>(std::lround(sourceY1));
+    const int dx = std::abs(x1 - x0);
+    const int sx = x0 < x1 ? 1 : -1;
+    const int dy = -std::abs(y1 - y0);
+    const int sy = y0 < y1 ? 1 : -1;
+    int error = dx + dy;
+    while (true) {
+        putPixel(image, x0, y0, color);
+        if (x0 == x1 && y0 == y1) break;
+        const int twiceError = error * 2;
+        if (twiceError >= dy) {
+            error += dy;
+            x0 += sx;
+        }
+        if (twiceError <= dx) {
+            error += dx;
+            y0 += sy;
+        }
+    }
+}
+
+void drawPoint(Image& image, float x, float y, Pixel color)
+{
+    const int centerX = static_cast<int>(std::lround(x));
+    const int centerY = static_cast<int>(std::lround(y));
+    for (int offsetY = -2; offsetY <= 2; ++offsetY) {
+        for (int offsetX = -2; offsetX <= 2; ++offsetX) {
+            if (std::abs(offsetX) + std::abs(offsetY) <= 3) putPixel(image, centerX + offsetX, centerY + offsetY, color);
+        }
+    }
+}
+
+void applyRoundMask(Image& image)
+{
+    constexpr int kCenter = kImageWidth / 2;
+    constexpr int kRadius = kImageWidth / 2;
+    for (int y = 0; y < kImageHeight; ++y) {
+        for (int x = 0; x < kImageWidth; ++x) {
+            const int dx = x - kCenter;
+            const int dy = y - kCenter;
+            if (dx * dx + dy * dy > kRadius * kRadius) {
+                image[static_cast<std::size_t>(y) * kImageWidth + static_cast<std::size_t>(x)] = {};
+            }
+        }
+    }
+}
+
+void writePpm(const Image& image, const std::string& path)
+{
+    std::ofstream output(path, std::ios::binary);
+    output << "P6\n" << kImageWidth << ' ' << kImageHeight << "\n255\n";
+    output.write(reinterpret_cast<const char*>(image.data()), static_cast<std::streamsize>(image.size() * 3));
+}
+
+Profile makeProfile()
+{
+    // The profile is intentionally semantic and deterministic:
+    // flat plateau -> short cap -> steep face -> short toe -> flat floor,
+    // mirrored around the canyon center. No noise or ridge height field.
+    return {{
+        {-7.00f, kWallHeight}, {-5.20f, kWallHeight}, {-3.65f, kWallHeight},
+        {-3.32f, kWallHeight}, {-3.04f, 3.34f}, {-2.67f, 1.06f}, {-2.38f, 0.38f},
+        {-kFloorHalfWidth, 0.0f},
+        {-1.744f, 0.0f}, {-1.308f, 0.0f}, {-0.872f, 0.0f}, {-0.436f, 0.0f},
+        {0.0f, 0.0f},
+        {0.436f, 0.0f}, {0.872f, 0.0f}, {1.308f, 0.0f}, {1.744f, 0.0f},
+        {kFloorHalfWidth, 0.0f},
+        {2.38f, 0.38f}, {2.67f, 1.06f}, {3.04f, 3.34f}, {3.32f, kWallHeight},
+        {3.65f, kWallHeight}, {5.20f, kWallHeight}, {7.00f, kWallHeight},
+    }};
+}
+
+bool validateProfile(const Profile& profile)
+{
+    constexpr float kEpsilon = 0.0001f;
+    for (std::size_t point = 7; point <= 17; ++point) {
+        if (std::abs(profile[point].height) > kEpsilon) return false;
+    }
+    for (std::size_t point = 0; point <= 3; ++point) {
+        if (std::abs(profile[point].height - kWallHeight) > kEpsilon) return false;
+    }
+    for (std::size_t point = 21; point < profile.size(); ++point) {
+        if (std::abs(profile[point].height - kWallHeight) > kEpsilon) return false;
+    }
+    for (std::size_t point = 0; point < profile.size(); ++point) {
+        const std::size_t mirror = profile.size() - 1 - point;
+        if (std::abs(profile[point].lateral + profile[mirror].lateral) > kEpsilon ||
+            std::abs(profile[point].height - profile[mirror].height) > kEpsilon) {
+            return false;
+        }
+    }
+    const float mainFaceRise = profile[4].height - profile[5].height;
+    const float mainFaceRetreat = std::abs(profile[4].lateral - profile[5].lateral);
+    const float mainFaceDegrees = std::atan2(mainFaceRise, mainFaceRetreat) * 57.2957795f;
+    return mainFaceDegrees >= 78.0f && mainFaceDegrees <= 85.0f;
+}
+
+CanyonMesh makeStraightMesh(const Profile& profile)
+{
+    CanyonMesh mesh{};
+    for (std::size_t slice = 0; slice < kSliceCount; ++slice) {
+        const float worldZ = kFirstSliceZ + static_cast<float>(slice) * kSliceSpacing;
+        for (std::size_t point = 0; point < kProfileCount; ++point) {
+            mesh[slice][point] = {profile[point].lateral, profile[point].height, worldZ};
+        }
+    }
+    return mesh;
+}
+
+bool validateStraightMesh(const CanyonMesh& mesh)
+{
+    constexpr float kEpsilon = 0.0001f;
+    for (std::size_t slice = 0; slice < mesh.size(); ++slice) {
+        const float expectedZ = kFirstSliceZ + static_cast<float>(slice) * kSliceSpacing;
+        for (std::size_t point = 0; point < kProfileCount; ++point) {
+            if (std::abs(mesh[slice][point].z - expectedZ) > kEpsilon) return false;
+        }
+        if (std::abs(mesh[slice][12].x) > kEpsilon || std::abs(mesh[slice][12].y) > kEpsilon) return false;
+    }
+    return true;
+}
+
+struct Camera {
+    Vec3 position;
+    Vec3 right;
+    Vec3 up;
+    Vec3 forward;
+};
+
+Camera makeCamera()
+{
+    Camera camera{};
+    camera.position = {0.0f, 0.95f, 0.0f};
+    camera.forward = normalize(Vec3{0.0f, 0.20f, 14.0f} - camera.position);
+    camera.right = normalize(cross(camera.forward, Vec3{0.0f, 1.0f, 0.0f}));
+    camera.up = normalize(cross(camera.right, camera.forward));
+    return camera;
+}
+
+bool project(const Camera& camera, Vec3 world, Vec2& screen)
+{
+    const Vec3 relative = world - camera.position;
+    const float cameraX = dot(relative, camera.right);
+    const float cameraY = dot(relative, camera.up);
+    const float cameraZ = dot(relative, camera.forward);
+    if (cameraZ < kNearPlane) return false;
+    screen.x = static_cast<float>(kPrincipalX) + kFocalLength * cameraX / cameraZ;
+    screen.y = static_cast<float>(kPrincipalY) - kFocalLength * cameraY / cameraZ;
+    return true;
+}
+
+Pixel depthColor(std::size_t slice)
+{
+    if (slice < 9) return kNearColor;
+    if (slice < 21) return kMidColor;
+    return kFarColor;
+}
+
+bool isStructuralRail(std::size_t profileIndex)
+{
+    return profileIndex == 3 || profileIndex == 7 || profileIndex == 12 || profileIndex == 17 ||
+           profileIndex == 21;
+}
+
+void renderPerspective(const CanyonMesh& mesh, const std::string& path)
+{
+    Image image{};
+    const Camera camera = makeCamera();
+    std::array<std::array<Vec2, kProfileCount>, kSliceCount> projected{};
+    std::array<std::array<bool, kProfileCount>, kSliceCount> visible{};
+
+    for (std::size_t slice = 0; slice < kSliceCount; ++slice) {
+        for (std::size_t point = 0; point < kProfileCount; ++point) {
+            visible[slice][point] = project(camera, mesh[slice][point], projected[slice][point]);
+        }
+    }
+
+    // Draw far to near. Each complete cross-section is a rib in the local N/Up plane.
+    for (std::size_t reverse = kSliceCount; reverse > 0; --reverse) {
+        const std::size_t slice = reverse - 1;
+        const Pixel color = depthColor(slice);
+        for (std::size_t point = 1; point < kProfileCount; ++point) {
+            if (!visible[slice][point - 1] || !visible[slice][point]) continue;
+            drawLine(image, projected[slice][point - 1].x, projected[slice][point - 1].y,
+                     projected[slice][point].x, projected[slice][point].y, color);
+        }
+    }
+
+    // Fixed semantic profile indices form longitudinal rails.
+    for (std::size_t point = 0; point < kProfileCount; ++point) {
+        for (std::size_t slice = 1; slice < kSliceCount; ++slice) {
+            if (!visible[slice - 1][point] || !visible[slice][point]) continue;
+            const Pixel color = isStructuralRail(point) ? kEdgeColor : depthColor(slice - 1);
+            drawLine(image, projected[slice - 1][point].x, projected[slice - 1][point].y,
+                     projected[slice][point].x, projected[slice][point].y, color);
+        }
+    }
+
+    // Sparse, deterministic diagonals make the two cliff faces read as low-poly surfaces.
+    constexpr std::array<std::size_t, 4> kFaceStarts = {3, 4, 18, 19};
+    for (std::size_t slice = 0; slice + 1 < kSliceCount; slice += 2) {
+        for (const std::size_t faceStart : kFaceStarts) {
+            if (!visible[slice][faceStart] || !visible[slice + 1][faceStart + 1]) continue;
+            drawLine(image, projected[slice][faceStart].x, projected[slice][faceStart].y,
+                     projected[slice + 1][faceStart + 1].x, projected[slice + 1][faceStart + 1].y,
+                     depthColor(slice));
+        }
+    }
+
+    applyRoundMask(image);
+    writePpm(image, path);
+}
+
+float topX(float worldX) { return 225.0f + worldX * 28.0f; }
+
+float topY(float worldZ)
+{
+    const float lastZ = kFirstSliceZ + static_cast<float>(kSliceCount - 1) * kSliceSpacing;
+    return 421.0f - (worldZ - kFirstSliceZ) * 390.0f / (lastZ - kFirstSliceZ);
+}
+
+void renderTopDebug(const CanyonMesh& mesh, const std::string& path)
+{
+    Image image{};
+    constexpr std::array<std::size_t, 7> kSemanticRails = {0, 3, 7, 12, 17, 21, 24};
+    for (const std::size_t point : kSemanticRails) {
+        const Pixel color = point == 12 ? kAxisColor : ((point == 7 || point == 17) ? kEdgeColor : kMidColor);
+        for (std::size_t slice = 1; slice < kSliceCount; ++slice) {
+            drawLine(image, topX(mesh[slice - 1][point].x), topY(mesh[slice - 1][point].z),
+                     topX(mesh[slice][point].x), topY(mesh[slice][point].z), color);
+        }
+    }
+
+    // Cross-section normals: every fourth rib spans the complete explicit profile.
+    for (std::size_t slice = 0; slice < kSliceCount; slice += 4) {
+        drawLine(image, topX(mesh[slice][0].x), topY(mesh[slice][0].z), topX(mesh[slice][24].x),
+                 topY(mesh[slice][24].z), kGuideColor);
+    }
+
+    // Three local frame markers. Green is T, orange is N; they are perpendicular in world space.
+    constexpr std::array<std::size_t, 3> kFrameSlices = {6, 17, 28};
+    for (const std::size_t slice : kFrameSlices) {
+        const float cx = topX(0.0f);
+        const float cy = topY(mesh[slice][12].z);
+        drawLine(image, cx, cy, cx, topY(mesh[slice][12].z + 2.2f), kAxisColor);
+        drawLine(image, topX(-1.4f), cy, topX(1.4f), cy, kWarningColor);
+        drawPoint(image, cx, cy, kEdgeColor);
+    }
+
+    applyRoundMask(image);
+    writePpm(image, path);
+}
+
+float sectionX(float lateral) { return 225.0f + lateral * 27.0f; }
+
+float sectionY(float height) { return 390.0f - height * 82.0f; }
+
+void renderCrossSection(const Profile& profile, const std::string& path)
+{
+    Image image{};
+    drawLine(image, 18.0f, sectionY(0.0f), 432.0f, sectionY(0.0f), kGuideColor);
+    drawLine(image, sectionX(0.0f), 42.0f, sectionX(0.0f), 420.0f, kGuideColor);
+
+    for (std::size_t point = 1; point < profile.size(); ++point) {
+        const bool floor = point >= 8 && point <= 17;
+        const bool plateau = point <= 3 || point >= 22;
+        const Pixel color = floor ? kAxisColor : (plateau ? kMidColor : kNearColor);
+        drawLine(image, sectionX(profile[point - 1].lateral), sectionY(profile[point - 1].height),
+                 sectionX(profile[point].lateral), sectionY(profile[point].height), color);
+    }
+    for (const auto& point : profile) {
+        drawPoint(image, sectionX(point.lateral), sectionY(point.height), kEdgeColor);
+    }
+
+    // Clear-width dimension line below the floor, with end caps at both collision boundaries.
+    constexpr float kDimensionY = 412.0f;
+    drawLine(image, sectionX(-kFloorHalfWidth), kDimensionY, sectionX(kFloorHalfWidth), kDimensionY, kWarningColor);
+    drawLine(image, sectionX(-kFloorHalfWidth), kDimensionY - 7.0f, sectionX(-kFloorHalfWidth), kDimensionY + 7.0f,
+             kWarningColor);
+    drawLine(image, sectionX(kFloorHalfWidth), kDimensionY - 7.0f, sectionX(kFloorHalfWidth), kDimensionY + 7.0f,
+             kWarningColor);
+
+    applyRoundMask(image);
+    writePpm(image, path);
+}
+
+}  // namespace
+
+int main(int argc, char** argv)
+{
+    if (argc != 2) return 2;
+    const std::string outputDirectory = argv[1];
+    const Profile profile = makeProfile();
+    const CanyonMesh mesh = makeStraightMesh(profile);
+    if (!validateProfile(profile) || !validateStraightMesh(mesh)) return 3;
+    renderPerspective(mesh, outputDirectory + "/a1-perspective.ppm");
+    renderTopDebug(mesh, outputDirectory + "/a1-top-debug.ppm");
+    renderCrossSection(profile, outputDirectory + "/a1-cross-section.ppm");
+    return 0;
+}
