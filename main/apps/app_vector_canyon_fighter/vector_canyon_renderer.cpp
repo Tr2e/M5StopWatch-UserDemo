@@ -1,10 +1,13 @@
 #include "vector_canyon_renderer.h"
 
+#include "explicit_canyon_projection.h"
+
 #include <hal/hal.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 
 namespace vector_canyon_fighter {
 namespace {
@@ -123,6 +126,15 @@ std::size_t columnStride(std::size_t sourceRow)
     return 1;
 }
 
+uint16_t scaleRgb565(uint16_t color, float weight)
+{
+    const uint16_t safeWeight = static_cast<uint16_t>(std::lround(std::clamp(weight, 0.0f, 1.0f) * 256.0f));
+    const uint16_t red = static_cast<uint16_t>(((color >> 11) & 0x1fu) * safeWeight >> 8);
+    const uint16_t green = static_cast<uint16_t>(((color >> 5) & 0x3fu) * safeWeight >> 8);
+    const uint16_t blue = static_cast<uint16_t>((color & 0x1fu) * safeWeight >> 8);
+    return static_cast<uint16_t>((red << 11) | (green << 5) | blue);
+}
+
 }  // namespace
 
 void Renderer::open(int width, int height)
@@ -213,6 +225,118 @@ bool Renderer::drawLegacyTerrain(const FlightState& flight, const TerrainStream&
         }
     }
     return true;
+}
+
+bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCanyonStream& terrain,
+                                   uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary)
+{
+    constexpr int16_t kInvisible = std::numeric_limits<int16_t>::min();
+    constexpr int kMinimumCoordinate = std::numeric_limits<int16_t>::min() + 1;
+    constexpr int kMaximumCoordinate = std::numeric_limits<int16_t>::max();
+    auto& canvas = GetHAL().getDisplay();
+    const auto& slices = terrain.slices();
+    const CanyonRouteFrame playerRoute = terrain.routeFrameAt(terrain.playerWorldS());
+    const CanyonCamera camera =
+        makeExplicitCanyonCamera(playerRoute, flight.altitude, flight.pitch, _width, _height);
+
+    const auto cacheIndex = [](std::size_t slice, std::size_t profilePoint) {
+        return slice * ExplicitCanyonStream::kProfileCount + profilePoint;
+    };
+    const auto toPackedPoint = [&](CanyonScreenPoint screen) {
+        const int x = std::clamp(static_cast<int>(std::lround(screen.x)), kMinimumCoordinate, kMaximumCoordinate);
+        const int y = std::clamp(static_cast<int>(std::lround(screen.y)), kMinimumCoordinate, kMaximumCoordinate);
+        return ProjectedCanyonPoint{static_cast<int16_t>(x), static_cast<int16_t>(y)};
+    };
+
+    for (std::size_t slice = 0; slice < ExplicitCanyonStream::kSliceCount; ++slice) {
+        for (std::size_t profilePoint = 0; profilePoint < ExplicitCanyonStream::kProfileCount; ++profilePoint) {
+            const CanyonCameraPoint cameraPoint =
+                explicitCanyonToCamera(camera, terrain.worldPoint(slice, profilePoint));
+            CanyonScreenPoint screen{};
+            ProjectedCanyonPoint& projected = _explicitTerrainPoints[cacheIndex(slice, profilePoint)];
+            if (projectExplicitCanyonPoint(camera, cameraPoint, screen)) {
+                projected = toPackedPoint(screen);
+            } else {
+                projected = {kInvisible, kInvisible};
+            }
+        }
+    }
+
+    bool drewAny = false;
+    const auto drawSegment = [&](std::size_t fromSlice, std::size_t fromProfile,
+                                 std::size_t toSlice, std::size_t toProfile, uint16_t color) {
+        const ProjectedCanyonPoint& fromProjected = _explicitTerrainPoints[cacheIndex(fromSlice, fromProfile)];
+        const ProjectedCanyonPoint& toProjected = _explicitTerrainPoints[cacheIndex(toSlice, toProfile)];
+        const bool fromVisible = fromProjected.x != kInvisible;
+        const bool toVisible = toProjected.x != kInvisible;
+        if (fromVisible && toVisible) {
+            canvas.drawLine(fromProjected.x, fromProjected.y, toProjected.x, toProjected.y, color);
+            drewAny = true;
+            return;
+        }
+        if (!fromVisible && !toVisible) return;
+
+        CanyonCameraPoint fromCamera =
+            explicitCanyonToCamera(camera, terrain.worldPoint(fromSlice, fromProfile));
+        CanyonCameraPoint toCamera =
+            explicitCanyonToCamera(camera, terrain.worldPoint(toSlice, toProfile));
+        if (!clipExplicitCanyonSegmentToNear(fromCamera, toCamera)) return;
+        CanyonScreenPoint fromScreen{};
+        CanyonScreenPoint toScreen{};
+        if (!projectExplicitCanyonPoint(camera, fromCamera, fromScreen) ||
+            !projectExplicitCanyonPoint(camera, toCamera, toScreen)) {
+            return;
+        }
+        const ProjectedCanyonPoint clippedFrom = toPackedPoint(fromScreen);
+        const ProjectedCanyonPoint clippedTo = toPackedPoint(toScreen);
+        canvas.drawLine(clippedFrom.x, clippedFrom.y, clippedTo.x, clippedTo.y, color);
+        drewAny = true;
+    };
+    const auto depthColor = [&](float relativeDepth) {
+        if (relativeDepth < 9.0f) return terrainPrimary;
+        if (relativeDepth < 20.0f) return terrainMid;
+        return terrainSecondary;
+    };
+
+    // Complete local N/Up ribs establish the flat floor, steep cliff faces,
+    // and flat plateaus. Draw far to near so the near geometry remains legible.
+    for (std::size_t reverse = ExplicitCanyonStream::kSliceCount; reverse > 0; --reverse) {
+        const std::size_t slice = reverse - 1;
+        const float relativeDepth = std::max(0.0f, slices[slice].worldS - terrain.playerWorldS());
+        const uint16_t color = depthColor(relativeDepth);
+        for (std::size_t profilePoint = 1; profilePoint < ExplicitCanyonStream::kProfileCount; ++profilePoint) {
+            drawSegment(slice, profilePoint - 1, slice, profilePoint, color);
+        }
+    }
+
+    // Semantic profile indices form longitudinal rails. Structural rails never
+    // disappear; mid and fine rails fade continuously with world depth.
+    for (std::size_t profilePoint = 0; profilePoint < ExplicitCanyonStream::kProfileCount; ++profilePoint) {
+        for (std::size_t slice = 1; slice < ExplicitCanyonStream::kSliceCount; ++slice) {
+            const float midpointWorldS = (slices[slice - 1].worldS + slices[slice].worldS) * 0.5f;
+            const float relativeDepth = std::max(0.0f, midpointWorldS - terrain.playerWorldS());
+            const float weight = explicitCanyonRailLodWeight(profilePoint, relativeDepth);
+            if (weight <= 0.01f) continue;
+            const uint16_t baseColor = isExplicitCanyonStructuralRail(profilePoint)
+                                           ? terrainPrimary
+                                           : depthColor(relativeDepth);
+            drawSegment(slice - 1, profilePoint, slice, profilePoint, scaleRgb565(baseColor, weight));
+        }
+    }
+
+    // Sparse deterministic diagonals make the two explicit cliff faces read as
+    // low-poly surfaces. They share the fine LOD fade and never replace rails.
+    constexpr std::array<std::size_t, 4> kFaceStarts = {3, 4, 18, 19};
+    for (std::size_t slice = 0; slice + 1 < ExplicitCanyonStream::kSliceCount; slice += 2) {
+        const float relativeDepth = std::max(0.0f, slices[slice].worldS - terrain.playerWorldS());
+        const float weight = 1.0f - explicitCanyonSmoothUnit((relativeDepth - 9.0f) / 5.0f);
+        if (weight <= 0.01f) continue;
+        for (const std::size_t faceStart : kFaceStarts) {
+            drawSegment(slice, faceStart, slice + 1, faceStart + 1,
+                        scaleRgb565(depthColor(relativeDepth), weight));
+        }
+    }
+    return drewAny;
 }
 
 void Renderer::render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, float calibrationProgress)
