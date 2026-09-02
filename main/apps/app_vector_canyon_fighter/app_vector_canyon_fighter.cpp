@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include "input/flight_input.h"
-#include "input/imu_button_input_provider.h"
+#include "input/input_provider_factory.h"
 #include "explicit_canyon_preview_schedule.h"
 
 namespace {
@@ -38,7 +38,7 @@ void AppVectorCanyonFighter::onOpen()
 #if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
     _inputProvider.reset();
 #else
-    _inputProvider = std::make_unique<vector_canyon_fighter::ImuButtonInputProvider>();
+    _inputProvider = vector_canyon_fighter::makeDefaultFlightInputProvider();
     _inputProvider->open();
 #endif
     GetHAL().stopLvglUpdate();
@@ -151,6 +151,13 @@ void AppVectorCanyonFighter::onRunning()
             _collisionStatus = {};
             _calibrationPhase = false;
             _lastSimulationMs = GetHAL().millis();
+            _lastFrameMs = 0;
+            _performanceWindowStartedMs = _lastSimulationMs;
+            _renderTimeTotalMs = 0;
+            _renderTimeMaxMs = 0;
+            _renderedFrames = 0;
+            _boostedFrames = 0;
+            _simulationClampCount = 0;
         }
         return;
     }
@@ -192,9 +199,10 @@ void AppVectorCanyonFighter::onRunning()
     if (performanceElapsedMs >= kPerformanceWindowMs && _renderedFrames > 0) {
         const uint32_t fpsTenths = static_cast<uint32_t>(_renderedFrames) * 10000u / performanceElapsedMs;
         const uint32_t averageRenderMs = _renderTimeTotalMs / _renderedFrames;
-        mclog::tagInfo(getAppInfo().name, "perf fps={}.{} render={}ms max={}ms boost={}/{} clamps={}",
+        const uint32_t stackWatermark = static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr));
+        mclog::tagInfo(getAppInfo().name, "M7 game fps={}.{} render={}ms max={}ms boost={}/{} clamps={} stack={}",
                        fpsTenths / 10, fpsTenths % 10, averageRenderMs, _renderTimeMaxMs, _boostedFrames,
-                       _renderedFrames, _simulationClampCount);
+                       _renderedFrames, _simulationClampCount, stackWatermark);
         _performanceWindowStartedMs = GetHAL().millis();
         _renderTimeTotalMs = 0;
         _renderTimeMaxMs = 0;

@@ -1,6 +1,7 @@
 #include "vector_canyon_renderer.h"
 
 #include "explicit_canyon_projection.h"
+#include "vector_canyon_config.h"
 
 #include <hal/hal.h>
 
@@ -251,6 +252,13 @@ bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCany
         const int y = std::clamp(static_cast<int>(std::lround(screen.y)), kMinimumCoordinate, kMaximumCoordinate);
         return ProjectedCanyonPoint{static_cast<int16_t>(x), static_cast<int16_t>(y)};
     };
+    const auto segmentOutsideViewport = [&](const ProjectedCanyonPoint& from,
+                                            const ProjectedCanyonPoint& to) {
+        return (from.x < 0 && to.x < 0) ||
+               (from.x >= _width && to.x >= _width) ||
+               (from.y < 0 && to.y < 0) ||
+               (from.y >= _height && to.y >= _height);
+    };
 
     for (std::size_t slice = 0; slice < ExplicitCanyonStream::kSliceCount; ++slice) {
         for (std::size_t profilePoint = 0; profilePoint < ExplicitCanyonStream::kProfileCount; ++profilePoint) {
@@ -274,6 +282,7 @@ bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCany
         const bool fromVisible = fromProjected.x != kInvisible;
         const bool toVisible = toProjected.x != kInvisible;
         if (fromVisible && toVisible) {
+            if (segmentOutsideViewport(fromProjected, toProjected)) return;
             canvas.drawLine(fromProjected.x, fromProjected.y, toProjected.x, toProjected.y, color);
             drewAny = true;
             return;
@@ -293,6 +302,7 @@ bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCany
         }
         const ProjectedCanyonPoint clippedFrom = toPackedPoint(fromScreen);
         const ProjectedCanyonPoint clippedTo = toPackedPoint(toScreen);
+        if (segmentOutsideViewport(clippedFrom, clippedTo)) return;
         canvas.drawLine(clippedFrom.x, clippedFrom.y, clippedTo.x, clippedTo.y, color);
         drewAny = true;
     };
@@ -357,7 +367,21 @@ void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCa
     display.endWrite();
 }
 
-void Renderer::render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, float calibrationProgress)
+void Renderer::render(const FlightState& flight, const TerrainStream& terrain,
+                      const CollisionStatus& collision, float calibrationProgress)
+{
+    renderGame(flight, collision, calibrationProgress, &terrain, nullptr);
+}
+
+void Renderer::render(const FlightState& flight, const ExplicitCanyonStream& terrain,
+                      const CollisionStatus& collision, float calibrationProgress)
+{
+    renderGame(flight, collision, calibrationProgress, nullptr, &terrain);
+}
+
+void Renderer::renderGame(const FlightState& flight, const CollisionStatus& collision,
+                          float calibrationProgress, const TerrainStream* legacyTerrain,
+                          const ExplicitCanyonStream* explicitTerrain)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -416,7 +440,27 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
     canvas.fillScreen(TFT_BLACK);
 
     int vanishingX = centerX;
-    if (!drawLegacyTerrain(flight, terrain, centerX, terrainPrimary, terrainMid, terrainSecondary, vanishingX)) {
+    bool terrainVisible = false;
+    if (explicitTerrain != nullptr) {
+        terrainVisible = drawExplicitTerrain(
+            flight, *explicitTerrain, terrainPrimary, terrainMid, terrainSecondary);
+        const CanyonRouteFrame route = explicitTerrain->routeFrameAt(explicitTerrain->playerWorldS());
+        const CanyonCamera camera =
+            makeExplicitCanyonCamera(route, flight.altitude, flight.pitch, _width, _height);
+        CanyonScreenPoint farCenter{};
+        if (projectExplicitCanyonPoint(
+                camera,
+                explicitCanyonToCamera(camera, explicitTerrain->worldPoint(
+                    ExplicitCanyonStream::kSliceCount - 1,
+                    static_cast<std::size_t>(CanyonProfilePoint::FloorCenter))),
+                farCenter)) {
+            vanishingX = static_cast<int>(std::lround(farCenter.x));
+        }
+    } else if (legacyTerrain != nullptr) {
+        terrainVisible = drawLegacyTerrain(
+            flight, *legacyTerrain, centerX, terrainPrimary, terrainMid, terrainSecondary, vanishingX);
+    }
+    if (!terrainVisible) {
         display.endWrite();
         return;
     }

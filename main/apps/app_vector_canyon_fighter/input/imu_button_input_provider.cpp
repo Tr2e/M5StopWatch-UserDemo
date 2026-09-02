@@ -2,7 +2,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <hal/hal.h>
+#include <mooncake_log.h>
 
 namespace vector_canyon_fighter {
 namespace {
@@ -11,6 +14,8 @@ constexpr float kDeadZone = 0.08f;
 constexpr float kAxisSensitivity = 0.85f;
 constexpr float kFilterStrength = 0.18f;
 constexpr uint32_t kCalibrationDelayMs = 2500;
+constexpr uint32_t kImuSamplePeriodMs = 33;
+constexpr uint32_t kImuTaskStackBytes = 5 * 1024;
 
 float normalizeAxis(float value)
 {
@@ -22,6 +27,36 @@ float normalizeAxis(float value)
 
 }  // namespace
 
+ImuButtonInputProvider::~ImuButtonInputProvider()
+{
+    close();
+}
+
+void ImuButtonInputProvider::samplingTaskEntry(void* context)
+{
+    static_cast<ImuButtonInputProvider*>(context)->samplingTask();
+}
+
+void ImuButtonInputProvider::samplingTask()
+{
+    TickType_t lastWake = xTaskGetTickCount();
+    uint16_t samplesSinceLog = 0;
+    while (_sampling.load(std::memory_order_acquire)) {
+        GetHAL().updateImuData();
+        const auto& imu = GetHAL().getImuData();
+        _latestAccelX.store(imu.accelX, std::memory_order_relaxed);
+        _latestAccelY.store(imu.accelY, std::memory_order_relaxed);
+        if (++samplesSinceLog >= 300) {
+            samplesSinceLog = 0;
+            mclog::tagInfo("Vector Run", "IMU async stack={}",
+                           static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr)));
+        }
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(kImuSamplePeriodMs));
+    }
+    _samplingTaskExited.store(true, std::memory_order_release);
+    vTaskDelete(nullptr);
+}
+
 void ImuButtonInputProvider::open()
 {
     _neutralAccelX = 0.0f;
@@ -30,6 +65,19 @@ void ImuButtonInputProvider::open()
     _sequence = 0;
     _openedAtMs = GetHAL().millis();
     _pauseLatched = false;
+    _latestAccelX.store(0.0f, std::memory_order_relaxed);
+    _latestAccelY.store(0.0f, std::memory_order_relaxed);
+    _samplingTaskExited.store(false, std::memory_order_relaxed);
+    _sampling.store(true, std::memory_order_release);
+    TaskHandle_t taskHandle = nullptr;
+    const BaseType_t taskCreated = xTaskCreatePinnedToCore(
+        samplingTaskEntry, "vector_imu", kImuTaskStackBytes, this, 3, &taskHandle, 1);
+    _asyncSampling = taskCreated == pdPASS;
+    if (!_asyncSampling) {
+        _sampling.store(false, std::memory_order_release);
+        _samplingTaskExited.store(true, std::memory_order_release);
+        mclog::tagWarn("Vector Run", "async IMU task unavailable; using synchronous sampling");
+    }
     startCalibration(_openedAtMs);
 }
 
@@ -54,16 +102,22 @@ float ImuButtonInputProvider::calibrationProgress(uint32_t nowMs) const
 
 FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
 {
-    GetHAL().updateImuData();
-    const auto& imu = GetHAL().getImuData();
+    if (!_asyncSampling) {
+        GetHAL().updateImuData();
+        const auto& imu = GetHAL().getImuData();
+        _latestAccelX.store(imu.accelX, std::memory_order_relaxed);
+        _latestAccelY.store(imu.accelY, std::memory_order_relaxed);
+    }
+    const float accelX = _latestAccelX.load(std::memory_order_relaxed);
+    const float accelY = _latestAccelY.load(std::memory_order_relaxed);
 
     if (!_calibrated) {
-        _accumX += imu.accelX;
-        _accumY += imu.accelY;
+        _accumX += accelX;
+        _accumY += accelY;
         ++_accumCount;
         if (nowMs - _calibStartMs >= kCalibrationDelayMs) {
-            _neutralAccelX = _accumCount > 0 ? _accumX / _accumCount : imu.accelX;
-            _neutralAccelY = _accumCount > 0 ? _accumY / _accumCount : imu.accelY;
+            _neutralAccelX = _accumCount > 0 ? _accumX / _accumCount : accelX;
+            _neutralAccelY = _accumCount > 0 ? _accumY / _accumCount : accelY;
             _calibrated = true;
         }
     }
@@ -77,8 +131,8 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
     input.sequence = ++_sequence;
     if (!_calibrated) return input;
 
-    const float steer = normalizeAxis(imu.accelX - _neutralAccelX);
-    const float pitch = normalizeAxis(imu.accelY - _neutralAccelY);
+    const float steer = normalizeAxis(accelX - _neutralAccelX);
+    const float pitch = normalizeAxis(accelY - _neutralAccelY);
     _filteredSteer += kFilterStrength * (steer - _filteredSteer);
     _filteredPitch += kFilterStrength * (pitch - _filteredPitch);
     input.steer = _filteredSteer;
@@ -95,6 +149,11 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
 
 void ImuButtonInputProvider::close()
 {
+    _sampling.store(false, std::memory_order_release);
+    while (_asyncSampling && !_samplingTaskExited.load(std::memory_order_acquire)) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    _asyncSampling = false;
     _calibrated = false;
 }
 

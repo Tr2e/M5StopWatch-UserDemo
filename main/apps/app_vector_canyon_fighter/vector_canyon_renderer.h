@@ -17,6 +17,8 @@ public:
     void close();
     // calibrationProgress: 0.0–1.0 while calibrating, <0 during normal gameplay.
     void render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, float calibrationProgress);
+    void render(const FlightState& flight, const ExplicitCanyonStream& terrain,
+                const CollisionStatus& collision, float calibrationProgress);
     void renderExplicitPreview(const FlightState& flight, const ExplicitCanyonStream& terrain);
 
 private:
@@ -38,6 +40,8 @@ private:
                            int& vanishingX);
     bool drawExplicitTerrain(const FlightState& flight, const ExplicitCanyonStream& terrain,
                              uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary);
+    void renderGame(const FlightState& flight, const CollisionStatus& collision, float calibrationProgress,
+                    const TerrainStream* legacyTerrain, const ExplicitCanyonStream* explicitTerrain);
 
     std::array<LegacyProjectedTerrainRow, TerrainStream::kSliceCount + 1> _legacyTerrainRows = {};
     std::array<std::size_t, TerrainStream::kSliceCount + 1> _legacyTerrainSourceRows = {};

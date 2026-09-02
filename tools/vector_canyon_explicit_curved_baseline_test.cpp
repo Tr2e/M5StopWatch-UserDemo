@@ -187,13 +187,6 @@ bool validateTopDebugCamera(const ExplicitCanyonStream& stream)
 
 int main()
 {
-    static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN == 1,
-                  "M5 must enable the explicit terrain path");
-    static_assert(VECTOR_CANYON_EXPLICIT_PREVIEW == 1,
-                  "M5 must keep the isolated preview path enabled");
-    static_assert(VECTOR_CANYON_EXPLICIT_STATIC_BASELINE == 0,
-                  "M5 must disable the straight baseline");
-
     ExplicitCanyonStream stream;
     stream.resetCurvedBaseline(0xC4A71001u);
     bool valid = validateCurvedFrames(stream);

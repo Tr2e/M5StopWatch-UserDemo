@@ -2,10 +2,13 @@
 
 #include "input_provider.h"
 
+#include <atomic>
+
 namespace vector_canyon_fighter {
 
 class ImuButtonInputProvider final : public InputProvider {
 public:
+    ~ImuButtonInputProvider() override;
     void open() override;
     FlightInput sample(uint32_t nowMs) override;
     void close() override;
@@ -15,6 +18,13 @@ public:
     bool isCalibrated() const { return _calibrated; }
 
 private:
+    static void samplingTaskEntry(void* context);
+    void samplingTask();
+
+    std::atomic<float> _latestAccelX{0.0f};
+    std::atomic<float> _latestAccelY{0.0f};
+    std::atomic<bool> _sampling{false};
+    std::atomic<bool> _samplingTaskExited{true};
     float _neutralAccelX = 0.0f;
     float _neutralAccelY = 0.0f;
     float _filteredSteer = 0.0f;
@@ -28,6 +38,7 @@ private:
     int _accumCount = 0;
     bool _calibrated = false;
     bool _pauseLatched = false;
+    bool _asyncSampling = false;
 };
 
 }  // namespace vector_canyon_fighter

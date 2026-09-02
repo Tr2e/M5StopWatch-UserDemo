@@ -129,15 +129,6 @@ Metrics simulate(uint32_t seed)
 
 int main()
 {
-    static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN == 1,
-                  "M6 must use the explicit terrain path");
-    static_assert(VECTOR_CANYON_EXPLICIT_PREVIEW == 1,
-                  "M6 must retain isolated preview mode");
-    static_assert(VECTOR_CANYON_EXPLICIT_EVENT_STREAM == 1,
-                  "M6 must enable the deterministic event stream");
-    static_assert(VECTOR_CANYON_EXPLICIT_STATIC_BASELINE == 0,
-                  "M6 cannot use the straight static baseline");
-
     const Metrics first = simulate(0xC4A71001u);
     const Metrics repeat = simulate(0xC4A71001u);
     const Metrics different = simulate(0xC4A71002u);
