@@ -16,6 +16,7 @@ public:
     static constexpr float kForwardDistanceScale = 0.018f;
 
     void reset(uint32_t seed);
+    void resetStraightBaseline();
     void update(float flightForwardDistance);
 
     const std::array<ExplicitCanyonSlice, kSliceCount>& slices() const { return _slices; }
@@ -42,6 +43,7 @@ private:
     uint32_t _seed = 0;
     uint32_t _firstSegment = 0;
     float _playerWorldS = 0.0f;
+    bool _straightBaseline = false;
 };
 
 static_assert(sizeof(ExplicitCanyonStream) <= 1280,

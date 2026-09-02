@@ -339,6 +339,20 @@ bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCany
     return drewAny;
 }
 
+void Renderer::renderExplicitBaseline(const FlightState& flight, const ExplicitCanyonStream& terrain)
+{
+    if (_width <= 0 || _height <= 0) return;
+
+    auto& display = GetHAL().getDisplay();
+    const uint16_t terrainPrimary = display.color565(255, 113, 56);
+    const uint16_t terrainMid = display.color565(182, 70, 36);
+    const uint16_t terrainSecondary = display.color565(87, 39, 29);
+    display.startWrite();
+    display.fillScreen(TFT_BLACK);
+    drawExplicitTerrain(flight, terrain, terrainPrimary, terrainMid, terrainSecondary);
+    display.endWrite();
+}
+
 void Renderer::render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, float calibrationProgress)
 {
     if (_width <= 0 || _height <= 0) return;

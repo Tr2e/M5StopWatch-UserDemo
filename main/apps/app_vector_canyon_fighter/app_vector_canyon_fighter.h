@@ -1,14 +1,22 @@
 #pragma once
 
 #include "vector_canyon_renderer.h"
+#include "vector_canyon_config.h"
 #include "input/input_provider.h"
 #include "model/flight_model.h"
 #include "model/collision_model.h"
+#include "model/explicit_canyon_stream.h"
 #include "model/terrain_stream.h"
 
 #include <apps/common/key_manager/key_manager.h>
 #include <memory>
 #include <mooncake.h>
+
+#if VECTOR_CANYON_EXPLICIT_TERRAIN
+using ActiveVectorCanyonTerrain = vector_canyon_fighter::ExplicitCanyonStream;
+#else
+using ActiveVectorCanyonTerrain = vector_canyon_fighter::TerrainStream;
+#endif
 
 class AppVectorCanyonFighter : public mooncake::AppAbility {
 public:
@@ -25,7 +33,7 @@ private:
     vector_canyon_fighter::FlightModel _flightModel;
     vector_canyon_fighter::CollisionModel _collisionModel;
     vector_canyon_fighter::CollisionStatus _collisionStatus;
-    vector_canyon_fighter::TerrainStream _terrain;
+    ActiveVectorCanyonTerrain _terrain;
     uint32_t _lastFrameMs = 0;
     uint32_t _lastSimulationMs = 0;
     uint32_t _performanceWindowStartedMs = 0;

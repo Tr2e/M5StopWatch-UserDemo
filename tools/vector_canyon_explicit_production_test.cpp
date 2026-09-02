@@ -326,9 +326,6 @@ void printMetrics(const StreamMetrics& metrics, const StreamMetrics& repeat,
 
 int main()
 {
-    static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN == 0,
-                  "M2 must keep the production renderer on the legacy terrain path");
-
     bool valid = validateProfile();
     ExplicitCanyonStream stream;
     stream.reset(kSeed);

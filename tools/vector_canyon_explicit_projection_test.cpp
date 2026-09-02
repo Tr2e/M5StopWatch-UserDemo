@@ -171,9 +171,6 @@ bool validateProjectionWorksetAndBudget(const ExplicitCanyonStream& stream)
 
 int main()
 {
-    static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN == 0,
-                  "M3 must compile the explicit projection path while keeping it disabled");
-
     ExplicitCanyonStream stream;
     stream.reset(0xC4A71001u);
     bool valid = validateCameraMatrix(stream);
