@@ -16,11 +16,6 @@ constexpr float kTerrainVerticalScale = 94.0f;
 constexpr float kShipFocalLength = 62.0f;
 constexpr float kTerrainNearPlane = 0.22f;
 
-struct ProjectedTerrainRow {
-    std::array<int16_t, TerrainStream::kColumnCount> x;
-    std::array<int16_t, TerrainStream::kColumnCount> y;
-};
-
 struct Vec3 {
     float x;
     float y;
@@ -142,6 +137,84 @@ void Renderer::close()
     _height = 0;
 }
 
+bool Renderer::drawLegacyTerrain(const FlightState& flight, const TerrainStream& terrain, int centerX,
+                                 uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary,
+                                 int& vanishingX)
+{
+    auto& canvas = GetHAL().getDisplay();
+    auto& rows = _legacyTerrainRows;
+    auto& sourceRows = _legacyTerrainSourceRows;
+    std::size_t rowCount = 0;
+    const auto& slices = terrain.slices();
+
+    std::size_t firstVisible = 0;
+    while (firstVisible < slices.size() && slices[firstVisible].z < kTerrainNearPlane) ++firstVisible;
+
+    if (firstVisible > 0 && firstVisible < slices.size()) {
+        const auto& behind = slices[firstVisible - 1];
+        const auto& ahead = slices[firstVisible];
+        const float blend = std::clamp((kTerrainNearPlane - behind.z) / (ahead.z - behind.z), 0.0f, 1.0f);
+        const float center = behind.center + (ahead.center - behind.center) * blend;
+        for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
+            const float height = behind.surfaceHeights[column] +
+                                 (ahead.surfaceHeights[column] - behind.surfaceHeights[column]) * blend;
+            rows[rowCount].x[column] = projectX(
+                centerX, TerrainStream::columnWorldX(center, column) - flight.lateralOffset, kTerrainNearPlane);
+            rows[rowCount].y[column] = projectY(height - flight.altitude, kTerrainNearPlane);
+        }
+        sourceRows[rowCount] = firstVisible;
+        ++rowCount;
+    }
+
+    for (std::size_t row = firstVisible; row < slices.size(); ++row) {
+        for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
+            rows[rowCount].x[column] =
+                projectX(centerX, TerrainStream::columnWorldX(slices[row].center, column) - flight.lateralOffset,
+                         slices[row].z);
+            rows[rowCount].y[column] = projectY(slices[row].surfaceHeights[column] - flight.altitude, slices[row].z);
+        }
+        sourceRows[rowCount] = row;
+        ++rowCount;
+    }
+    vanishingX = projectX(centerX, slices.back().center - flight.lateralOffset, slices.back().z);
+
+    const auto rowColor = [&](std::size_t row) {
+        return sourceRows[row] > 17 ? terrainSecondary : (sourceRows[row] > 7 ? terrainMid : terrainPrimary);
+    };
+    const auto drawRow = [&](std::size_t row) {
+        const std::size_t stride = columnStride(sourceRows[row]);
+        std::size_t previous = 0;
+        for (std::size_t column = stride; column < TerrainStream::kColumnCount; column += stride) {
+            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[column], rows[row].y[column],
+                            rowColor(row));
+            previous = column;
+        }
+        const std::size_t last = TerrainStream::kColumnCount - 1;
+        if (previous != last) {
+            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[last], rows[row].y[last],
+                            rowColor(row));
+        }
+    };
+
+    if (rowCount == 0) return false;
+    drawRow(rowCount - 1);
+    for (std::size_t farRow = rowCount - 1; farRow > 0; --farRow) {
+        const std::size_t nearRow = farRow - 1;
+        drawRow(nearRow);
+        const std::size_t stride = std::max(columnStride(sourceRows[nearRow]), columnStride(sourceRows[farRow]));
+        for (std::size_t column = 0; column < TerrainStream::kColumnCount; column += stride) {
+            canvas.drawLine(rows[nearRow].x[column], rows[nearRow].y[column], rows[farRow].x[column],
+                            rows[farRow].y[column], rowColor(nearRow));
+        }
+        const std::size_t last = TerrainStream::kColumnCount - 1;
+        if (last % stride != 0) {
+            canvas.drawLine(rows[nearRow].x[last], rows[nearRow].y[last], rows[farRow].x[last], rows[farRow].y[last],
+                            rowColor(nearRow));
+        }
+    }
+    return true;
+}
+
 void Renderer::render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, float calibrationProgress)
 {
     if (_width <= 0 || _height <= 0) return;
@@ -200,78 +273,10 @@ void Renderer::render(const FlightState& flight, const TerrainStream& terrain, c
 
     canvas.fillScreen(TFT_BLACK);
 
-    std::array<ProjectedTerrainRow, TerrainStream::kSliceCount + 1> rows = {};
-    std::array<std::size_t, TerrainStream::kSliceCount + 1> sourceRows = {};
-    std::size_t rowCount = 0;
-    const auto& slices = terrain.slices();
-
-    std::size_t firstVisible = 0;
-    while (firstVisible < slices.size() && slices[firstVisible].z < kTerrainNearPlane) ++firstVisible;
-
-    if (firstVisible > 0 && firstVisible < slices.size()) {
-        const auto& behind = slices[firstVisible - 1];
-        const auto& ahead = slices[firstVisible];
-        const float blend = std::clamp((kTerrainNearPlane - behind.z) / (ahead.z - behind.z), 0.0f, 1.0f);
-        const float center = behind.center + (ahead.center - behind.center) * blend;
-        for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
-            const float height = behind.surfaceHeights[column] +
-                                 (ahead.surfaceHeights[column] - behind.surfaceHeights[column]) * blend;
-            rows[rowCount].x[column] = projectX(
-                centerX, TerrainStream::columnWorldX(center, column) - flight.lateralOffset, kTerrainNearPlane);
-            rows[rowCount].y[column] = projectY(height - flight.altitude, kTerrainNearPlane);
-        }
-        sourceRows[rowCount] = firstVisible;
-        ++rowCount;
-    }
-
-    for (std::size_t row = firstVisible; row < slices.size(); ++row) {
-        for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
-            rows[rowCount].x[column] =
-                projectX(centerX, TerrainStream::columnWorldX(slices[row].center, column) - flight.lateralOffset,
-                         slices[row].z);
-            rows[rowCount].y[column] = projectY(slices[row].surfaceHeights[column] - flight.altitude, slices[row].z);
-        }
-        sourceRows[rowCount] = row;
-        ++rowCount;
-    }
-    const int vanishingX = projectX(centerX, slices.back().center - flight.lateralOffset, slices.back().z);
-
-    const auto rowColor = [&](std::size_t row) {
-        return sourceRows[row] > 17 ? terrainSecondary : (sourceRows[row] > 7 ? terrainMid : terrainPrimary);
-    };
-    const auto drawRow = [&](std::size_t row) {
-        const std::size_t stride = columnStride(sourceRows[row]);
-        std::size_t previous = 0;
-        for (std::size_t column = stride; column < TerrainStream::kColumnCount; column += stride) {
-            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[column], rows[row].y[column],
-                            rowColor(row));
-            previous = column;
-        }
-        const std::size_t last = TerrainStream::kColumnCount - 1;
-        if (previous != last) {
-            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[last], rows[row].y[last],
-                            rowColor(row));
-        }
-    };
-
-    if (rowCount == 0) {
+    int vanishingX = centerX;
+    if (!drawLegacyTerrain(flight, terrain, centerX, terrainPrimary, terrainMid, terrainSecondary, vanishingX)) {
         display.endWrite();
         return;
-    }
-    drawRow(rowCount - 1);
-    for (std::size_t farRow = rowCount - 1; farRow > 0; --farRow) {
-        const std::size_t nearRow = farRow - 1;
-        drawRow(nearRow);
-        const std::size_t stride = std::max(columnStride(sourceRows[nearRow]), columnStride(sourceRows[farRow]));
-        for (std::size_t column = 0; column < TerrainStream::kColumnCount; column += stride) {
-            canvas.drawLine(rows[nearRow].x[column], rows[nearRow].y[column], rows[farRow].x[column],
-                            rows[farRow].y[column], rowColor(nearRow));
-        }
-        const std::size_t last = TerrainStream::kColumnCount - 1;
-        if (last % stride != 0) {
-            canvas.drawLine(rows[nearRow].x[last], rows[nearRow].y[last], rows[farRow].x[last], rows[farRow].y[last],
-                            rowColor(nearRow));
-        }
     }
 
     const int shipX = centerX + static_cast<int>(flight.lateralOffset * 12.0f);
