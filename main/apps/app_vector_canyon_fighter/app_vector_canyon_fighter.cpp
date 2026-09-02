@@ -15,7 +15,7 @@ namespace {
 constexpr uint32_t kFrameIntervalMs = 33;
 constexpr uint32_t kPerformanceWindowMs = 5000;
 constexpr uint32_t kTerrainSeed = 0xC4A71001u;
-#if !(VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW)
+#if !VECTOR_CANYON_EXPLICIT_PREVIEW
 constexpr float kSimulationStepSeconds = 1.0f / 60.0f;
 constexpr int kMaxSimulationSteps = 5;
 #endif
@@ -35,7 +35,7 @@ void AppVectorCanyonFighter::onOpen()
 {
     mclog::tagInfo(getAppInfo().name, "on open");
     _keys = std::make_unique<input::KeyManager>();
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
+#if VECTOR_CANYON_EXPLICIT_PREVIEW
     _inputProvider.reset();
 #else
     _inputProvider = vector_canyon_fighter::makeDefaultFlightInputProvider();
@@ -46,7 +46,7 @@ void AppVectorCanyonFighter::onOpen()
     const auto& display = GetHAL().getDisplay();
     _renderer.open(display.width(), display.height());
     _flightModel.reset();
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
+#if VECTOR_CANYON_EXPLICIT_PREVIEW
 #if VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
     _terrain.resetStraightBaseline();
 #elif VECTOR_CANYON_EXPLICIT_EVENT_STREAM
@@ -58,7 +58,7 @@ void AppVectorCanyonFighter::onOpen()
     _terrain.reset(kTerrainSeed);
 #endif
     _collisionStatus = {};
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
+#if VECTOR_CANYON_EXPLICIT_PREVIEW
     _calibrationPhase = false;
 #else
     _calibrationPhase = true;
@@ -84,7 +84,7 @@ void AppVectorCanyonFighter::onRunning()
         return;
     }
 
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
+#if VECTOR_CANYON_EXPLICIT_PREVIEW
     const uint32_t nowMs = GetHAL().millis();
 #if VECTOR_CANYON_EXPLICIT_EVENT_STREAM
     if (_lastSimulationMs == 0) _lastSimulationMs = nowMs;

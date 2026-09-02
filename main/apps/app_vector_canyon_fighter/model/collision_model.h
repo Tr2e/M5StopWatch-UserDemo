@@ -2,7 +2,6 @@
 
 #include "flight_model.h"
 #include "explicit_canyon_stream.h"
-#include "terrain_stream.h"
 
 namespace vector_canyon_fighter {
 
@@ -21,7 +20,6 @@ CollisionStatus evaluateExplicitCanyonCollision(const FlightState& flight,
 
 class CollisionModel {
 public:
-    CollisionStatus evaluate(const FlightState& flight, const TerrainStream& terrain) const;
     CollisionStatus evaluate(const FlightState& flight, const ExplicitCanyonStream& terrain) const;
 
 private:

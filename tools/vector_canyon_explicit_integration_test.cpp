@@ -135,8 +135,6 @@ bool validateFlightAndCameraSeparation()
 
 int main()
 {
-    static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN == 1,
-                  "M7 must retain explicit terrain");
     static_assert(VECTOR_CANYON_EXPLICIT_PREVIEW == 0,
                   "M7 must leave isolated preview mode");
     static_assert(VECTOR_CANYON_EXPLICIT_EVENT_STREAM == 0,

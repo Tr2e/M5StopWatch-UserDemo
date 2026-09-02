@@ -15,10 +15,7 @@ namespace {
 
 constexpr int kHorizonY = 150;
 constexpr int kShipCenterY = 335;
-constexpr float kTerrainFocalLength = 112.0f;
-constexpr float kTerrainVerticalScale = 94.0f;
 constexpr float kShipFocalLength = 62.0f;
-constexpr float kTerrainNearPlane = 0.22f;
 
 struct Vec3 {
     float x;
@@ -110,23 +107,6 @@ constexpr std::array<ShipEdge, 114> kShipEdges = {{
     {16, 62, 1}, {19, 63, 1}, {22, 64, 1}, {25, 65, 1},
 }};
 
-int projectX(int centerX, float worldX, float z)
-{
-    return centerX + static_cast<int>(kTerrainFocalLength * worldX / z);
-}
-
-int projectY(float worldY, float z)
-{
-    return kHorizonY - static_cast<int>(kTerrainVerticalScale * worldY / z);
-}
-
-std::size_t columnStride(std::size_t sourceRow)
-{
-    if (sourceRow > 17) return 3;
-    if (sourceRow > 7) return 2;
-    return 1;
-}
-
 uint16_t scaleRgb565(uint16_t color, float weight)
 {
     const uint16_t safeWeight = static_cast<uint16_t>(std::lround(std::clamp(weight, 0.0f, 1.0f) * 256.0f));
@@ -148,84 +128,6 @@ void Renderer::close()
 {
     _width = 0;
     _height = 0;
-}
-
-bool Renderer::drawLegacyTerrain(const FlightState& flight, const TerrainStream& terrain, int centerX,
-                                 uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary,
-                                 int& vanishingX)
-{
-    auto& canvas = GetHAL().getDisplay();
-    auto& rows = _legacyTerrainRows;
-    auto& sourceRows = _legacyTerrainSourceRows;
-    std::size_t rowCount = 0;
-    const auto& slices = terrain.slices();
-
-    std::size_t firstVisible = 0;
-    while (firstVisible < slices.size() && slices[firstVisible].z < kTerrainNearPlane) ++firstVisible;
-
-    if (firstVisible > 0 && firstVisible < slices.size()) {
-        const auto& behind = slices[firstVisible - 1];
-        const auto& ahead = slices[firstVisible];
-        const float blend = std::clamp((kTerrainNearPlane - behind.z) / (ahead.z - behind.z), 0.0f, 1.0f);
-        const float center = behind.center + (ahead.center - behind.center) * blend;
-        for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
-            const float height = behind.surfaceHeights[column] +
-                                 (ahead.surfaceHeights[column] - behind.surfaceHeights[column]) * blend;
-            rows[rowCount].x[column] = projectX(
-                centerX, TerrainStream::columnWorldX(center, column) - flight.lateralOffset, kTerrainNearPlane);
-            rows[rowCount].y[column] = projectY(height - flight.altitude, kTerrainNearPlane);
-        }
-        sourceRows[rowCount] = firstVisible;
-        ++rowCount;
-    }
-
-    for (std::size_t row = firstVisible; row < slices.size(); ++row) {
-        for (std::size_t column = 0; column < TerrainStream::kColumnCount; ++column) {
-            rows[rowCount].x[column] =
-                projectX(centerX, TerrainStream::columnWorldX(slices[row].center, column) - flight.lateralOffset,
-                         slices[row].z);
-            rows[rowCount].y[column] = projectY(slices[row].surfaceHeights[column] - flight.altitude, slices[row].z);
-        }
-        sourceRows[rowCount] = row;
-        ++rowCount;
-    }
-    vanishingX = projectX(centerX, slices.back().center - flight.lateralOffset, slices.back().z);
-
-    const auto rowColor = [&](std::size_t row) {
-        return sourceRows[row] > 17 ? terrainSecondary : (sourceRows[row] > 7 ? terrainMid : terrainPrimary);
-    };
-    const auto drawRow = [&](std::size_t row) {
-        const std::size_t stride = columnStride(sourceRows[row]);
-        std::size_t previous = 0;
-        for (std::size_t column = stride; column < TerrainStream::kColumnCount; column += stride) {
-            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[column], rows[row].y[column],
-                            rowColor(row));
-            previous = column;
-        }
-        const std::size_t last = TerrainStream::kColumnCount - 1;
-        if (previous != last) {
-            canvas.drawLine(rows[row].x[previous], rows[row].y[previous], rows[row].x[last], rows[row].y[last],
-                            rowColor(row));
-        }
-    };
-
-    if (rowCount == 0) return false;
-    drawRow(rowCount - 1);
-    for (std::size_t farRow = rowCount - 1; farRow > 0; --farRow) {
-        const std::size_t nearRow = farRow - 1;
-        drawRow(nearRow);
-        const std::size_t stride = std::max(columnStride(sourceRows[nearRow]), columnStride(sourceRows[farRow]));
-        for (std::size_t column = 0; column < TerrainStream::kColumnCount; column += stride) {
-            canvas.drawLine(rows[nearRow].x[column], rows[nearRow].y[column], rows[farRow].x[column],
-                            rows[farRow].y[column], rowColor(nearRow));
-        }
-        const std::size_t last = TerrainStream::kColumnCount - 1;
-        if (last % stride != 0) {
-            canvas.drawLine(rows[nearRow].x[last], rows[nearRow].y[last], rows[farRow].x[last], rows[farRow].y[last],
-                            rowColor(nearRow));
-        }
-    }
-    return true;
 }
 
 bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCanyonStream& terrain,
@@ -367,21 +269,14 @@ void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCa
     display.endWrite();
 }
 
-void Renderer::render(const FlightState& flight, const TerrainStream& terrain,
-                      const CollisionStatus& collision, float calibrationProgress)
-{
-    renderGame(flight, collision, calibrationProgress, &terrain, nullptr);
-}
-
 void Renderer::render(const FlightState& flight, const ExplicitCanyonStream& terrain,
                       const CollisionStatus& collision, float calibrationProgress)
 {
-    renderGame(flight, collision, calibrationProgress, nullptr, &terrain);
+    renderGame(flight, terrain, collision, calibrationProgress);
 }
 
-void Renderer::renderGame(const FlightState& flight, const CollisionStatus& collision,
-                          float calibrationProgress, const TerrainStream* legacyTerrain,
-                          const ExplicitCanyonStream* explicitTerrain)
+void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream& terrain,
+                          const CollisionStatus& collision, float calibrationProgress)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -440,25 +335,19 @@ void Renderer::renderGame(const FlightState& flight, const CollisionStatus& coll
     canvas.fillScreen(TFT_BLACK);
 
     int vanishingX = centerX;
-    bool terrainVisible = false;
-    if (explicitTerrain != nullptr) {
-        terrainVisible = drawExplicitTerrain(
-            flight, *explicitTerrain, terrainPrimary, terrainMid, terrainSecondary);
-        const CanyonRouteFrame route = explicitTerrain->routeFrameAt(explicitTerrain->playerWorldS());
-        const CanyonCamera camera =
-            makeExplicitCanyonCamera(route, flight.altitude, flight.pitch, _width, _height);
-        CanyonScreenPoint farCenter{};
-        if (projectExplicitCanyonPoint(
-                camera,
-                explicitCanyonToCamera(camera, explicitTerrain->worldPoint(
-                    ExplicitCanyonStream::kSliceCount - 1,
-                    static_cast<std::size_t>(CanyonProfilePoint::FloorCenter))),
-                farCenter)) {
-            vanishingX = static_cast<int>(std::lround(farCenter.x));
-        }
-    } else if (legacyTerrain != nullptr) {
-        terrainVisible = drawLegacyTerrain(
-            flight, *legacyTerrain, centerX, terrainPrimary, terrainMid, terrainSecondary, vanishingX);
+    const bool terrainVisible = drawExplicitTerrain(
+        flight, terrain, terrainPrimary, terrainMid, terrainSecondary);
+    const CanyonRouteFrame route = terrain.routeFrameAt(terrain.playerWorldS());
+    const CanyonCamera camera =
+        makeExplicitCanyonCamera(route, flight.altitude, flight.pitch, _width, _height);
+    CanyonScreenPoint farCenter{};
+    if (projectExplicitCanyonPoint(
+            camera,
+            explicitCanyonToCamera(camera, terrain.worldPoint(
+                ExplicitCanyonStream::kSliceCount - 1,
+                static_cast<std::size_t>(CanyonProfilePoint::FloorCenter))),
+            farCenter)) {
+        vanishingX = static_cast<int>(std::lround(farCenter.x));
     }
     if (!terrainVisible) {
         display.endWrite();
