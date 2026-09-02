@@ -17,7 +17,7 @@ public:
     void close();
     // calibrationProgress: 0.0–1.0 while calibrating, <0 during normal gameplay.
     void render(const FlightState& flight, const TerrainStream& terrain, const CollisionStatus& collision, float calibrationProgress);
-    void renderExplicitBaseline(const FlightState& flight, const ExplicitCanyonStream& terrain);
+    void renderExplicitPreview(const FlightState& flight, const ExplicitCanyonStream& terrain);
 
 private:
     struct LegacyProjectedTerrainRow {

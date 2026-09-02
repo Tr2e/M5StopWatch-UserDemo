@@ -11,10 +11,10 @@
 namespace {
 constexpr uint32_t kFrameIntervalMs = 33;
 constexpr uint32_t kPerformanceWindowMs = 5000;
-#if !(VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_STATIC_BASELINE)
+constexpr uint32_t kTerrainSeed = 0xC4A71001u;
+#if !(VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW)
 constexpr float kSimulationStepSeconds = 1.0f / 60.0f;
 constexpr int kMaxSimulationSteps = 5;
-constexpr uint32_t kTerrainSeed = 0xC4A71001u;
 #endif
 }
 
@@ -32,7 +32,7 @@ void AppVectorCanyonFighter::onOpen()
 {
     mclog::tagInfo(getAppInfo().name, "on open");
     _keys = std::make_unique<input::KeyManager>();
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
+#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
     _inputProvider.reset();
 #else
     _inputProvider = std::make_unique<vector_canyon_fighter::ImuButtonInputProvider>();
@@ -43,13 +43,17 @@ void AppVectorCanyonFighter::onOpen()
     const auto& display = GetHAL().getDisplay();
     _renderer.open(display.width(), display.height());
     _flightModel.reset();
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
+#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
+#if VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
     _terrain.resetStraightBaseline();
+#else
+    _terrain.resetCurvedBaseline(kTerrainSeed);
+#endif
 #else
     _terrain.reset(kTerrainSeed);
 #endif
     _collisionStatus = {};
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
+#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
     _calibrationPhase = false;
 #else
     _calibrationPhase = true;
@@ -73,12 +77,12 @@ void AppVectorCanyonFighter::onRunning()
         return;
     }
 
-#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
+#if VECTOR_CANYON_EXPLICIT_TERRAIN && VECTOR_CANYON_EXPLICIT_PREVIEW
     const uint32_t nowMs = GetHAL().millis();
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
     const uint32_t renderStartedMs = GetHAL().millis();
-    _renderer.renderExplicitBaseline(_flightModel.state(), _terrain);
+    _renderer.renderExplicitPreview(_flightModel.state(), _terrain);
     const uint32_t renderTimeMs = GetHAL().millis() - renderStartedMs;
     _renderTimeTotalMs += renderTimeMs;
     _renderTimeMaxMs = std::max(_renderTimeMaxMs, renderTimeMs);
@@ -88,7 +92,7 @@ void AppVectorCanyonFighter::onRunning()
     if (performanceElapsedMs >= kPerformanceWindowMs && _renderedFrames > 0) {
         const uint32_t fpsTenths = static_cast<uint32_t>(_renderedFrames) * 10000u / performanceElapsedMs;
         const uint32_t averageRenderMs = _renderTimeTotalMs / _renderedFrames;
-        mclog::tagInfo(getAppInfo().name, "M4 static fps={}.{} render={}ms max={}ms",
+        mclog::tagInfo(getAppInfo().name, "M5 curved fps={}.{} render={}ms max={}ms",
                        fpsTenths / 10, fpsTenths % 10, averageRenderMs, _renderTimeMaxMs);
         _performanceWindowStartedMs = GetHAL().millis();
         _renderTimeTotalMs = 0;

@@ -135,11 +135,6 @@ bool validateStaticComposition(const ExplicitCanyonStream& stream)
 
 int main()
 {
-    static_assert(VECTOR_CANYON_EXPLICIT_TERRAIN == 1,
-                  "M4 must enable the explicit terrain path");
-    static_assert(VECTOR_CANYON_EXPLICIT_STATIC_BASELINE == 1,
-                  "M4 must enable the static straight baseline gate");
-
     ExplicitCanyonStream stream;
     stream.resetStraightBaseline();
     bool valid = validateStraightBaseline(stream);

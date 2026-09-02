@@ -236,8 +236,12 @@ bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCany
     auto& canvas = GetHAL().getDisplay();
     const auto& slices = terrain.slices();
     const CanyonRouteFrame playerRoute = terrain.routeFrameAt(terrain.playerWorldS());
+#if VECTOR_CANYON_EXPLICIT_TOP_DEBUG
+    const CanyonCamera camera = makeExplicitCanyonTopDebugCamera(playerRoute, _width, _height);
+#else
     const CanyonCamera camera =
         makeExplicitCanyonCamera(playerRoute, flight.altitude, flight.pitch, _width, _height);
+#endif
 
     const auto cacheIndex = [](std::size_t slice, std::size_t profilePoint) {
         return slice * ExplicitCanyonStream::kProfileCount + profilePoint;
@@ -339,7 +343,7 @@ bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCany
     return drewAny;
 }
 
-void Renderer::renderExplicitBaseline(const FlightState& flight, const ExplicitCanyonStream& terrain)
+void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCanyonStream& terrain)
 {
     if (_width <= 0 || _height <= 0) return;
 

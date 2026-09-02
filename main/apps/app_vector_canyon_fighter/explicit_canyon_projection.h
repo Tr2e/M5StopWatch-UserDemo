@@ -83,6 +83,24 @@ inline CanyonCamera makeExplicitCanyonCamera(const CanyonRouteFrame& route, floa
     };
 }
 
+inline CanyonCamera makeExplicitCanyonTopDebugCamera(const CanyonRouteFrame& route, int width, int height)
+{
+    const CanyonCameraVector worldUp{0.0f, 1.0f, 0.0f};
+    const CanyonCameraVector forward =
+        canyonNormalize({route.tangentX * 0.68f, -0.58f, route.tangentZ * 0.68f});
+    const CanyonCameraVector right = canyonNormalize(canyonCross(worldUp, forward));
+    const CanyonCameraVector up = canyonNormalize(canyonCross(forward, right));
+    return {
+        {route.centerX - route.tangentX * 5.0f, 14.0f, route.centerZ - route.tangentZ * 5.0f},
+        right,
+        up,
+        forward,
+        static_cast<float>(width) * 0.5f,
+        static_cast<float>(height) * 0.52f,
+        static_cast<float>(width) * 0.60f,
+    };
+}
+
 inline CanyonCameraPoint explicitCanyonToCamera(const CanyonCamera& camera, CanyonWorldPoint world)
 {
     const CanyonCameraVector relative{

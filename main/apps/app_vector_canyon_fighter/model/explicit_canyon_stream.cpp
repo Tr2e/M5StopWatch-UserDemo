@@ -170,7 +170,7 @@ void ExplicitCanyonStream::reset(uint32_t seed)
 {
     _seed = seed;
     _playerWorldS = 0.0f;
-    _straightBaseline = false;
+    _mode = Mode::Production;
     rebuildSlices(0);
 }
 
@@ -178,13 +178,21 @@ void ExplicitCanyonStream::resetStraightBaseline()
 {
     _seed = 0;
     _playerWorldS = 0.0f;
-    _straightBaseline = true;
+    _mode = Mode::StraightBaseline;
+    rebuildSlices(0);
+}
+
+void ExplicitCanyonStream::resetCurvedBaseline(uint32_t seed)
+{
+    _seed = seed;
+    _playerWorldS = 0.0f;
+    _mode = Mode::CurvedBaseline;
     rebuildSlices(0);
 }
 
 void ExplicitCanyonStream::update(float flightForwardDistance)
 {
-    if (_straightBaseline) return;
+    if (_mode != Mode::Production) return;
     _playerWorldS = std::max(0.0f, flightForwardDistance * kForwardDistanceScale);
     const uint32_t wantedFirstSegment = static_cast<uint32_t>(std::floor(_playerWorldS / kSliceSpacing));
     if (wantedFirstSegment < _firstSegment) {
@@ -219,14 +227,14 @@ CanyonWorldPoint ExplicitCanyonStream::worldPoint(std::size_t slice, std::size_t
 
 CanyonBoundary ExplicitCanyonStream::boundaryAt(float worldS) const
 {
-    if (_straightBaseline) return {};
+    if (_mode != Mode::Production) return {};
     return makeBoundary(std::max(worldS, 0.0f), _seed);
 }
 
 CanyonRouteFrame ExplicitCanyonStream::routeFrameAt(float worldS) const
 {
     const float clampedWorldS = std::max(worldS, 0.0f);
-    if (_straightBaseline) return {clampedWorldS, 0.0f, clampedWorldS, 0.0f, 1.0f};
+    if (_mode == Mode::StraightBaseline) return {clampedWorldS, 0.0f, clampedWorldS, 0.0f, 1.0f};
     if (clampedWorldS >= _slices.front().worldS && clampedWorldS <= _slices.back().worldS) {
         const float localPosition = std::max(0.0f, (clampedWorldS - _slices.front().worldS) / kSliceSpacing);
         const std::size_t local = static_cast<std::size_t>(std::floor(localPosition));
@@ -258,12 +266,12 @@ CanyonShoulderEvent ExplicitCanyonStream::eventAtIndex(uint32_t eventIndex) cons
 ExplicitCanyonSlice ExplicitCanyonStream::makeSlice(uint32_t segment) const
 {
     const float worldS = static_cast<float>(segment) * kSliceSpacing;
-    if (_straightBaseline) {
+    if (_mode == Mode::StraightBaseline) {
         return {segment, worldS, 0.0f, worldS, 0.0f, 1.0f,
                 kExplicitCanyonFloorHalfWidth, kExplicitCanyonFloorHalfWidth};
     }
     const CanyonRouteFrame route = calculateRouteFrame(worldS);
-    const CanyonBoundary boundary = makeBoundary(worldS, _seed);
+    const CanyonBoundary boundary = _mode == Mode::Production ? makeBoundary(worldS, _seed) : CanyonBoundary{};
     return {segment, worldS, route.centerX, route.centerZ, route.tangentX, route.tangentZ,
             boundary.leftWidth, boundary.rightWidth};
 }
@@ -290,7 +298,7 @@ void ExplicitCanyonStream::rebuildSlices(uint32_t firstSegment)
 void ExplicitCanyonStream::refreshEventWindow()
 {
     _eventWindow = {};
-    if (_straightBaseline) return;
+    if (_mode != Mode::Production) return;
     const float startWorldS = _slices.front().worldS;
     const float endWorldS = _slices.back().worldS;
     const int firstCycle = std::max(0, static_cast<int>(std::floor(startWorldS / kEventCycleLength)) - 1);

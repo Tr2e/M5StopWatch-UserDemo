@@ -17,6 +17,7 @@ public:
 
     void reset(uint32_t seed);
     void resetStraightBaseline();
+    void resetCurvedBaseline(uint32_t seed);
     void update(float flightForwardDistance);
 
     const std::array<ExplicitCanyonSlice, kSliceCount>& slices() const { return _slices; }
@@ -33,6 +34,12 @@ public:
     uint32_t seed() const { return _seed; }
 
 private:
+    enum class Mode : uint8_t {
+        Production,
+        StraightBaseline,
+        CurvedBaseline,
+    };
+
     ExplicitCanyonSlice makeSlice(uint32_t segment) const;
     CanyonRouteFrame calculateRouteFrame(float worldS) const;
     void rebuildSlices(uint32_t firstSegment);
@@ -43,7 +50,7 @@ private:
     uint32_t _seed = 0;
     uint32_t _firstSegment = 0;
     float _playerWorldS = 0.0f;
-    bool _straightBaseline = false;
+    Mode _mode = Mode::Production;
 };
 
 static_assert(sizeof(ExplicitCanyonStream) <= 1280,
