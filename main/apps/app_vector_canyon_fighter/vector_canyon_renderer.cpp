@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 
 namespace vector_canyon_fighter {
@@ -275,9 +276,9 @@ void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCa
     if (_width <= 0 || _height <= 0) return;
 
     auto& display = GetHAL().getDisplay();
-    const uint16_t terrainPrimary = display.color565(255, 113, 56);
-    const uint16_t terrainMid = display.color565(182, 70, 36);
-    const uint16_t terrainSecondary = display.color565(87, 39, 29);
+    const uint16_t terrainPrimary = display.color565(36, 127, 145);
+    const uint16_t terrainMid = display.color565(21, 76, 91);
+    const uint16_t terrainSecondary = display.color565(9, 40, 50);
     const CanyonRouteFrame route = terrain.routeFrameAt(terrain.playerWorldS());
 #if VECTOR_CANYON_EXPLICIT_TOP_DEBUG
     const CanyonCamera camera = makeExplicitCanyonTopDebugCamera(route, _width, _height);
@@ -305,17 +306,21 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     auto& display = GetHAL().getDisplay();
     auto& canvas = display;
     const int centerX = _width / 2;
-    const uint16_t terrainPrimary = display.color565(255, 113, 56);
-    const uint16_t terrainMid = display.color565(182, 70, 36);
-    const uint16_t terrainSecondary = display.color565(87, 39, 29);
-    const uint16_t shipColor = display.color565(233, 242, 242);
-    const uint16_t shipDim = display.color565(71, 102, 109);
-    const uint16_t canopyColor = display.color565(88, 166, 216);
-    const uint16_t exhaust = display.color565(255, 236, 155);
-    const uint16_t hudColor = display.color565(128, 216, 232);
-    const uint16_t hudDim = display.color565(39, 95, 105);
-    const uint16_t hudAccent = display.color565(227, 251, 255);
-    const uint16_t caution = display.color565(255, 225, 90);
+    // M9 palette: the canyon is a low-luminance blue-cyan world layer;
+    // phosphor green is reserved for flight symbology, and warm hues only
+    // appear when the vehicle state requires attention.
+    const uint16_t terrainPrimary = display.color565(36, 127, 145);
+    const uint16_t terrainMid = display.color565(21, 76, 91);
+    const uint16_t terrainSecondary = display.color565(9, 40, 50);
+    const uint16_t shipColor = display.color565(228, 238, 235);
+    const uint16_t shipDim = display.color565(84, 107, 106);
+    const uint16_t canopyColor = display.color565(101, 183, 200);
+    const uint16_t exhaust = display.color565(155, 225, 236);
+    const uint16_t hudColor = display.color565(114, 230, 162);
+    const uint16_t hudDim = display.color565(39, 94, 69);
+    const uint16_t hudAccent = display.color565(182, 255, 208);
+    const uint16_t caution = display.color565(255, 179, 71);
+    const uint16_t impact = display.color565(255, 88, 72);
 
     // The StopWatch display already owns a PSRAM framebuffer. Drawing into a
     // second full-screen sprite and pushing it duplicated the entire 468x466
@@ -329,27 +334,47 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         canvas.fillScreen(TFT_BLACK);
         const int cx = _width / 2;
         const int cy = _height / 2;
+        const auto drawCentered = [&](const char* text, int y) {
+            canvas.setCursor(cx - canvas.textWidth(text) / 2, y);
+            canvas.print(text);
+        };
+
+        // A compact centered instrument stack. Text widths come from the
+        // active display font instead of hand-tuned character offsets.
+        canvas.setTextSize(1);
+        canvas.setTextColor(hudDim, TFT_BLACK);
+        drawCentered("FLIGHT CONTROL / IMU", cy - 86);
+
         canvas.setTextSize(2);
         canvas.setTextColor(hudAccent, TFT_BLACK);
-        canvas.setCursor(cx - 88, cy - 48);
-        canvas.print("CALIBRATING");
+        drawCentered("CALIBRATING", cy - 61);
+        canvas.drawLine(cx - 102, cy - 43, cx - 76, cy - 43, hudDim);
+        canvas.drawLine(cx + 76, cy - 43, cx + 102, cy - 43, hudDim);
+
         canvas.setTextSize(1);
         canvas.setTextColor(hudColor, TFT_BLACK);
-        canvas.setCursor(cx - 72, cy - 20);
-        canvas.print("HOLD DEVICE LEVEL");
-        // Progress bar (80px wide, 8px tall)
+        drawCentered("HOLD DEVICE LEVEL", cy - 25);
+
         constexpr int kBarW = 160;
-        constexpr int kBarH = 8;
+        constexpr int kBarH = 7;
         const int barX = cx - kBarW / 2;
-        const int barY = cy + 4;
+        const int barY = cy + 2;
         canvas.drawRect(barX - 1, barY - 1, kBarW + 2, kBarH + 2, hudDim);
-        const int filled = static_cast<int>(calibrationProgress * kBarW);
+        const int filled = std::clamp(static_cast<int>(calibrationProgress * kBarW), 0, kBarW);
         canvas.fillRect(barX, barY, filled, kBarH, hudColor);
-        // Countdown
+        for (int division = 1; division < 4; ++division) {
+            const int tickX = barX + division * kBarW / 4;
+            canvas.drawLine(tickX, barY - 4, tickX, barY - 2, hudDim);
+            canvas.drawLine(tickX, barY + kBarH + 2, tickX, barY + kBarH + 4, hudDim);
+        }
+
         const float remaining = (1.0f - calibrationProgress) * 2.5f;
+        char countdown[16]{};
+        std::snprintf(countdown, sizeof(countdown), "T- %.1f SEC", remaining);
         canvas.setTextColor(hudDim, TFT_BLACK);
-        canvas.setCursor(cx - 14, cy + 22);
-        canvas.printf("%.1fs", remaining);
+        drawCentered(countdown, cy + 24);
+        canvas.setTextColor(hudColor, TFT_BLACK);
+        drawCentered("KEEP STILL", cy + 50);
         display.endWrite();
         return;
     }
@@ -426,7 +451,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
 
     // Mach ring (shock diamond) effect – animated contracting diamond rings along each plume
     if (flight.boostAmount > 0.08f) {
-        const uint16_t machColor = display.color565(60, 200, 255);
+        const uint16_t machColor = display.color565(92, 210, 230);
         const float machPhase = static_cast<float>(GetHAL().millis() % 400u) / 400.0f;
         const std::array<float, 12> kNozzles = {{
             -1.65f,  0.14f, -1.55f,
@@ -604,8 +629,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.setCursor(centerX - 34, _height - 48);
     canvas.printf("R%+03d P%+03d", static_cast<int>(flight.roll), static_cast<int>(flight.pitch));
     if (flight.collided) {
-        canvas.setTextColor(caution, TFT_BLACK);
-        canvas.drawLine(centerX - 52, 190, centerX + 52, 190, caution);
+        canvas.setTextColor(impact, TFT_BLACK);
+        canvas.drawLine(centerX - 52, 190, centerX + 52, 190, impact);
         canvas.setCursor(centerX - 34, 198);
         canvas.print(impactLabel(collision.impactHazard));
         canvas.setCursor(centerX - 31, 210);
