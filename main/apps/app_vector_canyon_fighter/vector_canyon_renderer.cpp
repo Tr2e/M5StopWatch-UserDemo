@@ -14,8 +14,9 @@ namespace vector_canyon_fighter {
 namespace {
 
 constexpr int kHorizonY = 150;
-constexpr int kShipCenterY = 335;
-constexpr float kShipFocalLength = 62.0f;
+// 146 px above the 466 px panel bottom: visually lower-middle, with enough
+// canyon visible below the aircraft to read its compact ground shadow.
+constexpr int kShipCenterY = kAircraftScreenCenterY;
 
 struct Vec3 {
     float x;
@@ -116,6 +117,28 @@ uint16_t scaleRgb565(uint16_t color, float weight)
     return static_cast<uint16_t>((red << 11) | (green << 5) | blue);
 }
 
+const char* warningLabel(CollisionHazard hazard)
+{
+    switch (hazard) {
+        case CollisionHazard::LeftWall: return "PROX LEFT";
+        case CollisionHazard::RightWall: return "PROX RIGHT";
+        case CollisionHazard::Floor: return "PULL UP";
+        case CollisionHazard::None: break;
+    }
+    return "PROX";
+}
+
+const char* impactLabel(CollisionHazard hazard)
+{
+    switch (hazard) {
+        case CollisionHazard::LeftWall: return "IMPACT LEFT";
+        case CollisionHazard::RightWall: return "IMPACT RIGHT";
+        case CollisionHazard::Floor: return "IMPACT FLOOR";
+        case CollisionHazard::None: break;
+    }
+    return "IMPACT";
+}
+
 }  // namespace
 
 void Renderer::open(int width, int height)
@@ -130,7 +153,7 @@ void Renderer::close()
     _height = 0;
 }
 
-bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCanyonStream& terrain,
+bool Renderer::drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCanyonStream& terrain,
                                    uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary)
 {
     constexpr int16_t kInvisible = std::numeric_limits<int16_t>::min();
@@ -138,14 +161,6 @@ bool Renderer::drawExplicitTerrain(const FlightState& flight, const ExplicitCany
     constexpr int kMaximumCoordinate = std::numeric_limits<int16_t>::max();
     auto& canvas = GetHAL().getDisplay();
     const auto& slices = terrain.slices();
-    const CanyonRouteFrame playerRoute = terrain.routeFrameAt(terrain.playerWorldS());
-#if VECTOR_CANYON_EXPLICIT_TOP_DEBUG
-    const CanyonCamera camera = makeExplicitCanyonTopDebugCamera(playerRoute, _width, _height);
-#else
-    const CanyonCamera camera =
-        makeExplicitCanyonCamera(playerRoute, flight.altitude, flight.pitch, _width, _height);
-#endif
-
     const auto cacheIndex = [](std::size_t slice, std::size_t profilePoint) {
         return slice * ExplicitCanyonStream::kProfileCount + profilePoint;
     };
@@ -263,9 +278,16 @@ void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCa
     const uint16_t terrainPrimary = display.color565(255, 113, 56);
     const uint16_t terrainMid = display.color565(182, 70, 36);
     const uint16_t terrainSecondary = display.color565(87, 39, 29);
+    const CanyonRouteFrame route = terrain.routeFrameAt(terrain.playerWorldS());
+#if VECTOR_CANYON_EXPLICIT_TOP_DEBUG
+    const CanyonCamera camera = makeExplicitCanyonTopDebugCamera(route, _width, _height);
+#else
+    const CanyonCamera camera =
+        makeExplicitCanyonCamera(route, flight.altitude, flight.pitch, _width, _height);
+#endif
     display.startWrite();
     display.fillScreen(TFT_BLACK);
-    drawExplicitTerrain(flight, terrain, terrainPrimary, terrainMid, terrainSecondary);
+    drawExplicitTerrain(camera, terrain, terrainPrimary, terrainMid, terrainSecondary);
     display.endWrite();
 }
 
@@ -334,12 +356,12 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
 
     canvas.fillScreen(TFT_BLACK);
 
+    const CanyonRouteFrame route = terrain.routeFrameAt(terrain.playerWorldS());
+    const CanyonCamera camera = makeExplicitCanyonChaseCamera(
+        route, flight.lateralOffset, flight.altitude, flight.pitch, _width, _height);
     int vanishingX = centerX;
     const bool terrainVisible = drawExplicitTerrain(
-        flight, terrain, terrainPrimary, terrainMid, terrainSecondary);
-    const CanyonRouteFrame route = terrain.routeFrameAt(terrain.playerWorldS());
-    const CanyonCamera camera =
-        makeExplicitCanyonCamera(route, flight.altitude, flight.pitch, _width, _height);
+        camera, terrain, terrainPrimary, terrainMid, terrainSecondary);
     CanyonScreenPoint farCenter{};
     if (projectExplicitCanyonPoint(
             camera,
@@ -354,21 +376,32 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         return;
     }
 
-    const int shipX = centerX + static_cast<int>(flight.lateralOffset * 12.0f);
-    const int shipY = kShipCenterY - static_cast<int>(flight.pitch * 0.8f);
-    const float radians = flight.roll * 0.0174532925f;
-    const float cosine = std::cos(radians);
-    const float sine = std::sin(radians);
+    // The chase camera follows the aircraft laterally, so the aircraft stays at
+    // the screen datum while the canyon moves around it. This is also the same
+    // camera used by the collision-aligned ground shadow below.
+    const int shipX = centerX;
+    const int shipY = kShipCenterY;
     const auto projectShip = [&](const Vec3& point) {
-        const float depth = point.z + 5.7f;
-        const float localX = kShipFocalLength * point.x / depth;
-        const float viewY = point.y + point.z * (0.52f + flight.pitch * 0.0025f);
-        const float localY = -kShipFocalLength * viewY / depth;
+        // Rotate the model itself around its lateral axis. The former renderer
+        // only translated the whole sprite vertically, so its silhouette never
+        // communicated pitch.
+        const AircraftScreenOffset offset =
+            projectAircraftPose(point.x, point.y, point.z, flight.pitch, flight.roll);
         return std::array<int, 2>{
-            shipX + static_cast<int>(localX * cosine - localY * sine),
-            shipY + static_cast<int>(localX * sine + localY * cosine),
+            shipX + static_cast<int>(offset.x),
+            shipY + static_cast<int>(offset.y),
         };
     };
+
+    // Keep the ground cue deliberately small. A collision envelope spans the
+    // camera depth and becomes a giant trapezoid under perspective; it is not
+    // an appropriate shadow shape. This flattened footprint only communicates
+    // aircraft position and AGL, leaving the canyon grid exposed.
+    const AircraftGroundShadow shadow = makeAircraftGroundShadow(collision.floorClearance);
+    const uint16_t shadowFill = scaleRgb565(terrainPrimary, shadow.brightness);
+    const uint16_t shadowEdge = scaleRgb565(terrainPrimary, shadow.brightness + 0.10f);
+    canvas.fillEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowFill);
+    canvas.drawEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowEdge);
 
     for (const auto& edge : kShipEdges) {
         const auto from = projectShip(kShipVertices[edge.from]);
@@ -527,15 +560,17 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.setCursor(35, 270);
     canvas.printf("T%02d", std::clamp(static_cast<int>((flight.speed - 42.0f) * 0.67f), 0, 60));
 
-    // Altitude tape mirrors speed and adds a pitch-derived trend cue.
+    // AGL tape mirrors speed; it reports the same floor clearance used by the
+    // collision model, while the lower cue remains the aircraft pitch trend.
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setCursor(_width - 72, 127);
-    canvas.print("ALT");
+    canvas.print("AGL");
     canvas.drawRect(_width - 81, 139, 42, 15, hudDim);
     canvas.setCursor(_width - 77, 143);
-    canvas.printf("%+03d", static_cast<int>(flight.altitude * 10.0f));
+    canvas.printf("%+03d", static_cast<int>(collision.floorClearance * 10.0f));
     canvas.drawLine(_width - 45, 160, _width - 45, 264, hudDim);
-    const int altitudeMarkerY = 208 - std::clamp(static_cast<int>(flight.altitude * 32.0f), -42, 42);
+    const int altitudeMarkerY = 208 -
+        std::clamp(static_cast<int>(collision.floorClearance * 32.0f), -42, 42);
     for (int tick = 0; tick <= 10; ++tick) {
         const int y = 160 + tick * 10;
         const bool major = tick % 2 == 0;
@@ -549,7 +584,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.printf("P%+03d", static_cast<int>(flight.pitch));
 
     // Compact course-deviation scale sits above the fighter, not over terrain.
-    constexpr int kCourseY = 294;
+    // Keep the course cue above the raised aircraft, between the two side tapes.
+    constexpr int kCourseY = kAircraftCourseCueY;
     canvas.drawLine(centerX - 52, kCourseY, centerX + 52, kCourseY, hudDim);
     for (int tick = -2; tick <= 2; ++tick) {
         const int x = centerX + tick * 21;
@@ -570,8 +606,10 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     if (flight.collided) {
         canvas.setTextColor(caution, TFT_BLACK);
         canvas.drawLine(centerX - 52, 190, centerX + 52, 190, caution);
-        canvas.setCursor(centerX - 37, 198);
-        canvas.print("IMPACT: A HOLD");
+        canvas.setCursor(centerX - 34, 198);
+        canvas.print(impactLabel(collision.impactHazard));
+        canvas.setCursor(centerX - 31, 210);
+        canvas.print("A HOLD RESET");
     } else if (flight.paused) {
         canvas.setTextColor(hudColor, TFT_BLACK);
         canvas.setCursor(centerX - 20, 198);
@@ -579,8 +617,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     } else if (collision.warning) {
         canvas.setTextColor(caution, TFT_BLACK);
         canvas.drawLine(centerX - 34, 190, centerX + 34, 190, caution);
-        canvas.setCursor(centerX - 23, 198);
-        canvas.print("TERRAIN");
+        canvas.setCursor(centerX - 28, 198);
+        canvas.print(warningLabel(collision.warningHazard));
     }
 
     display.endWrite();

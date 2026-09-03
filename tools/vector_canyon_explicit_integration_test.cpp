@@ -42,31 +42,44 @@ bool validateAsymmetricCollision()
     flight.altitude = 0.5f;
 
     const CanyonShoulderEvent leftEvent = stream.eventAtIndex(0);
-    stream.update(leftEvent.centerWorldS / ExplicitCanyonStream::kForwardDistanceScale);
-    const CanyonBoundary leftBoundary = stream.boundaryAt(stream.playerWorldS());
+    const AircraftCollisionStation wing = kAircraftCollisionStations[kAircraftWingStationIndex];
+    stream.update((leftEvent.centerWorldS - wing.forwardLead) /
+                  ExplicitCanyonStream::kForwardDistanceScale);
+    const CanyonBoundary leftBoundary = stream.boundaryAt(leftEvent.centerWorldS);
     CollisionStatus status = evaluateExplicitCanyonCollision(flight, stream);
     valid &= check(status.leftClearance < status.rightClearance,
                    "M7 left shoulder event did not reduce only left clearance");
     valid &= check(!status.collided, "M7 centered ship collided inside the left event");
 
-    flight.lateralOffset = -leftBoundary.leftWidth + 0.24f - 0.01f;
+    const float leftWall = leftBoundary.leftWidth +
+                           explicitCanyonWallOutsetAtHeight(flight.altitude);
+    flight.lateralOffset = -leftWall + wing.halfWidth - 0.01f;
     status = evaluateExplicitCanyonCollision(flight, stream);
     valid &= check(status.collided && status.leftClearance < 0.0f && status.rightClearance > 0.0f,
                    "M7 left collision used a symmetric or wrong-side boundary");
+    valid &= check(status.impactHazard == CollisionHazard::LeftWall,
+                   "M8 left collision did not identify the left wall");
 
     const CanyonShoulderEvent rightEvent = stream.eventAtIndex(1);
-    stream.update(rightEvent.centerWorldS / ExplicitCanyonStream::kForwardDistanceScale);
-    const CanyonBoundary rightBoundary = stream.boundaryAt(stream.playerWorldS());
-    flight.lateralOffset = rightBoundary.rightWidth - 0.24f + 0.01f;
+    stream.update((rightEvent.centerWorldS - wing.forwardLead) /
+                  ExplicitCanyonStream::kForwardDistanceScale);
+    const CanyonBoundary rightBoundary = stream.boundaryAt(rightEvent.centerWorldS);
+    const float rightWall = rightBoundary.rightWidth +
+                            explicitCanyonWallOutsetAtHeight(flight.altitude);
+    flight.lateralOffset = rightWall - wing.halfWidth + 0.01f;
     status = evaluateExplicitCanyonCollision(flight, stream);
     valid &= check(status.collided && status.rightClearance < 0.0f && status.leftClearance > 0.0f,
                    "M7 right collision used a symmetric or wrong-side boundary");
+    valid &= check(status.impactHazard == CollisionHazard::RightWall,
+                   "M8 right collision did not identify the right wall");
 
     flight.lateralOffset = 0.0f;
-    flight.altitude = 0.19f;
+    flight.altitude = kAircraftFloorClearance - 0.01f;
     status = evaluateExplicitCanyonCollision(flight, stream);
     valid &= check(status.collided && status.floorClearance < 0.0f,
                    "M7 flat floor collision threshold changed");
+    valid &= check(status.impactHazard == CollisionHazard::Floor,
+                   "M8 floor collision did not identify the floor");
     flight.altitude = 0.5f;
     status = evaluateExplicitCanyonCollision(flight, stream);
     valid &= check(!status.warning,
@@ -113,11 +126,15 @@ bool validateFlightAndCameraSeparation()
     bool valid = check(model.state().lateralOffset > 1.0f,
                        "M7 generic flight input did not move the ship laterally");
     const CanyonRouteFrame route = stream.routeFrameAt(stream.playerWorldS());
-    const CanyonCamera camera =
-        makeExplicitCanyonCamera(route, model.state().altitude, model.state().pitch, 468, 466);
-    valid &= check(std::abs(camera.position.x - route.centerX) < 0.0001f &&
-                       std::abs(camera.position.z - route.centerZ) < 0.0001f,
-                   "M7 player lateral offset was applied to the terrain camera");
+    const CanyonCamera camera = makeExplicitCanyonChaseCamera(
+        route, model.state().lateralOffset, model.state().altitude,
+        model.state().pitch, 468, 466);
+    valid &= check(
+        std::abs(camera.position.x -
+                 (route.centerX + camera.right.x * model.state().lateralOffset)) < 0.0001f &&
+            std::abs(camera.position.z -
+                     (route.centerZ + camera.right.z * model.state().lateralOffset)) < 0.0001f,
+        "M8 chase camera did not follow player lateral offset exactly once");
     const CanyonWorldPoint before = stream.worldPoint(
         8, static_cast<std::size_t>(CanyonProfilePoint::FloorCenter));
     FlightInput reverse = input;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "model/aircraft_geometry.h"
 #include "model/explicit_canyon_types.h"
 
 #include <algorithm>
@@ -81,6 +82,20 @@ inline CanyonCamera makeExplicitCanyonCamera(const CanyonRouteFrame& route, floa
         static_cast<float>(height) * kExplicitCanyonPrincipalYRatio,
         static_cast<float>(width) * kExplicitCanyonFocalWidthRatio,
     };
+}
+
+inline CanyonCamera makeExplicitCanyonChaseCamera(const CanyonRouteFrame& route,
+                                                  float flightLateralOffset,
+                                                  float flightAltitude,
+                                                  float flightPitchDegrees,
+                                                  int width, int height)
+{
+    CanyonCamera camera = makeExplicitCanyonCamera(
+        route, flightAltitude, flightPitchDegrees * kChaseCameraPitchFollow, width, height);
+    camera.position.x += camera.right.x * flightLateralOffset;
+    camera.position.y += camera.right.y * flightLateralOffset;
+    camera.position.z += camera.right.z * flightLateralOffset;
+    return camera;
 }
 
 inline CanyonCamera makeExplicitCanyonTopDebugCamera(const CanyonRouteFrame& route, int width, int height)

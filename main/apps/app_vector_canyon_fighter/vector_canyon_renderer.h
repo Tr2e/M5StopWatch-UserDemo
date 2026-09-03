@@ -10,6 +10,8 @@
 
 namespace vector_canyon_fighter {
 
+struct CanyonCamera;
+
 class Renderer {
 public:
     void open(int width, int height);
@@ -26,7 +28,7 @@ private:
     };
     static_assert(sizeof(ProjectedCanyonPoint) == 4, "Explicit projected points must remain packed XY pairs");
 
-    bool drawExplicitTerrain(const FlightState& flight, const ExplicitCanyonStream& terrain,
+    bool drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCanyonStream& terrain,
                              uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary);
     void renderGame(const FlightState& flight, const ExplicitCanyonStream& terrain,
                     const CollisionStatus& collision, float calibrationProgress);

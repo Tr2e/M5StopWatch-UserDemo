@@ -57,6 +57,37 @@ inline constexpr std::array<CanyonProfileSample, kExplicitCanyonProfileCount> kE
     {5.20f, kExplicitCanyonWallHeight}, {7.00f, kExplicitCanyonWallHeight},
 }};
 
+// Returns how far the rendered cliff surface sits outside its floor edge at a
+// given height. This is derived from the right-side semantic profile; the left
+// side is its mirror and has the same positive outset.
+inline float explicitCanyonWallOutsetAtHeight(float height)
+{
+    constexpr std::array<CanyonProfilePoint, 5> kWallPoints = {{
+        CanyonProfilePoint::RightFloorEdge,
+        CanyonProfilePoint::RightToe,
+        CanyonProfilePoint::RightFaceLow,
+        CanyonProfilePoint::RightFaceHigh,
+        CanyonProfilePoint::RightCap,
+    }};
+    const CanyonProfileSample& floor =
+        kExplicitCanyonProfile[static_cast<std::size_t>(CanyonProfilePoint::RightFloorEdge)];
+    if (height <= floor.height) return 0.0f;
+    for (std::size_t point = 1; point < kWallPoints.size(); ++point) {
+        const CanyonProfileSample& from =
+            kExplicitCanyonProfile[static_cast<std::size_t>(kWallPoints[point - 1])];
+        const CanyonProfileSample& to =
+            kExplicitCanyonProfile[static_cast<std::size_t>(kWallPoints[point])];
+        if (height <= to.height) {
+            const float blend = (height - from.height) / (to.height - from.height);
+            const float lateral = from.lateral + (to.lateral - from.lateral) * blend;
+            return lateral - floor.lateral;
+        }
+    }
+    const CanyonProfileSample& cap =
+        kExplicitCanyonProfile[static_cast<std::size_t>(CanyonProfilePoint::RightCap)];
+    return cap.lateral - floor.lateral;
+}
+
 enum class CanyonSide : uint8_t {
     Left,
     Right,
