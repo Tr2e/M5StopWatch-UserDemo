@@ -39,4 +39,5 @@ private:
     float _previewForwardDistance = 0.0f;
     uint32_t _previewStartedMs = 0;
     bool _calibrationPhase = false;
+    bool _aircraftVisible = true;
 };

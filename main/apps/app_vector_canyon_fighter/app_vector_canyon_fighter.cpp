@@ -76,6 +76,7 @@ void AppVectorCanyonFighter::onOpen()
     _simulationAccumulator = 0.0f;
     _previewForwardDistance = 0.0f;
     _previewStartedMs = GetHAL().millis();
+    _aircraftVisible = true;
 }
 
 void AppVectorCanyonFighter::onRunning()
@@ -140,6 +141,14 @@ void AppVectorCanyonFighter::onRunning()
     auto flightInput = _inputProvider ? _inputProvider->sample(nowMs) : vector_canyon_fighter::FlightInput{};
     const float calibProgress = _inputProvider ? _inputProvider->calibrationProgress(nowMs) : 0.0f;
 
+    // K1 long press toggles the third-person vehicle layer during active
+    // gameplay. Consume the input provider's legacy pause intent so entering
+    // the visual/immersive view never pauses the simulation as a side effect.
+    if (!_calibrationPhase && !_flightModel.state().collided && GetHAL().btnA.wasHold()) {
+        _aircraftVisible = !_aircraftVisible;
+        flightInput.pausePressed = false;
+    }
+
     // ── Calibration phase: wait for IMU to settle before (re)starting ──────
     if (_calibrationPhase) {
         _simulationAccumulator = 0.0f;
@@ -190,7 +199,8 @@ void AppVectorCanyonFighter::onRunning()
     if (_lastFrameMs != 0 && nowMs - _lastFrameMs < kFrameIntervalMs) return;
     _lastFrameMs = nowMs;
     const uint32_t renderStartedMs = GetHAL().millis();
-    _renderer.render(_flightModel.state(), _terrain, _collisionStatus, -1.0f);
+    _renderer.render(_flightModel.state(), _terrain, _collisionStatus, -1.0f,
+                     _aircraftVisible);
     const uint32_t renderTimeMs = GetHAL().millis() - renderStartedMs;
     _renderTimeTotalMs += renderTimeMs;
     _renderTimeMaxMs = std::max(_renderTimeMaxMs, renderTimeMs);

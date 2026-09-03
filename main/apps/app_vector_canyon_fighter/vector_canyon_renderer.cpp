@@ -313,13 +313,15 @@ void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCa
 }
 
 void Renderer::render(const FlightState& flight, const ExplicitCanyonStream& terrain,
-                      const CollisionStatus& collision, float calibrationProgress)
+                      const CollisionStatus& collision, float calibrationProgress,
+                      bool aircraftVisible)
 {
-    renderGame(flight, terrain, collision, calibrationProgress);
+    renderGame(flight, terrain, collision, calibrationProgress, aircraftVisible);
 }
 
 void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream& terrain,
-                          const CollisionStatus& collision, float calibrationProgress)
+                          const CollisionStatus& collision, float calibrationProgress,
+                          bool aircraftVisible)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -338,6 +340,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const uint16_t engineColor = display.color565(48, 92, 104);
     const uint16_t canopyColor = display.color565(42, 105, 121);
     const uint16_t exhaust = display.color565(126, 58, 18);
+    const uint16_t strobeGlow = display.color565(132, 210, 255);
+    const uint16_t strobeCore = display.color565(232, 250, 255);
     const uint16_t hudColor = display.color565(114, 230, 162);
     const uint16_t hudDim = display.color565(39, 94, 69);
     const uint16_t hudAccent = display.color565(182, 255, 208);
@@ -438,6 +442,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     };
     const auto drawShipLine = [&](const Vec3& fromPoint, const Vec3& toPoint,
                                   uint16_t color) {
+        if (!aircraftVisible) return;
         const auto from = projectShip(fromPoint);
         const auto to = projectShip(toPoint);
         canvas.drawLine(from[0], from[1], to[0], to[1], color);
@@ -450,16 +455,19 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const AircraftGroundShadow shadow = makeAircraftGroundShadow(collision.floorClearance);
     const uint16_t shadowFill = scaleRgb565(terrainPrimary, shadow.brightness);
     const uint16_t shadowEdge = scaleRgb565(terrainPrimary, shadow.brightness + 0.10f);
-    canvas.fillEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowFill);
-    canvas.drawEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowEdge);
+    if (aircraftVisible) {
+        canvas.fillEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowFill);
+        canvas.drawEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowEdge);
+    }
 
     // Exhaust is a persistent part of the fighter silhouette. A clean axial
     // ray passes through fixed circular cross-section rings and reaches the
     // convergence apex beyond them. Their radii taper monotonically away from
     // the nozzle without geometric motion or noisy side-envelope rays. A
-    // synchronized luminance wave travels from the inner ring to the tip. The
-    // largest nozzle ring is deliberately omitted; the small terminal ring is
-    // restored to articulate the plume tip before the axis reaches its apex.
+    // synchronized luminance wave travels across the three boost rings.
+    // Cruise keeps the shorter amber axis with one animated middle ring, while
+    // boost restores three tapered rings without the omitted nozzle endpoint.
+    const uint32_t frameMillis = GetHAL().millis();
     const bool boostedExhaust = flight.boostAmount >= 0.35f;
     const int machRingCount = aircraftMachRingCount(flight.boostAmount);
     const float plumeLength = aircraftPlumeLength(flight.boostAmount);
@@ -467,7 +475,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
                                kAircraftPlumeApexExtension;
     const uint32_t highlightPeriodMs = boostedExhaust ? 520u : 760u;
     const float highlightPhase =
-        static_cast<float>(GetHAL().millis() % highlightPeriodMs) /
+        static_cast<float>(frameMillis % highlightPeriodMs) /
         static_cast<float>(highlightPeriodMs);
     const uint16_t machBase = boostedExhaust
         ? display.color565(196, 128, 24)
@@ -628,6 +636,19 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     drawShipLine(kCanopy[0], kCanopy[3], canopyColor);
     drawShipLine(kCanopy[1], kCanopy[4], canopyColor);
     drawShipLine(kCanopy[2], kCanopy[5], canopyColor);
+
+    // Synchronized double-flash anti-collision strobes sit on the outer wing
+    // panels. A two-pixel cool-white beacon is enough to read on the watch;
+    // no decorative housing or persistent marker competes with the wireframe.
+    if (aircraftVisible && aircraftWingStrobeOn(frameMillis)) {
+        for (float side : {-1.0f, 1.0f}) {
+            const auto beacon = projectShip(
+                wingPoint(side, kWingStations.back(), 0.72f));
+            canvas.fillCircle(beacon[0], beacon[1], kAircraftWingStrobeRadiusPx,
+                              strobeGlow);
+            canvas.drawPixel(beacon[0], beacon[1], strobeCore);
+        }
+    }
 
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setTextSize(1);

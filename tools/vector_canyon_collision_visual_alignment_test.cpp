@@ -105,36 +105,55 @@ float projectedFloorY(const ExplicitCanyonStream& stream, float altitude, float 
 bool validateAttitudeAndHeightCue()
 {
     bool valid = true;
-    valid &= check(aircraftMachRingCount(0.0f) == 2 &&
-                       aircraftMachRingCount(0.34f) == 2 &&
-                       aircraftMachRingCount(0.35f) == 4 &&
-                       aircraftMachRingCount(1.0f) == 4,
-                   "M10 exhaust no longer preserves two cruise / four boost rings");
-    valid &= check(aircraftExhaustRingFraction(0, 2) > 0.0f &&
-                       aircraftExhaustRingFraction(0, 4) > 0.0f &&
-                       aircraftExhaustRingFraction(3, 4) < 1.0f &&
-                       aircraftExhaustRingFraction(3, 4) > 0.85f,
-                   "M10 exhaust did not restore the terminal ring while omitting the nozzle ring");
-    valid &= check(aircraftExhaustRingRadiusScale(0, 4) >
-                       aircraftExhaustRingRadiusScale(1, 4) &&
-                       aircraftExhaustRingRadiusScale(1, 4) >
-                           aircraftExhaustRingRadiusScale(2, 4) &&
-                       aircraftExhaustRingRadiusScale(2, 4) >
-                           aircraftExhaustRingRadiusScale(3, 4),
+    valid &= check(aircraftMachRingCount(0.0f) == 1 &&
+                       aircraftMachRingCount(0.34f) == 1 &&
+                       aircraftMachRingCount(0.35f) == 3 &&
+                       aircraftMachRingCount(1.0f) == 3,
+                   "M10 exhaust no longer preserves one cruise / three boost rings");
+    valid &= check(aircraftExhaustRingFraction(0, 1) >= 0.67f &&
+                       aircraftExhaustRingFraction(0, 1) <= 0.69f &&
+                       aircraftExhaustRingRadiusScale(0, 1) >= 0.46f &&
+                       aircraftExhaustRingRadiusScale(0, 1) <= 0.47f,
+                   "M10 cruise ring left its reviewed position or radius range");
+    valid &= check(aircraftExhaustRingFraction(0, 3) > 0.0f &&
+                       aircraftExhaustRingFraction(2, 3) < 1.0f &&
+                       aircraftExhaustRingFraction(2, 3) > 0.85f,
+                   "M10 boost exhaust lost its terminal ring or restored the nozzle ring");
+    valid &= check(aircraftExhaustRingRadiusScale(0, 3) >
+                       aircraftExhaustRingRadiusScale(1, 3) &&
+                       aircraftExhaustRingRadiusScale(1, 3) >
+                           aircraftExhaustRingRadiusScale(2, 3),
                    "M10 exhaust rings do not taper monotonically away from the nozzle");
-    valid &= check(aircraftPlumeLength(0.0f) >= 2.20f &&
-                       aircraftPlumeLength(1.0f) >= 4.20f &&
-                       aircraftPlumeLength(1.0f) > aircraftPlumeLength(0.0f) + 1.9f,
+    valid &= check(aircraftExhaustRingRadiusScale(0, 3) >= 0.64f &&
+                       aircraftExhaustRingRadiusScale(0, 3) <= 0.66f &&
+                       aircraftExhaustRingRadiusScale(1, 3) >= 0.48f &&
+                       aircraftExhaustRingRadiusScale(1, 3) <= 0.50f &&
+                       aircraftExhaustRingRadiusScale(2, 3) >= 0.32f &&
+                       aircraftExhaustRingRadiusScale(2, 3) <= 0.34f,
+                   "M10 boost ring radii left the reviewed cohesive taper range");
+    valid &= check(aircraftPlumeLength(0.0f) >= 1.50f &&
+                       aircraftPlumeLength(0.0f) <= 1.60f &&
+                       aircraftPlumeLength(1.0f) >= 2.70f &&
+                       aircraftPlumeLength(1.0f) <= 2.80f &&
+                       aircraftPlumeLength(1.0f) > aircraftPlumeLength(0.0f) + 1.15f,
                    "M10 boost exhaust did not visibly lengthen");
-    valid &= check(kAircraftPlumeApexExtension >= 0.40f,
+    valid &= check(kAircraftPlumeApexExtension >= 0.22f &&
+                       kAircraftPlumeApexExtension <= 0.26f,
                    "M10 exhaust axis does not extend visibly beyond the terminal ring");
-    valid &= check(aircraftExhaustRingHighlight(0.0f, 0, 4) > 0.99f &&
-                       aircraftExhaustRingHighlight(0.0f, 1, 4) <
-                           aircraftExhaustRingHighlight(0.25f, 1, 4) &&
-                       aircraftExhaustRingHighlight(0.25f, 1, 4) > 0.99f &&
-                       aircraftExhaustRingHighlight(0.50f, 2, 4) > 0.99f &&
-                       aircraftExhaustRingHighlight(0.75f, 3, 4) > 0.99f,
+    valid &= check(aircraftExhaustRingHighlight(0.0f, 0, 3) > 0.99f &&
+                       aircraftExhaustRingHighlight(1.0f / 3.0f, 1, 3) > 0.99f &&
+                       aircraftExhaustRingHighlight(2.0f / 3.0f, 2, 3) > 0.99f,
                    "M10 exhaust highlight no longer travels coherently from inner to outer rings");
+    valid &= check(aircraftExhaustRingHighlight(0.0f, 0, 1) > 0.99f &&
+                       aircraftExhaustRingHighlight(0.5f, 0, 1) < 0.19f,
+                   "M10 cruise ring highlight no longer pulses through its luminance range");
+    valid &= check(aircraftWingStrobeOn(0u) && aircraftWingStrobeOn(150u) &&
+                       aircraftWingStrobeOn(920u) &&
+                       !aircraftWingStrobeOn(80u) &&
+                       !aircraftWingStrobeOn(300u),
+                   "M10 wing strobe double-flash cadence regressed");
+    valid &= check(kAircraftWingStrobeRadiusPx == 1,
+                   "M10 wing strobe grew beyond its restrained beacon size");
     valid &= check(kAircraftScreenCenterY == 304 &&
                        (466 - kAircraftScreenCenterY) >= 158 &&
                        (466 - kAircraftScreenCenterY) <= 166,

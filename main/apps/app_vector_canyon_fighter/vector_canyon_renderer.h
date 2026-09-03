@@ -18,7 +18,8 @@ public:
     void close();
     // calibrationProgress: 0.0–1.0 while calibrating, <0 during normal gameplay.
     void render(const FlightState& flight, const ExplicitCanyonStream& terrain,
-                const CollisionStatus& collision, float calibrationProgress);
+                const CollisionStatus& collision, float calibrationProgress,
+                bool aircraftVisible = true);
     void renderExplicitPreview(const FlightState& flight, const ExplicitCanyonStream& terrain);
 
 private:
@@ -31,7 +32,8 @@ private:
     bool drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCanyonStream& terrain,
                              uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary);
     void renderGame(const FlightState& flight, const ExplicitCanyonStream& terrain,
-                    const CollisionStatus& collision, float calibrationProgress);
+                    const CollisionStatus& collision, float calibrationProgress,
+                    bool aircraftVisible);
 
     std::array<ProjectedCanyonPoint, ExplicitCanyonStream::kSliceCount * ExplicitCanyonStream::kProfileCount>
         _explicitTerrainPoints = {};
