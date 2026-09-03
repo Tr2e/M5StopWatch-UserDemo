@@ -1,5 +1,6 @@
 #include "app_vector_canyon_fighter.h"
 
+#include <assets/assets.h>
 #include <hal/hal.h>
 #include <mooncake_log.h>
 #include <freertos/FreeRTOS.h>
@@ -24,6 +25,7 @@ constexpr int kMaxSimulationSteps = 5;
 AppVectorCanyonFighter::AppVectorCanyonFighter()
 {
     setAppInfo().name = "Vector Run";
+    setAppInfo().icon = (void*)&icon_vector_run;
 }
 
 void AppVectorCanyonFighter::onCreate()

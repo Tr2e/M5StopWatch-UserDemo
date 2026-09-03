@@ -21,6 +21,7 @@ LV_IMG_DECLARE(icon_imu);
 LV_IMG_DECLARE(icon_fft);
 LV_IMG_DECLARE(icon_ruview);
 LV_IMG_DECLARE(icon_glow_field);
+LV_IMG_DECLARE(icon_vector_run);
 LV_IMG_DECLARE(icon_stopwatch);
 LV_IMG_DECLARE(icon_badge);
 LV_IMG_DECLARE(icon_lucky_wheel);

@@ -105,25 +105,80 @@ float projectedFloorY(const ExplicitCanyonStream& stream, float altitude, float 
 bool validateAttitudeAndHeightCue()
 {
     bool valid = true;
-    valid &= check(kAircraftScreenCenterY == 320 &&
-                       (466 - kAircraftScreenCenterY) >= 140 &&
-                       (466 - kAircraftScreenCenterY) <= 156,
-                   "M8 aircraft is no longer positioned near the lower screen third");
-    valid &= check(kAircraftScreenCenterY - kAircraftCourseCueY >= 40,
-                   "M8 course cue overlaps the raised aircraft datum");
-    const AircraftScreenOffset noseUp = projectAircraftPose(0.0f, 0.02f, 3.70f, 12.0f, 0.0f);
-    const AircraftScreenOffset tailUp = projectAircraftPose(0.0f, -0.22f, -2.34f, 12.0f, 0.0f);
-    const AircraftScreenOffset noseDown = projectAircraftPose(0.0f, 0.02f, 3.70f, -12.0f, 0.0f);
-    const AircraftScreenOffset tailDown = projectAircraftPose(0.0f, -0.22f, -2.34f, -12.0f, 0.0f);
+    valid &= check(aircraftMachRingCount(0.0f) == 2 &&
+                       aircraftMachRingCount(0.34f) == 2 &&
+                       aircraftMachRingCount(0.35f) == 4 &&
+                       aircraftMachRingCount(1.0f) == 4,
+                   "M10 exhaust no longer preserves two cruise / four boost rings");
+    valid &= check(aircraftExhaustRingFraction(0, 2) > 0.0f &&
+                       aircraftExhaustRingFraction(0, 4) > 0.0f &&
+                       aircraftExhaustRingFraction(3, 4) < 1.0f &&
+                       aircraftExhaustRingFraction(3, 4) > 0.85f,
+                   "M10 exhaust did not restore the terminal ring while omitting the nozzle ring");
+    valid &= check(aircraftExhaustRingRadiusScale(0, 4) >
+                       aircraftExhaustRingRadiusScale(1, 4) &&
+                       aircraftExhaustRingRadiusScale(1, 4) >
+                           aircraftExhaustRingRadiusScale(2, 4) &&
+                       aircraftExhaustRingRadiusScale(2, 4) >
+                           aircraftExhaustRingRadiusScale(3, 4),
+                   "M10 exhaust rings do not taper monotonically away from the nozzle");
+    valid &= check(aircraftPlumeLength(0.0f) >= 2.20f &&
+                       aircraftPlumeLength(1.0f) >= 4.20f &&
+                       aircraftPlumeLength(1.0f) > aircraftPlumeLength(0.0f) + 1.9f,
+                   "M10 boost exhaust did not visibly lengthen");
+    valid &= check(kAircraftPlumeApexExtension >= 0.40f,
+                   "M10 exhaust axis does not extend visibly beyond the terminal ring");
+    valid &= check(aircraftExhaustRingHighlight(0.0f, 0, 4) > 0.99f &&
+                       aircraftExhaustRingHighlight(0.0f, 1, 4) <
+                           aircraftExhaustRingHighlight(0.25f, 1, 4) &&
+                       aircraftExhaustRingHighlight(0.25f, 1, 4) > 0.99f &&
+                       aircraftExhaustRingHighlight(0.50f, 2, 4) > 0.99f &&
+                       aircraftExhaustRingHighlight(0.75f, 3, 4) > 0.99f,
+                   "M10 exhaust highlight no longer travels coherently from inner to outer rings");
+    valid &= check(kAircraftScreenCenterY == 304 &&
+                       (466 - kAircraftScreenCenterY) >= 158 &&
+                       (466 - kAircraftScreenCenterY) <= 166,
+                   "M10 aircraft projection datum moved outside its reviewed range");
+    valid &= check(kAircraftScreenCenterY - kAircraftCourseCueY >= 55,
+                   "M10 course cue overlaps the raised aircraft datum");
+    const AircraftScreenOffset noseUp = projectAircraftPose(0.0f, 0.02f, 6.30f, 12.0f, 0.0f);
+    const AircraftScreenOffset tailUp = projectAircraftPose(0.0f, -0.22f, -3.00f, 12.0f, 0.0f);
+    const AircraftScreenOffset noseDown = projectAircraftPose(0.0f, 0.02f, 6.30f, -12.0f, 0.0f);
+    const AircraftScreenOffset tailDown = projectAircraftPose(0.0f, -0.22f, -3.00f, -12.0f, 0.0f);
     const float upSlope = noseUp.y - tailUp.y;
     const float downSlope = noseDown.y - tailDown.y;
     valid &= check(upSlope < downSlope - 18.0f,
                    "M8 aircraft silhouette does not visibly change with pitch");
 
-    const AircraftScreenOffset leftWing = projectAircraftPose(-3.06f, 0.62f, -1.62f, 0.0f, 18.0f);
-    const AircraftScreenOffset rightWing = projectAircraftPose(3.06f, 0.62f, -1.62f, 0.0f, 18.0f);
+    const AircraftScreenOffset leftWing = projectAircraftPose(-3.70f, 0.48f, -1.40f, 0.0f, 18.0f);
+    const AircraftScreenOffset rightWing = projectAircraftPose(3.70f, 0.48f, -1.40f, 0.0f, 18.0f);
     valid &= check(std::abs(leftWing.y - rightWing.y) > 24.0f,
                    "M8 aircraft silhouette does not visibly bank with roll");
+
+    // M10 fifth-pass visual gates: a level fighter must read as a shallow
+    // ground-parallel chase view, and an engine cross-section must retain real
+    // vertical area. These reject the former isolated top-down presentation.
+    const AircraftScreenOffset neutralNose =
+        projectAircraftPose(0.0f, 0.0f, 6.50f, 0.0f, 0.0f);
+    const AircraftScreenOffset neutralTail =
+        projectAircraftPose(0.0f, 0.0f,-3.02f, 0.0f, 0.0f);
+    const AircraftScreenOffset neutralLeftWing =
+        projectAircraftPose(-3.72f,0.22f,-0.58f,0.0f,0.0f);
+    const AircraftScreenOffset neutralRightWing =
+        projectAircraftPose(3.72f,0.22f,-0.58f,0.0f,0.0f);
+    const float neutralLength = std::abs(neutralNose.y - neutralTail.y);
+    const float neutralSpan = std::abs(neutralRightWing.x - neutralLeftWing.x);
+    const float chaseAspect = neutralSpan / neutralLength;
+    valid &= check(chaseAspect >= 1.8f && chaseAspect <= 2.4f,
+                   "M10 neutral aircraft no longer reads as ground-parallel in chase view");
+
+    const AircraftScreenOffset engineTop =
+        projectAircraftPose(1.12f,-0.18f,-3.02f,0.0f,0.0f);
+    const AircraftScreenOffset engineBottom =
+        projectAircraftPose(1.12f,-0.82f,-3.02f,0.0f,0.0f);
+    const float engineDiameterY = std::abs(engineTop.y - engineBottom.y);
+    valid &= check(engineDiameterY >= 9.0f,
+                   "M10 engine cross-section collapsed into a luminous line");
 
     ExplicitCanyonStream stream;
     stream.resetStraightBaseline();
@@ -160,6 +215,8 @@ bool validateAttitudeAndHeightCue()
                    "M8 ground shadow does not fade with altitude");
 
     std::cout << "attitude_slope_up_down=" << upSlope << ',' << downSlope << '\n';
+    std::cout << "neutral_chase_aspect=" << chaseAspect
+              << " engine_diameter_y=" << engineDiameterY << '\n';
     std::cout << "floor_y_low_high=" << lowFloorY << ',' << highFloorY
               << " threshold_pitch_range=" << std::abs(pitchLow - pitchHigh)
               << " threshold_tail_y=" << thresholdTail.y

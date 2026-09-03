@@ -15,8 +15,8 @@ namespace vector_canyon_fighter {
 namespace {
 
 constexpr int kHorizonY = 150;
-// 146 px above the 466 px panel bottom: visually lower-middle, with enough
-// canyon visible below the aircraft to read its compact ground shadow.
+// The projection datum places the reviewed silhouette around y=257..345, with
+// its belly adjacent to the collision-aligned y=346.5 floor threshold.
 constexpr int kShipCenterY = kAircraftScreenCenterY;
 
 struct Vec3 {
@@ -25,89 +25,93 @@ struct Vec3 {
     float z;
 };
 
-struct ShipEdge {
-    uint8_t from;
-    uint8_t to;
-    uint8_t style;
+struct FuselageStation {
+    float z;
+    float halfWidth;
+    float topY;
+    float sideY;
+    float bottomY;
 };
 
-// v0-v13: fuselage  v14-v25: wings (upper L/R, lower L/R)
-// v26-v33: left-outer engine (front: top/bot/inner/outer, rear: top/bot/inner/outer)
-// v34-v41: left-inner engine   v42-v49: right-inner engine   v50-v57: right-outer engine
-// v58-v61: canopy struts   v62-v65: wing-tip weapon pods
-constexpr std::array<Vec3, 66> kShipVertices = {{
-    // Fuselage
-    {0.00f, 0.02f, 3.70f},   {0.00f, 0.24f, 2.28f},   {-0.40f, 0.02f, 1.38f},
-    {0.40f, 0.02f, 1.38f},   {0.00f, 0.72f, 0.88f},   {0.00f, 0.78f, -0.18f},
-    {-0.44f, 0.34f, -0.08f}, {0.44f, 0.34f, -0.08f},  {-0.56f, -0.04f, 0.02f},
-    {0.56f, -0.04f, 0.02f},  {0.00f, -0.28f, 0.92f},  {0.00f, -0.34f, -1.54f},
-    {0.00f, 0.14f, -2.18f},  {0.00f, -0.22f, -2.34f},
-    // Wings: upper left, upper right, lower left, lower right
-    {-0.62f, 0.16f, 0.55f},  {-1.65f, 0.38f, -0.05f}, {-3.00f, 0.62f, -0.72f},
-    {0.62f, 0.16f, 0.55f},   {1.65f, 0.38f, -0.05f},  {3.00f, 0.62f, -0.72f},
-    {-0.62f, -0.14f, 0.10f}, {-1.55f, -0.42f, -0.55f},{-2.75f, -0.68f, -1.28f},
-    {0.62f, -0.14f, 0.10f},  {1.55f, -0.42f, -0.55f}, {2.75f, -0.68f, -1.28f},
-    // Left outer engine nacelle – front ring (top, bot, inner x+, outer x-)
-    {-1.65f, 0.48f, -0.28f}, {-1.65f, 0.04f, -0.28f}, {-1.43f, 0.26f, -0.28f}, {-1.87f, 0.26f, -0.28f},
-    // Left outer engine – rear ring
-    {-1.65f, 0.36f, -1.55f}, {-1.65f, -0.08f, -1.55f},{-1.43f, 0.14f, -1.55f}, {-1.87f, 0.14f, -1.55f},
-    // Left inner engine nacelle – front ring
-    {-0.70f, 0.00f, -0.38f}, {-0.70f, -0.44f, -0.38f},{-0.48f, -0.22f, -0.38f},{-0.92f, -0.22f, -0.38f},
-    // Left inner engine – rear ring
-    {-0.70f, -0.10f, -1.72f},{-0.70f, -0.54f, -1.72f},{-0.48f, -0.32f, -1.72f},{-0.92f, -0.32f, -1.72f},
-    // Right inner engine nacelle – front ring
-    {0.70f, 0.00f, -0.38f},  {0.70f, -0.44f, -0.38f}, {0.92f, -0.22f, -0.38f}, {0.48f, -0.22f, -0.38f},
-    // Right inner engine – rear ring
-    {0.70f, -0.10f, -1.72f}, {0.70f, -0.54f, -1.72f}, {0.92f, -0.32f, -1.72f}, {0.48f, -0.32f, -1.72f},
-    // Right outer engine nacelle – front ring
-    {1.65f, 0.48f, -0.28f},  {1.65f, 0.04f, -0.28f},  {1.87f, 0.26f, -0.28f},  {1.43f, 0.26f, -0.28f},
-    // Right outer engine – rear ring
-    {1.65f, 0.36f, -1.55f},  {1.65f, -0.08f, -1.55f}, {1.87f, 0.14f, -1.55f},  {1.43f, 0.14f, -1.55f},
-    // Canopy struts
-    {-0.52f, 0.20f, -1.50f}, {-0.64f, 1.02f, -1.88f}, {0.52f, 0.20f, -1.50f},  {0.64f, 1.02f, -1.88f},
-    // Wing tip weapon pods
-    {-3.06f, 0.62f, -1.62f}, {3.06f, 0.62f, -1.62f},  {-2.80f, -0.68f, -2.04f},{2.80f, -0.68f, -2.04f},
+// Original variable-geometry space-fighter silhouette. Width changes are
+// staged around a cockpit shoulder rather than forming one uninterrupted
+// needle, so the fuselage reads as a vehicle instead of a center decoration.
+constexpr std::array<FuselageStation, 10> kFuselageStations = {{
+    { 6.50f, 0.04f,0.06f, 0.00f,-0.05f},
+    { 5.60f,0.15f,0.14f, 0.01f,-0.10f},
+    { 4.65f,0.30f,0.25f, 0.02f,-0.16f},
+    { 3.65f,0.48f,0.42f, 0.02f,-0.23f},
+    { 2.65f,0.64f,0.73f, 0.00f,-0.31f},
+    { 1.55f,0.74f,0.90f,-0.03f,-0.39f},
+    { 0.45f,0.80f,0.70f,-0.06f,-0.44f},
+    {-0.65f,0.74f,0.53f,-0.08f,-0.43f},
+    {-1.75f,0.60f,0.37f,-0.09f,-0.37f},
+    {-2.85f,0.38f,0.22f,-0.08f,-0.25f},
 }};
 
-constexpr std::array<ShipEdge, 114> kShipEdges = {{
-    // Fuselage
-    {0, 1, 1}, {0, 2, 1}, {0, 3, 1}, {1, 2, 0}, {1, 3, 0}, {1, 4, 2},
-    {4, 5, 2}, {4, 6, 2}, {4, 7, 2}, {5, 6, 2}, {5, 7, 2}, {6, 7, 2},
-    {2, 8, 1}, {3, 9, 1}, {2, 10, 0}, {3, 10, 0}, {8, 9, 0}, {8, 11, 1},
-    {9, 11, 1}, {10, 11, 0}, {8, 12, 1}, {9, 12, 1}, {11, 13, 0}, {12, 13, 1},
-    // Upper wings
-    {2, 14, 1}, {14, 15, 1}, {15, 16, 1}, {16, 8, 1}, {14, 16, 0}, {15, 8, 0},
-    {3, 17, 1}, {17, 18, 1}, {18, 19, 1}, {19, 9, 1}, {17, 19, 0}, {18, 9, 0},
-    // Lower wings
-    {8, 20, 1}, {20, 21, 1}, {21, 22, 1}, {22, 11, 1}, {20, 22, 0}, {21, 11, 0},
-    {9, 23, 1}, {23, 24, 1}, {24, 25, 1}, {25, 11, 1}, {23, 25, 0}, {24, 11, 0},
-    // Wing S-foil cross-sections (upper mid/tip ↔ lower mid/tip for thickness)
-    {15, 21, 0}, {16, 22, 0}, {18, 24, 0}, {19, 25, 0},
-    // Left outer engine: front ring (top→inner→bot→outer→top)
-    {26, 28, 0}, {28, 27, 0}, {27, 29, 0}, {29, 26, 0},
-    // rear ring + longitudinals + wing attachment
-    {30, 32, 0}, {32, 31, 0}, {31, 33, 0}, {33, 30, 0},
-    {26, 30, 1}, {27, 31, 1}, {28, 32, 0}, {29, 33, 0}, {15, 26, 0},
-    // Left inner engine: front ring
-    {34, 36, 0}, {36, 35, 0}, {35, 37, 0}, {37, 34, 0},
-    // rear ring + longitudinals + wing attachment
-    {38, 40, 0}, {40, 39, 0}, {39, 41, 0}, {41, 38, 0},
-    {34, 38, 1}, {35, 39, 1}, {36, 40, 0}, {37, 41, 0}, {20, 34, 0},
-    // Right inner engine: front ring
-    {42, 44, 0}, {44, 43, 0}, {43, 45, 0}, {45, 42, 0},
-    // rear ring + longitudinals + wing attachment
-    {46, 48, 0}, {48, 47, 0}, {47, 49, 0}, {49, 46, 0},
-    {42, 46, 1}, {43, 47, 1}, {44, 48, 0}, {45, 49, 0}, {23, 42, 0},
-    // Right outer engine: front ring
-    {50, 52, 0}, {52, 51, 0}, {51, 53, 0}, {53, 50, 0},
-    // rear ring + longitudinals + wing attachment
-    {54, 56, 0}, {56, 55, 0}, {55, 57, 0}, {57, 54, 0},
-    {50, 54, 1}, {51, 55, 1}, {52, 56, 0}, {53, 57, 0}, {18, 50, 0},
-    // Canopy struts
-    {8, 58, 1}, {58, 59, 1}, {59, 12, 1}, {9, 60, 1}, {60, 61, 1}, {61, 12, 1},
-    // Wing tip weapon pods
-    {16, 62, 1}, {19, 63, 1}, {22, 64, 1}, {25, 65, 1},
+struct WingStation {
+    float span;
+    float leadingZ;
+    float trailingZ;
+    float upperY;
+};
+
+// The leading edge has a deliberate shoulder and outer kink; the cropped tip
+// prevents the generic paper-airplane triangle seen in the rejected pass.
+constexpr std::array<WingStation, 5> kWingStations = {{
+    {0.64f, 2.82f,-1.92f,0.04f},
+    {1.24f, 2.32f,-2.02f,0.08f},
+    {2.02f, 1.54f,-2.12f,0.13f},
+    {2.90f, 0.50f,-2.14f,0.18f},
+    {3.72f,-0.58f,-1.76f,0.22f},
 }};
+
+struct EngineSpec {
+    float x;
+    float y;
+    float radius;
+};
+
+constexpr std::array<EngineSpec, 4> kEngineSpecs = {{
+    {-2.42f,-0.27f,0.25f},
+    {-1.12f,-0.50f,0.32f},
+    { 1.12f,-0.50f,0.32f},
+    { 2.42f,-0.27f,0.25f},
+}};
+
+constexpr std::array<float, 3> kEngineRingZ = {{0.32f,-1.36f,-3.02f}};
+constexpr std::array<std::array<float, 2>, 6> kEngineRadials = {{
+    {{ 0.00f,  1.00f}}, {{ 0.87f,  0.50f}}, {{ 0.87f, -0.50f}},
+    {{ 0.00f, -1.00f}}, {{-0.87f, -0.50f}}, {{-0.87f,  0.50f}},
+}};
+
+Vec3 fuselagePoint(const FuselageStation& station, int lane)
+{
+    switch (lane & 3) {
+        case 0: return {0.0f, station.topY, station.z};
+        case 1: return {station.halfWidth, station.sideY, station.z};
+        case 2: return {0.0f, station.bottomY, station.z};
+        default: return {-station.halfWidth, station.sideY, station.z};
+    }
+}
+
+Vec3 wingPoint(float side, const WingStation& station, float chord)
+{
+    return {
+        side * station.span,
+        station.upperY - chord * 0.10f,
+        station.leadingZ + (station.trailingZ - station.leadingZ) * chord,
+    };
+}
+
+Vec3 enginePoint(const EngineSpec& engine, std::size_t ring, std::size_t radial)
+{
+    return {
+        engine.x + kEngineRadials[radial][0] * engine.radius,
+        engine.y + kEngineRadials[radial][1] * engine.radius,
+        kEngineRingZ[ring],
+    };
+}
 
 uint16_t scaleRgb565(uint16_t color, float weight)
 {
@@ -115,6 +119,22 @@ uint16_t scaleRgb565(uint16_t color, float weight)
     const uint16_t red = static_cast<uint16_t>(((color >> 11) & 0x1fu) * safeWeight >> 8);
     const uint16_t green = static_cast<uint16_t>(((color >> 5) & 0x3fu) * safeWeight >> 8);
     const uint16_t blue = static_cast<uint16_t>((color & 0x1fu) * safeWeight >> 8);
+    return static_cast<uint16_t>((red << 11) | (green << 5) | blue);
+}
+
+uint16_t blendRgb565(uint16_t from, uint16_t to, float amount)
+{
+    const float safeAmount = std::clamp(amount, 0.0f, 1.0f);
+    const float inverse = 1.0f - safeAmount;
+    const uint16_t red = static_cast<uint16_t>(std::lround(
+        static_cast<float>((from >> 11) & 0x1fu) * inverse +
+        static_cast<float>((to >> 11) & 0x1fu) * safeAmount));
+    const uint16_t green = static_cast<uint16_t>(std::lround(
+        static_cast<float>((from >> 5) & 0x3fu) * inverse +
+        static_cast<float>((to >> 5) & 0x3fu) * safeAmount));
+    const uint16_t blue = static_cast<uint16_t>(std::lround(
+        static_cast<float>(from & 0x1fu) * inverse +
+        static_cast<float>(to & 0x1fu) * safeAmount));
     return static_cast<uint16_t>((red << 11) | (green << 5) | blue);
 }
 
@@ -312,10 +332,12 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const uint16_t terrainPrimary = display.color565(36, 127, 145);
     const uint16_t terrainMid = display.color565(21, 76, 91);
     const uint16_t terrainSecondary = display.color565(9, 40, 50);
-    const uint16_t shipColor = display.color565(228, 238, 235);
-    const uint16_t shipDim = display.color565(84, 107, 106);
-    const uint16_t canopyColor = display.color565(101, 183, 200);
-    const uint16_t exhaust = display.color565(155, 225, 236);
+    const uint16_t shipColor = display.color565(68, 124, 139);
+    const uint16_t shipDim = display.color565(20, 49, 58);
+    const uint16_t structureColor = display.color565(43, 86, 99);
+    const uint16_t engineColor = display.color565(48, 92, 104);
+    const uint16_t canopyColor = display.color565(42, 105, 121);
+    const uint16_t exhaust = display.color565(126, 58, 18);
     const uint16_t hudColor = display.color565(114, 230, 162);
     const uint16_t hudDim = display.color565(39, 94, 69);
     const uint16_t hudAccent = display.color565(182, 255, 208);
@@ -406,16 +428,19 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     // camera used by the collision-aligned ground shadow below.
     const int shipX = centerX;
     const int shipY = kShipCenterY;
+    const AircraftPoseProjector poseProjector(flight.pitch, flight.roll);
     const auto projectShip = [&](const Vec3& point) {
-        // Rotate the model itself around its lateral axis. The former renderer
-        // only translated the whole sprite vertically, so its silhouette never
-        // communicated pitch.
-        const AircraftScreenOffset offset =
-            projectAircraftPose(point.x, point.y, point.z, flight.pitch, flight.roll);
+        const AircraftScreenOffset offset = poseProjector.project(point.x, point.y, point.z);
         return std::array<int, 2>{
             shipX + static_cast<int>(offset.x),
             shipY + static_cast<int>(offset.y),
         };
+    };
+    const auto drawShipLine = [&](const Vec3& fromPoint, const Vec3& toPoint,
+                                  uint16_t color) {
+        const auto from = projectShip(fromPoint);
+        const auto to = projectShip(toPoint);
+        canvas.drawLine(from[0], from[1], to[0], to[1], color);
     };
 
     // Keep the ground cue deliberately small. A collision envelope spans the
@@ -428,59 +453,181 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.fillEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowFill);
     canvas.drawEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowEdge);
 
-    for (const auto& edge : kShipEdges) {
-        const auto from = projectShip(kShipVertices[edge.from]);
-        const auto to = projectShip(kShipVertices[edge.to]);
-        const uint16_t color = edge.style == 2 ? canopyColor : (edge.style == 1 ? shipColor : shipDim);
-        if (edge.style == 1) canvas.drawLine(from[0], from[1] + 1, to[0], to[1] + 1, shipDim);
-        canvas.drawLine(from[0], from[1], to[0], to[1], color);
-    }
+    // Exhaust is a persistent part of the fighter silhouette. A clean axial
+    // ray passes through fixed circular cross-section rings and reaches the
+    // convergence apex beyond them. Their radii taper monotonically away from
+    // the nozzle without geometric motion or noisy side-envelope rays. A
+    // synchronized luminance wave travels from the inner ring to the tip. The
+    // largest nozzle ring is deliberately omitted; the small terminal ring is
+    // restored to articulate the plume tip before the axis reaches its apex.
+    const bool boostedExhaust = flight.boostAmount >= 0.35f;
+    const int machRingCount = aircraftMachRingCount(flight.boostAmount);
+    const float plumeLength = aircraftPlumeLength(flight.boostAmount);
+    const float exhaustApexZ = kEngineRingZ.back() - plumeLength -
+                               kAircraftPlumeApexExtension;
+    const uint32_t highlightPeriodMs = boostedExhaust ? 520u : 760u;
+    const float highlightPhase =
+        static_cast<float>(GetHAL().millis() % highlightPeriodMs) /
+        static_cast<float>(highlightPeriodMs);
+    const uint16_t machBase = boostedExhaust
+        ? display.color565(196, 128, 24)
+        : display.color565(150, 98, 18);
+    const uint16_t machPeak = boostedExhaust
+        ? display.color565(255, 255, 176)
+        : display.color565(255, 225, 84);
+    for (const EngineSpec& engine : kEngineSpecs) {
+        const Vec3 plumeTip{engine.x, engine.y, exhaustApexZ};
+        drawShipLine({engine.x, engine.y, kEngineRingZ.back()}, plumeTip, exhaust);
 
-    const float exhaustTailZ = -2.30f - 0.86f * flight.boostAmount;
-    const std::array<Vec3, 8> exhaustPoints = {{
-        {-1.65f, 0.14f, -1.55f}, {-1.65f, 0.14f, exhaustTailZ},
-        {-0.70f, -0.32f, -1.72f}, {-0.70f, -0.32f, exhaustTailZ},
-        {0.70f, -0.32f, -1.72f}, {0.70f, -0.32f, exhaustTailZ},
-        {1.65f, 0.14f, -1.55f}, {1.65f, 0.14f, exhaustTailZ},
-    }};
-    for (int engine = 0; engine < 4; ++engine) {
-        const auto from = projectShip(exhaustPoints[engine * 2]);
-        const auto to = projectShip(exhaustPoints[engine * 2 + 1]);
-        canvas.drawLine(from[0], from[1], to[0], to[1], exhaust);
-    }
-
-    // Mach ring (shock diamond) effect – animated contracting diamond rings along each plume
-    if (flight.boostAmount > 0.08f) {
-        const uint16_t machColor = display.color565(92, 210, 230);
-        const float machPhase = static_cast<float>(GetHAL().millis() % 400u) / 400.0f;
-        const std::array<float, 12> kNozzles = {{
-            -1.65f,  0.14f, -1.55f,
-            -0.70f, -0.32f, -1.72f,
-             0.70f, -0.32f, -1.72f,
-             1.65f,  0.14f, -1.55f,
-        }};
-        for (int eng = 0; eng < 4; ++eng) {
-            const float nx = kNozzles[static_cast<size_t>(eng) * 3];
-            const float ny = kNozzles[static_cast<size_t>(eng) * 3 + 1];
-            const float nz = kNozzles[static_cast<size_t>(eng) * 3 + 2];
-            for (int ring = 0; ring < 2; ++ring) {
-                const float frac = std::fmod(machPhase + ring * 0.5f, 1.0f);
-                const float ringZ = nz - 0.12f - frac * 0.80f;
-                const float r = 0.21f * (0.45f + 0.42f * std::sin(frac * 3.14159f));
-                const std::array<Vec3, 4> pts = {{
-                    {nx,       ny + r, ringZ},
-                    {nx + r,   ny,     ringZ},
-                    {nx,       ny - r, ringZ},
-                    {nx - r,   ny,     ringZ},
-                }};
-                for (int s = 0; s < 4; ++s) {
-                    const auto p1 = projectShip(pts[static_cast<size_t>(s)]);
-                    const auto p2 = projectShip(pts[static_cast<size_t>((s + 1) % 4)]);
-                    canvas.drawLine(p1[0], p1[1], p2[0], p2[1], machColor);
-                }
+        for (int ring = 0; ring < machRingCount; ++ring) {
+            const float fraction = aircraftExhaustRingFraction(ring, machRingCount);
+            const float ringZ = kEngineRingZ.back() - fraction * plumeLength;
+            const float radius = engine.radius *
+                                 aircraftExhaustRingRadiusScale(ring, machRingCount);
+            const uint16_t machColor = blendRgb565(
+                machBase, machPeak,
+                aircraftExhaustRingHighlight(highlightPhase, ring, machRingCount));
+            std::array<Vec3, 8> ringPoints{};
+            for (std::size_t point = 0; point < ringPoints.size(); ++point) {
+                constexpr float kTau = 6.28318530718f;
+                const float angle = kTau * static_cast<float>(point) /
+                                    static_cast<float>(ringPoints.size());
+                ringPoints[point] = {
+                    engine.x + radius * std::cos(angle),
+                    engine.y + radius * std::sin(angle),
+                    ringZ,
+                };
+            }
+            for (std::size_t edge = 0; edge < ringPoints.size(); ++edge) {
+                drawShipLine(ringPoints[edge],
+                             ringPoints[(edge + 1) % ringPoints.size()], machColor);
             }
         }
     }
+
+    // Draw only the upper transverse facets. Hidden lower ribs previously
+    // collapsed onto the same watch pixels and obscured the fuselage volume.
+    for (std::size_t index = 0; index < kFuselageStations.size(); ++index) {
+        if (index != 0 && index + 1 != kFuselageStations.size() && index % 2 == 0) continue;
+        const FuselageStation& station = kFuselageStations[index];
+        drawShipLine(fuselagePoint(station, 3), fuselagePoint(station, 0), shipDim);
+        drawShipLine(fuselagePoint(station, 0), fuselagePoint(station, 1), shipDim);
+    }
+    for (std::size_t station = 0; station + 1 < kFuselageStations.size(); ++station) {
+        for (int lane = 0; lane < 4; ++lane) {
+            const bool silhouette = lane != 2;
+            drawShipLine(fuselagePoint(kFuselageStations[station], lane),
+                         fuselagePoint(kFuselageStations[station + 1], lane),
+                         silhouette ? shipColor : shipDim);
+        }
+    }
+
+    // Broad swept wings use a real chord/span grid rather than decorative
+    // diagonals. This is the defining construction visible in the approved icon.
+    constexpr std::array<float, 3> kWingChords = {{0.0f, 0.50f, 1.0f}};
+    for (float side : {-1.0f, 1.0f}) {
+        for (std::size_t station = 0; station < kWingStations.size(); ++station) {
+            for (std::size_t chord = 0; chord + 1 < kWingChords.size(); ++chord) {
+                const bool outline = station == 0 || station + 1 == kWingStations.size();
+                drawShipLine(wingPoint(side, kWingStations[station], kWingChords[chord]),
+                             wingPoint(side, kWingStations[station], kWingChords[chord + 1]),
+                             outline ? shipColor : shipDim);
+            }
+        }
+        for (std::size_t chord = 0; chord < kWingChords.size(); ++chord) {
+            for (std::size_t station = 0; station + 1 < kWingStations.size(); ++station) {
+                const bool outline = chord == 0 || chord + 1 == kWingChords.size();
+                drawShipLine(wingPoint(side, kWingStations[station], kWingChords[chord]),
+                             wingPoint(side, kWingStations[station + 1], kWingChords[chord]),
+                             outline ? shipColor : shipDim);
+            }
+        }
+
+    }
+
+    // Shoulder intake boxes bridge fuselage, wing and inner nacelles. Their
+    // front-mouth diagonals give the craft a mechanical torso instead of a
+    // featureless flat delta.
+    for (float side : {-1.0f, 1.0f}) {
+        const std::array<Vec3, 4> intakeTop = {{
+            {side * 0.52f,0.40f,2.62f},
+            {side * 1.14f,0.30f,2.18f},
+            {side * 1.20f,0.20f,0.34f},
+            {side * 0.66f,0.38f,0.52f},
+        }};
+        // The camera trails the aircraft, so the forward-facing mouth and its
+        // lower rim are occluded. Only the top shell, outer wall and rear lip
+        // are legal visible edges from this viewpoint.
+        drawShipLine(intakeTop[1], intakeTop[2], structureColor);
+        drawShipLine(intakeTop[2], intakeTop[3], structureColor);
+        drawShipLine(intakeTop[3], intakeTop[0], structureColor);
+    }
+
+    // Twin canted tail fins add a second silhouette tier behind the cockpit
+    // and provide the vertical-volume cue missing from the rejected flat mesh.
+    for (float side : {-1.0f, 1.0f}) {
+        const std::array<Vec3, 4> fin = {{
+            {side * 0.72f,0.46f,-0.92f},
+            {side * 0.88f,0.30f,-2.70f},
+            {side * 1.38f,1.05f,-2.18f},
+            {side * 1.20f,1.24f,-1.24f},
+        }};
+        for (std::size_t edge = 0; edge < fin.size(); ++edge) {
+            drawShipLine(fin[edge], fin[(edge + 1) % fin.size()], shipColor);
+        }
+        drawShipLine(fin[0], fin[2], shipDim);
+
+        // Compact wingtip sensor/weapon booms echo the four-pod interceptor
+        // language without crossing the HUD safe area.
+        drawShipLine({side * 3.64f,0.16f,-0.72f},
+                     {side * 3.64f,0.12f,0.82f}, structureColor);
+        drawShipLine({side * 3.54f,0.12f,0.64f},
+                     {side * 3.74f,0.12f,0.64f}, structureColor);
+    }
+
+    // Visibility-filtered nacelles: the rear lip is complete, but forward rings
+    // and rails only show their camera-facing upper half. This is enough to read
+    // as a cylinder without creating four dense luminous columns.
+    for (const EngineSpec& engine : kEngineSpecs) {
+        for (std::size_t ring = 0; ring < kEngineRingZ.size(); ++ring) {
+            const bool rearRing = ring + 1 == kEngineRingZ.size();
+            for (std::size_t radial = 0; radial < kEngineRadials.size(); ++radial) {
+                if (!rearRing && radial >= 2 && radial <= 3) continue;
+                drawShipLine(enginePoint(engine, ring, radial),
+                             enginePoint(engine, ring, (radial + 1) % kEngineRadials.size()),
+                             rearRing ? engineColor : shipDim);
+            }
+        }
+        for (std::size_t ring = 0; ring + 1 < kEngineRingZ.size(); ++ring) {
+            constexpr std::array<std::size_t, 3> kVisibleRails = {{0, 1, 5}};
+            for (const std::size_t radial : kVisibleRails) {
+                drawShipLine(enginePoint(engine, ring, radial),
+                             enginePoint(engine, ring + 1, radial),
+                             engineColor);
+            }
+        }
+        const float pylonY = engine.x < -1.7f || engine.x > 1.7f ? 0.16f : 0.20f;
+        drawShipLine({engine.x, engine.y + engine.radius, kEngineRingZ.front()},
+                     {engine.x - engine.radius * 0.48f, pylonY, 0.68f}, structureColor);
+        drawShipLine({engine.x, engine.y + engine.radius, kEngineRingZ.front()},
+                     {engine.x + engine.radius * 0.48f, pylonY, 0.68f}, structureColor);
+    }
+
+    // A cyan canopy cage breaks up the white fuselage and reads as a cockpit,
+    // while remaining transparent wireframe geometry.
+    constexpr std::array<Vec3, 6> kCanopy = {{
+        { 0.00f,0.52f,3.40f}, {-0.28f,0.38f,3.15f}, {0.28f,0.38f,3.15f},
+        { 0.00f,0.82f,0.55f}, {-0.44f,0.48f,0.38f}, {0.44f,0.48f,0.38f},
+    }};
+    drawShipLine(kCanopy[0], kCanopy[1], canopyColor);
+    drawShipLine(kCanopy[0], kCanopy[2], canopyColor);
+    drawShipLine(kCanopy[1], kCanopy[2], canopyColor);
+    drawShipLine(kCanopy[3], kCanopy[4], canopyColor);
+    drawShipLine(kCanopy[3], kCanopy[5], canopyColor);
+    drawShipLine(kCanopy[4], kCanopy[5], canopyColor);
+    drawShipLine(kCanopy[0], kCanopy[3], canopyColor);
+    drawShipLine(kCanopy[1], kCanopy[4], canopyColor);
+    drawShipLine(kCanopy[2], kCanopy[5], canopyColor);
 
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setTextSize(1);
