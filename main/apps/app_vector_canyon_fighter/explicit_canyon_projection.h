@@ -41,6 +41,13 @@ struct CanyonCamera {
     float focalLength = 0.0f;
 };
 
+struct CanyonHudReferenceFrame {
+    CanyonCameraVector forwardHorizontal;
+    float centerX = 0.0f;
+    float horizonY = 0.0f;
+    float horizonSlope = 0.0f;
+};
+
 inline float canyonDot(CanyonCameraVector left, CanyonCameraVector right)
 {
     return left.x * right.x + left.y * right.y + left.z * right.z;
@@ -96,6 +103,59 @@ inline CanyonCamera makeExplicitCanyonChaseCamera(const CanyonRouteFrame& route,
     camera.position.y += camera.right.y * flightLateralOffset;
     camera.position.z += camera.right.z * flightLateralOffset;
     return camera;
+}
+
+inline CanyonCamera makeExplicitCanyonCockpitCamera(
+    const CanyonRouteFrame& route, float flightLateralOffset,
+    float flightAltitude, float flightPitchDegrees, float flightRollDegrees,
+    float flightYawDegrees, int width, int height)
+{
+    constexpr float kDegreesToRadians = 0.01745329252f;
+    const float yaw = flightYawDegrees * kDegreesToRadians;
+    const CanyonCameraVector routeRight{
+        route.tangentZ, 0.0f, -route.tangentX,
+    };
+    const CanyonCameraVector heading = canyonNormalize({
+        route.tangentX * std::cos(yaw) + routeRight.x * std::sin(yaw),
+        0.0f,
+        route.tangentZ * std::cos(yaw) + routeRight.z * std::sin(yaw),
+    });
+    const float pitch =
+        (kExplicitCanyonNeutralPitchDegrees + flightPitchDegrees) *
+        kDegreesToRadians;
+    const CanyonCameraVector worldUp{0.0f, 1.0f, 0.0f};
+    const CanyonCameraVector forward = canyonNormalize({
+        heading.x * std::cos(pitch), std::sin(pitch),
+        heading.z * std::cos(pitch),
+    });
+    const CanyonCameraVector unrolledRight = canyonNormalize(
+        canyonCross(worldUp, forward));
+    const CanyonCameraVector unrolledUp = canyonNormalize(
+        canyonCross(forward, unrolledRight));
+    const float roll = flightRollDegrees * kDegreesToRadians;
+    const CanyonCameraVector right = canyonNormalize({
+        unrolledRight.x * std::cos(roll) + unrolledUp.x * std::sin(roll),
+        unrolledRight.y * std::cos(roll) + unrolledUp.y * std::sin(roll),
+        unrolledRight.z * std::cos(roll) + unrolledUp.z * std::sin(roll),
+    });
+    const CanyonCameraVector up = canyonNormalize({
+        unrolledUp.x * std::cos(roll) - unrolledRight.x * std::sin(roll),
+        unrolledUp.y * std::cos(roll) - unrolledRight.y * std::sin(roll),
+        unrolledUp.z * std::cos(roll) - unrolledRight.z * std::sin(roll),
+    });
+    return {
+        {
+            route.centerX + routeRight.x * flightLateralOffset,
+            flightAltitude + kExplicitCanyonCameraLift,
+            route.centerZ + routeRight.z * flightLateralOffset,
+        },
+        right,
+        up,
+        forward,
+        static_cast<float>(width) * 0.5f,
+        static_cast<float>(height) * kExplicitCanyonPrincipalYRatio,
+        static_cast<float>(width) * kExplicitCanyonFocalWidthRatio,
+    };
 }
 
 inline CanyonCamera makeExplicitCanyonTopDebugCamera(const CanyonRouteFrame& route, int width, int height)
@@ -157,6 +217,72 @@ inline bool projectExplicitCanyonPoint(const CanyonCamera& camera, CanyonCameraP
     return std::isfinite(screen.x) && std::isfinite(screen.y);
 }
 
+inline bool projectExplicitCanyonDirection(const CanyonCamera& camera,
+                                           CanyonCameraVector direction,
+                                           CanyonScreenPoint& screen)
+{
+    const CanyonCameraPoint cameraDirection{
+        canyonDot(direction, camera.right),
+        canyonDot(direction, camera.up),
+        canyonDot(direction, camera.forward),
+    };
+    if (cameraDirection.z <= 0.00001f) return false;
+    screen.x = camera.principalX +
+               camera.focalLength * cameraDirection.x / cameraDirection.z;
+    screen.y = camera.principalY -
+               camera.focalLength * cameraDirection.y / cameraDirection.z;
+    return std::isfinite(screen.x) && std::isfinite(screen.y);
+}
+
+inline bool makeCanyonHudReferenceFrame(const CanyonCamera& camera,
+                                        CanyonHudReferenceFrame& frame)
+{
+    constexpr float kHorizonProbeSpread = 0.35f;
+    const CanyonCameraVector worldUp{0.0f, 1.0f, 0.0f};
+    frame.forwardHorizontal = canyonNormalize(
+        {camera.forward.x, 0.0f, camera.forward.z});
+    const CanyonCameraVector horizontalRight = canyonNormalize(
+        canyonCross(worldUp, frame.forwardHorizontal));
+    const CanyonCameraVector leftDirection = canyonNormalize({
+        frame.forwardHorizontal.x - horizontalRight.x * kHorizonProbeSpread,
+        0.0f,
+        frame.forwardHorizontal.z - horizontalRight.z * kHorizonProbeSpread,
+    });
+    const CanyonCameraVector rightDirection = canyonNormalize({
+        frame.forwardHorizontal.x + horizontalRight.x * kHorizonProbeSpread,
+        0.0f,
+        frame.forwardHorizontal.z + horizontalRight.z * kHorizonProbeSpread,
+    });
+    CanyonScreenPoint center{};
+    CanyonScreenPoint left{};
+    CanyonScreenPoint right{};
+    if (!projectExplicitCanyonDirection(camera, frame.forwardHorizontal, center) ||
+        !projectExplicitCanyonDirection(camera, leftDirection, left) ||
+        !projectExplicitCanyonDirection(camera, rightDirection, right) ||
+        std::abs(right.x - left.x) <= 0.00001f) {
+        return false;
+    }
+    frame.centerX = center.x;
+    frame.horizonY = center.y;
+    frame.horizonSlope = (right.y - left.y) / (right.x - left.x);
+    return std::isfinite(frame.horizonSlope);
+}
+
+inline bool projectCanyonHudElevation(const CanyonCamera& camera,
+                                      const CanyonHudReferenceFrame& frame,
+                                      float elevationDegrees,
+                                      CanyonScreenPoint& screen)
+{
+    constexpr float kDegreesToRadians = 0.01745329252f;
+    const float elevation = elevationDegrees * kDegreesToRadians;
+    const CanyonCameraVector direction{
+        frame.forwardHorizontal.x * std::cos(elevation),
+        std::sin(elevation),
+        frame.forwardHorizontal.z * std::cos(elevation),
+    };
+    return projectExplicitCanyonDirection(camera, direction, screen);
+}
+
 inline bool isExplicitCanyonStructuralRail(std::size_t profileIndex)
 {
     return profileIndex == 0 || profileIndex == 3 || profileIndex == 7 || profileIndex == 12 ||
@@ -186,5 +312,7 @@ inline float explicitCanyonRailLodWeight(std::size_t profileIndex, float relativ
 static_assert(sizeof(CanyonCameraPoint) == 12, "Camera-space points must remain three floats");
 static_assert(sizeof(CanyonScreenPoint) == 8, "Screen points must remain two floats");
 static_assert(sizeof(CanyonCamera) == 60, "Camera matrix exceeded its reviewed stack budget");
+static_assert(sizeof(CanyonHudReferenceFrame) == 24,
+              "HUD reference frame exceeded its reviewed stack budget");
 
 }  // namespace vector_canyon_fighter

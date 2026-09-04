@@ -29,7 +29,7 @@ inline constexpr float kAircraftNominalScreenHalfSpan = 53.0f;
 inline constexpr int kAircraftScreenCenterY = 304;
 inline constexpr int kAircraftCourseCueY = 230;
 inline constexpr float kAircraftNominalScreenBottomY = 346.5f;
-inline constexpr float kChaseCameraPitchFollow = 0.08f;
+inline constexpr float kChaseCameraPitchFollow = 0.18f;
 inline constexpr float kAircraftFuselageTailZ = -2.85f;
 inline constexpr float kAircraftMinimumEngineRadius = 0.25f;
 inline constexpr std::array<float, 3> kAircraftEngineRingZ = {{
@@ -127,7 +127,7 @@ public:
         _yawCosine = std::cos(yaw);
         _yawSine = std::sin(yaw);
 
-        // Match the canyon chase camera. The scenery follows 8% of aircraft
+        // Match the canyon chase camera. The scenery follows 18% of aircraft
         // pitch, so the airframe and floor keep the same optical relationship
         // while the aircraft still visibly changes attitude.
         const float cameraPitch = (-3.1f + pitchDegrees * kChaseCameraPitchFollow) *

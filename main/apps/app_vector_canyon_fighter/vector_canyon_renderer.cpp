@@ -14,7 +14,6 @@
 namespace vector_canyon_fighter {
 namespace {
 
-constexpr int kHorizonY = 150;
 // The projection datum places the reviewed silhouette around y=257..345, with
 // its belly adjacent to the collision-aligned y=346.5 floor threshold.
 constexpr int kShipCenterY = kAircraftScreenCenterY;
@@ -422,9 +421,16 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.fillScreen(TFT_BLACK);
 
     const CanyonRouteFrame route = terrain.routeFrameAt(terrain.playerWorldS());
-    const CanyonCamera camera = makeExplicitCanyonChaseCamera(
-        route, flight.lateralOffset, flight.altitude, flight.pitch, _width, _height);
-    int vanishingX = centerX;
+    const CanyonCamera camera = aircraftVisible
+        ? makeExplicitCanyonChaseCamera(
+              route, flight.lateralOffset, flight.altitude, flight.pitch,
+              _width, _height)
+        : makeExplicitCanyonCockpitCamera(
+              route, flight.lateralOffset, flight.altitude, flight.pitch,
+              flight.roll, flight.turnYaw, _width, _height);
+    CanyonScreenPoint routeCue{
+        static_cast<float>(centerX), camera.principalY,
+    };
     const bool terrainVisible = drawExplicitTerrain(
         camera, terrain, terrainPrimary, terrainMid, terrainSecondary);
     CanyonScreenPoint farCenter{};
@@ -434,7 +440,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
                 ExplicitCanyonStream::kSliceCount - 1,
                 static_cast<std::size_t>(CanyonProfilePoint::FloorCenter))),
             farCenter)) {
-        vanishingX = static_cast<int>(std::lround(farCenter.x));
+        routeCue = farCenter;
     }
     if (!terrainVisible) {
         display.endWrite();
@@ -712,50 +718,95 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const int bankPointerY = kBankCenterY + static_cast<int>(std::sin(bankPointerRadians) * (kBankRadius - 10));
     canvas.drawCircle(bankPointerX, bankPointerY, 2, hudAccent);
 
-    // Pitch ladder rotates with roll while labels remain upright for legibility.
-    const int attitudeY = kHorizonY + static_cast<int>(flight.pitch * 1.25f);
-    const float attitudeRadians = -flight.roll * 0.0174532925f;
-    const float attitudeCosine = std::cos(attitudeRadians);
-    const float attitudeSine = std::sin(attitudeRadians);
-    const auto drawAttitudeLine = [&](int x1, int y1, int x2, int y2, uint16_t color) {
-        const auto rotateX = [&](int x, int y) {
-            return vanishingX + static_cast<int>(x * attitudeCosine - y * attitudeSine);
+    // Earth-referenced HUD layer. It is projected by the same chase camera as
+    // the canyon, so the zero rung overlays the rendered world horizon. The
+    // chase camera is world-up stabilized; aircraft roll belongs to the ship
+    // and bank pointer, not to this line.
+    CanyonHudReferenceFrame hudReference{};
+    const bool hudReferenceValid =
+        makeCanyonHudReferenceFrame(camera, hudReference);
+    const float horizonDirectionLength = std::sqrt(
+        1.0f + hudReference.horizonSlope * hudReference.horizonSlope);
+    const float horizonDirectionX = 1.0f / horizonDirectionLength;
+    const float horizonDirectionY =
+        hudReference.horizonSlope / horizonDirectionLength;
+    const auto attitudePoint = [&](CanyonScreenPoint center, float along,
+                                   float normal = 0.0f) {
+        return CanyonScreenPoint{
+            center.x + along * horizonDirectionX - normal * horizonDirectionY,
+            center.y + along * horizonDirectionY + normal * horizonDirectionX,
         };
-        const auto rotateY = [&](int x, int y) {
-            return attitudeY + static_cast<int>(x * attitudeSine + y * attitudeCosine);
-        };
-        canvas.drawLine(rotateX(x1, y1), rotateY(x1, y1), rotateX(x2, y2), rotateY(x2, y2), color);
+    };
+    const auto drawAttitudeSegment = [&](CanyonScreenPoint rungCenter,
+                                         float from, float to,
+                                         uint16_t color) {
+        const CanyonScreenPoint start = attitudePoint(rungCenter, from);
+        const CanyonScreenPoint end = attitudePoint(rungCenter, to);
+        canvas.drawLine(static_cast<int>(std::lround(start.x)),
+                        static_cast<int>(std::lround(start.y)),
+                        static_cast<int>(std::lround(end.x)),
+                        static_cast<int>(std::lround(end.y)), color);
     };
     for (int level = -2; level <= 2; ++level) {
-        const int localY = -level * 18;
+        CanyonScreenPoint rungCenter{};
+        if (!hudReferenceValid ||
+            !projectCanyonHudElevation(camera, hudReference,
+                                       static_cast<float>(level * 5),
+                                       rungCenter)) {
+            continue;
+        }
         const int halfWidth = level == 0 ? 78 : (std::abs(level) == 1 ? 35 : 27);
         const int gap = level == 0 ? 14 : 11;
         const uint16_t color = level == 0 ? hudColor : hudDim;
-        drawAttitudeLine(-halfWidth, localY, -gap, localY, color);
-        drawAttitudeLine(gap, localY, halfWidth, localY, color);
+        drawAttitudeSegment(rungCenter, -halfWidth, -gap, color);
+        drawAttitudeSegment(rungCenter, gap, halfWidth, color);
         if (level != 0) {
-            drawAttitudeLine(-halfWidth, localY, -halfWidth, localY + (level > 0 ? 5 : -5), color);
-            drawAttitudeLine(halfWidth, localY, halfWidth, localY + (level > 0 ? 5 : -5), color);
+            const float tickNormal = level > 0 ? 5.0f : -5.0f;
+            const CanyonScreenPoint leftStart = attitudePoint(rungCenter, -halfWidth);
+            const CanyonScreenPoint leftEnd =
+                attitudePoint(rungCenter, -halfWidth, tickNormal);
+            const CanyonScreenPoint rightStart = attitudePoint(rungCenter, halfWidth);
+            const CanyonScreenPoint rightEnd =
+                attitudePoint(rungCenter, halfWidth, tickNormal);
+            canvas.drawLine(static_cast<int>(std::lround(leftStart.x)),
+                            static_cast<int>(std::lround(leftStart.y)),
+                            static_cast<int>(std::lround(leftEnd.x)),
+                            static_cast<int>(std::lround(leftEnd.y)), color);
+            canvas.drawLine(static_cast<int>(std::lround(rightStart.x)),
+                            static_cast<int>(std::lround(rightStart.y)),
+                            static_cast<int>(std::lround(rightEnd.x)),
+                            static_cast<int>(std::lround(rightEnd.y)), color);
             canvas.setTextColor(hudDim, TFT_BLACK);
-            canvas.setCursor(vanishingX - halfWidth - 17, attitudeY + localY - 3);
-            canvas.printf("%d", std::abs(level) * 10);
-            canvas.setCursor(vanishingX + halfWidth + 6, attitudeY + localY - 3);
-            canvas.printf("%d", std::abs(level) * 10);
+            const CanyonScreenPoint leftLabel =
+                attitudePoint(rungCenter, -halfWidth - 17.0f);
+            const CanyonScreenPoint rightLabel =
+                attitudePoint(rungCenter, halfWidth + 6.0f);
+            canvas.setCursor(static_cast<int>(std::lround(leftLabel.x)),
+                             static_cast<int>(std::lround(leftLabel.y)) - 3);
+            canvas.printf("%d", std::abs(level) * 5);
+            canvas.setCursor(static_cast<int>(std::lround(rightLabel.x)),
+                             static_cast<int>(std::lround(rightLabel.y)) - 3);
+            canvas.printf("%d", std::abs(level) * 5);
         }
     }
     canvas.setTextColor(hudColor, TFT_BLACK);
 
-    // Flight-path marker follows the canyon vanishing point. The W marker is
-    // the fixed aircraft datum, so their separation communicates flight path.
-    canvas.drawCircle(vanishingX, kHorizonY, 5, hudAccent);
-    canvas.drawLine(vanishingX - 14, kHorizonY, vanishingX - 5, kHorizonY, hudAccent);
-    canvas.drawLine(vanishingX + 5, kHorizonY, vanishingX + 14, kHorizonY, hudAccent);
-    canvas.drawLine(vanishingX, kHorizonY - 10, vanishingX, kHorizonY - 5, hudAccent);
-    constexpr int kDatumY = 188;
-    canvas.drawLine(centerX - 24, kDatumY, centerX - 8, kDatumY, hudColor);
-    canvas.drawLine(centerX - 8, kDatumY, centerX, kDatumY + 7, hudColor);
-    canvas.drawLine(centerX, kDatumY + 7, centerX + 8, kDatumY, hudColor);
-    canvas.drawLine(centerX + 8, kDatumY, centerX + 24, kDatumY, hudColor);
+    // Route cue: unlike the earth horizon, this follows the projected far
+    // canyon center in both axes. It is deliberately not called a velocity
+    // vector until FlightState exposes actual lateral/vertical velocity.
+    const int routeCueX = static_cast<int>(std::lround(routeCue.x));
+    const int routeCueY = static_cast<int>(std::lround(routeCue.y));
+    canvas.drawCircle(routeCueX, routeCueY, 5, hudAccent);
+    canvas.drawLine(routeCueX - 14, routeCueY, routeCueX - 5, routeCueY, hudAccent);
+    canvas.drawLine(routeCueX + 5, routeCueY, routeCueX + 14, routeCueY, hudAccent);
+    canvas.drawLine(routeCueX, routeCueY - 10, routeCueX, routeCueY - 5, hudAccent);
+    const int datumY = aircraftVisible
+        ? 188
+        : static_cast<int>(std::lround(camera.principalY));
+    canvas.drawLine(centerX - 24, datumY, centerX - 8, datumY, hudColor);
+    canvas.drawLine(centerX - 8, datumY, centerX, datumY + 7, hudColor);
+    canvas.drawLine(centerX, datumY + 7, centerX + 8, datumY, hudColor);
+    canvas.drawLine(centerX + 8, datumY, centerX + 24, datumY, hudColor);
 
     // Speed tape with primary/secondary ticks and a boxed active readout.
     canvas.setCursor(39, 127);

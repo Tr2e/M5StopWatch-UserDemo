@@ -93,6 +93,91 @@ bool validateNearClipping()
     return valid;
 }
 
+bool validateHudReferenceFrame(const ExplicitCanyonStream& stream)
+{
+    const CanyonRouteFrame route = stream.routeFrameAt(stream.playerWorldS());
+    const CanyonCamera neutral =
+        makeExplicitCanyonChaseCamera(route, 0.0f, 0.5f, 0.0f, 468, 466);
+    CanyonHudReferenceFrame neutralHud{};
+    bool valid = check(makeCanyonHudReferenceFrame(neutral, neutralHud),
+                       "HUD world reference could not be projected");
+    valid &= check(std::abs(neutralHud.horizonY - 140.74f) < 0.15f &&
+                       std::abs(neutralHud.horizonSlope) < 0.0001f,
+                   "HUD neutral horizon no longer overlays the world horizon");
+
+    const CanyonCamera higher =
+        makeExplicitCanyonChaseCamera(route, 0.0f, 1.2f, 0.0f, 468, 466);
+    CanyonHudReferenceFrame higherHud{};
+    valid &= check(makeCanyonHudReferenceFrame(higher, higherHud) &&
+                       std::abs(higherHud.horizonY - neutralHud.horizonY) < 0.0001f,
+                   "HUD horizon changed when only camera altitude changed");
+
+    const CanyonCamera climb =
+        makeExplicitCanyonChaseCamera(route, 0.0f, 0.5f, 18.0f, 468, 466);
+    const CanyonCamera dive =
+        makeExplicitCanyonChaseCamera(route, 0.0f, 0.5f, -18.0f, 468, 466);
+    CanyonHudReferenceFrame climbHud{};
+    CanyonHudReferenceFrame diveHud{};
+    valid &= check(makeCanyonHudReferenceFrame(climb, climbHud) &&
+                       makeCanyonHudReferenceFrame(dive, diveHud) &&
+                       climbHud.horizonY > neutralHud.horizonY + 21.0f &&
+                       diveHud.horizonY < neutralHud.horizonY - 21.0f,
+                   "HUD horizon does not move down/up with chase-camera pitch");
+
+    CanyonScreenPoint positiveFive{};
+    CanyonScreenPoint negativeFive{};
+    valid &= check(projectCanyonHudElevation(
+                       neutral, neutralHud, 5.0f, positiveFive) &&
+                       projectCanyonHudElevation(
+                           neutral, neutralHud, -5.0f, negativeFive) &&
+                       positiveFive.y < neutralHud.horizonY &&
+                       negativeFive.y > neutralHud.horizonY,
+                   "HUD pitch rungs have incorrect earth-relative ordering");
+    return valid;
+}
+
+bool validateCockpitHudReferenceFrame(const ExplicitCanyonStream& stream)
+{
+    const CanyonRouteFrame route = stream.routeFrameAt(stream.playerWorldS());
+    const CanyonCamera neutral = makeExplicitCanyonCockpitCamera(
+        route, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 468, 466);
+    CanyonHudReferenceFrame neutralHud{};
+    bool valid = check(makeCanyonHudReferenceFrame(neutral, neutralHud),
+                       "cockpit HUD world reference could not be projected");
+    valid &= check(std::abs(neutralHud.horizonY - 140.74f) < 0.15f &&
+                       std::abs(neutralHud.horizonSlope) < 0.0001f,
+                   "cockpit neutral horizon is not conformal");
+
+    const CanyonCamera climb = makeExplicitCanyonCockpitCamera(
+        route, 0.0f, 0.5f, 18.0f, 0.0f, 0.0f, 468, 466);
+    const CanyonCamera dive = makeExplicitCanyonCockpitCamera(
+        route, 0.0f, 0.5f, -18.0f, 0.0f, 0.0f, 468, 466);
+    CanyonHudReferenceFrame climbHud{};
+    CanyonHudReferenceFrame diveHud{};
+    valid &= check(makeCanyonHudReferenceFrame(climb, climbHud) &&
+                       makeCanyonHudReferenceFrame(dive, diveHud) &&
+                       climbHud.horizonY > neutralHud.horizonY + 115.0f &&
+                       diveHud.horizonY < neutralHud.horizonY - 115.0f,
+                   "cockpit horizon does not follow full aircraft pitch");
+
+    const CanyonCamera banked = makeExplicitCanyonCockpitCamera(
+        route, 0.0f, 0.5f, 0.0f, 30.0f, 0.0f, 468, 466);
+    CanyonHudReferenceFrame bankedHud{};
+    valid &= check(makeCanyonHudReferenceFrame(banked, bankedHud) &&
+                       std::abs(std::abs(bankedHud.horizonSlope) - 0.57735f) < 0.01f,
+                   "cockpit horizon does not share the camera bank angle");
+    valid &= check(std::abs(vectorLength(banked.right) - 1.0f) < 0.0001f &&
+                       std::abs(vectorLength(banked.up) - 1.0f) < 0.0001f &&
+                       std::abs(canyonDot(banked.right, banked.up)) < 0.0001f,
+                   "cockpit roll broke the camera orthonormal basis");
+
+    const CanyonCamera yawed = makeExplicitCanyonCockpitCamera(
+        route, 0.0f, 0.5f, 0.0f, 0.0f, 8.0f, 468, 466);
+    valid &= check(canyonDot(neutral.forward, yawed.forward) < 0.995f,
+                   "cockpit camera ignored aircraft turn yaw");
+    return valid;
+}
+
 bool validateLodContract()
 {
     bool valid = true;
@@ -175,6 +260,8 @@ int main()
     stream.reset(0xC4A71001u);
     bool valid = validateCameraMatrix(stream);
     valid &= validateNearClipping();
+    valid &= validateHudReferenceFrame(stream);
+    valid &= validateCockpitHudReferenceFrame(stream);
     valid &= validateLodContract();
     valid &= validateProjectionWorksetAndBudget(stream);
     return valid ? 0 : 1;
