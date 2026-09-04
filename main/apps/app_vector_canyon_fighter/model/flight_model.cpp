@@ -10,11 +10,24 @@ constexpr float kMaxSpeed = 132.0f;
 constexpr float kResponse = 5.2f;
 constexpr float kMaxLateralVelocity = 1.8f;
 constexpr float kMaxVerticalVelocity = 1.1f;
+constexpr float kMaximumVisualRoll = 30.0f;
+constexpr float kMaximumVisualPitch = 18.0f;
+constexpr float kMaximumVisualTurnYaw = 8.0f;
 
 float approach(float current, float target, float amount)
 {
     if (current < target) return std::min(current + amount, target);
     return std::max(current - amount, target);
+}
+
+void approachCriticallyDamped(float& value, float& velocity, float target,
+                              float naturalFrequency, float deltaSeconds)
+{
+    const float dt = std::clamp(deltaSeconds, 0.0f, 0.05f);
+    const float acceleration = naturalFrequency * naturalFrequency * (target - value) -
+                               2.0f * naturalFrequency * velocity;
+    velocity += acceleration * dt;
+    value += velocity * dt;
 }
 
 }  // namespace
@@ -26,6 +39,9 @@ void FlightModel::reset()
     _state.altitude = 0.5f;
     _lateralVelocity = 0.0f;
     _verticalVelocity = 0.0f;
+    _rollRate = 0.0f;
+    _pitchRate = 0.0f;
+    _turnYawRate = 0.0f;
 }
 
 void FlightModel::step(const FlightInput& input, float deltaSeconds)
@@ -47,8 +63,16 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     _state.heading += safeSteer * 24.0f * deltaSeconds;
     if (_state.heading < 0.0f) _state.heading += 360.0f;
     if (_state.heading >= 360.0f) _state.heading -= 360.0f;
-    _state.roll = approach(_state.roll, -safeSteer * 18.0f, 58.0f * deltaSeconds);
-    _state.pitch = approach(_state.pitch, safePitch * 12.0f, 38.0f * deltaSeconds);
+    // These are local aircraft pose channels, not camera rotations. Bank is
+    // deliberately strongest, pitch remains readable in chase view, and the
+    // restrained yaw exposes turn direction through perspective without
+    // making the fighter look detached from the canyon course.
+    approachCriticallyDamped(_state.roll, _rollRate,
+                             -safeSteer * kMaximumVisualRoll, 10.0f, deltaSeconds);
+    approachCriticallyDamped(_state.pitch, _pitchRate,
+                             safePitch * kMaximumVisualPitch, 8.0f, deltaSeconds);
+    approachCriticallyDamped(_state.turnYaw, _turnYawRate,
+                             safeSteer * kMaximumVisualTurnYaw, 9.0f, deltaSeconds);
 
     const bool boostActive = input.actions.isHeld(FlightAction::Boost);
     const float boostTarget = boostActive ? 1.0f : 0.0f;

@@ -110,13 +110,14 @@ struct FlightState {
     float speed;
     float roll;
     float pitch;
+    float turnYaw;        // 相对航道的瞬时视觉偏航，不是累计航向
     float boostAmount;
     bool paused;
     bool collided;
 };
 ```
 
-模型将 `steer/pitch` 转换为平滑的目标横向速度、垂直速度和视觉滚转；`throttle` 决定目标巡航速度，持续 `Boost` 状态控制推进建立与衰减。暂停、重置、沉浸和重新校准等边沿由应用控制层处理。渲染只读取状态，不反向修正物理。
+模型将 `steer/pitch` 转换为平滑的目标横向速度、垂直速度，以及临界阻尼的视觉滚转、俯仰和局部转向偏航；`throttle` 决定目标巡航速度，持续 `Boost` 状态控制推进建立与衰减。暂停、重置、沉浸和重新校准等边沿由应用控制层处理。渲染只读取状态，不反向修正物理。
 
 ### 3.3 场景快照
 

@@ -12,6 +12,7 @@ struct FlightState {
     float heading = 0.0f;
     float roll = 0.0f;
     float pitch = 0.0f;
+    float turnYaw = 0.0f;
     float boostAmount = 0.0f;
     bool paused = false;
     bool collided = false;
@@ -29,6 +30,9 @@ private:
     FlightState _state;
     float _lateralVelocity = 0.0f;
     float _verticalVelocity = 0.0f;
+    float _rollRate = 0.0f;
+    float _pitchRate = 0.0f;
+    float _turnYawRate = 0.0f;
 };
 
 }  // namespace vector_canyon_fighter

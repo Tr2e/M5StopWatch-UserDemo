@@ -430,7 +430,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     // camera used by the collision-aligned ground shadow below.
     const int shipX = centerX;
     const int shipY = kShipCenterY;
-    const AircraftPoseProjector poseProjector(flight.pitch, flight.roll);
+    const AircraftPoseProjector poseProjector(
+        flight.pitch, flight.roll, flight.turnYaw);
     const auto projectShip = [&](const Vec3& point) {
         const AircraftScreenOffset offset = poseProjector.project(point.x, point.y, point.z);
         return std::array<int, 2>{

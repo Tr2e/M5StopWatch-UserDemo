@@ -29,7 +29,7 @@ inline constexpr float kAircraftNominalScreenHalfSpan = 53.0f;
 inline constexpr int kAircraftScreenCenterY = 304;
 inline constexpr int kAircraftCourseCueY = 230;
 inline constexpr float kAircraftNominalScreenBottomY = 346.5f;
-inline constexpr float kChaseCameraPitchFollow = 0.12f;
+inline constexpr float kChaseCameraPitchFollow = 0.08f;
 inline constexpr float kAircraftFuselageTailZ = -2.85f;
 inline constexpr float kAircraftMinimumEngineRadius = 0.25f;
 inline constexpr std::array<float, 3> kAircraftEngineRingZ = {{
@@ -113,17 +113,21 @@ struct AircraftScreenOffset {
 // a measurable regression on the watch.
 class AircraftPoseProjector {
 public:
-    AircraftPoseProjector(float pitchDegrees, float rollDegrees)
+    AircraftPoseProjector(float pitchDegrees, float rollDegrees,
+                          float yawDegrees = 0.0f)
     {
         constexpr float kDegreesToRadians = 0.01745329252f;
         const float pitch = pitchDegrees * kDegreesToRadians;
         const float roll = rollDegrees * kDegreesToRadians;
+        const float yaw = yawDegrees * kDegreesToRadians;
         _pitchCosine = std::cos(pitch);
         _pitchSine = std::sin(pitch);
         _rollCosine = std::cos(roll);
         _rollSine = std::sin(roll);
+        _yawCosine = std::cos(yaw);
+        _yawSine = std::sin(yaw);
 
-        // Match the canyon chase camera. The scenery follows 12% of aircraft
+        // Match the canyon chase camera. The scenery follows 8% of aircraft
         // pitch, so the airframe and floor keep the same optical relationship
         // while the aircraft still visibly changes attitude.
         const float cameraPitch = (-3.1f + pitchDegrees * kChaseCameraPitchFollow) *
@@ -149,9 +153,11 @@ public:
         const float rolledY = x * _rollSine + y * _rollCosine;
         const float pitchedY = rolledY * _pitchCosine + z * _pitchSine;
         const float pitchedZ = z * _pitchCosine - rolledY * _pitchSine;
+        const float yawedX = rolledX * _yawCosine + pitchedZ * _yawSine;
+        const float yawedZ = pitchedZ * _yawCosine - rolledX * _yawSine;
 
         const float worldY = kAnchorVertical + pitchedY * kModelScale;
-        const float worldZ = kAnchorForward + pitchedZ * kModelScale;
+        const float worldZ = kAnchorForward + yawedZ * kModelScale;
         const float cameraY = worldY * _cameraCosine - worldZ * _cameraSine;
         const float cameraZ = worldY * _cameraSine + worldZ * _cameraCosine;
         const float anchorCameraY = kAnchorVertical * _cameraCosine -
@@ -160,7 +166,7 @@ public:
                                     kAnchorForward * _cameraCosine;
 
         return {
-            kFocalLength * rolledX * kModelScale / cameraZ,
+            kFocalLength * yawedX * kModelScale / cameraZ,
             -kFocalLength * cameraY / cameraZ +
                 kFocalLength * anchorCameraY / anchorCameraZ,
         };
@@ -171,15 +177,18 @@ private:
     float _pitchSine = 0.0f;
     float _rollCosine = 1.0f;
     float _rollSine = 0.0f;
+    float _yawCosine = 1.0f;
+    float _yawSine = 0.0f;
     float _cameraCosine = 1.0f;
     float _cameraSine = 0.0f;
 };
 
 // Compatibility helper retained for geometry tests and one-off projections.
 inline AircraftScreenOffset projectAircraftPose(float x, float y, float z,
-                                                 float pitchDegrees, float rollDegrees)
+                                                 float pitchDegrees, float rollDegrees,
+                                                 float yawDegrees = 0.0f)
 {
-    return AircraftPoseProjector(pitchDegrees, rollDegrees).project(x, y, z);
+    return AircraftPoseProjector(pitchDegrees, rollDegrees, yawDegrees).project(x, y, z);
 }
 
 struct AircraftGroundShadow {
