@@ -22,6 +22,8 @@ void CompositeInputProvider::open()
     if (_axes) _axes->open();
     if (_actions) _actions->open();
     _sequence = 0;
+    _throttle = 0.62f;
+    _throttleOverridden = false;
     _opened = true;
 }
 
@@ -39,11 +41,24 @@ FlightInput CompositeInputProvider::sample(uint32_t nowMs)
     if (result.valid) {
         result.steer = std::clamp(axes.steer, -1.0f, 1.0f);
         result.pitch = std::clamp(axes.pitch, -1.0f, 1.0f);
-        result.throttle = std::clamp(axes.throttle, 0.0f, 1.0f);
+        if (!_throttleOverridden) {
+            _throttle = std::clamp(axes.throttle, 0.0f, 1.0f);
+        }
     }
     // An action-source fault must not invalidate healthy flight axes. It
     // safely produces no button state and is reported as Degraded in status().
-    if (_opened && actions.valid) result.actions = actions.actions;
+    if (_opened && actions.valid) {
+        result.actions = actions.actions;
+        if (actions.actions.wasPressed(FlightAction::ThrottleDown)) {
+            _throttle = std::max(0.0f, _throttle - 0.08f);
+            _throttleOverridden = true;
+        }
+        if (actions.actions.wasPressed(FlightAction::ThrottleUp)) {
+            _throttle = std::min(1.0f, _throttle + 0.08f);
+            _throttleOverridden = true;
+        }
+    }
+    if (result.valid) result.throttle = _throttle;
     return result;
 }
 

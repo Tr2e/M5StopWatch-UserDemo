@@ -191,13 +191,15 @@ Renderer 使用一个复用的 `M5Canvas` 或等价离屏画布完成单帧绘�
 ### 7.2 Joystick2 + Dual Button
 
 - Joystick2：在 PORT.A 的 GPIO10（SDA）/GPIO11（SCL）建立**独立于内部 GPIO47/48 总线**的 I2C 主机，默认 100 kHz，探测地址 `0x63`。
+- Joystick2 按官方协议先读 `0xFE` 固件版本确认身份，再以 50 Hz 从 `0x50` 读取小端序有符号 X/Y 偏移；本地静止校准、死区、曲线和低通滤波均留在 AxisSource 内。
 - Dual Button：GPIO3/4 配置为输入，按下低电平；使用软件去抖并以边沿事件输出。
+- Dual Button 是无身份寄存器、无心跳的被动 GPIO 单元，物理拔线与“未按下”无法由软件区分；其 `connected` 只表示 GPIO 路径已成功配置。实体连接必须依赖通电前导通检查及人工按键自检，不得宣称自动热插拔检测。
 - I2C 总线只使用本工程既有的 ESP-IDF/I2C 组件风格；不得同一端口混用 legacy 与 driver-ng，避免驱动冲突。
 - Joystick2 作为 `AxisSource`、Dual Button 作为 `ActionSource` 独立报告连接与错误；任一失联不伪装成整套控制器同时掉线。
 - 两者分别实现 `FlightAxisProvider` 与 `FlightActionProvider`，再由 `CompositeInputProvider` 合成为既有 `FlightInput`；按键单侧失联进入可玩的 `Degraded`，摇杆失联则输出安全中性轴。
 - 任何连续读取超时、地址消失或信号异常都更新 `InputStatus`，不阻塞主循环；未来 Router 按固定优先级组合外设或安全回退到 IMU/表身按键。
 
-外设实现安排在 G4；G3 的所有玩法验证必须以 `ImuButtonInputProvider` 完成。
+外设实现安排在 G4；默认编译开关 `VECTOR_CANYON_USE_EXTERNAL_INPUT=0` 继续使用 `ImuButtonInputProvider`。仅在接线与电压门禁全部通过后才可置为 `1`，无需修改 App、FlightModel 或 Renderer。
 
 ## 8. 测试、重放与观测
 

@@ -76,6 +76,15 @@ bool validateCompositionAndFaultIsolation()
                        readyStatus.actionSource == FlightActionSource::DualButton,
                    "P3 composite provider lost independent source identity");
 
+    actionsView->sample.actions = {};
+    actionsView->sample.actions.setPressed(FlightAction::ThrottleUp);
+    const FlightInput throttleUp = provider.sample(110u);
+    actionsView->sample.actions = {};
+    const FlightInput persistedThrottle = provider.sample(120u);
+    valid &= check(throttleUp.throttle > ready.throttle &&
+                       throttleUp.throttle == persistedThrottle.throttle,
+                   "P4 discrete throttle adjustment did not persist");
+
     actionsView->sample.valid = false;
     actionsView->status.connected = false;
     actionsView->status.readiness = InputReadiness::Disconnected;

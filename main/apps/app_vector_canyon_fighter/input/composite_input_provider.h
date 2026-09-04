@@ -23,6 +23,8 @@ private:
     std::unique_ptr<FlightAxisProvider> _axes;
     std::unique_ptr<FlightActionProvider> _actions;
     uint32_t _sequence = 0;
+    float _throttle = 0.62f;
+    bool _throttleOverridden = false;
     bool _opened = false;
 };
 
