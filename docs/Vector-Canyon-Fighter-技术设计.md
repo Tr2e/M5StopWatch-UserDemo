@@ -17,10 +17,11 @@
 ## 2. 模块与数据流
 
 ```text
-IMU + 表身按钮 ─┐
-                 ├─ InputProvider ─ FlightInput ─┐
-Joystick2 + Dual ─┘                               │
-                                                    ▼
+IMU ─────────── AxisSource ───┐
+Joystick2 ───── AxisSource ───┤
+                              ├─ InputProvider ─ FlightInput ─┐
+表身按钮 ──── ActionSource ───┤                                │
+Dual Button ─ ActionSource ───┘                                ▼
                  UiStateMachine ← FlightModel ← FlightController
                                       │
                                       ▼
@@ -64,13 +65,17 @@ main/apps/app_vector_canyon_fighter/
 ### 3.1 输入
 
 ```cpp
+struct FlightActions {
+    uint16_t pressed;  // 每个物理边沿只在一个 sample 中出现
+    uint16_t held;     // 可跨固定模拟步重复使用的持续状态
+};
+
 struct FlightInput {
     float steer;       // [-1, +1]，左负右正
     float pitch;       // [-1, +1]，俯冲负、爬升正
     float throttle;    // [0, 1]
-    bool boostPressed; // 边沿事件
-    bool pausePressed; // 边沿事件
-    bool valid;        // 输入源健康且完成校准
+    FlightActions actions;
+    bool valid;        // 轴输入健康且完成必要校准
     uint32_t sequence;
 };
 ```
@@ -83,14 +88,17 @@ public:
     virtual ~InputProvider() = default;
     virtual void open() = 0;
     virtual FlightInput sample(uint32_t nowMs) = 0;
-    virtual InputStatus status() const = 0;
+    virtual InputStatus status(uint32_t nowMs) const = 0;
+    virtual void requestCalibration(uint32_t nowMs) = 0;
     virtual void close() = 0;
 };
 ```
 
-`ImuButtonInputProvider` 与 `JoystickDualButtonInputProvider` 必须完整填充同一个 `FlightInput`。任何输入源异常返回 `valid=false` 和中性轴值；`FlightController` 负责把它变成安全巡航或暂停提示，不能沿用最后一次极端姿态。
+轴来源与动作来源独立报告：`FlightAxisSource` 区分 `IMU / Joystick2`，`FlightActionSource` 区分 `BodyButtons / DualButton`。因此允许 Joystick2 + Dual Button、Joystick2 + 表身按键、IMU + Dual Button 和完整 IMU 降级等组合，不把两个电气设备错误地压成一个在线状态。
 
-K1 长按的沉浸模式属于应用级视觉意图，不写入 `FlightInput`、`FlightState` 或地形状态。应用仅在正常飞行且未碰撞时翻转 `aircraftVisible`，并消费输入提供者同一长按产生的旧 `pausePressed`；碰撞后仍由原路径使用该事件重新进入校准。Renderer 只读 `aircraftVisible`，关闭时跳过战机线框、尾焰、投影和频闪，不能停止模拟、碰撞、地形或 HUD。
+`InputStatus` 统一报告来源、连接、`Disconnected / Calibrating / Ready / Degraded / Fault`、校准能力、校准进度、最后有效样本时间和连续错误数。无需校准的按钮设备不实现伪校准；外设异常返回 `valid=false` 和中性轴值，不能沿用最后一次极端姿态。
+
+一次性动作包括 `Pause / Reset / ToggleImmersive / Recalibrate / ThrottleUp / ThrottleDown`；持续动作目前包含 `Boost`。应用在固定模拟步循环外只消费一次 `pressed`，FlightModel 只读取规范化连续轴和 `held`，避免慢帧把一次按键重复执行。K1 长按由当前 Provider 映射为上下文动作：正常飞行切换沉浸模式，撞击后请求重置；应用不再直接读取 HAL 游戏按键。Renderer 只读 `aircraftVisible` 和 `InputStatus`，关闭战机层时仍保持峡谷、HUD、碰撞和飞行模拟。
 
 ### 3.2 飞行状态
 
@@ -108,7 +116,7 @@ struct FlightState {
 };
 ```
 
-模型将 `steer/pitch` 转换为平滑的目标横向速度、垂直速度和视觉滚转；`throttle` 决定目标巡航速度，`boostPressed` 叠加有时限的推进。渲染只读取状态，不反向修正物理。
+模型将 `steer/pitch` 转换为平滑的目标横向速度、垂直速度和视觉滚转；`throttle` 决定目标巡航速度，持续 `Boost` 状态控制推进建立与衰减。暂停、重置、沉浸和重新校准等边沿由应用控制层处理。渲染只读取状态，不反向修正物理。
 
 ### 3.3 场景快照
 
@@ -119,7 +127,8 @@ struct FlightState {
 - 模型步长：`1/60 s`；每帧最多补算 3 步，超过的时间丢弃并记录诊断，避免掉帧后“穿墙”。
 - 渲染目标：`30 FPS`（约 33 ms）；允许在静止/暂停时降低刷新率。
 - 输入采样：IMU 50–100 Hz；Joystick2 50 Hz；Dual Button 以 10–20 ms 去抖或事件采样。
-- 输入滤波：IMU 和摇杆轴应用死区、指数平滑和最大斜率限制；校准只在用户确认且设备稳定时写入当前会话。
+- 输入滤波：IMU 和摇杆各自在 Provider/AxisSource 内应用适合自身量纲的校准、死区和曲线，最终只输出相同的 `[-1,+1]` 意图；不得把 IMU 的角度或重力阈值写入 FlightModel。
+- 输入动作：每个硬件边沿只允许在一个 `sample()` 快照中出现；App 在固定步循环前消费，`held` 状态才可跨多个模拟步重复使用。
 - 所有时间使用单调毫秒时钟；不得用阻塞 `delay()` 等待外设或动画。
 
 初始可调参数集中在一个配置结构中：最大速度、巡航加速度、推进时长、转向响应、滚转上限、俯仰上限、IMU 死区、摇杆死区、碰撞安全余量和地形难度。业务代码中不散落魔法数。
@@ -183,7 +192,8 @@ Renderer 使用一个复用的 `M5Canvas` 或等价离屏画布完成单帧绘�
 - Joystick2：在 PORT.A 的 GPIO10（SDA）/GPIO11（SCL）建立**独立于内部 GPIO47/48 总线**的 I2C 主机，默认 100 kHz，探测地址 `0x63`。
 - Dual Button：GPIO3/4 配置为输入，按下低电平；使用软件去抖并以边沿事件输出。
 - I2C 总线只使用本工程既有的 ESP-IDF/I2C 组件风格；不得同一端口混用 legacy 与 driver-ng，避免驱动冲突。
-- 任何连续读取超时、地址消失或信号异常都更新 `InputStatus`，不阻塞主循环。
+- Joystick2 作为 `AxisSource`、Dual Button 作为 `ActionSource` 独立报告连接与错误；任一失联不伪装成整套控制器同时掉线。
+- 任何连续读取超时、地址消失或信号异常都更新 `InputStatus`，不阻塞主循环；未来 Router 按固定优先级组合外设或安全回退到 IMU/表身按键。
 
 外设实现安排在 G4；G3 的所有玩法验证必须以 `ImuButtonInputProvider` 完成。
 

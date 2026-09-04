@@ -19,6 +19,15 @@ constexpr int kHorizonY = 150;
 // its belly adjacent to the collision-aligned y=346.5 floor threshold.
 constexpr int kShipCenterY = kAircraftScreenCenterY;
 
+const char* axisSourceLabel(FlightAxisSource source)
+{
+    switch (source) {
+        case FlightAxisSource::Imu: return "IMU";
+        case FlightAxisSource::Joystick2: return "JOY2";
+        default: return "NONE";
+    }
+}
+
 struct Vec3 {
     float x;
     float y;
@@ -296,14 +305,15 @@ void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCa
 
 void Renderer::render(const FlightState& flight, const ExplicitCanyonStream& terrain,
                       const CollisionStatus& collision, float calibrationProgress,
-                      bool aircraftVisible)
+                      const InputStatus& inputStatus, bool aircraftVisible)
 {
-    renderGame(flight, terrain, collision, calibrationProgress, aircraftVisible);
+    renderGame(flight, terrain, collision, calibrationProgress, inputStatus,
+               aircraftVisible);
 }
 
 void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream& terrain,
                           const CollisionStatus& collision, float calibrationProgress,
-                          bool aircraftVisible)
+                          const InputStatus& inputStatus, bool aircraftVisible)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -354,7 +364,10 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         // active display font instead of hand-tuned character offsets.
         canvas.setTextSize(1);
         canvas.setTextColor(hudDim, TFT_BLACK);
-        drawCentered("FLIGHT CONTROL / IMU", cy - 86);
+        char sourceTitle[28]{};
+        std::snprintf(sourceTitle, sizeof(sourceTitle), "FLIGHT CONTROL / %s",
+                      axisSourceLabel(inputStatus.axisSource));
+        drawCentered(sourceTitle, cy - 86);
 
         canvas.setTextSize(2);
         canvas.setTextColor(hudAccent, TFT_BLACK);
@@ -783,7 +796,13 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.drawLine(deviationX, kCourseY - 4, deviationX + 4, kCourseY - 9, hudAccent);
 
     canvas.setCursor(92, _height - 48);
-    canvas.print("IN IMU");
+    if (!inputStatus.axesConnected) {
+        canvas.setTextColor(caution, TFT_BLACK);
+        canvas.print("IN LOST");
+    } else {
+        canvas.print("IN ");
+        canvas.print(axisSourceLabel(inputStatus.axisSource));
+    }
     canvas.setCursor(_width - 143, _height - 48);
     canvas.setTextColor(flight.boostAmount > 0.05f ? caution : hudColor, TFT_BLACK);
     canvas.print(flight.boostAmount > 0.05f ? "THR BOOST" : "THR CRZ");

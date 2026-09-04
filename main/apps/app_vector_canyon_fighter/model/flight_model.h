@@ -21,6 +21,7 @@ class FlightModel {
 public:
     void reset();
     void step(const FlightInput& input, float deltaSeconds);
+    void togglePaused();
     void setCollided(bool collided);
     const FlightState& state() const { return _state; }
 

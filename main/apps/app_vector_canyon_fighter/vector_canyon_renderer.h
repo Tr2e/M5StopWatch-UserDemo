@@ -3,6 +3,7 @@
 #include "model/flight_model.h"
 #include "model/collision_model.h"
 #include "model/explicit_canyon_stream.h"
+#include "input/flight_input.h"
 
 #include <array>
 #include <cstddef>
@@ -19,7 +20,7 @@ public:
     // calibrationProgress: 0.0–1.0 while calibrating, <0 during normal gameplay.
     void render(const FlightState& flight, const ExplicitCanyonStream& terrain,
                 const CollisionStatus& collision, float calibrationProgress,
-                bool aircraftVisible = true);
+                const InputStatus& inputStatus, bool aircraftVisible = true);
     void renderExplicitPreview(const FlightState& flight, const ExplicitCanyonStream& terrain);
 
 private:
@@ -33,7 +34,7 @@ private:
                              uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary);
     void renderGame(const FlightState& flight, const ExplicitCanyonStream& terrain,
                     const CollisionStatus& collision, float calibrationProgress,
-                    bool aircraftVisible);
+                    const InputStatus& inputStatus, bool aircraftVisible);
 
     std::array<ProjectedCanyonPoint, ExplicitCanyonStream::kSliceCount * ExplicitCanyonStream::kProfileCount>
         _explicitTerrainPoints = {};

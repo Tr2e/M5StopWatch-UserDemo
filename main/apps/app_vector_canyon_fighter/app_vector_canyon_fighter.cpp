@@ -37,11 +37,13 @@ void AppVectorCanyonFighter::onOpen()
 {
     mclog::tagInfo(getAppInfo().name, "on open");
     _keys = std::make_unique<input::KeyManager>();
+    _inputStatus = {};
 #if VECTOR_CANYON_EXPLICIT_PREVIEW
     _inputProvider.reset();
 #else
     _inputProvider = vector_canyon_fighter::makeDefaultFlightInputProvider();
     _inputProvider->open();
+    _inputStatus = _inputProvider->status(GetHAL().millis());
 #endif
     GetHAL().stopLvglUpdate();
 
@@ -138,25 +140,21 @@ void AppVectorCanyonFighter::onRunning()
     _lastSimulationMs = nowMs;
     _simulationAccumulator += static_cast<float>(elapsedMs) / 1000.0f;
 
-    auto flightInput = _inputProvider ? _inputProvider->sample(nowMs) : vector_canyon_fighter::FlightInput{};
-    const float calibProgress = _inputProvider ? _inputProvider->calibrationProgress(nowMs) : 0.0f;
-
-    // K1 long press toggles the third-person vehicle layer during active
-    // gameplay. Consume the input provider's legacy pause intent so entering
-    // the visual/immersive view never pauses the simulation as a side effect.
-    if (!_calibrationPhase && !_flightModel.state().collided && GetHAL().btnA.wasHold()) {
-        _aircraftVisible = !_aircraftVisible;
-        flightInput.pausePressed = false;
-    }
+    auto flightInput = _inputProvider ? _inputProvider->sample(nowMs)
+                                      : vector_canyon_fighter::FlightInput{};
+    _inputStatus = _inputProvider ? _inputProvider->status(nowMs)
+                                  : vector_canyon_fighter::InputStatus{};
+    const float calibProgress = _inputStatus.calibrationProgress;
 
     // ── Calibration phase: wait for IMU to settle before (re)starting ──────
     if (_calibrationPhase) {
         _simulationAccumulator = 0.0f;
         if (_lastFrameMs == 0 || nowMs - _lastFrameMs >= kFrameIntervalMs) {
             _lastFrameMs = nowMs;
-            _renderer.render(_flightModel.state(), _terrain, _collisionStatus, calibProgress);
+            _renderer.render(_flightModel.state(), _terrain, _collisionStatus,
+                             calibProgress, _inputStatus);
         }
-        if (_inputProvider && _inputProvider->isCalibrated()) {
+        if (_inputStatus.isReady()) {
             _flightModel.reset();
             _terrain.reset(kTerrainSeed);
             _collisionStatus = {};
@@ -173,13 +171,29 @@ void AppVectorCanyonFighter::onRunning()
         return;
     }
 
-    // ── Collision + restart intent → enter calibration ──────────────────────
-    if (_flightModel.state().collided && flightInput.pausePressed) {
-        if (_inputProvider) _inputProvider->startCalibration(nowMs);
+    // Edge actions are consumed once here, outside the fixed-step loop. This
+    // prevents a slow frame from applying one hardware edge several times.
+    if (_flightModel.state().collided &&
+        flightInput.actions.wasPressed(vector_canyon_fighter::FlightAction::Reset)) {
+        if (_inputProvider) _inputProvider->requestCalibration(nowMs);
         _calibrationPhase = true;
-        flightInput.pausePressed = false;
         return;
     }
+    if (!_flightModel.state().collided) {
+        if (flightInput.actions.wasPressed(
+                vector_canyon_fighter::FlightAction::ToggleImmersive)) {
+            _aircraftVisible = !_aircraftVisible;
+        }
+        if (flightInput.actions.wasPressed(vector_canyon_fighter::FlightAction::Pause)) {
+            _flightModel.togglePaused();
+        }
+        if (flightInput.actions.wasPressed(vector_canyon_fighter::FlightAction::Recalibrate)) {
+            if (_inputProvider) _inputProvider->requestCalibration(nowMs);
+            _calibrationPhase = true;
+            return;
+        }
+    }
+    flightInput.actions.clearPressed();
 
     // ── Normal simulation ────────────────────────────────────────────────────
     int simulatedSteps = 0;
@@ -200,7 +214,7 @@ void AppVectorCanyonFighter::onRunning()
     _lastFrameMs = nowMs;
     const uint32_t renderStartedMs = GetHAL().millis();
     _renderer.render(_flightModel.state(), _terrain, _collisionStatus, -1.0f,
-                     _aircraftVisible);
+                     _inputStatus, _aircraftVisible);
     const uint32_t renderTimeMs = GetHAL().millis() - renderStartedMs;
     _renderTimeTotalMs += renderTimeMs;
     _renderTimeMaxMs = std::max(_renderTimeMaxMs, renderTimeMs);
@@ -231,6 +245,7 @@ void AppVectorCanyonFighter::onClose()
     _renderer.close();
     if (_inputProvider) _inputProvider->close();
     _inputProvider.reset();
+    _inputStatus = {};
     _keys.reset();
     GetHAL().startLvglUpdate();
 }

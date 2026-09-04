@@ -63,22 +63,23 @@
 InputProvider → FlightInput → FlightModel → SceneState → Renderer
 ```
 
-`FlightInput` 的初始语义固定为：
+`FlightInput` 的规范化语义固定为：
 
 | 动作 | 范围/类型 | 语义 |
 | --- | --- | --- |
 | `steer` | -1.0 ~ +1.0 | 左/右转向或横移请求 |
 | `pitch` | -1.0 ~ +1.0 | 爬升/俯冲请求 |
 | `throttle` | 0.0 ~ 1.0 | 持续速度目标 |
-| `boost` | 布尔沿事件 | 短时加速请求 |
-| `pause` | 布尔沿事件 | 暂停或恢复 |
+| `boost` | 持续状态 | 按住期间加速，释放后衰减 |
+| `actions.pressed` | 动作位集合 | 暂停、重置、沉浸、重新校准、油门步进等一次性请求 |
+| `actions.held` | 动作位集合 | 可跨固定模拟步保持的动作状态 |
 
-首版至少实现两种提供者：
+轴设备和动作设备独立表达，首版至少实现以下来源：
 
-- `ImuButtonInputProvider`：IMU 倾斜映射 `steer/pitch`，表身按键映射速度与推进。
-- `JoystickDualButtonInputProvider`：Joystick2 映射 `steer/pitch` 和摇杆按下，Dual Button 映射速度/推进或暂停。
+- `ImuAxisSource` / `BodyButtonActionSource`：当前临时控制。
+- `Joystick2AxisSource` / `DualButtonActionSource`：最终外设控制。
 
-两者必须输出相同的 `FlightInput`；外设未连接、I2C 读取失败或输入失效时，游戏退回安全的中性输入并显示明确状态。
+Provider/Router 必须输出相同的 `FlightInput`，并用 `InputStatus` 分别报告轴与动作来源、连接、校准和错误。外设未连接、I2C 读取失败或输入失效时，游戏退回安全的中性输入并显示明确状态。
 
 ### 4.3 性能与可靠性
 

@@ -63,8 +63,8 @@ void ImuButtonInputProvider::open()
     _neutralAccelY = 0.0f;
     _throttle = 0.62f;
     _sequence = 0;
-    _openedAtMs = GetHAL().millis();
-    _pauseLatched = false;
+    _lastValidSampleMs = 0;
+    _opened = true;
     _latestAccelX.store(0.0f, std::memory_order_relaxed);
     _latestAccelY.store(0.0f, std::memory_order_relaxed);
     _samplingTaskExited.store(false, std::memory_order_relaxed);
@@ -78,10 +78,10 @@ void ImuButtonInputProvider::open()
         _samplingTaskExited.store(true, std::memory_order_release);
         mclog::tagWarn("Vector Run", "async IMU task unavailable; using synchronous sampling");
     }
-    startCalibration(_openedAtMs);
+    requestCalibration(GetHAL().millis());
 }
 
-void ImuButtonInputProvider::startCalibration(uint32_t nowMs)
+void ImuButtonInputProvider::requestCalibration(uint32_t nowMs)
 {
     _calibrated = false;
     _calibStartMs = nowMs;
@@ -92,12 +92,31 @@ void ImuButtonInputProvider::startCalibration(uint32_t nowMs)
     _filteredPitch = 0.0f;
 }
 
-float ImuButtonInputProvider::calibrationProgress(uint32_t nowMs) const
+InputStatus ImuButtonInputProvider::status(uint32_t nowMs) const
 {
-    if (_calibrated) return 1.0f;
-    if (nowMs <= _calibStartMs) return 0.0f;
-    return std::min(1.0f, static_cast<float>(nowMs - _calibStartMs) /
-                              static_cast<float>(kCalibrationDelayMs));
+    InputStatus result;
+    result.axisSource = FlightAxisSource::Imu;
+    result.actionSource = FlightActionSource::BodyButtons;
+    result.axesConnected = _opened;
+    result.actionsConnected = _opened;
+    result.calibrationSupported = true;
+    result.lastValidSampleMs = _lastValidSampleMs;
+    if (!_opened) {
+        result.readiness = InputReadiness::Disconnected;
+        return result;
+    }
+    if (_calibrated) {
+        result.readiness = InputReadiness::Ready;
+        result.calibrationProgress = 1.0f;
+        return result;
+    }
+    result.readiness = InputReadiness::Calibrating;
+    if (nowMs > _calibStartMs) {
+        result.calibrationProgress =
+            std::min(1.0f, static_cast<float>(nowMs - _calibStartMs) /
+                               static_cast<float>(kCalibrationDelayMs));
+    }
+    return result;
 }
 
 FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
@@ -122,8 +141,11 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
         }
     }
 
-    if (GetHAL().btnA.wasClicked()) _throttle = std::max(0.0f, _throttle - 0.08f);
-    if (GetHAL().btnB.wasClicked()) _throttle = std::min(1.0f, _throttle + 0.08f);
+    const bool throttleDownPressed = GetHAL().btnA.wasClicked();
+    const bool throttleUpPressed = GetHAL().btnB.wasClicked();
+    const bool primaryHoldPressed = GetHAL().btnA.wasHold();
+    if (throttleDownPressed) _throttle = std::max(0.0f, _throttle - 0.08f);
+    if (throttleUpPressed) _throttle = std::min(1.0f, _throttle + 0.08f);
 
     FlightInput input;
     input.throttle = _throttle;
@@ -137,13 +159,16 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
     _filteredPitch += kFilterStrength * (pitch - _filteredPitch);
     input.steer = _filteredSteer;
     input.pitch = _filteredPitch;
-    input.boostActive = GetHAL().btnB.isHolding();
-    if (!GetHAL().btnA.isHolding()) {
-        _pauseLatched = false;
-    } else if (!_pauseLatched) {
-        input.pausePressed = true;
-        _pauseLatched = true;
+    input.actions.setHeld(FlightAction::Boost, GetHAL().btnB.isHolding());
+    if (throttleDownPressed) input.actions.setPressed(FlightAction::ThrottleDown);
+    if (throttleUpPressed) input.actions.setPressed(FlightAction::ThrottleUp);
+    if (primaryHoldPressed) {
+        // The same physical hold is contextual: reset after impact, otherwise
+        // toggle the aircraft layer. The app consumes exactly one of them.
+        input.actions.setPressed(FlightAction::Reset);
+        input.actions.setPressed(FlightAction::ToggleImmersive);
     }
+    _lastValidSampleMs = nowMs;
     return input;
 }
 
@@ -155,6 +180,7 @@ void ImuButtonInputProvider::close()
     }
     _asyncSampling = false;
     _calibrated = false;
+    _opened = false;
 }
 
 }  // namespace vector_canyon_fighter

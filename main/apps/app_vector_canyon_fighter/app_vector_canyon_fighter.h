@@ -22,6 +22,7 @@ public:
 private:
     std::unique_ptr<input::KeyManager> _keys;
     std::unique_ptr<vector_canyon_fighter::InputProvider> _inputProvider;
+    vector_canyon_fighter::InputStatus _inputStatus;
     vector_canyon_fighter::Renderer _renderer;
     vector_canyon_fighter::FlightModel _flightModel;
     vector_canyon_fighter::CollisionModel _collisionModel;

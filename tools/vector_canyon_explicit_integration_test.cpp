@@ -22,11 +22,28 @@ bool check(bool condition, const char* message)
 class TestInputProvider final : public InputProvider {
 public:
     void open() override { _open = true; }
-    FlightInput sample(uint32_t) override { return {}; }
+    FlightInput sample(uint32_t) override
+    {
+        FlightInput input;
+        input.valid = _open && _calibrated;
+        return input;
+    }
+    InputStatus status(uint32_t) const override
+    {
+        InputStatus result;
+        result.axisSource = FlightAxisSource::Imu;
+        result.actionSource = FlightActionSource::BodyButtons;
+        result.axesConnected = _open;
+        result.actionsConnected = _open;
+        result.calibrationSupported = true;
+        result.calibrationProgress = _calibrated ? 1.0f : 0.0f;
+        result.readiness = !_open ? InputReadiness::Disconnected
+                                  : (_calibrated ? InputReadiness::Ready
+                                                 : InputReadiness::Calibrating);
+        return result;
+    }
+    void requestCalibration(uint32_t) override { _calibrated = false; }
     void close() override { _open = false; }
-    void startCalibration(uint32_t) override { _calibrated = false; }
-    float calibrationProgress(uint32_t) const override { return _calibrated ? 1.0f : 0.0f; }
-    bool isCalibrated() const override { return _calibrated; }
 
 private:
     bool _open = false;
