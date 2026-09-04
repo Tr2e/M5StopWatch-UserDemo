@@ -30,18 +30,22 @@ inline constexpr int kAircraftScreenCenterY = 304;
 inline constexpr int kAircraftCourseCueY = 230;
 inline constexpr float kAircraftNominalScreenBottomY = 346.5f;
 inline constexpr float kChaseCameraPitchFollow = 0.12f;
+inline constexpr float kAircraftEngineRearZ = -3.02f;
+inline constexpr float kAircraftMinimumEngineRadius = 0.25f;
 
 inline constexpr int aircraftMachRingCount(float boostAmount)
 {
-    return boostAmount >= 0.35f ? 3 : 1;
+    return boostAmount >= 0.35f ? 3 : 0;
 }
 
 inline constexpr float aircraftPlumeLength(float boostAmount)
 {
-    return 1.55f + 1.20f * std::clamp(boostAmount, 0.0f, 1.0f);
+    return 1.30f + 1.45f * std::clamp(boostAmount, 0.0f, 1.0f);
 }
 
 inline constexpr float kAircraftPlumeApexExtension = 0.24f;
+inline constexpr int kAircraftEngineCoreRadiusPx = 1;
+inline constexpr int kAircraftEngineCoreGlowRadiusPx = 2;
 inline constexpr int kAircraftWingStrobeRadiusPx = 1;
 
 inline constexpr bool aircraftWingStrobeOn(uint32_t milliseconds)
@@ -56,16 +60,15 @@ inline constexpr bool aircraftWingStrobeOn(uint32_t milliseconds)
 inline constexpr float aircraftExhaustRingFraction(int ringIndex, int ringCount)
 {
     // The conceptual largest ring at the nozzle is intentionally omitted.
-    // The visible sequence begins with the middle rings and restores the small
-    // terminal ring, leaving a clean nozzle gap before converging to the tip.
-    if (ringCount == 1) return 0.68f;
+    // The boost-only sequence begins after the permanent engine core and
+    // restores the small terminal ring before converging to the tip.
     return (static_cast<float>(ringIndex) + 1.55f) /
            (static_cast<float>(ringCount) + 1.0f);
 }
 
 inline constexpr float aircraftExhaustRingRadiusScale(int ringIndex, int ringCount)
 {
-    return 0.90f - 0.64f * aircraftExhaustRingFraction(ringIndex, ringCount);
+    return 0.8325f - 0.60f * aircraftExhaustRingFraction(ringIndex, ringCount);
 }
 
 inline float aircraftExhaustRingHighlight(float cyclePhase, int ringIndex, int ringCount)
@@ -180,8 +183,8 @@ inline AircraftGroundShadow makeAircraftGroundShadow(float floorClearance)
 static_assert(kAircraftCollisionStations[kAircraftWingStationIndex].halfWidth ==
                   kAircraftMaximumHalfWidth,
               "The wing station must own the maximum collision span");
-static_assert(aircraftMachRingCount(0.0f) == 1,
-              "Cruise exhaust must render one animated Mach ring");
+static_assert(aircraftMachRingCount(0.0f) == 0,
+              "Cruise exhaust must not render a Mach ring");
 static_assert(aircraftMachRingCount(1.0f) == 3,
               "Boost exhaust must retain three coordinated rings");
 static_assert(aircraftExhaustRingFraction(0, 3) > 0.0f &&
@@ -190,24 +193,25 @@ static_assert(aircraftExhaustRingFraction(0, 3) > 0.0f &&
 static_assert(aircraftExhaustRingRadiusScale(0, 3) >
                   aircraftExhaustRingRadiusScale(2, 3),
               "Exhaust section rings must shrink away from the nozzle");
-static_assert(aircraftPlumeLength(0.0f) >= 1.50f &&
-                  aircraftPlumeLength(0.0f) <= 1.60f,
+static_assert(aircraftPlumeLength(0.0f) >= 1.28f &&
+                  aircraftPlumeLength(0.0f) <= 1.32f,
               "Cruise exhaust plume became too short to read");
 static_assert(aircraftPlumeLength(1.0f) >= 2.70f &&
                   aircraftPlumeLength(1.0f) <= 2.80f,
               "Boost exhaust plume must visibly extend beyond cruise");
-static_assert(aircraftExhaustRingRadiusScale(0, 3) >= 0.64f &&
-                  aircraftExhaustRingRadiusScale(0, 3) <= 0.66f &&
-                  aircraftExhaustRingRadiusScale(2, 3) >= 0.32f,
+static_assert(aircraftExhaustRingRadiusScale(0, 3) >= 0.59f &&
+                  aircraftExhaustRingRadiusScale(0, 3) <= 0.61f &&
+                  aircraftExhaustRingRadiusScale(2, 3) >= 0.29f,
               "Boost rings became too small to form a cohesive tapered plume");
-static_assert(aircraftExhaustRingFraction(0, 1) >= 0.67f &&
-                  aircraftExhaustRingFraction(0, 1) <= 0.69f &&
-                  aircraftExhaustRingRadiusScale(0, 1) >= 0.46f &&
-                  aircraftExhaustRingRadiusScale(0, 1) <= 0.47f,
-              "Cruise ring left its reviewed position or radius range");
 static_assert(kAircraftPlumeApexExtension >= 0.22f &&
                   kAircraftPlumeApexExtension <= 0.26f,
               "Exhaust axis needs a readable exposed segment after the terminal ring");
+static_assert(kAircraftEngineCoreRadiusPx == 1,
+              "Engine core must retain its crisp three-pixel center");
+static_assert(kAircraftEngineCoreGlowRadiusPx == 2,
+              "Engine core glow must remain smaller than the projected nozzle");
+static_assert(kAircraftMinimumEngineRadius > 0.0f,
+              "Engine nozzle radius must remain positive");
 static_assert(aircraftWingStrobeOn(0u) && aircraftWingStrobeOn(150u) &&
                   !aircraftWingStrobeOn(80u) && !aircraftWingStrobeOn(300u),
               "Wing strobe must preserve the reviewed double-flash cadence");

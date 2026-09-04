@@ -105,16 +105,11 @@ float projectedFloorY(const ExplicitCanyonStream& stream, float altitude, float 
 bool validateAttitudeAndHeightCue()
 {
     bool valid = true;
-    valid &= check(aircraftMachRingCount(0.0f) == 1 &&
-                       aircraftMachRingCount(0.34f) == 1 &&
+    valid &= check(aircraftMachRingCount(0.0f) == 0 &&
+                       aircraftMachRingCount(0.34f) == 0 &&
                        aircraftMachRingCount(0.35f) == 3 &&
                        aircraftMachRingCount(1.0f) == 3,
-                   "M10 exhaust no longer preserves one cruise / three boost rings");
-    valid &= check(aircraftExhaustRingFraction(0, 1) >= 0.67f &&
-                       aircraftExhaustRingFraction(0, 1) <= 0.69f &&
-                       aircraftExhaustRingRadiusScale(0, 1) >= 0.46f &&
-                       aircraftExhaustRingRadiusScale(0, 1) <= 0.47f,
-                   "M10 cruise ring left its reviewed position or radius range");
+                   "M10 exhaust no longer preserves zero cruise / three boost rings");
     valid &= check(aircraftExhaustRingFraction(0, 3) > 0.0f &&
                        aircraftExhaustRingFraction(2, 3) < 1.0f &&
                        aircraftExhaustRingFraction(2, 3) > 0.85f,
@@ -124,18 +119,18 @@ bool validateAttitudeAndHeightCue()
                        aircraftExhaustRingRadiusScale(1, 3) >
                            aircraftExhaustRingRadiusScale(2, 3),
                    "M10 exhaust rings do not taper monotonically away from the nozzle");
-    valid &= check(aircraftExhaustRingRadiusScale(0, 3) >= 0.64f &&
-                       aircraftExhaustRingRadiusScale(0, 3) <= 0.66f &&
-                       aircraftExhaustRingRadiusScale(1, 3) >= 0.48f &&
-                       aircraftExhaustRingRadiusScale(1, 3) <= 0.50f &&
-                       aircraftExhaustRingRadiusScale(2, 3) >= 0.32f &&
-                       aircraftExhaustRingRadiusScale(2, 3) <= 0.34f,
+    valid &= check(aircraftExhaustRingRadiusScale(0, 3) >= 0.59f &&
+                       aircraftExhaustRingRadiusScale(0, 3) <= 0.61f &&
+                       aircraftExhaustRingRadiusScale(1, 3) >= 0.44f &&
+                       aircraftExhaustRingRadiusScale(1, 3) <= 0.46f &&
+                       aircraftExhaustRingRadiusScale(2, 3) >= 0.29f &&
+                       aircraftExhaustRingRadiusScale(2, 3) <= 0.31f,
                    "M10 boost ring radii left the reviewed cohesive taper range");
-    valid &= check(aircraftPlumeLength(0.0f) >= 1.50f &&
-                       aircraftPlumeLength(0.0f) <= 1.60f &&
+    valid &= check(aircraftPlumeLength(0.0f) >= 1.28f &&
+                       aircraftPlumeLength(0.0f) <= 1.32f &&
                        aircraftPlumeLength(1.0f) >= 2.70f &&
                        aircraftPlumeLength(1.0f) <= 2.80f &&
-                       aircraftPlumeLength(1.0f) > aircraftPlumeLength(0.0f) + 1.15f,
+                       aircraftPlumeLength(1.0f) > aircraftPlumeLength(0.0f) + 1.40f,
                    "M10 boost exhaust did not visibly lengthen");
     valid &= check(kAircraftPlumeApexExtension >= 0.22f &&
                        kAircraftPlumeApexExtension <= 0.26f,
@@ -144,9 +139,18 @@ bool validateAttitudeAndHeightCue()
                        aircraftExhaustRingHighlight(1.0f / 3.0f, 1, 3) > 0.99f &&
                        aircraftExhaustRingHighlight(2.0f / 3.0f, 2, 3) > 0.99f,
                    "M10 exhaust highlight no longer travels coherently from inner to outer rings");
-    valid &= check(aircraftExhaustRingHighlight(0.0f, 0, 1) > 0.99f &&
-                       aircraftExhaustRingHighlight(0.5f, 0, 1) < 0.19f,
-                   "M10 cruise ring highlight no longer pulses through its luminance range");
+    valid &= check(kAircraftEngineCoreRadiusPx == 1,
+                   "M10 steady engine core lost its crisp center size");
+    valid &= check(kAircraftEngineCoreGlowRadiusPx == 2,
+                   "M10 steady engine glow left its restrained size");
+    const AircraftScreenOffset nozzleCenter =
+        projectAircraftPose(0.0f, 0.0f, kAircraftEngineRearZ, 0.0f, 0.0f);
+    const AircraftScreenOffset smallestNozzleEdge =
+        projectAircraftPose(kAircraftMinimumEngineRadius, 0.0f,
+                            kAircraftEngineRearZ, 0.0f, 0.0f);
+    valid &= check(std::abs(smallestNozzleEdge.x - nozzleCenter.x) >
+                       static_cast<float>(kAircraftEngineCoreGlowRadiusPx) + 1.0f,
+                   "M10 steady engine glow no longer fits inside the smallest nozzle");
     valid &= check(aircraftWingStrobeOn(0u) && aircraftWingStrobeOn(150u) &&
                        aircraftWingStrobeOn(920u) &&
                        !aircraftWingStrobeOn(80u) &&

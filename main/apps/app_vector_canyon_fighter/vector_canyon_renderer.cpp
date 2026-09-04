@@ -73,13 +73,13 @@ struct EngineSpec {
 };
 
 constexpr std::array<EngineSpec, 4> kEngineSpecs = {{
-    {-2.42f,-0.27f,0.25f},
+    {-2.42f,-0.27f,kAircraftMinimumEngineRadius},
     {-1.12f,-0.50f,0.32f},
     { 1.12f,-0.50f,0.32f},
-    { 2.42f,-0.27f,0.25f},
+    { 2.42f,-0.27f,kAircraftMinimumEngineRadius},
 }};
 
-constexpr std::array<float, 3> kEngineRingZ = {{0.32f,-1.36f,-3.02f}};
+constexpr std::array<float, 3> kEngineRingZ = {{0.32f,-1.36f,kAircraftEngineRearZ}};
 constexpr std::array<std::array<float, 2>, 6> kEngineRadials = {{
     {{ 0.00f,  1.00f}}, {{ 0.87f,  0.50f}}, {{ 0.87f, -0.50f}},
     {{ 0.00f, -1.00f}}, {{-0.87f, -0.50f}}, {{-0.87f,  0.50f}},
@@ -340,6 +340,9 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const uint16_t engineColor = display.color565(48, 92, 104);
     const uint16_t canopyColor = display.color565(42, 105, 121);
     const uint16_t exhaust = display.color565(126, 58, 18);
+    const uint16_t engineCoreHalo = display.color565(126, 76, 18);
+    const uint16_t engineCoreGlow = display.color565(242, 174, 44);
+    const uint16_t engineCore = display.color565(255, 244, 176);
     const uint16_t strobeGlow = display.color565(132, 210, 255);
     const uint16_t strobeCore = display.color565(232, 250, 255);
     const uint16_t hudColor = display.color565(114, 230, 162);
@@ -460,29 +463,21 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         canvas.drawEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowEdge);
     }
 
-    // Exhaust is a persistent part of the fighter silhouette. A clean axial
-    // ray passes through fixed circular cross-section rings and reaches the
-    // convergence apex beyond them. Their radii taper monotonically away from
-    // the nozzle without geometric motion or noisy side-envelope rays. A
-    // synchronized luminance wave travels across the three boost rings.
-    // Cruise keeps the shorter amber axis with one animated middle ring, while
-    // boost restores three tapered rings without the omitted nozzle endpoint.
+    // Exhaust has two distinct layers: a short amber axial plume that remains
+    // readable in cruise, and three boost-only Mach rings. A permanent steady
+    // core is drawn inside every nozzle later, after the nacelle outlines, so
+    // engine activity never depends on boost animation.
     const uint32_t frameMillis = GetHAL().millis();
-    const bool boostedExhaust = flight.boostAmount >= 0.35f;
     const int machRingCount = aircraftMachRingCount(flight.boostAmount);
     const float plumeLength = aircraftPlumeLength(flight.boostAmount);
     const float exhaustApexZ = kEngineRingZ.back() - plumeLength -
                                kAircraftPlumeApexExtension;
-    const uint32_t highlightPeriodMs = boostedExhaust ? 520u : 760u;
+    constexpr uint32_t highlightPeriodMs = 520u;
     const float highlightPhase =
         static_cast<float>(frameMillis % highlightPeriodMs) /
         static_cast<float>(highlightPeriodMs);
-    const uint16_t machBase = boostedExhaust
-        ? display.color565(196, 128, 24)
-        : display.color565(150, 98, 18);
-    const uint16_t machPeak = boostedExhaust
-        ? display.color565(255, 255, 176)
-        : display.color565(255, 225, 84);
+    const uint16_t machBase = display.color565(196, 128, 24);
+    const uint16_t machPeak = display.color565(255, 255, 176);
     for (const EngineSpec& engine : kEngineSpecs) {
         const Vec3 plumeTip{engine.x, engine.y, exhaustApexZ};
         drawShipLine({engine.x, engine.y, kEngineRingZ.back()}, plumeTip, exhaust);
@@ -619,6 +614,21 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
                      {engine.x - engine.radius * 0.48f, pylonY, 0.68f}, structureColor);
         drawShipLine({engine.x, engine.y + engine.radius, kEngineRingZ.front()},
                      {engine.x + engine.radius * 0.48f, pylonY, 0.68f}, structureColor);
+    }
+
+    // One restrained, steady core per nozzle. A dim five-pixel halo surrounds
+    // the crisp three-pixel center, increasing presence without becoming a
+    // solid disc. Both remain inside the smallest projected exhaust port and
+    // stay identical in cruise and boost; only downstream rings encode boost.
+    if (aircraftVisible) {
+        for (const EngineSpec& engine : kEngineSpecs) {
+            const auto core = projectShip({engine.x, engine.y, kEngineRingZ.back()});
+            canvas.drawCircle(core[0], core[1], kAircraftEngineCoreGlowRadiusPx,
+                              engineCoreHalo);
+            canvas.fillCircle(core[0], core[1], kAircraftEngineCoreRadiusPx,
+                              engineCoreGlow);
+            canvas.drawPixel(core[0], core[1], engineCore);
+        }
     }
 
     // A cyan canopy cage breaks up the white fuselage and reads as a cockpit,
