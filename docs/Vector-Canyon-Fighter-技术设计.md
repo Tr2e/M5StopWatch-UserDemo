@@ -90,6 +90,8 @@ public:
 
 `ImuButtonInputProvider` 与 `JoystickDualButtonInputProvider` 必须完整填充同一个 `FlightInput`。任何输入源异常返回 `valid=false` 和中性轴值；`FlightController` 负责把它变成安全巡航或暂停提示，不能沿用最后一次极端姿态。
 
+K1 长按的沉浸模式属于应用级视觉意图，不写入 `FlightInput`、`FlightState` 或地形状态。应用仅在正常飞行且未碰撞时翻转 `aircraftVisible`，并消费输入提供者同一长按产生的旧 `pausePressed`；碰撞后仍由原路径使用该事件重新进入校准。Renderer 只读 `aircraftVisible`，关闭时跳过战机线框、尾焰、投影和频闪，不能停止模拟、碰撞、地形或 HUD。
+
 ### 3.2 飞行状态
 
 ```cpp
@@ -174,7 +176,7 @@ Renderer 使用一个复用的 `M5Canvas` 或等价离屏画布完成单帧绘�
 
 ### 7.1 IMU + 表身按键
 
-复用 `GetHAL().updateImuData()` 和已有 A/B 按键状态。启动校准采集稳定中性姿态，之后将重力方向映射为 `steer/pitch`；不依赖陀螺积分避免长期漂移。A/B 产生速度/推进动作，并保留 A+B 长按返回 Launcher 的现有系统约定。
+复用 `GetHAL().updateImuData()` 和已有 K1/K2 按键状态。启动校准采集稳定中性姿态，之后将重力方向映射为 `steer/pitch`；不依赖陀螺积分避免长期漂移。当前映射为 K1/K2 短按降低/提高巡航速度、K2 按住推进、正常飞行中 K1 长按切换战机视觉层、碰撞后 K1 长按重新校准，并保留 K1+K2 长按返回 Launcher 的现有系统约定。
 
 ### 7.2 Joystick2 + Dual Button
 
