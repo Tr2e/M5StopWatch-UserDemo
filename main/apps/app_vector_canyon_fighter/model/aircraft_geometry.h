@@ -30,8 +30,31 @@ inline constexpr int kAircraftScreenCenterY = 304;
 inline constexpr int kAircraftCourseCueY = 230;
 inline constexpr float kAircraftNominalScreenBottomY = 346.5f;
 inline constexpr float kChaseCameraPitchFollow = 0.12f;
-inline constexpr float kAircraftEngineRearZ = -3.02f;
+inline constexpr float kAircraftFuselageTailZ = -2.85f;
 inline constexpr float kAircraftMinimumEngineRadius = 0.25f;
+inline constexpr std::array<float, 3> kAircraftEngineRingZ = {{
+    -0.45f, -1.35f, -2.25f,
+}};
+inline constexpr float kAircraftEngineRearZ = kAircraftEngineRingZ.back();
+
+struct AircraftWingStation {
+    float span;
+    float leadingZ;
+    float trailingZ;
+    float upperY;
+};
+
+// A clipped, cranked-arrow planform. The root starts behind the cockpit while
+// the nearly straight trailing edge uses one restrained mechanical break at
+// the clipped tip. Keeping the wing plane shallow prevents perspective from
+// turning the rear edge into a drooping bat-wing arc.
+inline constexpr std::array<AircraftWingStation, 5> kAircraftWingStations = {{
+    {0.78f, 2.05f,-1.50f,0.08f},
+    {1.30f, 1.82f,-1.56f,0.10f},
+    {1.95f, 1.22f,-1.62f,0.12f},
+    {2.70f, 0.32f,-1.56f,0.14f},
+    {3.42f,-0.58f,-1.40f,0.16f},
+}};
 
 inline constexpr int aircraftMachRingCount(float boostAmount)
 {
@@ -212,6 +235,26 @@ static_assert(kAircraftEngineCoreGlowRadiusPx == 2,
               "Engine core glow must remain smaller than the projected nozzle");
 static_assert(kAircraftMinimumEngineRadius > 0.0f,
               "Engine nozzle radius must remain positive");
+static_assert(kAircraftEngineRingZ.front() - kAircraftEngineRingZ.back() >= 1.75f &&
+                  kAircraftEngineRingZ.front() - kAircraftEngineRingZ.back() <= 1.85f,
+              "Engine nacelle length left the restrained wing/body proportion");
+static_assert(kAircraftWingStations[2].trailingZ - kAircraftEngineRearZ >= 0.55f &&
+                  kAircraftWingStations[2].trailingZ - kAircraftEngineRearZ <= 0.70f,
+              "Engine nozzle protrudes too far behind the wing trailing edge");
+static_assert(kAircraftWingStations.back().span >= 3.35f &&
+                  kAircraftWingStations.back().span <= 3.50f,
+              "Wing span left the restrained chase-view silhouette range");
+static_assert(kAircraftWingStations.front().leadingZ <= 2.20f &&
+                  kAircraftWingStations.front().trailingZ >
+                      kAircraftWingStations[2].trailingZ &&
+                  kAircraftWingStations.back().trailingZ >
+                      kAircraftWingStations[2].trailingZ,
+              "Wing planform regressed to an uninterrupted delta triangle");
+static_assert(kAircraftWingStations.front().trailingZ -
+                      kAircraftWingStations[2].trailingZ <= 0.15f &&
+                  kAircraftWingStations.back().upperY -
+                      kAircraftWingStations.front().upperY <= 0.10f,
+              "Wing trailing edge regained a curved or drooping silhouette");
 static_assert(aircraftWingStrobeOn(0u) && aircraftWingStrobeOn(150u) &&
                   !aircraftWingStrobeOn(80u) && !aircraftWingStrobeOn(300u),
               "Wing strobe must preserve the reviewed double-flash cadence");

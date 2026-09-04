@@ -143,6 +143,12 @@ bool validateAttitudeAndHeightCue()
                    "M10 steady engine core lost its crisp center size");
     valid &= check(kAircraftEngineCoreGlowRadiusPx == 2,
                    "M10 steady engine glow left its restrained size");
+    valid &= check(kAircraftEngineRingZ.front() - kAircraftEngineRingZ.back() >= 1.75f &&
+                       kAircraftEngineRingZ.front() - kAircraftEngineRingZ.back() <= 1.85f,
+                   "M10 engine nacelles no longer match the restrained wing planform");
+    valid &= check(kAircraftWingStations[2].trailingZ - kAircraftEngineRearZ >= 0.55f &&
+                       kAircraftWingStations[2].trailingZ - kAircraftEngineRearZ <= 0.70f,
+                   "M10 engine nozzles protrude too far behind the wing trailing edge");
     const AircraftScreenOffset nozzleCenter =
         projectAircraftPose(0.0f, 0.0f, kAircraftEngineRearZ, 0.0f, 0.0f);
     const AircraftScreenOffset smallestNozzleEdge =
@@ -173,8 +179,11 @@ bool validateAttitudeAndHeightCue()
     valid &= check(upSlope < downSlope - 18.0f,
                    "M8 aircraft silhouette does not visibly change with pitch");
 
-    const AircraftScreenOffset leftWing = projectAircraftPose(-3.70f, 0.48f, -1.40f, 0.0f, 18.0f);
-    const AircraftScreenOffset rightWing = projectAircraftPose(3.70f, 0.48f, -1.40f, 0.0f, 18.0f);
+    const AircraftWingStation& wingTip = kAircraftWingStations.back();
+    const AircraftScreenOffset leftWing = projectAircraftPose(
+        -wingTip.span, wingTip.upperY, wingTip.trailingZ, 0.0f, 18.0f);
+    const AircraftScreenOffset rightWing = projectAircraftPose(
+        wingTip.span, wingTip.upperY, wingTip.trailingZ, 0.0f, 18.0f);
     valid &= check(std::abs(leftWing.y - rightWing.y) > 24.0f,
                    "M8 aircraft silhouette does not visibly bank with roll");
 
@@ -184,21 +193,36 @@ bool validateAttitudeAndHeightCue()
     const AircraftScreenOffset neutralNose =
         projectAircraftPose(0.0f, 0.0f, 6.50f, 0.0f, 0.0f);
     const AircraftScreenOffset neutralTail =
-        projectAircraftPose(0.0f, 0.0f,-3.02f, 0.0f, 0.0f);
+        projectAircraftPose(0.0f, 0.0f, kAircraftFuselageTailZ, 0.0f, 0.0f);
     const AircraftScreenOffset neutralLeftWing =
-        projectAircraftPose(-3.72f,0.22f,-0.58f,0.0f,0.0f);
+        projectAircraftPose(-wingTip.span, wingTip.upperY,
+                            wingTip.leadingZ, 0.0f, 0.0f);
     const AircraftScreenOffset neutralRightWing =
-        projectAircraftPose(3.72f,0.22f,-0.58f,0.0f,0.0f);
+        projectAircraftPose(wingTip.span, wingTip.upperY,
+                            wingTip.leadingZ, 0.0f, 0.0f);
     const float neutralLength = std::abs(neutralNose.y - neutralTail.y);
     const float neutralSpan = std::abs(neutralRightWing.x - neutralLeftWing.x);
     const float chaseAspect = neutralSpan / neutralLength;
-    valid &= check(chaseAspect >= 1.8f && chaseAspect <= 2.4f,
+    valid &= check(chaseAspect >= 1.80f && chaseAspect <= 2.05f,
                    "M10 neutral aircraft no longer reads as ground-parallel in chase view");
+    const float rootChord = kAircraftWingStations.front().leadingZ -
+                            kAircraftWingStations.front().trailingZ;
+    const float tipChord = wingTip.leadingZ - wingTip.trailingZ;
+    valid &= check(rootChord >= 3.40f && rootChord <= 3.55f &&
+                       tipChord >= 0.75f && tipChord <= 0.85f &&
+                       kAircraftWingStations.front().trailingZ >
+                           kAircraftWingStations[2].trailingZ &&
+                       wingTip.trailingZ > kAircraftWingStations[2].trailingZ,
+                   "M10 wing planform regressed to a bulky delta triangle");
+    valid &= check(kAircraftWingStations.front().trailingZ -
+                           kAircraftWingStations[2].trailingZ <= 0.15f &&
+                       wingTip.upperY - kAircraftWingStations.front().upperY <= 0.10f,
+                   "M10 wing trailing edge regained a drooping arc");
 
     const AircraftScreenOffset engineTop =
-        projectAircraftPose(1.12f,-0.18f,-3.02f,0.0f,0.0f);
+        projectAircraftPose(1.12f,-0.18f,kAircraftEngineRearZ,0.0f,0.0f);
     const AircraftScreenOffset engineBottom =
-        projectAircraftPose(1.12f,-0.82f,-3.02f,0.0f,0.0f);
+        projectAircraftPose(1.12f,-0.82f,kAircraftEngineRearZ,0.0f,0.0f);
     const float engineDiameterY = std::abs(engineTop.y - engineBottom.y);
     valid &= check(engineDiameterY >= 9.0f,
                    "M10 engine cross-section collapsed into a luminous line");

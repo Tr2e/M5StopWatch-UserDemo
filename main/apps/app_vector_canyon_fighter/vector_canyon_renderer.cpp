@@ -46,24 +46,7 @@ constexpr std::array<FuselageStation, 10> kFuselageStations = {{
     { 0.45f,0.80f,0.70f,-0.06f,-0.44f},
     {-0.65f,0.74f,0.53f,-0.08f,-0.43f},
     {-1.75f,0.60f,0.37f,-0.09f,-0.37f},
-    {-2.85f,0.38f,0.22f,-0.08f,-0.25f},
-}};
-
-struct WingStation {
-    float span;
-    float leadingZ;
-    float trailingZ;
-    float upperY;
-};
-
-// The leading edge has a deliberate shoulder and outer kink; the cropped tip
-// prevents the generic paper-airplane triangle seen in the rejected pass.
-constexpr std::array<WingStation, 5> kWingStations = {{
-    {0.64f, 2.82f,-1.92f,0.04f},
-    {1.24f, 2.32f,-2.02f,0.08f},
-    {2.02f, 1.54f,-2.12f,0.13f},
-    {2.90f, 0.50f,-2.14f,0.18f},
-    {3.72f,-0.58f,-1.76f,0.22f},
+    {kAircraftFuselageTailZ,0.38f,0.22f,-0.08f,-0.25f},
 }};
 
 struct EngineSpec {
@@ -79,7 +62,6 @@ constexpr std::array<EngineSpec, 4> kEngineSpecs = {{
     { 2.42f,-0.27f,kAircraftMinimumEngineRadius},
 }};
 
-constexpr std::array<float, 3> kEngineRingZ = {{0.32f,-1.36f,kAircraftEngineRearZ}};
 constexpr std::array<std::array<float, 2>, 6> kEngineRadials = {{
     {{ 0.00f,  1.00f}}, {{ 0.87f,  0.50f}}, {{ 0.87f, -0.50f}},
     {{ 0.00f, -1.00f}}, {{-0.87f, -0.50f}}, {{-0.87f,  0.50f}},
@@ -95,7 +77,7 @@ Vec3 fuselagePoint(const FuselageStation& station, int lane)
     }
 }
 
-Vec3 wingPoint(float side, const WingStation& station, float chord)
+Vec3 wingPoint(float side, const AircraftWingStation& station, float chord)
 {
     return {
         side * station.span,
@@ -109,7 +91,7 @@ Vec3 enginePoint(const EngineSpec& engine, std::size_t ring, std::size_t radial)
     return {
         engine.x + kEngineRadials[radial][0] * engine.radius,
         engine.y + kEngineRadials[radial][1] * engine.radius,
-        kEngineRingZ[ring],
+        kAircraftEngineRingZ[ring],
     };
 }
 
@@ -470,7 +452,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const uint32_t frameMillis = GetHAL().millis();
     const int machRingCount = aircraftMachRingCount(flight.boostAmount);
     const float plumeLength = aircraftPlumeLength(flight.boostAmount);
-    const float exhaustApexZ = kEngineRingZ.back() - plumeLength -
+    const float exhaustApexZ = kAircraftEngineRingZ.back() - plumeLength -
                                kAircraftPlumeApexExtension;
     constexpr uint32_t highlightPeriodMs = 520u;
     const float highlightPhase =
@@ -480,11 +462,11 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const uint16_t machPeak = display.color565(255, 255, 176);
     for (const EngineSpec& engine : kEngineSpecs) {
         const Vec3 plumeTip{engine.x, engine.y, exhaustApexZ};
-        drawShipLine({engine.x, engine.y, kEngineRingZ.back()}, plumeTip, exhaust);
+        drawShipLine({engine.x, engine.y, kAircraftEngineRingZ.back()}, plumeTip, exhaust);
 
         for (int ring = 0; ring < machRingCount; ++ring) {
             const float fraction = aircraftExhaustRingFraction(ring, machRingCount);
-            const float ringZ = kEngineRingZ.back() - fraction * plumeLength;
+            const float ringZ = kAircraftEngineRingZ.back() - fraction * plumeLength;
             const float radius = engine.radius *
                                  aircraftExhaustRingRadiusScale(ring, machRingCount);
             const uint16_t machColor = blendRgb565(
@@ -529,19 +511,21 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     // diagonals. This is the defining construction visible in the approved icon.
     constexpr std::array<float, 3> kWingChords = {{0.0f, 0.50f, 1.0f}};
     for (float side : {-1.0f, 1.0f}) {
-        for (std::size_t station = 0; station < kWingStations.size(); ++station) {
+        for (std::size_t station = 0; station < kAircraftWingStations.size(); ++station) {
             for (std::size_t chord = 0; chord + 1 < kWingChords.size(); ++chord) {
-                const bool outline = station == 0 || station + 1 == kWingStations.size();
-                drawShipLine(wingPoint(side, kWingStations[station], kWingChords[chord]),
-                             wingPoint(side, kWingStations[station], kWingChords[chord + 1]),
+                const bool outline = station == 0 ||
+                                     station + 1 == kAircraftWingStations.size();
+                drawShipLine(wingPoint(side, kAircraftWingStations[station], kWingChords[chord]),
+                             wingPoint(side, kAircraftWingStations[station], kWingChords[chord + 1]),
                              outline ? shipColor : shipDim);
             }
         }
         for (std::size_t chord = 0; chord < kWingChords.size(); ++chord) {
-            for (std::size_t station = 0; station + 1 < kWingStations.size(); ++station) {
+            for (std::size_t station = 0;
+                 station + 1 < kAircraftWingStations.size(); ++station) {
                 const bool outline = chord == 0 || chord + 1 == kWingChords.size();
-                drawShipLine(wingPoint(side, kWingStations[station], kWingChords[chord]),
-                             wingPoint(side, kWingStations[station + 1], kWingChords[chord]),
+                drawShipLine(wingPoint(side, kAircraftWingStations[station], kWingChords[chord]),
+                             wingPoint(side, kAircraftWingStations[station + 1], kWingChords[chord]),
                              outline ? shipColor : shipDim);
             }
         }
@@ -592,8 +576,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     // and rails only show their camera-facing upper half. This is enough to read
     // as a cylinder without creating four dense luminous columns.
     for (const EngineSpec& engine : kEngineSpecs) {
-        for (std::size_t ring = 0; ring < kEngineRingZ.size(); ++ring) {
-            const bool rearRing = ring + 1 == kEngineRingZ.size();
+        for (std::size_t ring = 0; ring < kAircraftEngineRingZ.size(); ++ring) {
+            const bool rearRing = ring + 1 == kAircraftEngineRingZ.size();
             for (std::size_t radial = 0; radial < kEngineRadials.size(); ++radial) {
                 if (!rearRing && radial >= 2 && radial <= 3) continue;
                 drawShipLine(enginePoint(engine, ring, radial),
@@ -601,7 +585,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
                              rearRing ? engineColor : shipDim);
             }
         }
-        for (std::size_t ring = 0; ring + 1 < kEngineRingZ.size(); ++ring) {
+        for (std::size_t ring = 0; ring + 1 < kAircraftEngineRingZ.size(); ++ring) {
             constexpr std::array<std::size_t, 3> kVisibleRails = {{0, 1, 5}};
             for (const std::size_t radial : kVisibleRails) {
                 drawShipLine(enginePoint(engine, ring, radial),
@@ -610,10 +594,10 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
             }
         }
         const float pylonY = engine.x < -1.7f || engine.x > 1.7f ? 0.16f : 0.20f;
-        drawShipLine({engine.x, engine.y + engine.radius, kEngineRingZ.front()},
-                     {engine.x - engine.radius * 0.48f, pylonY, 0.68f}, structureColor);
-        drawShipLine({engine.x, engine.y + engine.radius, kEngineRingZ.front()},
-                     {engine.x + engine.radius * 0.48f, pylonY, 0.68f}, structureColor);
+        drawShipLine({engine.x, engine.y + engine.radius, kAircraftEngineRingZ.front()},
+                     {engine.x - engine.radius * 0.48f, pylonY, 0.18f}, structureColor);
+        drawShipLine({engine.x, engine.y + engine.radius, kAircraftEngineRingZ.front()},
+                     {engine.x + engine.radius * 0.48f, pylonY, 0.18f}, structureColor);
     }
 
     // One restrained, steady core per nozzle. A dim five-pixel halo surrounds
@@ -622,7 +606,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     // stay identical in cruise and boost; only downstream rings encode boost.
     if (aircraftVisible) {
         for (const EngineSpec& engine : kEngineSpecs) {
-            const auto core = projectShip({engine.x, engine.y, kEngineRingZ.back()});
+            const auto core = projectShip({engine.x, engine.y, kAircraftEngineRingZ.back()});
             canvas.drawCircle(core[0], core[1], kAircraftEngineCoreGlowRadiusPx,
                               engineCoreHalo);
             canvas.fillCircle(core[0], core[1], kAircraftEngineCoreRadiusPx,
@@ -653,7 +637,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     if (aircraftVisible && aircraftWingStrobeOn(frameMillis)) {
         for (float side : {-1.0f, 1.0f}) {
             const auto beacon = projectShip(
-                wingPoint(side, kWingStations.back(), 0.72f));
+                wingPoint(side, kAircraftWingStations.back(), 0.72f));
             canvas.fillCircle(beacon[0], beacon[1], kAircraftWingStrobeRadiusPx,
                               strobeGlow);
             canvas.drawPixel(beacon[0], beacon[1], strobeCore);
