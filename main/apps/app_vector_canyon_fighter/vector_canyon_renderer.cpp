@@ -355,6 +355,9 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         canvas.fillScreen(TFT_BLACK);
         const int cx = _width / 2;
         const int cy = _height / 2;
+        const bool inputOffline =
+            inputStatus.readiness == InputReadiness::Disconnected ||
+            inputStatus.readiness == InputReadiness::Fault;
         const auto drawCentered = [&](const char* text, int y) {
             canvas.setCursor(cx - canvas.textWidth(text) / 2, y);
             canvas.print(text);
@@ -370,21 +373,30 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         drawCentered(sourceTitle, cy - 86);
 
         canvas.setTextSize(2);
-        canvas.setTextColor(hudAccent, TFT_BLACK);
-        drawCentered("CALIBRATING", cy - 61);
+        canvas.setTextColor(inputOffline ? caution : hudAccent, TFT_BLACK);
+        drawCentered(inputOffline ? "INPUT OFFLINE" : "CALIBRATING", cy - 61);
         canvas.drawLine(cx - 102, cy - 43, cx - 76, cy - 43, hudDim);
         canvas.drawLine(cx + 76, cy - 43, cx + 102, cy - 43, hudDim);
 
         canvas.setTextSize(1);
-        canvas.setTextColor(hudColor, TFT_BLACK);
-        drawCentered("HOLD DEVICE LEVEL", cy - 25);
+        canvas.setTextColor(inputOffline ? caution : hudColor, TFT_BLACK);
+        if (inputOffline && inputStatus.axisSource == FlightAxisSource::Joystick2) {
+            drawCentered("CHECK PORT.A / ADDR 0x63", cy - 25);
+        } else {
+            drawCentered(inputOffline ? "SENSOR NOT READY" : "HOLD DEVICE LEVEL",
+                         cy - 25);
+        }
 
         constexpr int kBarW = 160;
         constexpr int kBarH = 7;
         const int barX = cx - kBarW / 2;
         const int barY = cy + 2;
         canvas.drawRect(barX - 1, barY - 1, kBarW + 2, kBarH + 2, hudDim);
-        const int filled = std::clamp(static_cast<int>(calibrationProgress * kBarW), 0, kBarW);
+        const int filled = inputOffline
+                               ? 0
+                               : std::clamp(
+                                     static_cast<int>(calibrationProgress * kBarW),
+                                     0, kBarW);
         canvas.fillRect(barX, barY, filled, kBarH, hudColor);
         for (int division = 1; division < 4; ++division) {
             const int tickX = barX + division * kBarW / 4;
@@ -392,13 +404,17 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
             canvas.drawLine(tickX, barY + kBarH + 2, tickX, barY + kBarH + 4, hudDim);
         }
 
-        const float remaining = (1.0f - calibrationProgress) * 2.5f;
-        char countdown[16]{};
-        std::snprintf(countdown, sizeof(countdown), "T- %.1f SEC", remaining);
         canvas.setTextColor(hudDim, TFT_BLACK);
-        drawCentered(countdown, cy + 24);
+        if (inputOffline) {
+            drawCentered("WAITING FOR VALID SIGNAL", cy + 24);
+        } else {
+            const float remaining = (1.0f - calibrationProgress) * 2.5f;
+            char countdown[16]{};
+            std::snprintf(countdown, sizeof(countdown), "T- %.1f SEC", remaining);
+            drawCentered(countdown, cy + 24);
+        }
         canvas.setTextColor(hudColor, TFT_BLACK);
-        drawCentered("KEEP STILL", cy + 50);
+        drawCentered(inputOffline ? "K1+K2 / EXIT" : "KEEP STILL", cy + 50);
         display.endWrite();
         return;
     }
