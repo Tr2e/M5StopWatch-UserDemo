@@ -194,6 +194,7 @@ Renderer 使用一个复用的 `M5Canvas` 或等价离屏画布完成单帧绘�
 - Dual Button：GPIO3/4 配置为输入，按下低电平；使用软件去抖并以边沿事件输出。
 - I2C 总线只使用本工程既有的 ESP-IDF/I2C 组件风格；不得同一端口混用 legacy 与 driver-ng，避免驱动冲突。
 - Joystick2 作为 `AxisSource`、Dual Button 作为 `ActionSource` 独立报告连接与错误；任一失联不伪装成整套控制器同时掉线。
+- 两者分别实现 `FlightAxisProvider` 与 `FlightActionProvider`，再由 `CompositeInputProvider` 合成为既有 `FlightInput`；按键单侧失联进入可玩的 `Degraded`，摇杆失联则输出安全中性轴。
 - 任何连续读取超时、地址消失或信号异常都更新 `InputStatus`，不阻塞主循环；未来 Router 按固定优先级组合外设或安全回退到 IMU/表身按键。
 
 外设实现安排在 G4；G3 的所有玩法验证必须以 `ImuButtonInputProvider` 完成。
