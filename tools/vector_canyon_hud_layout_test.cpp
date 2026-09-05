@@ -114,6 +114,26 @@ bool validatePeripheralScales()
     return valid;
 }
 
+bool validateProximityArrowScale()
+{
+    const int farLength = hudProximityArrowLength(0.0f);
+    const int middleLength = hudProximityArrowLength(0.5f);
+    const int nearLength = hudProximityArrowLength(1.0f);
+    bool valid = check(farLength == 7 && nearLength == 18 &&
+                           farLength < middleLength && middleLength < nearLength &&
+                           hudProximityArrowLength(-1.0f) == farLength &&
+                           hudProximityArrowLength(2.0f) == nearLength,
+                       "proximity arrow is not monotonic or exceeded 7..18 px");
+    valid &= check(hudRectInsideCircularArea(45.0f, 271.0f, 18.0f, 19.0f,
+                                             468, 466, 31.0f) &&
+                       hudRectInsideCircularArea(405.0f, 271.0f, 18.0f, 19.0f,
+                                                 468, 466, 31.0f) &&
+                       hudRectInsideCircularArea(205.0f, 374.0f, 58.0f, 16.0f,
+                                                 468, 466, 31.0f),
+                   "integrated wall or independent floor cue escaped the safe area");
+    return valid;
+}
+
 }  // namespace
 
 int main()
@@ -122,5 +142,6 @@ int main()
     valid &= validatePitchLabelZones();
     valid &= validateFirstPersonCueSeparation();
     valid &= validatePeripheralScales();
+    valid &= validateProximityArrowScale();
     return valid ? 0 : 1;
 }

@@ -7,8 +7,6 @@
 namespace vector_canyon_fighter {
 namespace {
 
-constexpr float kWarningClearance = 0.48f;
-constexpr float kFloorWarningClearance = 0.10f;
 constexpr float kWarningLookAhead = 4.8f;
 constexpr int kWarningSamples = 4;
 
@@ -62,8 +60,10 @@ CollisionStatus evaluateExplicitCanyonCollision(const FlightState& flight,
         updateMinimum(right, CollisionHazard::RightWall,
                       status.warningClearance, status.warningHazard);
     }
-    const float wallWarningMargin = status.warningClearance - kWarningClearance;
-    const float floorWarningMargin = status.floorClearance - kFloorWarningClearance;
+    const float wallWarningMargin =
+        status.warningClearance - kCollisionWallWarningClearance;
+    const float floorWarningMargin =
+        status.floorClearance - kCollisionFloorWarningClearance;
     status.warning = wallWarningMargin < 0.0f || floorWarningMargin < 0.0f;
     if (status.warning && floorWarningMargin < wallWarningMargin) {
         status.warningHazard = CollisionHazard::Floor;

@@ -130,28 +130,6 @@ uint16_t blendRgb565(uint16_t from, uint16_t to, float amount)
     return static_cast<uint16_t>((red << 11) | (green << 5) | blue);
 }
 
-const char* warningLabel(CollisionHazard hazard)
-{
-    switch (hazard) {
-        case CollisionHazard::LeftWall: return "PROX LEFT";
-        case CollisionHazard::RightWall: return "PROX RIGHT";
-        case CollisionHazard::Floor: return "PULL UP";
-        case CollisionHazard::None: break;
-    }
-    return "PROX";
-}
-
-const char* impactLabel(CollisionHazard hazard)
-{
-    switch (hazard) {
-        case CollisionHazard::LeftWall: return "IMPACT LEFT";
-        case CollisionHazard::RightWall: return "IMPACT RIGHT";
-        case CollisionHazard::Floor: return "IMPACT FLOOR";
-        case CollisionHazard::None: break;
-    }
-    return "IMPACT";
-}
-
 }  // namespace
 
 void Renderer::open(int width, int height)
@@ -343,6 +321,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const uint16_t hudDim = display.color565(39, 94, 69);
     const uint16_t hudAccent = display.color565(182, 255, 208);
     const uint16_t caution = display.color565(255, 179, 71);
+    const uint16_t cautionDim = display.color565(166, 108, 42);
     const uint16_t impact = display.color565(255, 88, 72);
 
     // The StopWatch display already owns a PSRAM framebuffer. Drawing into a
@@ -1012,24 +991,107 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.setTextColor(flight.boostAmount > 0.05f ? caution : hudColor, TFT_BLACK);
     canvas.print(flight.boostAmount > 0.05f ? "PWR BST" : "PWR CRZ");
     canvas.setTextColor(hudColor, TFT_BLACK);
-    canvas.setCursor(centerX - 34, _height - 48);
-    canvas.printf("R%+03d P%+03d", static_cast<int>(flight.roll), static_cast<int>(flight.pitch));
+    if (!flight.collided) {
+        canvas.setCursor(centerX - 34, _height - 48);
+        canvas.printf("R%+03d P%+03d", static_cast<int>(flight.roll),
+                      static_cast<int>(flight.pitch));
+    }
+    const auto drawCenteredStatusText = [&](const char* text, int y,
+                                            uint16_t color) {
+        canvas.setTextColor(color, TFT_BLACK);
+        canvas.setCursor(centerX - canvas.textWidth(text) / 2, y);
+        canvas.print(text);
+    };
+    const auto drawStatusPanel = [&](int left, int top, int width, int height,
+                                     uint16_t color) {
+        constexpr int kCornerWidth = 10;
+        constexpr int kCornerHeight = 6;
+        canvas.drawLine(left, top, left + kCornerWidth, top, color);
+        canvas.drawLine(left, top, left, top + kCornerHeight, color);
+        canvas.drawLine(left + width, top, left + width - kCornerWidth, top, color);
+        canvas.drawLine(left + width, top, left + width, top + kCornerHeight, color);
+        canvas.drawLine(left, top + height, left + kCornerWidth, top + height, color);
+        canvas.drawLine(left, top + height, left, top + height - kCornerHeight, color);
+        canvas.drawLine(left + width, top + height,
+                        left + width - kCornerWidth, top + height, color);
+        canvas.drawLine(left + width, top + height,
+                        left + width, top + height - kCornerHeight, color);
+    };
+    const auto drawEdgeProximityCue = [&](CollisionHazard hazard,
+                                          float clearance,
+                                          bool impacted) {
+        constexpr int kSideArrowY = kTapeBottom + 10;
+        constexpr int kSideReadoutY = kSideArrowY + 8;
+        constexpr int kFloorCenterY = 382;
+        const bool floorHazard = hazard == CollisionHazard::Floor;
+        const float severity = impacted
+            ? 1.0f
+            : canyonHudProximitySeverity(clearance, hazard);
+        const int arrowLength = hudProximityArrowLength(severity);
+        const uint16_t cueColor = impacted
+            ? impact
+            : blendRgb565(cautionDim, caution, severity * 0.78f);
+        if (floorHazard) {
+            char panelText[12]{};
+            std::snprintf(panelText, sizeof(panelText), "F%02d %s",
+                          canyonHudClearanceIndex(clearance),
+                          impacted ? "HIT" : "UP");
+            canvas.setTextColor(cueColor, TFT_BLACK);
+            const int textWidth = canvas.textWidth(panelText);
+            constexpr int kHorizontalPadding = 6;
+            constexpr int kPanelHeight = 16;
+            const int panelWidth = textWidth + kHorizontalPadding * 2;
+            const int panelLeft = centerX - panelWidth / 2;
+            const int panelTop = kFloorCenterY - kPanelHeight / 2;
+            canvas.drawRect(panelLeft, panelTop, panelWidth, kPanelHeight,
+                            scaleRgb565(cueColor, 0.72f));
+            canvas.setCursor(centerX - textWidth / 2, panelTop + 4);
+            canvas.print(panelText);
+            return;
+        }
+
+        char readout[8]{};
+        std::snprintf(readout, sizeof(readout), "%c%02d",
+                      canyonHudHazardCode(hazard),
+                      canyonHudClearanceIndex(clearance));
+        canvas.setTextColor(cueColor, TFT_BLACK);
+        const int readoutWidth = canvas.textWidth(readout);
+        const HudAvoidanceDirection direction = canyonHudAvoidanceDirection(hazard);
+        if (direction == HudAvoidanceDirection::Right) {
+            const int startX = kSpeedAxisX;
+            const int tipX = startX + arrowLength;
+            canvas.drawLine(startX, kSideArrowY, tipX, kSideArrowY, cueColor);
+            canvas.drawLine(tipX - 4, kSideArrowY - 3, tipX, kSideArrowY, cueColor);
+            canvas.drawLine(tipX - 4, kSideArrowY + 3, tipX, kSideArrowY, cueColor);
+            canvas.setCursor((startX + tipX - readoutWidth) / 2,
+                             kSideReadoutY);
+            canvas.print(readout);
+        } else if (direction == HudAvoidanceDirection::Left) {
+            const int startX = altitudeAxisX;
+            const int tipX = startX - arrowLength;
+            canvas.drawLine(startX, kSideArrowY, tipX, kSideArrowY, cueColor);
+            canvas.drawLine(tipX + 4, kSideArrowY - 3, tipX, kSideArrowY, cueColor);
+            canvas.drawLine(tipX + 4, kSideArrowY + 3, tipX, kSideArrowY, cueColor);
+            canvas.setCursor((startX + tipX - readoutWidth) / 2,
+                             kSideReadoutY);
+            canvas.print(readout);
+        }
+    };
+
     if (flight.collided) {
-        canvas.setTextColor(impact, TFT_BLACK);
-        canvas.drawLine(centerX - 52, 190, centerX + 52, 190, impact);
-        canvas.setCursor(centerX - 34, 198);
-        canvas.print(impactLabel(collision.impactHazard));
-        canvas.setCursor(centerX - 37, 210);
-        canvas.print("K1 HOLD RESET");
+        drawEdgeProximityCue(collision.impactHazard,
+                             canyonHudImpactClearance(collision), true);
+        drawCenteredStatusText("HOLD K1", _height - 48, impact);
     } else if (flight.paused) {
-        canvas.setTextColor(hudColor, TFT_BLACK);
-        canvas.setCursor(centerX - 20, 198);
-        canvas.print("PAUSED");
+        constexpr int kPanelWidth = 76;
+        constexpr int kPanelHeight = 22;
+        constexpr int kPanelTop = 188;
+        drawStatusPanel(centerX - kPanelWidth / 2, kPanelTop,
+                        kPanelWidth, kPanelHeight, hudDim);
+        drawCenteredStatusText("PAUSED", kPanelTop + 7, hudColor);
     } else if (collision.warning) {
-        canvas.setTextColor(caution, TFT_BLACK);
-        canvas.drawLine(centerX - 34, 190, centerX + 34, 190, caution);
-        canvas.setCursor(centerX - 28, 198);
-        canvas.print(warningLabel(collision.warningHazard));
+        drawEdgeProximityCue(collision.warningHazard,
+                             canyonHudWarningClearance(collision), false);
     }
 
     display.endWrite();

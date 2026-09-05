@@ -5,6 +5,9 @@
 
 namespace vector_canyon_fighter {
 
+inline constexpr float kCollisionWallWarningClearance = 0.48f;
+inline constexpr float kCollisionFloorWarningClearance = 0.10f;
+
 enum class CollisionHazard : uint8_t {
     None,
     LeftWall,

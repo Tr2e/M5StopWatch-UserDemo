@@ -1,8 +1,10 @@
 #pragma once
 
 #include "input/flight_input.h"
+#include "model/collision_model.h"
 #include "model/explicit_canyon_types.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace vector_canyon_fighter {
@@ -12,6 +14,73 @@ enum class HudInputAlert : uint8_t {
     AxisLost,
     ActionLost,
 };
+
+enum class HudAvoidanceDirection : uint8_t {
+    None,
+    Left,
+    Right,
+    Up,
+};
+
+inline constexpr HudAvoidanceDirection canyonHudAvoidanceDirection(
+    CollisionHazard hazard)
+{
+    switch (hazard) {
+        case CollisionHazard::LeftWall: return HudAvoidanceDirection::Right;
+        case CollisionHazard::RightWall: return HudAvoidanceDirection::Left;
+        case CollisionHazard::Floor: return HudAvoidanceDirection::Up;
+        case CollisionHazard::None: break;
+    }
+    return HudAvoidanceDirection::None;
+}
+
+inline constexpr char canyonHudHazardCode(CollisionHazard hazard)
+{
+    switch (hazard) {
+        case CollisionHazard::LeftWall: return 'L';
+        case CollisionHazard::RightWall: return 'R';
+        case CollisionHazard::Floor: return 'F';
+        case CollisionHazard::None: break;
+    }
+    return '-';
+}
+
+inline constexpr float canyonHudHazardThreshold(CollisionHazard hazard)
+{
+    return hazard == CollisionHazard::Floor
+        ? kCollisionFloorWarningClearance
+        : kCollisionWallWarningClearance;
+}
+
+inline float canyonHudWarningClearance(const CollisionStatus& status)
+{
+    return status.warningHazard == CollisionHazard::Floor
+        ? status.floorClearance
+        : status.warningClearance;
+}
+
+inline float canyonHudImpactClearance(const CollisionStatus& status)
+{
+    switch (status.impactHazard) {
+        case CollisionHazard::LeftWall: return status.leftClearance;
+        case CollisionHazard::RightWall: return status.rightClearance;
+        case CollisionHazard::Floor: return status.floorClearance;
+        case CollisionHazard::None: break;
+    }
+    return status.clearance;
+}
+
+inline float canyonHudProximitySeverity(float clearance, CollisionHazard hazard)
+{
+    const float threshold = canyonHudHazardThreshold(hazard);
+    return std::clamp(1.0f - clearance / threshold, 0.0f, 1.0f);
+}
+
+inline int canyonHudClearanceIndex(float clearance)
+{
+    return std::clamp(static_cast<int>(std::lround(clearance * 100.0f)),
+                      0, 99);
+}
 
 inline float canyonHudHeadingFloatDegrees(const CanyonRouteFrame& route,
                                           float localYawDegrees)

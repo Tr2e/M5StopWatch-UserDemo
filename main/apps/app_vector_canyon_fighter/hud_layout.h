@@ -38,6 +38,15 @@ inline float hudTapeTickY(float tickValue, float currentValue,
                         (pixelsPerTick / unitsPerTick);
 }
 
+inline int hudProximityArrowLength(float severity)
+{
+    constexpr int kMinimumLength = 7;
+    constexpr int kMaximumLength = 18;
+    const float normalized = std::clamp(severity, 0.0f, 1.0f);
+    return kMinimumLength + static_cast<int>(std::lround(
+        normalized * static_cast<float>(kMaximumLength - kMinimumLength)));
+}
+
 inline bool hudRectInsideCircularArea(float x, float y, float rectWidth,
                                       float rectHeight, int width, int height,
                                       float edgeInset)

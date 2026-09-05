@@ -76,6 +76,40 @@ bool validateModeAndInputSemantics()
     return valid;
 }
 
+bool validateHazardSemantics()
+{
+    bool valid = check(
+        canyonHudAvoidanceDirection(CollisionHazard::LeftWall) ==
+            HudAvoidanceDirection::Right &&
+            canyonHudAvoidanceDirection(CollisionHazard::RightWall) ==
+                HudAvoidanceDirection::Left &&
+            canyonHudAvoidanceDirection(CollisionHazard::Floor) ==
+                HudAvoidanceDirection::Up,
+        "terrain hazards do not map to the correct avoidance direction");
+    valid &= check(canyonHudHazardCode(CollisionHazard::LeftWall) == 'L' &&
+                       canyonHudHazardCode(CollisionHazard::RightWall) == 'R' &&
+                       canyonHudHazardCode(CollisionHazard::Floor) == 'F',
+                   "edge hazard code lost its collision source");
+
+    CollisionStatus status{};
+    status.warningHazard = CollisionHazard::LeftWall;
+    status.warningClearance = 0.32f;
+    valid &= check(std::abs(canyonHudWarningClearance(status) - 0.32f) < 0.001f &&
+                       canyonHudClearanceIndex(0.32f) == 32,
+                   "wall clearance does not drive the edge readout");
+    status.warningHazard = CollisionHazard::Floor;
+    status.floorClearance = 0.07f;
+    valid &= check(std::abs(canyonHudWarningClearance(status) - 0.07f) < 0.001f &&
+                       std::abs(canyonHudProximitySeverity(
+                                    status.floorClearance,
+                                    CollisionHazard::Floor) - 0.30f) < 0.001f,
+                   "floor clearance does not use its own warning threshold");
+    valid &= check(canyonHudClearanceIndex(-0.2f) == 0 &&
+                       canyonHudClearanceIndex(2.0f) == 99,
+                   "clearance index escaped its two-digit display range");
+    return valid;
+}
+
 }  // namespace
 
 int main()
@@ -83,5 +117,6 @@ int main()
     bool valid = validateSpeedSemantics();
     valid &= validateHeadingSemantics();
     valid &= validateModeAndInputSemantics();
+    valid &= validateHazardSemantics();
     return valid ? 0 : 1;
 }
