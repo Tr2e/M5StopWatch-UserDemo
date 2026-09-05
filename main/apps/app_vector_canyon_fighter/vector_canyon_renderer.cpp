@@ -155,6 +155,9 @@ bool Renderer::drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCan
     const auto cacheIndex = [](std::size_t slice, std::size_t profilePoint) {
         return slice * ExplicitCanyonStream::kProfileCount + profilePoint;
     };
+    const auto farCacheIndex = [](std::size_t slice, std::size_t profilePoint) {
+        return slice * ExplicitCanyonStream::kProfileCount + profilePoint;
+    };
     const auto toPackedPoint = [&](CanyonScreenPoint screen) {
         const int x = std::clamp(static_cast<int>(std::lround(screen.x)), kMinimumCoordinate, kMaximumCoordinate);
         const int y = std::clamp(static_cast<int>(std::lround(screen.y)), kMinimumCoordinate, kMaximumCoordinate);
@@ -181,8 +184,34 @@ bool Renderer::drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCan
             }
         }
     }
+    for (std::size_t slice = 0; slice < ExplicitCanyonStream::kFarSliceCount; ++slice) {
+        for (std::size_t profilePoint = 0;
+             profilePoint < ExplicitCanyonStream::kProfileCount;
+             ++profilePoint) {
+            const CanyonCameraPoint cameraPoint = explicitCanyonToCamera(
+                camera, terrain.farWorldPoint(slice, profilePoint));
+            CanyonScreenPoint screen{};
+            ProjectedCanyonPoint& projected =
+                _explicitFarTerrainPoints[farCacheIndex(slice, profilePoint)];
+            if (projectExplicitCanyonPoint(camera, cameraPoint, screen)) {
+                projected = toPackedPoint(screen);
+            } else {
+                projected = {kInvisible, kInvisible};
+            }
+        }
+    }
 
     bool drewAny = false;
+    const auto drawPackedSegment = [&](const ProjectedCanyonPoint& from,
+                                       const ProjectedCanyonPoint& to,
+                                       uint16_t color) {
+        if (from.x == kInvisible || to.x == kInvisible ||
+            segmentOutsideViewport(from, to)) {
+            return;
+        }
+        canvas.drawLine(from.x, from.y, to.x, to.y, color);
+        drewAny = true;
+    };
     const auto drawSegment = [&](std::size_t fromSlice, std::size_t fromProfile,
                                  std::size_t toSlice, std::size_t toProfile, uint16_t color) {
         const ProjectedCanyonPoint& fromProjected = _explicitTerrainPoints[cacheIndex(fromSlice, fromProfile)];
@@ -219,6 +248,39 @@ bool Renderer::drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCan
         if (relativeDepth < 20.0f) return terrainMid;
         return terrainSecondary;
     };
+
+    // Two sparse cross-sections extend the real curved route from the detailed
+    // 37-unit mesh to roughly 93 units. At that distance the flat floor is
+    // within a few pixels of the true world horizon, so the terrain converges
+    // naturally without moving or falsifying the earth-referenced HUD line.
+    for (std::size_t reverse = ExplicitCanyonStream::kFarSliceCount;
+         reverse > 0; --reverse) {
+        const std::size_t slice = reverse - 1;
+        const float fade = slice == 0 ? 0.62f : 0.36f;
+        const uint16_t color = scaleRgb565(terrainSecondary, fade);
+        for (std::size_t profilePoint = 1;
+             profilePoint < ExplicitCanyonStream::kProfileCount;
+             ++profilePoint) {
+            drawPackedSegment(
+                _explicitFarTerrainPoints[farCacheIndex(slice, profilePoint - 1)],
+                _explicitFarTerrainPoints[farCacheIndex(slice, profilePoint)],
+                color);
+        }
+    }
+    for (std::size_t profilePoint = 0;
+         profilePoint < ExplicitCanyonStream::kProfileCount;
+         ++profilePoint) {
+        if (!isExplicitCanyonStructuralRail(profilePoint)) continue;
+        drawPackedSegment(
+            _explicitTerrainPoints[cacheIndex(
+                ExplicitCanyonStream::kSliceCount - 1, profilePoint)],
+            _explicitFarTerrainPoints[farCacheIndex(0, profilePoint)],
+            scaleRgb565(terrainSecondary, 0.68f));
+        drawPackedSegment(
+            _explicitFarTerrainPoints[farCacheIndex(0, profilePoint)],
+            _explicitFarTerrainPoints[farCacheIndex(1, profilePoint)],
+            scaleRgb565(terrainSecondary, 0.44f));
+    }
 
     // Complete local N/Up ribs establish the flat floor, steep cliff faces,
     // and flat plateaus. Draw far to near so the near geometry remains legible.
@@ -590,12 +652,6 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         }
         drawShipLine(fin[0], fin[2], shipDim);
 
-        // Compact wingtip sensor/weapon booms echo the four-pod interceptor
-        // language without crossing the HUD safe area.
-        drawShipLine({side * 3.64f,0.16f,-0.72f},
-                     {side * 3.64f,0.12f,0.82f}, structureColor);
-        drawShipLine({side * 3.54f,0.12f,0.64f},
-                     {side * 3.74f,0.12f,0.64f}, structureColor);
     }
 
     // Visibility-filtered nacelles: the rear lip is complete, but forward rings

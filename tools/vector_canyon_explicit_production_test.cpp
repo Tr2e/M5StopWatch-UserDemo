@@ -171,6 +171,27 @@ bool validateIndependentShoulders(ExplicitCanyonStream& stream)
     return valid;
 }
 
+bool validateFarSlices(const ExplicitCanyonStream& stream)
+{
+    const auto& detailed = stream.slices();
+    const auto& far = stream.farSlices();
+    bool valid = check(
+        std::abs((far[0].worldS - detailed.back().worldS) -
+                 ExplicitCanyonStream::kFarSliceSpacing) < kEpsilon &&
+            std::abs((far[1].worldS - far[0].worldS) -
+                     ExplicitCanyonStream::kFarSliceSpacing) < kEpsilon,
+        "far LOD slices lost their fixed sparse spacing");
+    for (const ExplicitCanyonSlice& slice : far) {
+        const float tangentLength = std::sqrt(
+            slice.tangentX * slice.tangentX + slice.tangentZ * slice.tangentZ);
+        valid &= check(std::abs(tangentLength - 1.0f) < 0.001f,
+                       "far LOD route frame is not normalized");
+        valid &= check(slice.leftWidth + slice.rightWidth > 1.44f,
+                       "far LOD sampled an impassable canyon boundary");
+    }
+    return valid;
+}
+
 void hashBoundary(uint64_t& hash, const CanyonBoundary& boundary)
 {
     const std::array<uint32_t, 2> values = {
@@ -333,6 +354,7 @@ int main()
     stream.reset(kSeed);
     valid &= validateRouteAndWorldPoints(stream);
     valid &= validateIndependentShoulders(stream);
+    valid &= validateFarSlices(stream);
 
     const StreamMetrics metrics = simulateStream(kSeed);
     const StreamMetrics repeat = simulateStream(kSeed);

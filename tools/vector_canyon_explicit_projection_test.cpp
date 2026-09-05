@@ -136,6 +136,34 @@ bool validateHudReferenceFrame(const ExplicitCanyonStream& stream)
     return valid;
 }
 
+bool validateFarFieldConvergence(const ExplicitCanyonStream& stream)
+{
+    const CanyonRouteFrame route = stream.routeFrameAt(stream.playerWorldS());
+    const CanyonCamera camera = makeExplicitCanyonChaseCamera(
+        route, 0.0f, 0.5f, 0.0f, 468, 466);
+    CanyonHudReferenceFrame hud{};
+    CanyonScreenPoint farFloor{};
+    const bool projected = makeCanyonHudReferenceFrame(camera, hud) &&
+        projectExplicitCanyonPoint(
+            camera,
+            explicitCanyonToCamera(
+                camera,
+                stream.farWorldPoint(
+                    ExplicitCanyonStream::kFarSliceCount - 1,
+                    static_cast<std::size_t>(CanyonProfilePoint::FloorCenter))),
+            farFloor);
+    const float farDepth = stream.farSlices().back().worldS -
+                           stream.playerWorldS();
+    bool valid = check(projected && farDepth > 90.0f,
+                       "sparse far field does not extend beyond 90 world units");
+    valid &= check(std::abs(farFloor.y - hud.horizonY) < 5.5f,
+                   "far floor still fails to converge near the true HUD horizon");
+    std::cout << "far_field_depth=" << farDepth << '\n';
+    std::cout << "far_floor_horizon_gap_px="
+              << std::abs(farFloor.y - hud.horizonY) << '\n';
+    return valid;
+}
+
 bool validateCockpitHudReferenceFrame(const ExplicitCanyonStream& stream)
 {
     const CanyonRouteFrame route = stream.routeFrameAt(stream.playerWorldS());
@@ -238,10 +266,16 @@ bool validateProjectionWorksetAndBudget(const ExplicitCanyonStream& stream)
     }
     constexpr std::size_t maximumDiagonalSegments =
         ((ExplicitCanyonStream::kSliceCount + 1) / 2) * 4;
-    const std::size_t maximumFrameSegments = ribSegments + railSegments + maximumDiagonalSegments;
+    constexpr std::size_t farRibSegments =
+        ExplicitCanyonStream::kFarSliceCount *
+        (ExplicitCanyonStream::kProfileCount - 1);
+    constexpr std::size_t farRailSegments =
+        ExplicitCanyonStream::kFarSliceCount * 7;
+    const std::size_t maximumFrameSegments = ribSegments + railSegments +
+        maximumDiagonalSegments + farRibSegments + farRailSegments;
     valid &= check(visiblePoints > 700 && visiblePoints <= 850,
                    "M3 default camera projected an unexpected portion of the 850-point workset");
-    valid &= check(maximumFrameSegments < 1600,
+    valid &= check(maximumFrameSegments < 1700,
                    "M3 explicit line budget exceeded the reviewed thousand-level range");
 
     std::cout << "visible_points=" << visiblePoints << '\n';
@@ -261,6 +295,7 @@ int main()
     bool valid = validateCameraMatrix(stream);
     valid &= validateNearClipping();
     valid &= validateHudReferenceFrame(stream);
+    valid &= validateFarFieldConvergence(stream);
     valid &= validateCockpitHudReferenceFrame(stream);
     valid &= validateLodContract();
     valid &= validateProjectionWorksetAndBudget(stream);

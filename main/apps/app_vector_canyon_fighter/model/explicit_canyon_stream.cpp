@@ -240,12 +240,32 @@ void ExplicitCanyonStream::update(float flightForwardDistance)
         recycled = true;
     }
     if (recycled) refreshEventWindow();
+    if (recycled) refreshFarSlices();
 }
 
 CanyonWorldPoint ExplicitCanyonStream::worldPoint(std::size_t slice, std::size_t profilePoint) const
 {
     if (slice >= _slices.size() || profilePoint >= kExplicitCanyonProfile.size()) return {};
     const ExplicitCanyonSlice& source = _slices[slice];
+    const CanyonBoundary boundary{source.leftWidth, source.rightWidth};
+    const float lateral = deformedLateral(profilePoint, boundary);
+    const float normalX = source.tangentZ;
+    const float normalZ = -source.tangentX;
+    return {
+        source.centerX + normalX * lateral,
+        kExplicitCanyonProfile[profilePoint].height,
+        source.centerZ + normalZ * lateral,
+    };
+}
+
+CanyonWorldPoint ExplicitCanyonStream::farWorldPoint(std::size_t slice,
+                                                      std::size_t profilePoint) const
+{
+    if (slice >= _farSlices.size() ||
+        profilePoint >= kExplicitCanyonProfile.size()) {
+        return {};
+    }
+    const ExplicitCanyonSlice& source = _farSlices[slice];
     const CanyonBoundary boundary{source.leftWidth, source.rightWidth};
     const float lateral = deformedLateral(profilePoint, boundary);
     const float normalX = source.tangentZ;
@@ -340,7 +360,42 @@ void ExplicitCanyonStream::rebuildSlices(uint32_t firstSegment)
     _backRouteParameter = _mode == Mode::StraightBaseline
                               ? _slices.back().worldS
                               : routeParameterAtArcLength(_slices.back().worldS, _seed);
+    refreshFarSlices();
     refreshEventWindow();
+}
+
+void ExplicitCanyonStream::refreshFarSlices()
+{
+    float routeParameter = _backRouteParameter;
+    const ExplicitCanyonSlice& detailedBack = _slices.back();
+    for (std::size_t index = 0; index < _farSlices.size(); ++index) {
+        const float worldS = detailedBack.worldS +
+                             kFarSliceSpacing * static_cast<float>(index + 1u);
+        if (_mode == Mode::StraightBaseline) {
+            _farSlices[index] = {
+                detailedBack.segmentId + static_cast<uint32_t>(index + 1u),
+                worldS, 0.0f, worldS, 0.0f, 1.0f,
+                kExplicitCanyonFloorHalfWidth, kExplicitCanyonFloorHalfWidth,
+            };
+            continue;
+        }
+        routeParameter = advanceRouteParameter(routeParameter, kFarSliceSpacing,
+                                               _seed);
+        const Vec2 center = routePointAtParameter(routeParameter, _seed);
+        const Vec2 previous = routePointAtParameter(
+            std::max(0.0f, routeParameter - kRouteDerivativeStep), _seed);
+        const Vec2 next = routePointAtParameter(
+            routeParameter + kRouteDerivativeStep, _seed);
+        const Vec2 tangent = normalize(next - previous);
+        const CanyonBoundary boundary = _mode == Mode::Production
+            ? makeBoundary(worldS, _seed)
+            : CanyonBoundary{};
+        _farSlices[index] = {
+            detailedBack.segmentId + static_cast<uint32_t>(index + 1u),
+            worldS, center.x, center.z, tangent.x, tangent.z,
+            boundary.leftWidth, boundary.rightWidth,
+        };
+    }
 }
 
 void ExplicitCanyonStream::refreshEventWindow()

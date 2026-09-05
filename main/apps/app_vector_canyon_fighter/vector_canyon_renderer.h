@@ -38,13 +38,17 @@ private:
 
     std::array<ProjectedCanyonPoint, ExplicitCanyonStream::kSliceCount * ExplicitCanyonStream::kProfileCount>
         _explicitTerrainPoints = {};
+    std::array<ProjectedCanyonPoint, ExplicitCanyonStream::kFarSliceCount * ExplicitCanyonStream::kProfileCount>
+        _explicitFarTerrainPoints = {};
     static_assert(sizeof(_explicitTerrainPoints) == 3400,
                   "The 34 x 25 explicit projection cache must remain exactly 3400 bytes");
+    static_assert(sizeof(_explicitFarTerrainPoints) == 200,
+                  "The sparse 2 x 25 far projection cache must remain exactly 200 bytes");
     int _width = 0;
     int _height = 0;
 };
 
-static_assert(sizeof(Renderer) <= 3500,
+static_assert(sizeof(Renderer) <= 3700,
               "Explicit projection cache exceeded the reviewed heap budget");
 
 }  // namespace vector_canyon_fighter
