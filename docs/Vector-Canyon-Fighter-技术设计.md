@@ -98,7 +98,7 @@ public:
 
 `InputStatus` 统一报告来源、连接、`Disconnected / Calibrating / Ready / Degraded / Fault`、校准能力、校准进度、最后有效样本时间和连续错误数。无需校准的按钮设备不实现伪校准；外设异常返回 `valid=false` 和中性轴值，不能沿用最后一次极端姿态。
 
-一次性动作包括 `Pause / Reset / ToggleImmersive / Recalibrate / ThrottleUp / ThrottleDown`；持续动作目前包含 `Boost`。应用在固定模拟步循环外只消费一次 `pressed`，FlightModel 只读取规范化连续轴和 `held`，避免慢帧把一次按键重复执行。K1 长按由当前 Provider 映射为上下文动作：正常飞行切换沉浸模式，撞击后请求重置；应用不再直接读取 HAL 游戏按键。Renderer 只读 `aircraftVisible` 和 `InputStatus`，关闭战机层时仍保持峡谷、HUD、碰撞和飞行模拟。
+一次性动作包括 `Pause / Reset / ToggleImmersive / Recalibrate / ThrottleUp / ThrottleDown`；持续动作目前包含 `Boost`。应用在固定模拟步循环外只消费一次 `pressed`，FlightModel 只读取规范化连续轴和 `held`，避免慢帧把一次按键重复执行。K1 长按由当前 Provider 映射为上下文动作：正常飞行切换沉浸模式，撞击后请求重置；应用不再直接读取 HAL 游戏按键。Renderer 只读 `aircraftVisible` 和 `InputStatus`：`aircraftVisible=true` 使用 world-up 稳定追尾相机并绘制战机层；`false` 使用完整 pitch、roll、turnYaw 的机体随动相机并隐藏战机、尾焰、投影与频闪。峡谷、共形 HUD、碰撞和飞行模拟在两种模式下持续运行。
 
 ### 3.2 飞行状态
 
