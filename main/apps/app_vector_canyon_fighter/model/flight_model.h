@@ -9,7 +9,6 @@ struct FlightState {
     float lateralOffset = 0.0f;
     float altitude = 0.0f;
     float speed = 72.0f;
-    float heading = 0.0f;
     float roll = 0.0f;
     float pitch = 0.0f;
     float turnYaw = 0.0f;
@@ -17,6 +16,13 @@ struct FlightState {
     bool paused = false;
     bool collided = false;
 };
+
+inline constexpr float kFlightBoostSpeedGain = 44.0f;
+
+inline constexpr float effectiveFlightForwardSpeed(const FlightState& state)
+{
+    return state.speed + kFlightBoostSpeedGain * state.boostAmount;
+}
 
 class FlightModel {
 public:

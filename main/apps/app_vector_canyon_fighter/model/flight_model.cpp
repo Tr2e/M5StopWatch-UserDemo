@@ -60,9 +60,6 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     _verticalVelocity = approach(_verticalVelocity, safePitch * kMaxVerticalVelocity, response);
     _state.lateralOffset = std::clamp(_state.lateralOffset + _lateralVelocity * deltaSeconds, -3.2f, 3.2f);
     _state.altitude = std::clamp(_state.altitude + _verticalVelocity * deltaSeconds, -1.25f, 1.35f);
-    _state.heading += safeSteer * 24.0f * deltaSeconds;
-    if (_state.heading < 0.0f) _state.heading += 360.0f;
-    if (_state.heading >= 360.0f) _state.heading -= 360.0f;
     // These are local aircraft pose channels, not camera rotations. Bank is
     // deliberately strongest, pitch remains readable in chase view, and the
     // restrained yaw exposes turn direction through perspective without
@@ -78,7 +75,7 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     const float boostTarget = boostActive ? 1.0f : 0.0f;
     const float boostResponse = (boostActive ? 5.5f : 1.8f) * deltaSeconds;
     _state.boostAmount = approach(_state.boostAmount, boostTarget, boostResponse);
-    _state.forwardDistance += (_state.speed + 44.0f * _state.boostAmount) * deltaSeconds;
+    _state.forwardDistance += effectiveFlightForwardSpeed(_state) * deltaSeconds;
 }
 
 void FlightModel::togglePaused()

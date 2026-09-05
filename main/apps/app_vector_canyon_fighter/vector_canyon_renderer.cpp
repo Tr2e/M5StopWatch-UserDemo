@@ -1,6 +1,7 @@
 #include "vector_canyon_renderer.h"
 
 #include "explicit_canyon_projection.h"
+#include "hud_semantics.h"
 #include "vector_canyon_config.h"
 
 #include <hal/hal.h>
@@ -691,11 +692,11 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setTextSize(1);
 
-    const int heading = static_cast<int>(flight.heading + 0.5f) % 360;
+    const int heading = canyonHudHeadingDegrees(route, flight.turnYaw);
     canvas.setCursor(92, 50);
     canvas.print("VR-01");
     canvas.setCursor(_width - 120, 50);
-    canvas.print("NAV");
+    canvas.print(canyonHudViewModeLabel(aircraftVisible));
     canvas.setCursor(centerX - 25, 42);
     canvas.print("HDG");
     canvas.setCursor(centerX + 1, 42);
@@ -799,31 +800,38 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     }
     canvas.setTextColor(hudColor, TFT_BLACK);
 
-    // Route cue: unlike the earth horizon, this follows the projected far
-    // canyon center in both axes. It is deliberately not called a velocity
-    // vector until FlightState exposes actual lateral/vertical velocity.
+    // Route cue: a diamond follows the projected far canyon center in both
+    // axes. Avoid the circle-with-wings silhouette reserved for a real flight
+    // path marker until FlightState exposes lateral/vertical velocity.
     const int routeCueX = static_cast<int>(std::lround(routeCue.x));
     const int routeCueY = static_cast<int>(std::lround(routeCue.y));
-    canvas.drawCircle(routeCueX, routeCueY, 5, hudAccent);
-    canvas.drawLine(routeCueX - 14, routeCueY, routeCueX - 5, routeCueY, hudAccent);
-    canvas.drawLine(routeCueX + 5, routeCueY, routeCueX + 14, routeCueY, hudAccent);
-    canvas.drawLine(routeCueX, routeCueY - 10, routeCueX, routeCueY - 5, hudAccent);
-    const int datumY = aircraftVisible
-        ? 188
-        : static_cast<int>(std::lround(camera.principalY));
-    canvas.drawLine(centerX - 24, datumY, centerX - 8, datumY, hudColor);
-    canvas.drawLine(centerX - 8, datumY, centerX, datumY + 7, hudColor);
-    canvas.drawLine(centerX, datumY + 7, centerX + 8, datumY, hudColor);
-    canvas.drawLine(centerX + 8, datumY, centerX + 24, datumY, hudColor);
+    constexpr int kRouteCueRadius = 6;
+    canvas.drawLine(routeCueX, routeCueY - kRouteCueRadius,
+                    routeCueX + kRouteCueRadius, routeCueY, hudAccent);
+    canvas.drawLine(routeCueX + kRouteCueRadius, routeCueY,
+                    routeCueX, routeCueY + kRouteCueRadius, hudAccent);
+    canvas.drawLine(routeCueX, routeCueY + kRouteCueRadius,
+                    routeCueX - kRouteCueRadius, routeCueY, hudAccent);
+    canvas.drawLine(routeCueX - kRouteCueRadius, routeCueY,
+                    routeCueX, routeCueY - kRouteCueRadius, hudAccent);
+    if (!aircraftVisible) {
+        const int datumY = static_cast<int>(std::lround(camera.principalY));
+        canvas.drawLine(centerX - 24, datumY, centerX - 8, datumY, hudColor);
+        canvas.drawLine(centerX - 8, datumY, centerX, datumY + 7, hudColor);
+        canvas.drawLine(centerX, datumY + 7, centerX + 8, datumY, hudColor);
+        canvas.drawLine(centerX + 8, datumY, centerX + 24, datumY, hudColor);
+    }
 
     // Speed tape with primary/secondary ticks and a boxed active readout.
     canvas.setCursor(39, 127);
     canvas.print("SPD");
+    const float forwardSpeed = effectiveFlightForwardSpeed(flight);
     canvas.drawRect(34, 139, 35, 15, hudDim);
     canvas.setCursor(40, 143);
-    canvas.printf("%03d", static_cast<int>(flight.speed + 0.5f));
+    canvas.printf("%03d", static_cast<int>(forwardSpeed + 0.5f));
     canvas.drawLine(45, 160, 45, 264, hudDim);
-    const int speedMarkerY = 255 - std::clamp(static_cast<int>((flight.speed - 42.0f) * 1.05f), 0, 95);
+    const int speedMarkerY = 255 - std::clamp(
+        static_cast<int>((forwardSpeed - 42.0f) * 1.05f), 0, 95);
     for (int tick = 0; tick <= 10; ++tick) {
         const int y = 160 + tick * 10;
         const bool major = tick % 2 == 0;
@@ -832,12 +840,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.drawLine(40, speedMarkerY, 61, speedMarkerY, hudAccent);
     canvas.drawLine(61, speedMarkerY, 65, speedMarkerY - 3, hudAccent);
     canvas.drawLine(61, speedMarkerY, 65, speedMarkerY + 3, hudAccent);
-    canvas.setTextColor(hudDim, TFT_BLACK);
-    canvas.setCursor(35, 270);
-    canvas.printf("T%02d", std::clamp(static_cast<int>((flight.speed - 42.0f) * 0.67f), 0, 60));
-
-    // AGL tape mirrors speed; it reports the same floor clearance used by the
-    // collision model, while the lower cue remains the aircraft pitch trend.
+    // AGL tape mirrors speed and reports the same floor clearance used by the
+    // collision model.
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setCursor(_width - 72, 127);
     canvas.print("AGL");
@@ -855,10 +859,6 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.drawLine(_width - 61, altitudeMarkerY, _width - 40, altitudeMarkerY, hudAccent);
     canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY - 3, hudAccent);
     canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY + 3, hudAccent);
-    canvas.setTextColor(hudDim, TFT_BLACK);
-    canvas.setCursor(_width - 75, 270);
-    canvas.printf("P%+03d", static_cast<int>(flight.pitch));
-
     // Compact course-deviation scale sits above the fighter, not over terrain.
     // Keep the course cue above the raised aircraft, between the two side tapes.
     constexpr int kCourseY = kAircraftCourseCueY;
@@ -872,16 +872,20 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.drawLine(deviationX, kCourseY - 4, deviationX + 4, kCourseY - 9, hudAccent);
 
     canvas.setCursor(92, _height - 48);
-    if (!inputStatus.axesConnected) {
+    const HudInputAlert inputAlert = canyonHudInputAlert(inputStatus);
+    if (inputAlert == HudInputAlert::AxisLost) {
         canvas.setTextColor(caution, TFT_BLACK);
-        canvas.print("IN LOST");
+        canvas.print("AXIS LOST");
+    } else if (inputAlert == HudInputAlert::ActionLost) {
+        canvas.setTextColor(caution, TFT_BLACK);
+        canvas.print("ACT LOST");
     } else {
         canvas.print("IN ");
         canvas.print(axisSourceLabel(inputStatus.axisSource));
     }
     canvas.setCursor(_width - 143, _height - 48);
     canvas.setTextColor(flight.boostAmount > 0.05f ? caution : hudColor, TFT_BLACK);
-    canvas.print(flight.boostAmount > 0.05f ? "THR BOOST" : "THR CRZ");
+    canvas.print(flight.boostAmount > 0.05f ? "PWR BST" : "PWR CRZ");
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setCursor(centerX - 34, _height - 48);
     canvas.printf("R%+03d P%+03d", static_cast<int>(flight.roll), static_cast<int>(flight.pitch));
@@ -890,8 +894,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         canvas.drawLine(centerX - 52, 190, centerX + 52, 190, impact);
         canvas.setCursor(centerX - 34, 198);
         canvas.print(impactLabel(collision.impactHazard));
-        canvas.setCursor(centerX - 31, 210);
-        canvas.print("A HOLD RESET");
+        canvas.setCursor(centerX - 37, 210);
+        canvas.print("K1 HOLD RESET");
     } else if (flight.paused) {
         canvas.setTextColor(hudColor, TFT_BLACK);
         canvas.setCursor(centerX - 20, 198);
