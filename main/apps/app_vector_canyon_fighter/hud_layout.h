@@ -17,6 +17,47 @@ struct HudBoundedCue {
     bool constrained = false;
 };
 
+inline int normalizeHudDegrees(int degrees)
+{
+    degrees %= 360;
+    return degrees < 0 ? degrees + 360 : degrees;
+}
+
+inline float hudHeadingTickX(float tickDegrees, float headingDegrees,
+                             float centerX, float pixelsPerFiveDegrees = 22.0f)
+{
+    return centerX + (tickDegrees - headingDegrees) *
+                         (pixelsPerFiveDegrees / 5.0f);
+}
+
+inline float hudTapeTickY(float tickValue, float currentValue,
+                          float unitsPerTick, float pixelsPerTick,
+                          float datumY)
+{
+    return datumY - (tickValue - currentValue) *
+                        (pixelsPerTick / unitsPerTick);
+}
+
+inline bool hudRectInsideCircularArea(float x, float y, float rectWidth,
+                                      float rectHeight, int width, int height,
+                                      float edgeInset)
+{
+    const float centerX = static_cast<float>(width) * 0.5f;
+    const float centerY = static_cast<float>(height) * 0.5f;
+    const float radius = static_cast<float>(std::min(width, height)) * 0.5f -
+                         edgeInset;
+    const float corners[4][2] = {
+        {x, y}, {x + rectWidth, y},
+        {x, y + rectHeight}, {x + rectWidth, y + rectHeight},
+    };
+    for (const auto& corner : corners) {
+        const float deltaX = corner[0] - centerX;
+        const float deltaY = corner[1] - centerY;
+        if (deltaX * deltaX + deltaY * deltaY > radius * radius) return false;
+    }
+    return true;
+}
+
 inline HudBoundedCue constrainHudCueToRect(
     HudLayoutPoint raw, HudLayoutPoint origin,
     float minX, float maxX, float minY, float maxY)

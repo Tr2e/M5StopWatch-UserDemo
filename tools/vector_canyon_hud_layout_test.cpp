@@ -78,6 +78,42 @@ bool validateFirstPersonCueSeparation()
     return valid;
 }
 
+bool validatePeripheralScales()
+{
+    bool valid = check(normalizeHudDegrees(-5) == 355 &&
+                           normalizeHudDegrees(360) == 0 &&
+                           normalizeHudDegrees(725) == 5,
+                       "heading labels do not wrap through north");
+    constexpr float centerX = 234.0f;
+    const float northX = hudHeadingTickX(360.0f, 359.0f, centerX);
+    const float previousX = hudHeadingTickX(355.0f, 359.0f, centerX);
+    valid &= check(northX > centerX && northX - centerX < 5.0f &&
+                       previousX < centerX,
+                   "heading tape is discontinuous around 359/000 degrees");
+    const float subDegreeBefore = hudHeadingTickX(10.0f, 9.10f, centerX);
+    const float subDegreeAfter = hudHeadingTickX(10.0f, 9.35f, centerX);
+    valid &= check(subDegreeAfter < subDegreeBefore &&
+                       subDegreeBefore - subDegreeAfter > 1.0f &&
+                       subDegreeBefore - subDegreeAfter < 1.2f,
+                   "heading tape discarded sub-degree motion");
+
+    constexpr float datumY = 212.0f;
+    const float highSpeedBefore = hudTapeTickY(80.0f, 70.0f, 5.0f, 10.0f, datumY);
+    const float highSpeedAfter = hudTapeTickY(80.0f, 75.0f, 5.0f, 10.0f, datumY);
+    valid &= check(highSpeedBefore < datumY && highSpeedAfter > highSpeedBefore,
+                   "speed tape did not scroll downward as speed increased");
+    const float aglNegative = hudTapeTickY(-2.0f, -1.0f, 1.0f, 10.0f, datumY);
+    valid &= check(std::isfinite(aglNegative) && aglNegative > datumY,
+                   "AGL tape cannot represent negative clearance");
+
+    valid &= check(hudRectInsideCircularArea(35.0f, 204.0f, 40.0f, 17.0f,
+                                             468, 466, 31.0f) &&
+                       hudRectInsideCircularArea(393.0f, 204.0f, 40.0f, 17.0f,
+                                                 468, 466, 31.0f),
+                   "side tape readout escaped the core circular safe area");
+    return valid;
+}
+
 }  // namespace
 
 int main()
@@ -85,5 +121,6 @@ int main()
     bool valid = validateCueConstraint();
     valid &= validatePitchLabelZones();
     valid &= validateFirstPersonCueSeparation();
+    valid &= validatePeripheralScales();
     return valid ? 0 : 1;
 }

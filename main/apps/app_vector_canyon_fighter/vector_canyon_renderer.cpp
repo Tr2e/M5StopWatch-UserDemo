@@ -694,6 +694,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setTextSize(1);
 
+    const float headingFloat =
+        canyonHudHeadingFloatDegrees(route, flight.turnYaw);
     const int heading = canyonHudHeadingDegrees(route, flight.turnYaw);
     canvas.setCursor(92, 50);
     canvas.print("VR-01");
@@ -703,12 +705,49 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.print("HDG");
     canvas.setCursor(centerX + 1, 42);
     canvas.printf("%03d", heading);
-    canvas.drawLine(centerX - 55, 63, centerX + 55, 63, hudDim);
-    for (int tick = -2; tick <= 2; ++tick) {
-        const int x = centerX + tick * 22;
-        const int length = tick == 0 ? 8 : 4;
-        canvas.drawLine(x, 63, x, 63 + length, tick == 0 ? hudAccent : hudColor);
+    constexpr int kHeadingAxisY = 63;
+    constexpr int kHeadingHalfWidth = 66;
+    constexpr int kHeadingStepDegrees = 5;
+    canvas.drawLine(centerX - kHeadingHalfWidth, kHeadingAxisY,
+                    centerX + kHeadingHalfWidth, kHeadingAxisY, hudDim);
+    const int headingBase =
+        static_cast<int>(std::floor(headingFloat /
+                                    static_cast<float>(kHeadingStepDegrees))) *
+        kHeadingStepDegrees;
+    for (int offset = -4; offset <= 4; ++offset) {
+        const int rawTickHeading = headingBase + offset * kHeadingStepDegrees;
+        const int x = static_cast<int>(std::lround(hudHeadingTickX(
+            static_cast<float>(rawTickHeading), headingFloat,
+            static_cast<float>(centerX))));
+        if (x < centerX - kHeadingHalfWidth || x > centerX + kHeadingHalfWidth) continue;
+        const int tickHeading = normalizeHudDegrees(rawTickHeading);
+        const bool major = tickHeading % 10 == 0;
+        canvas.drawLine(x, kHeadingAxisY, x,
+                        kHeadingAxisY + (major ? 6 : 3),
+                        major ? hudColor : hudDim);
+        if (major) {
+            // Keep enough space for the compiler's conservative integer range
+            // analysis; normalized headings still render as one cardinal or
+            // exactly two decimal characters.
+            char label[12]{};
+            if (tickHeading == 0) {
+                std::snprintf(label, sizeof(label), "N");
+            } else if (tickHeading == 90) {
+                std::snprintf(label, sizeof(label), "E");
+            } else if (tickHeading == 180) {
+                std::snprintf(label, sizeof(label), "S");
+            } else if (tickHeading == 270) {
+                std::snprintf(label, sizeof(label), "W");
+            } else {
+                std::snprintf(label, sizeof(label), "%02d", tickHeading / 10);
+            }
+            canvas.setTextColor(tickHeading % 90 == 0 ? hudColor : hudMid,
+                                TFT_BLACK);
+            canvas.setCursor(x - canvas.textWidth(label) / 2, 51);
+            canvas.print(label);
+        }
     }
+    canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.drawLine(centerX - 4, 75, centerX, 69, hudAccent);
     canvas.drawLine(centerX, 69, centerX + 4, 75, hudAccent);
 
@@ -869,46 +908,84 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         canvas.drawLine(centerX + 8, datumY, centerX + 24, datumY, hudColor);
     }
 
-    // Speed tape with primary/secondary ticks and a boxed active readout.
+    // Speed and AGL use fixed central readout datums while their scales move
+    // behind them. This makes the boxed number the single current-value cue.
+    constexpr int kTapeTop = 160;
+    constexpr int kTapeBottom = 264;
+    constexpr int kTapeDatumY = 212;
+    constexpr int kTapeBoxY = 204;
+    constexpr int kTapeBoxWidth = 40;
+    constexpr int kTapeBoxHeight = 17;
+    constexpr int kSpeedAxisX = 45;
+    const int altitudeAxisX = _width - 45;
     canvas.setCursor(39, 127);
     canvas.print("SPD");
     const float forwardSpeed = effectiveFlightForwardSpeed(flight);
-    canvas.drawRect(34, 139, 35, 15, hudDim);
-    canvas.setCursor(40, 143);
-    canvas.printf("%03d", static_cast<int>(forwardSpeed + 0.5f));
-    canvas.drawLine(45, 160, 45, 264, hudDim);
-    const int speedMarkerY = 255 - std::clamp(
-        static_cast<int>((forwardSpeed - 42.0f) * 1.05f), 0, 95);
-    for (int tick = 0; tick <= 10; ++tick) {
-        const int y = 160 + tick * 10;
-        const bool major = tick % 2 == 0;
-        canvas.drawLine(45, y, major ? 59 : 52, y, major ? hudColor : hudDim);
+    canvas.drawLine(kSpeedAxisX, kTapeTop, kSpeedAxisX, kTapeBottom, hudDim);
+    constexpr int kSpeedStep = 5;
+    const int speedBase = static_cast<int>(std::floor(forwardSpeed /
+                                                      static_cast<float>(kSpeedStep))) *
+                          kSpeedStep;
+    for (int offset = -7; offset <= 7; ++offset) {
+        const int tickValue = speedBase + offset * kSpeedStep;
+        const int y = static_cast<int>(std::lround(hudTapeTickY(
+            static_cast<float>(tickValue), forwardSpeed,
+            static_cast<float>(kSpeedStep), 10.0f,
+            static_cast<float>(kTapeDatumY))));
+        if (y < kTapeTop || y > kTapeBottom) continue;
+        const bool major = tickValue % 10 == 0;
+        canvas.drawLine(kSpeedAxisX, y, kSpeedAxisX + (major ? 14 : 7), y,
+                        major ? hudColor : hudDim);
     }
-    canvas.drawLine(40, speedMarkerY, 61, speedMarkerY, hudAccent);
-    canvas.drawLine(61, speedMarkerY, 65, speedMarkerY - 3, hudAccent);
-    canvas.drawLine(61, speedMarkerY, 65, speedMarkerY + 3, hudAccent);
+    constexpr int kSpeedBoxX = 35;
+    canvas.fillRect(kSpeedBoxX, kTapeBoxY, kTapeBoxWidth, kTapeBoxHeight,
+                    TFT_BLACK);
+    canvas.drawRect(kSpeedBoxX, kTapeBoxY, kTapeBoxWidth, kTapeBoxHeight,
+                    hudColor);
+    canvas.setCursor(kSpeedBoxX + 5, kTapeBoxY + 4);
+    canvas.printf("%03d", static_cast<int>(forwardSpeed + 0.5f));
+    canvas.drawLine(kSpeedBoxX + kTapeBoxWidth, kTapeDatumY,
+                    kSpeedBoxX + kTapeBoxWidth + 5, kTapeDatumY - 4,
+                    hudAccent);
+    canvas.drawLine(kSpeedBoxX + kTapeBoxWidth, kTapeDatumY,
+                    kSpeedBoxX + kTapeBoxWidth + 5, kTapeDatumY + 4,
+                    hudAccent);
     // AGL tape mirrors speed and reports the same floor clearance used by the
     // collision model.
     canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setCursor(_width - 72, 127);
     canvas.print("AGL");
-    canvas.drawRect(_width - 81, 139, 42, 15, hudDim);
-    canvas.setCursor(_width - 77, 143);
-    canvas.printf("%+03d", static_cast<int>(collision.floorClearance * 10.0f));
-    canvas.drawLine(_width - 45, 160, _width - 45, 264, hudDim);
-    const int altitudeMarkerY = 208 -
-        std::clamp(static_cast<int>(collision.floorClearance * 32.0f), -42, 42);
-    for (int tick = 0; tick <= 10; ++tick) {
-        const int y = 160 + tick * 10;
-        const bool major = tick % 2 == 0;
-        canvas.drawLine(_width - 45, y, _width - (major ? 59 : 52), y, major ? hudColor : hudDim);
+    const float aglValue = collision.floorClearance * 10.0f;
+    canvas.drawLine(altitudeAxisX, kTapeTop, altitudeAxisX, kTapeBottom, hudDim);
+    const int aglBase = static_cast<int>(std::floor(aglValue));
+    for (int offset = -7; offset <= 7; ++offset) {
+        const int tickValue = aglBase + offset;
+        const int y = static_cast<int>(std::lround(hudTapeTickY(
+            static_cast<float>(tickValue), aglValue, 1.0f, 10.0f,
+            static_cast<float>(kTapeDatumY))));
+        if (y < kTapeTop || y > kTapeBottom) continue;
+        const bool major = tickValue % 5 == 0;
+        canvas.drawLine(altitudeAxisX, y,
+                        altitudeAxisX - (major ? 14 : 7), y,
+                        major ? hudColor : hudDim);
     }
-    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 40, altitudeMarkerY, hudAccent);
-    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY - 3, hudAccent);
-    canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY + 3, hudAccent);
+    const int altitudeBoxX = _width - 75;
+    canvas.fillRect(altitudeBoxX, kTapeBoxY, kTapeBoxWidth, kTapeBoxHeight,
+                    TFT_BLACK);
+    canvas.drawRect(altitudeBoxX, kTapeBoxY, kTapeBoxWidth, kTapeBoxHeight,
+                    hudColor);
+    canvas.setCursor(altitudeBoxX + 5, kTapeBoxY + 4);
+    canvas.printf("%+03d", static_cast<int>(std::lround(aglValue)));
+    canvas.drawLine(altitudeBoxX, kTapeDatumY,
+                    altitudeBoxX - 5, kTapeDatumY - 4, hudAccent);
+    canvas.drawLine(altitudeBoxX, kTapeDatumY,
+                    altitudeBoxX - 5, kTapeDatumY + 4, hudAccent);
     // Compact course-deviation scale sits above the fighter, not over terrain.
     // Keep the course cue above the raised aircraft, between the two side tapes.
     const int kCourseY = aircraftVisible ? kAircraftCourseCueY : 330;
+    canvas.setTextColor(hudDim, TFT_BLACK);
+    canvas.setCursor(centerX - 76, kCourseY - 3);
+    canvas.print("XTK");
     canvas.drawLine(centerX - 52, kCourseY, centerX + 52, kCourseY, hudDim);
     for (int tick = -2; tick <= 2; ++tick) {
         const int x = centerX + tick * 21;
@@ -918,6 +995,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.drawLine(deviationX - 4, kCourseY - 9, deviationX, kCourseY - 4, hudAccent);
     canvas.drawLine(deviationX, kCourseY - 4, deviationX + 4, kCourseY - 9, hudAccent);
 
+    canvas.setTextColor(hudColor, TFT_BLACK);
     canvas.setCursor(92, _height - 48);
     const HudInputAlert inputAlert = canyonHudInputAlert(inputStatus);
     if (inputAlert == HudInputAlert::AxisLost) {

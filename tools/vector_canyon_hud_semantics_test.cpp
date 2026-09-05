@@ -30,6 +30,9 @@ bool validateHeadingSemantics()
     CanyonRouteFrame route{};
     bool valid = check(canyonHudHeadingDegrees(route, 0.0f) == 0,
                        "+Z route must be heading 000");
+    valid &= check(std::abs(canyonHudHeadingFloatDegrees(route, 0.25f) - 0.25f) <
+                       0.001f,
+                   "continuous heading lost its sub-degree precision");
     route.tangentX = 1.0f;
     route.tangentZ = 0.0f;
     valid &= check(canyonHudHeadingDegrees(route, 0.0f) == 90,
@@ -45,6 +48,12 @@ bool validateHeadingSemantics()
     valid &= check(canyonHudHeadingDegrees(route, -8.0f) == 262 &&
                        canyonHudHeadingDegrees(route, 92.0f) == 2,
                    "local yaw did not wrap around the heading scale");
+    route.tangentX = 0.0f;
+    route.tangentZ = 1.0f;
+    valid &= check(std::abs(canyonHudHeadingFloatDegrees(route, -0.25f) -
+                            359.75f) < 0.001f &&
+                       canyonHudHeadingDegrees(route, -0.25f) == 0,
+                   "continuous heading did not wrap smoothly through north");
     return valid;
 }
 
