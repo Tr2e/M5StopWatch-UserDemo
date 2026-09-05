@@ -49,6 +49,7 @@ void AppVectorCanyonFighter::onOpen()
 
     const auto& display = GetHAL().getDisplay();
     _renderer.open(display.width(), display.height());
+    _renderBudget.reset();
     _flightModel.reset();
 #if VECTOR_CANYON_EXPLICIT_PREVIEW
 #if VECTOR_CANYON_EXPLICIT_STATIC_BASELINE
@@ -152,7 +153,8 @@ void AppVectorCanyonFighter::onRunning()
         if (_lastFrameMs == 0 || nowMs - _lastFrameMs >= kFrameIntervalMs) {
             _lastFrameMs = nowMs;
             _renderer.render(_flightModel.state(), _terrain, _collisionStatus,
-                             calibProgress, _inputStatus);
+                             calibProgress, _inputStatus, true,
+                             _renderBudget.detail());
         }
         if (_inputStatus.isReady()) {
             _flightModel.reset();
@@ -167,6 +169,7 @@ void AppVectorCanyonFighter::onRunning()
             _renderedFrames = 0;
             _boostedFrames = 0;
             _simulationClampCount = 0;
+            _renderBudget.reset();
         }
         return;
     }
@@ -214,7 +217,7 @@ void AppVectorCanyonFighter::onRunning()
     _lastFrameMs = nowMs;
     const uint32_t renderStartedMs = GetHAL().millis();
     _renderer.render(_flightModel.state(), _terrain, _collisionStatus, -1.0f,
-                     _inputStatus, _aircraftVisible);
+                     _inputStatus, _aircraftVisible, _renderBudget.detail());
     const uint32_t renderTimeMs = GetHAL().millis() - renderStartedMs;
     _renderTimeTotalMs += renderTimeMs;
     _renderTimeMaxMs = std::max(_renderTimeMaxMs, renderTimeMs);
@@ -226,9 +229,14 @@ void AppVectorCanyonFighter::onRunning()
         const uint32_t fpsTenths = static_cast<uint32_t>(_renderedFrames) * 10000u / performanceElapsedMs;
         const uint32_t averageRenderMs = _renderTimeTotalMs / _renderedFrames;
         const uint32_t stackWatermark = static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr));
-        mclog::tagInfo(getAppInfo().name, "M7 game fps={}.{} render={}ms max={}ms boost={}/{} clamps={} stack={}",
+        _renderBudget.observe(fpsTenths, averageRenderMs,
+                              _simulationClampCount);
+        mclog::tagInfo(getAppInfo().name, "H9 game fps={}.{} render={}ms max={}ms boost={}/{} clamps={} detail={} stack={}",
                        fpsTenths / 10, fpsTenths % 10, averageRenderMs, _renderTimeMaxMs, _boostedFrames,
-                       _renderedFrames, _simulationClampCount, stackWatermark);
+                       _renderedFrames, _simulationClampCount,
+                       vector_canyon_fighter::terrainRenderDetailLabel(
+                           _renderBudget.detail()),
+                       stackWatermark);
         _performanceWindowStartedMs = GetHAL().millis();
         _renderTimeTotalMs = 0;
         _renderTimeMaxMs = 0;

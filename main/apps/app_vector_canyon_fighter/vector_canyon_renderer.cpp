@@ -145,7 +145,9 @@ void Renderer::close()
 }
 
 bool Renderer::drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCanyonStream& terrain,
-                                   uint16_t terrainPrimary, uint16_t terrainMid, uint16_t terrainSecondary)
+                                   uint16_t terrainPrimary, uint16_t terrainMid,
+                                   uint16_t terrainSecondary,
+                                   TerrainRenderDetail terrainDetail)
 {
     constexpr int16_t kInvisible = std::numeric_limits<int16_t>::min();
     constexpr int kMinimumCoordinate = std::numeric_limits<int16_t>::min() + 1;
@@ -296,6 +298,12 @@ bool Renderer::drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCan
     // Semantic profile indices form longitudinal rails. Structural rails never
     // disappear; mid and fine rails fade continuously with world depth.
     for (std::size_t profilePoint = 0; profilePoint < ExplicitCanyonStream::kProfileCount; ++profilePoint) {
+        const bool optionalFineRail =
+            !isExplicitCanyonStructuralRail(profilePoint) &&
+            !isExplicitCanyonMidRail(profilePoint);
+        if (terrainDetail == TerrainRenderDetail::Low && optionalFineRail) {
+            continue;
+        }
         for (std::size_t slice = 1; slice < ExplicitCanyonStream::kSliceCount; ++slice) {
             const float midpointWorldS = (slices[slice - 1].worldS + slices[slice].worldS) * 0.5f;
             const float relativeDepth = std::max(0.0f, midpointWorldS - terrain.playerWorldS());
@@ -310,14 +318,19 @@ bool Renderer::drawExplicitTerrain(const CanyonCamera& camera, const ExplicitCan
 
     // Sparse deterministic diagonals make the two explicit cliff faces read as
     // low-poly surfaces. They share the fine LOD fade and never replace rails.
-    constexpr std::array<std::size_t, 4> kFaceStarts = {3, 4, 18, 19};
-    for (std::size_t slice = 0; slice + 1 < ExplicitCanyonStream::kSliceCount; slice += 2) {
-        const float relativeDepth = std::max(0.0f, slices[slice].worldS - terrain.playerWorldS());
-        const float weight = 1.0f - explicitCanyonSmoothUnit((relativeDepth - 9.0f) / 5.0f);
-        if (weight <= 0.01f) continue;
-        for (const std::size_t faceStart : kFaceStarts) {
-            drawSegment(slice, faceStart, slice + 1, faceStart + 1,
-                        scaleRgb565(depthColor(relativeDepth), weight));
+    if (terrainDetail == TerrainRenderDetail::High) {
+        constexpr std::array<std::size_t, 4> kFaceStarts = {3, 4, 18, 19};
+        for (std::size_t slice = 0;
+             slice + 1 < ExplicitCanyonStream::kSliceCount; slice += 2) {
+            const float relativeDepth = std::max(
+                0.0f, slices[slice].worldS - terrain.playerWorldS());
+            const float weight = 1.0f - explicitCanyonSmoothUnit(
+                (relativeDepth - 9.0f) / 5.0f);
+            if (weight <= 0.01f) continue;
+            for (const std::size_t faceStart : kFaceStarts) {
+                drawSegment(slice, faceStart, slice + 1, faceStart + 1,
+                            scaleRgb565(depthColor(relativeDepth), weight));
+            }
         }
     }
     return drewAny;
@@ -340,21 +353,24 @@ void Renderer::renderExplicitPreview(const FlightState& flight, const ExplicitCa
 #endif
     display.startWrite();
     display.fillScreen(TFT_BLACK);
-    drawExplicitTerrain(camera, terrain, terrainPrimary, terrainMid, terrainSecondary);
+    drawExplicitTerrain(camera, terrain, terrainPrimary, terrainMid,
+                        terrainSecondary, TerrainRenderDetail::High);
     display.endWrite();
 }
 
 void Renderer::render(const FlightState& flight, const ExplicitCanyonStream& terrain,
                       const CollisionStatus& collision, float calibrationProgress,
-                      const InputStatus& inputStatus, bool aircraftVisible)
+                      const InputStatus& inputStatus, bool aircraftVisible,
+                      TerrainRenderDetail terrainDetail)
 {
     renderGame(flight, terrain, collision, calibrationProgress, inputStatus,
-               aircraftVisible);
+               aircraftVisible, terrainDetail);
 }
 
 void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream& terrain,
                           const CollisionStatus& collision, float calibrationProgress,
-                          const InputStatus& inputStatus, bool aircraftVisible)
+                          const InputStatus& inputStatus, bool aircraftVisible,
+                          TerrainRenderDetail terrainDetail)
 {
     if (_width <= 0 || _height <= 0) return;
 
@@ -476,7 +492,8 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         static_cast<float>(centerX), camera.principalY,
     };
     const bool terrainVisible = drawExplicitTerrain(
-        camera, terrain, terrainPrimary, terrainMid, terrainSecondary);
+        camera, terrain, terrainPrimary, terrainMid, terrainSecondary,
+        terrainDetail);
     CanyonScreenPoint farCenter{};
     if (projectExplicitCanyonPoint(
             camera,

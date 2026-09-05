@@ -257,11 +257,20 @@ bool validateProjectionWorksetAndBudget(const ExplicitCanyonStream& stream)
 
     constexpr std::size_t ribSegments =
         ExplicitCanyonStream::kSliceCount * (ExplicitCanyonStream::kProfileCount - 1);
-    std::size_t railSegments = 0;
+    std::size_t highRailSegments = 0;
+    std::size_t lowRailSegments = 0;
     for (std::size_t profile = 0; profile < ExplicitCanyonStream::kProfileCount; ++profile) {
         for (std::size_t slice = 1; slice < ExplicitCanyonStream::kSliceCount; ++slice) {
             const float worldS = (stream.slices()[slice - 1].worldS + stream.slices()[slice].worldS) * 0.5f;
-            if (explicitCanyonRailLodWeight(profile, worldS - stream.playerWorldS()) > 0.01f) ++railSegments;
+            if (explicitCanyonRailLodWeight(
+                    profile, worldS - stream.playerWorldS()) <= 0.01f) {
+                continue;
+            }
+            ++highRailSegments;
+            if (isExplicitCanyonStructuralRail(profile) ||
+                isExplicitCanyonMidRail(profile)) {
+                ++lowRailSegments;
+            }
         }
     }
     constexpr std::size_t maximumDiagonalSegments =
@@ -271,18 +280,30 @@ bool validateProjectionWorksetAndBudget(const ExplicitCanyonStream& stream)
         (ExplicitCanyonStream::kProfileCount - 1);
     constexpr std::size_t farRailSegments =
         ExplicitCanyonStream::kFarSliceCount * 7;
-    const std::size_t maximumFrameSegments = ribSegments + railSegments +
+    const std::size_t highFrameSegments = ribSegments + highRailSegments +
         maximumDiagonalSegments + farRibSegments + farRailSegments;
+    const std::size_t mediumFrameSegments = ribSegments + highRailSegments +
+        farRibSegments + farRailSegments;
+    const std::size_t lowFrameSegments = ribSegments + lowRailSegments +
+        farRibSegments + farRailSegments;
     valid &= check(visiblePoints > 700 && visiblePoints <= 850,
                    "M3 default camera projected an unexpected portion of the 850-point workset");
-    valid &= check(maximumFrameSegments < 1700,
+    valid &= check(highFrameSegments < 1700,
                    "M3 explicit line budget exceeded the reviewed thousand-level range");
+    valid &= check(highFrameSegments > mediumFrameSegments &&
+                       mediumFrameSegments > lowFrameSegments &&
+                       lowFrameSegments >= ribSegments + farRibSegments +
+                                               farRailSegments,
+                   "H9 terrain detail tiers do not preserve the required mesh");
 
     std::cout << "visible_points=" << visiblePoints << '\n';
     std::cout << "host_renderer_size=" << sizeof(Renderer) << '\n';
     std::cout << "rib_segments=" << ribSegments << '\n';
-    std::cout << "lod_rail_segments=" << railSegments << '\n';
-    std::cout << "maximum_frame_segments=" << maximumFrameSegments << '\n';
+    std::cout << "high_lod_rail_segments=" << highRailSegments << '\n';
+    std::cout << "low_lod_rail_segments=" << lowRailSegments << '\n';
+    std::cout << "high_frame_segments=" << highFrameSegments << '\n';
+    std::cout << "medium_frame_segments=" << mediumFrameSegments << '\n';
+    std::cout << "low_frame_segments=" << lowFrameSegments << '\n';
     return valid;
 }
 

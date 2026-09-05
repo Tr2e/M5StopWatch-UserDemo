@@ -28,6 +28,7 @@ private:
     vector_canyon_fighter::CollisionModel _collisionModel;
     vector_canyon_fighter::CollisionStatus _collisionStatus;
     vector_canyon_fighter::ExplicitCanyonStream _terrain;
+    vector_canyon_fighter::RenderBudgetController _renderBudget;
     uint32_t _lastFrameMs = 0;
     uint32_t _lastSimulationMs = 0;
     uint32_t _performanceWindowStartedMs = 0;
