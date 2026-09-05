@@ -58,18 +58,20 @@ inline constexpr std::array<AircraftWingStation, 5> kAircraftWingStations = {{
 
 inline constexpr int aircraftMachRingCount(float boostAmount)
 {
-    return boostAmount >= 0.35f ? 3 : 0;
+    return boostAmount >= 0.35f ? 3 : 1;
 }
 
 inline constexpr float aircraftPlumeLength(float boostAmount)
 {
-    return 1.30f + 1.45f * std::clamp(boostAmount, 0.0f, 1.0f);
+    return 1.05f + 1.70f * std::clamp(boostAmount, 0.0f, 1.0f);
 }
 
 inline constexpr float kAircraftPlumeApexExtension = 0.24f;
 inline constexpr int kAircraftEngineCoreRadiusPx = 1;
 inline constexpr int kAircraftEngineCoreGlowRadiusPx = 2;
 inline constexpr int kAircraftWingStrobeRadiusPx = 1;
+inline constexpr float kAircraftCruiseRingFraction = 0.62f;
+inline constexpr float kAircraftCruiseRingRadiusScale = 0.46f;
 
 inline constexpr bool aircraftWingStrobeOn(uint32_t milliseconds)
 {
@@ -215,8 +217,8 @@ inline AircraftGroundShadow makeAircraftGroundShadow(float floorClearance)
 static_assert(kAircraftCollisionStations[kAircraftWingStationIndex].halfWidth ==
                   kAircraftMaximumHalfWidth,
               "The wing station must own the maximum collision span");
-static_assert(aircraftMachRingCount(0.0f) == 0,
-              "Cruise exhaust must not render a Mach ring");
+static_assert(aircraftMachRingCount(0.0f) == 1,
+              "Cruise exhaust must retain one steady Mach ring");
 static_assert(aircraftMachRingCount(1.0f) == 3,
               "Boost exhaust must retain three coordinated rings");
 static_assert(aircraftExhaustRingFraction(0, 3) > 0.0f &&
@@ -225,9 +227,9 @@ static_assert(aircraftExhaustRingFraction(0, 3) > 0.0f &&
 static_assert(aircraftExhaustRingRadiusScale(0, 3) >
                   aircraftExhaustRingRadiusScale(2, 3),
               "Exhaust section rings must shrink away from the nozzle");
-static_assert(aircraftPlumeLength(0.0f) >= 1.28f &&
-                  aircraftPlumeLength(0.0f) <= 1.32f,
-              "Cruise exhaust plume became too short to read");
+static_assert(aircraftPlumeLength(0.0f) >= 1.03f &&
+                  aircraftPlumeLength(0.0f) <= 1.07f,
+              "Cruise exhaust left its restrained length");
 static_assert(aircraftPlumeLength(1.0f) >= 2.70f &&
                   aircraftPlumeLength(1.0f) <= 2.80f,
               "Boost exhaust plume must visibly extend beyond cruise");
@@ -238,6 +240,11 @@ static_assert(aircraftExhaustRingRadiusScale(0, 3) >= 0.59f &&
 static_assert(kAircraftPlumeApexExtension >= 0.22f &&
                   kAircraftPlumeApexExtension <= 0.26f,
               "Exhaust axis needs a readable exposed segment after the terminal ring");
+static_assert(kAircraftCruiseRingFraction >= 0.60f &&
+                  kAircraftCruiseRingFraction <= 0.64f &&
+                  kAircraftCruiseRingRadiusScale >= 0.44f &&
+                  kAircraftCruiseRingRadiusScale <= 0.48f,
+              "Cruise ring must stay centered and smaller than its nozzle");
 static_assert(kAircraftEngineCoreRadiusPx == 1,
               "Engine core must retain its crisp three-pixel center");
 static_assert(kAircraftEngineCoreGlowRadiusPx == 2,

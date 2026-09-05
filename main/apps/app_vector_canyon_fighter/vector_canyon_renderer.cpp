@@ -481,10 +481,10 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         canvas.drawEllipse(shipX, shadow.centerY, shadow.radiusX, shadow.radiusY, shadowEdge);
     }
 
-    // Exhaust has two distinct layers: a short amber axial plume that remains
-    // readable in cruise, and three boost-only Mach rings. A permanent steady
-    // core is drawn inside every nozzle later, after the nacelle outlines, so
-    // engine activity never depends on boost animation.
+    // Exhaust has two distinct states: cruise uses a short amber axis and one
+    // steady mid-plume ring, while boost expands into three animated rings. A
+    // permanent steady core is drawn inside every nozzle later, after the
+    // nacelle outlines, so engine activity never depends on ring animation.
     const uint32_t frameMillis = GetHAL().millis();
     const int machRingCount = aircraftMachRingCount(flight.boostAmount);
     const float plumeLength = aircraftPlumeLength(flight.boostAmount);
@@ -496,18 +496,26 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
         static_cast<float>(highlightPeriodMs);
     const uint16_t machBase = display.color565(196, 128, 24);
     const uint16_t machPeak = display.color565(255, 255, 176);
+    const uint16_t cruiseMach = display.color565(224, 166, 52);
+    const bool boostRings = flight.boostAmount >= 0.35f;
     for (const EngineSpec& engine : kEngineSpecs) {
         const Vec3 plumeTip{engine.x, engine.y, exhaustApexZ};
         drawShipLine({engine.x, engine.y, kAircraftEngineRingZ.back()}, plumeTip, exhaust);
 
         for (int ring = 0; ring < machRingCount; ++ring) {
-            const float fraction = aircraftExhaustRingFraction(ring, machRingCount);
+            const float fraction = boostRings
+                ? aircraftExhaustRingFraction(ring, machRingCount)
+                : kAircraftCruiseRingFraction;
             const float ringZ = kAircraftEngineRingZ.back() - fraction * plumeLength;
-            const float radius = engine.radius *
-                                 aircraftExhaustRingRadiusScale(ring, machRingCount);
-            const uint16_t machColor = blendRgb565(
-                machBase, machPeak,
-                aircraftExhaustRingHighlight(highlightPhase, ring, machRingCount));
+            const float radius = engine.radius * (boostRings
+                ? aircraftExhaustRingRadiusScale(ring, machRingCount)
+                : kAircraftCruiseRingRadiusScale);
+            const uint16_t machColor = boostRings
+                ? blendRgb565(
+                      machBase, machPeak,
+                      aircraftExhaustRingHighlight(
+                          highlightPhase, ring, machRingCount))
+                : cruiseMach;
             std::array<Vec3, 8> ringPoints{};
             for (std::size_t point = 0; point < ringPoints.size(); ++point) {
                 constexpr float kTau = 6.28318530718f;

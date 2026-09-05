@@ -105,11 +105,16 @@ float projectedFloorY(const ExplicitCanyonStream& stream, float altitude, float 
 bool validateAttitudeAndHeightCue()
 {
     bool valid = true;
-    valid &= check(aircraftMachRingCount(0.0f) == 0 &&
-                       aircraftMachRingCount(0.34f) == 0 &&
+    valid &= check(aircraftMachRingCount(0.0f) == 1 &&
+                       aircraftMachRingCount(0.34f) == 1 &&
                        aircraftMachRingCount(0.35f) == 3 &&
                        aircraftMachRingCount(1.0f) == 3,
-                   "M10 exhaust no longer preserves zero cruise / three boost rings");
+                   "M10 exhaust no longer preserves one cruise / three boost rings");
+    valid &= check(kAircraftCruiseRingFraction >= 0.60f &&
+                       kAircraftCruiseRingFraction <= 0.64f &&
+                       kAircraftCruiseRingRadiusScale >= 0.44f &&
+                       kAircraftCruiseRingRadiusScale <= 0.48f,
+                   "M10 steady cruise ring left the reviewed midpoint scale");
     valid &= check(aircraftExhaustRingFraction(0, 3) > 0.0f &&
                        aircraftExhaustRingFraction(2, 3) < 1.0f &&
                        aircraftExhaustRingFraction(2, 3) > 0.85f,
@@ -126,11 +131,11 @@ bool validateAttitudeAndHeightCue()
                        aircraftExhaustRingRadiusScale(2, 3) >= 0.29f &&
                        aircraftExhaustRingRadiusScale(2, 3) <= 0.31f,
                    "M10 boost ring radii left the reviewed cohesive taper range");
-    valid &= check(aircraftPlumeLength(0.0f) >= 1.28f &&
-                       aircraftPlumeLength(0.0f) <= 1.32f &&
+    valid &= check(aircraftPlumeLength(0.0f) >= 1.03f &&
+                       aircraftPlumeLength(0.0f) <= 1.07f &&
                        aircraftPlumeLength(1.0f) >= 2.70f &&
                        aircraftPlumeLength(1.0f) <= 2.80f &&
-                       aircraftPlumeLength(1.0f) > aircraftPlumeLength(0.0f) + 1.40f,
+                       aircraftPlumeLength(1.0f) > aircraftPlumeLength(0.0f) + 1.65f,
                    "M10 boost exhaust did not visibly lengthen");
     valid &= check(kAircraftPlumeApexExtension >= 0.22f &&
                        kAircraftPlumeApexExtension <= 0.26f,
