@@ -122,6 +122,16 @@ bool validateLookAheadWarning()
                        "M7 look-ahead warning incorrectly collides before the shoulder arrives");
     valid &= check(status.warning && status.warningClearance < 0.48f,
                    "M7 look-ahead did not warn about the approaching left shoulder");
+    FlightState boosted = flight;
+    boosted.speed = kFlightMaximumCruiseSpeed;
+    boosted.boostAmount = 1.0f;
+    const float boostLookAhead = collisionWarningLookAhead(boosted);
+    const float boostWarningSeconds = boostLookAhead /
+        (effectiveFlightForwardSpeed(boosted) *
+         ExplicitCanyonStream::kForwardDistanceScale);
+    valid &= check(boostLookAhead > kCollisionMinimumWarningLookAhead &&
+                       boostWarningSeconds >= kCollisionWarningLookAheadSeconds - 0.001f,
+                   "boost speed reduced terrain warning below its time budget");
     std::cout << "look_ahead_current_clearance=" << status.clearance << '\n';
     std::cout << "look_ahead_warning_clearance=" << status.warningClearance << '\n';
     return valid;

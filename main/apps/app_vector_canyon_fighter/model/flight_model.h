@@ -17,11 +17,16 @@ struct FlightState {
     bool collided = false;
 };
 
-inline constexpr float kFlightBoostSpeedGain = 44.0f;
+inline constexpr float kFlightMinimumCruiseSpeed = 42.0f;
+inline constexpr float kFlightMaximumCruiseSpeed = 156.0f;
+inline constexpr float kFlightBoostTopSpeed = 240.0f;
 
 inline constexpr float effectiveFlightForwardSpeed(const FlightState& state)
 {
-    return state.speed + kFlightBoostSpeedGain * state.boostAmount;
+    const float boost = state.boostAmount < 0.0f
+        ? 0.0f
+        : (state.boostAmount > 1.0f ? 1.0f : state.boostAmount);
+    return state.speed + (kFlightBoostTopSpeed - state.speed) * boost;
 }
 
 class FlightModel {

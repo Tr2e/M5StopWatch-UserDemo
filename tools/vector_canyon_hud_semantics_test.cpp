@@ -20,8 +20,12 @@ bool validateSpeedSemantics()
     bool valid = check(effectiveFlightForwardSpeed(state) == 72.0f,
                        "cruise HUD speed changed without boost");
     state.boostAmount = 1.0f;
-    valid &= check(effectiveFlightForwardSpeed(state) == 116.0f,
-                   "HUD speed does not include the model boost gain");
+    valid &= check(effectiveFlightForwardSpeed(state) == kFlightBoostTopSpeed,
+                   "full boost does not converge to the absolute top speed");
+    state.speed = kFlightMaximumCruiseSpeed;
+    state.boostAmount = 0.5f;
+    valid &= check(effectiveFlightForwardSpeed(state) == 198.0f,
+                   "HUD speed does not interpolate the boost transition");
     return valid;
 }
 

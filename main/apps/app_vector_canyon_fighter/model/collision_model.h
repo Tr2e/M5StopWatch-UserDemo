@@ -7,6 +7,18 @@ namespace vector_canyon_fighter {
 
 inline constexpr float kCollisionWallWarningClearance = 0.48f;
 inline constexpr float kCollisionFloorWarningClearance = 0.10f;
+inline constexpr float kCollisionMinimumWarningLookAhead = 4.8f;
+inline constexpr float kCollisionWarningLookAheadSeconds = 1.35f;
+
+inline constexpr float collisionWarningLookAhead(const FlightState& flight)
+{
+    const float speedBased = effectiveFlightForwardSpeed(flight) *
+                             ExplicitCanyonStream::kForwardDistanceScale *
+                             kCollisionWarningLookAheadSeconds;
+    return speedBased > kCollisionMinimumWarningLookAhead
+        ? speedBased
+        : kCollisionMinimumWarningLookAhead;
+}
 
 enum class CollisionHazard : uint8_t {
     None,

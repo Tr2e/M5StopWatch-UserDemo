@@ -1,4 +1,5 @@
 #include "../main/apps/app_vector_canyon_fighter/model/explicit_canyon_stream.h"
+#include "../main/apps/app_vector_canyon_fighter/model/flight_model.h"
 #include "../main/apps/app_vector_canyon_fighter/vector_canyon_config.h"
 
 #include <algorithm>
@@ -200,7 +201,7 @@ StreamMetrics simulateStream(uint32_t seed)
 {
     constexpr uint32_t kFrameCount = 1800;
     constexpr float kFramesPerSecond = 30.0f;
-    constexpr float kWorstFlightSpeed = 176.0f;
+    constexpr float kWorstFlightSpeed = kFlightBoostTopSpeed;
     constexpr float kWorstTerrainSpeed = kWorstFlightSpeed * ExplicitCanyonStream::kForwardDistanceScale;
     constexpr float kMaxLateralVelocity = 1.8f;
 
@@ -280,7 +281,8 @@ bool validateStreamMetrics(const StreamMetrics& metrics, const StreamMetrics& re
     valid &= check(metrics.hash != differentSeed.hash, "A4 different seed did not change the stream");
     valid &= check(metrics.routeHash == repeat.routeHash, "A2 same-seed route hash is not deterministic");
     valid &= check(metrics.routeHash != differentSeed.routeHash, "A2 different seed did not change the route");
-    valid &= check(metrics.hash == 17445385684075537385ull, "A4 production stream no longer matches reviewed event output");
+    valid &= check(metrics.hash == 18143387014092071028ull,
+                   "H7 top-speed stream no longer matches reviewed event output");
     valid &= check(metrics.recycleCount > 150u, "A4 did not exercise enough slice recycling");
     valid &= check(metrics.maximumWindowEventCount <= kExplicitCanyonEventCapacity &&
                        metrics.windowOverflowCount == 0u,

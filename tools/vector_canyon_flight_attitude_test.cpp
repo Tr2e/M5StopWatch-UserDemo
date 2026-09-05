@@ -66,11 +66,40 @@ bool validateYawPerspective()
     return valid;
 }
 
+bool validateSpeedEnvelope()
+{
+    FlightModel model;
+    model.reset();
+    FlightInput input;
+    input.valid = true;
+    input.throttle = 1.0f;
+    run(model, input, 240);
+    bool valid = check(model.state().speed > 155.9f &&
+                           model.state().speed <= kFlightMaximumCruiseSpeed,
+                       "maximum cruise throttle did not reach the raised speed cap");
+
+    input.actions.setHeld(FlightAction::Boost, true);
+    run(model, input, 60);
+    valid &= check(model.state().boostAmount > 0.99f &&
+                       std::abs(effectiveFlightForwardSpeed(model.state()) -
+                                kFlightBoostTopSpeed) < 0.01f,
+                   "full boost is not the absolute top-speed state");
+
+    FlightState lowCruise{};
+    lowCruise.speed = kFlightMinimumCruiseSpeed;
+    lowCruise.boostAmount = 1.0f;
+    valid &= check(effectiveFlightForwardSpeed(lowCruise) ==
+                       kFlightBoostTopSpeed,
+                   "low cruise gear reduced full boost top speed");
+    return valid;
+}
+
 }  // namespace
 
 int main()
 {
     bool valid = validatePoseDynamics();
     valid &= validateYawPerspective();
+    valid &= validateSpeedEnvelope();
     return valid ? 0 : 1;
 }

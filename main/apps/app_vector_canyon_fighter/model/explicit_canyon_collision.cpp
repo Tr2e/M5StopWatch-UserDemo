@@ -7,7 +7,6 @@
 namespace vector_canyon_fighter {
 namespace {
 
-constexpr float kWarningLookAhead = 4.8f;
 constexpr int kWarningSamples = 4;
 
 void updateMinimum(float candidate, CollisionHazard hazard,
@@ -46,9 +45,10 @@ CollisionStatus evaluateExplicitCanyonCollision(const FlightState& flight,
                                       : CollisionHazard::RightWall;
     status.warningHazard = closestWall;
 
+    const float warningLookAhead = collisionWarningLookAhead(flight);
     for (int sample = 1; sample <= kWarningSamples; ++sample) {
         const float worldS = terrain.playerWorldS() + kAircraftCollisionStations.back().forwardLead +
-                             kWarningLookAhead * static_cast<float>(sample) /
+                             warningLookAhead * static_cast<float>(sample) /
                                  static_cast<float>(kWarningSamples);
         const CanyonBoundary boundary = terrain.boundaryAt(worldS);
         const float left = boundary.leftWidth + wallOutset + flight.lateralOffset -

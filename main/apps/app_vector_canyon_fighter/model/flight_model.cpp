@@ -5,8 +5,6 @@
 namespace vector_canyon_fighter {
 namespace {
 
-constexpr float kMinSpeed = 42.0f;
-constexpr float kMaxSpeed = 132.0f;
 constexpr float kResponse = 5.2f;
 constexpr float kMaxLateralVelocity = 1.8f;
 constexpr float kMaxVerticalVelocity = 1.1f;
@@ -52,7 +50,9 @@ void FlightModel::step(const FlightInput& input, float deltaSeconds)
     const float safeSteer = input.valid ? std::clamp(input.steer, -1.0f, 1.0f) : 0.0f;
     const float safePitch = input.valid ? std::clamp(input.pitch, -1.0f, 1.0f) : 0.0f;
     const float safeThrottle = input.valid ? std::clamp(input.throttle, 0.0f, 1.0f) : 0.55f;
-    const float targetSpeed = kMinSpeed + (kMaxSpeed - kMinSpeed) * safeThrottle;
+    const float targetSpeed = kFlightMinimumCruiseSpeed +
+                              (kFlightMaximumCruiseSpeed -
+                               kFlightMinimumCruiseSpeed) * safeThrottle;
     const float response = kResponse * deltaSeconds;
 
     _state.speed = approach(_state.speed, targetSpeed, 42.0f * deltaSeconds);
