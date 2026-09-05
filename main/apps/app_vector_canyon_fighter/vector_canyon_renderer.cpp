@@ -1,6 +1,7 @@
 #include "vector_canyon_renderer.h"
 
 #include "explicit_canyon_projection.h"
+#include "hud_layout.h"
 #include "hud_semantics.h"
 #include "vector_canyon_config.h"
 
@@ -338,6 +339,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     const uint16_t strobeGlow = display.color565(132, 210, 255);
     const uint16_t strobeCore = display.color565(232, 250, 255);
     const uint16_t hudColor = display.color565(114, 230, 162);
+    const uint16_t hudMid = display.color565(67, 153, 108);
     const uint16_t hudDim = display.color565(39, 94, 69);
     const uint16_t hudAccent = display.color565(182, 255, 208);
     const uint16_t caution = display.color565(255, 179, 71);
@@ -756,6 +758,16 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
                         static_cast<int>(std::lround(end.x)),
                         static_cast<int>(std::lround(end.y)), color);
     };
+    const auto drawAttitudeDashes = [&](CanyonScreenPoint rungCenter,
+                                        float from, float to,
+                                        uint16_t color) {
+        constexpr float kDashLength = 5.0f;
+        constexpr float kDashStride = 9.0f;
+        for (float position = from; position < to; position += kDashStride) {
+            drawAttitudeSegment(rungCenter, position,
+                                std::min(position + kDashLength, to), color);
+        }
+    };
     for (int level = -2; level <= 2; ++level) {
         CanyonScreenPoint rungCenter{};
         if (!hudReferenceValid ||
@@ -765,10 +777,17 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
             continue;
         }
         const int halfWidth = level == 0 ? 78 : (std::abs(level) == 1 ? 35 : 27);
-        const int gap = level == 0 ? 14 : 11;
-        const uint16_t color = level == 0 ? hudColor : hudDim;
-        drawAttitudeSegment(rungCenter, -halfWidth, -gap, color);
-        drawAttitudeSegment(rungCenter, gap, halfWidth, color);
+        const int gap = level == 0 ? (aircraftVisible ? 14 : 30) : 11;
+        const uint16_t color = level == 0
+            ? hudColor
+            : (std::abs(level) == 1 ? hudMid : hudDim);
+        if (level < 0) {
+            drawAttitudeDashes(rungCenter, -halfWidth, -gap, color);
+            drawAttitudeDashes(rungCenter, gap, halfWidth, color);
+        } else {
+            drawAttitudeSegment(rungCenter, -halfWidth, -gap, color);
+            drawAttitudeSegment(rungCenter, gap, halfWidth, color);
+        }
         if (level != 0) {
             const float tickNormal = level > 0 ? 5.0f : -5.0f;
             const CanyonScreenPoint leftStart = attitudePoint(rungCenter, -halfWidth);
@@ -785,17 +804,23 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
                             static_cast<int>(std::lround(rightStart.y)),
                             static_cast<int>(std::lround(rightEnd.x)),
                             static_cast<int>(std::lround(rightEnd.y)), color);
-            canvas.setTextColor(hudDim, TFT_BLACK);
+            canvas.setTextColor(color, TFT_BLACK);
             const CanyonScreenPoint leftLabel =
-                attitudePoint(rungCenter, -halfWidth - 17.0f);
+                attitudePoint(rungCenter, -halfWidth - 20.0f);
             const CanyonScreenPoint rightLabel =
                 attitudePoint(rungCenter, halfWidth + 6.0f);
-            canvas.setCursor(static_cast<int>(std::lround(leftLabel.x)),
-                             static_cast<int>(std::lround(leftLabel.y)) - 3);
-            canvas.printf("%d", std::abs(level) * 5);
-            canvas.setCursor(static_cast<int>(std::lround(rightLabel.x)),
-                             static_cast<int>(std::lround(rightLabel.y)) - 3);
-            canvas.printf("%d", std::abs(level) * 5);
+            if (hudPitchLabelVisible(leftLabel.x, leftLabel.y, aircraftVisible,
+                                     _width, _height)) {
+                canvas.setCursor(static_cast<int>(std::lround(leftLabel.x)),
+                                 static_cast<int>(std::lround(leftLabel.y)) - 3);
+                canvas.printf("%+d", level * 5);
+            }
+            if (hudPitchLabelVisible(rightLabel.x, rightLabel.y, aircraftVisible,
+                                     _width, _height)) {
+                canvas.setCursor(static_cast<int>(std::lround(rightLabel.x)),
+                                 static_cast<int>(std::lround(rightLabel.y)) - 3);
+                canvas.printf("%+d", level * 5);
+            }
         }
     }
     canvas.setTextColor(hudColor, TFT_BLACK);
@@ -803,17 +828,39 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     // Route cue: a diamond follows the projected far canyon center in both
     // axes. Avoid the circle-with-wings silhouette reserved for a real flight
     // path marker until FlightState exposes lateral/vertical velocity.
-    const int routeCueX = static_cast<int>(std::lround(routeCue.x));
-    const int routeCueY = static_cast<int>(std::lround(routeCue.y));
+    constexpr float kRouteCueMinX = 88.0f;
+    constexpr float kRouteCueMaxInsetX = 88.0f;
+    constexpr float kRouteCueMinY = 92.0f;
+    constexpr float kThirdPersonCueMaxY = 216.0f;
+    constexpr float kFirstPersonCueBottomInset = 90.0f;
+    const HudBoundedCue boundedRouteCue = constrainHudCueToRect(
+        {routeCue.x, routeCue.y}, {camera.principalX, camera.principalY},
+        kRouteCueMinX, static_cast<float>(_width) - kRouteCueMaxInsetX,
+        kRouteCueMinY, aircraftVisible
+            ? kThirdPersonCueMaxY
+            : static_cast<float>(_height) - kFirstPersonCueBottomInset);
+    const int routeCueX = static_cast<int>(std::lround(boundedRouteCue.point.x));
+    const int routeCueY = static_cast<int>(std::lround(boundedRouteCue.point.y));
     constexpr int kRouteCueRadius = 6;
-    canvas.drawLine(routeCueX, routeCueY - kRouteCueRadius,
-                    routeCueX + kRouteCueRadius, routeCueY, hudAccent);
-    canvas.drawLine(routeCueX + kRouteCueRadius, routeCueY,
-                    routeCueX, routeCueY + kRouteCueRadius, hudAccent);
-    canvas.drawLine(routeCueX, routeCueY + kRouteCueRadius,
-                    routeCueX - kRouteCueRadius, routeCueY, hudAccent);
-    canvas.drawLine(routeCueX - kRouteCueRadius, routeCueY,
-                    routeCueX, routeCueY - kRouteCueRadius, hudAccent);
+    const HudLayoutPoint cameraDatum{camera.principalX, camera.principalY};
+    if (hudRouteCueVisible(boundedRouteCue, cameraDatum, aircraftVisible)) {
+        canvas.drawLine(routeCueX, routeCueY - kRouteCueRadius,
+                        routeCueX + kRouteCueRadius, routeCueY, hudAccent);
+        canvas.drawLine(routeCueX + kRouteCueRadius, routeCueY,
+                        routeCueX, routeCueY + kRouteCueRadius, hudAccent);
+        canvas.drawLine(routeCueX, routeCueY + kRouteCueRadius,
+                        routeCueX - kRouteCueRadius, routeCueY, hudAccent);
+        canvas.drawLine(routeCueX - kRouteCueRadius, routeCueY,
+                        routeCueX, routeCueY - kRouteCueRadius, hudAccent);
+        if (boundedRouteCue.constrained) {
+            canvas.drawLine(
+                routeCueX + static_cast<int>(std::lround(boundedRouteCue.directionX * 9.0f)),
+                routeCueY + static_cast<int>(std::lround(boundedRouteCue.directionY * 9.0f)),
+                routeCueX + static_cast<int>(std::lround(boundedRouteCue.directionX * 14.0f)),
+                routeCueY + static_cast<int>(std::lround(boundedRouteCue.directionY * 14.0f)),
+                hudAccent);
+        }
+    }
     if (!aircraftVisible) {
         const int datumY = static_cast<int>(std::lround(camera.principalY));
         canvas.drawLine(centerX - 24, datumY, centerX - 8, datumY, hudColor);
@@ -861,7 +908,7 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
     canvas.drawLine(_width - 61, altitudeMarkerY, _width - 65, altitudeMarkerY + 3, hudAccent);
     // Compact course-deviation scale sits above the fighter, not over terrain.
     // Keep the course cue above the raised aircraft, between the two side tapes.
-    constexpr int kCourseY = kAircraftCourseCueY;
+    const int kCourseY = aircraftVisible ? kAircraftCourseCueY : 330;
     canvas.drawLine(centerX - 52, kCourseY, centerX + 52, kCourseY, hudDim);
     for (int tick = -2; tick <= 2; ++tick) {
         const int x = centerX + tick * 21;

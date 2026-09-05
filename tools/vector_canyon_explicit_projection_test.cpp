@@ -144,9 +144,9 @@ bool validateCockpitHudReferenceFrame(const ExplicitCanyonStream& stream)
     CanyonHudReferenceFrame neutralHud{};
     bool valid = check(makeCanyonHudReferenceFrame(neutral, neutralHud),
                        "cockpit HUD world reference could not be projected");
-    valid &= check(std::abs(neutralHud.horizonY - 140.74f) < 0.15f &&
+    valid &= check(std::abs(neutralHud.horizonY - 233.0f) < 0.15f &&
                        std::abs(neutralHud.horizonSlope) < 0.0001f,
-                   "cockpit neutral horizon is not conformal");
+                   "cockpit neutral horizon is not centered and conformal");
 
     const CanyonCamera climb = makeExplicitCanyonCockpitCamera(
         route, 0.0f, 0.5f, 18.0f, 0.0f, 0.0f, 468, 466);

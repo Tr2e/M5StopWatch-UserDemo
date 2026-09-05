@@ -13,6 +13,8 @@ inline constexpr float kExplicitCanyonPrincipalYRatio = 0.347f;
 inline constexpr float kExplicitCanyonFocalWidthRatio = 0.827f;
 inline constexpr float kExplicitCanyonCameraLift = 0.45f;
 inline constexpr float kExplicitCanyonNeutralPitchDegrees = -3.1f;
+inline constexpr float kExplicitCanyonCockpitPrincipalYRatio = 0.50f;
+inline constexpr float kExplicitCanyonCockpitNeutralPitchDegrees = 0.0f;
 
 struct CanyonCameraVector {
     float x = 0.0f;
@@ -121,7 +123,7 @@ inline CanyonCamera makeExplicitCanyonCockpitCamera(
         route.tangentZ * std::cos(yaw) + routeRight.z * std::sin(yaw),
     });
     const float pitch =
-        (kExplicitCanyonNeutralPitchDegrees + flightPitchDegrees) *
+        (kExplicitCanyonCockpitNeutralPitchDegrees + flightPitchDegrees) *
         kDegreesToRadians;
     const CanyonCameraVector worldUp{0.0f, 1.0f, 0.0f};
     const CanyonCameraVector forward = canyonNormalize({
@@ -153,7 +155,7 @@ inline CanyonCamera makeExplicitCanyonCockpitCamera(
         up,
         forward,
         static_cast<float>(width) * 0.5f,
-        static_cast<float>(height) * kExplicitCanyonPrincipalYRatio,
+        static_cast<float>(height) * kExplicitCanyonCockpitPrincipalYRatio,
         static_cast<float>(width) * kExplicitCanyonFocalWidthRatio,
     };
 }
