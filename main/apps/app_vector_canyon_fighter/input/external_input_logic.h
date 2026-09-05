@@ -41,6 +41,7 @@ struct ButtonTransition {
     bool clicked = false;
     bool holdStarted = false;
     bool holding = false;
+    bool pressed = false;
 };
 
 class DebouncedActiveLowButton {
@@ -79,6 +80,7 @@ public:
             result.holdStarted = true;
         }
         result.holding = _stablePressed && _holdReported;
+        result.pressed = _stablePressed;
         return result;
     }
 

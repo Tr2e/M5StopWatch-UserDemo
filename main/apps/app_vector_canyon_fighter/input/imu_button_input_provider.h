@@ -33,6 +33,7 @@ private:
     std::atomic<bool> _sampling{false};
     std::atomic<bool> _samplingTaskExited{true};
     ImuAttitudeEstimator _attitudeEstimator;
+    TwoButtonFlightActionMapper _buttonActions;
     float _neutralSteerDegrees = 0.0f;
     float _neutralPitchDegrees = 0.0f;
     float _gyroXBias = 0.0f;

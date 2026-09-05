@@ -22,6 +22,7 @@ void DualButtonActionSource::open()
     _opened = gpio_config(&config) == ESP_OK;
     _redButton.reset();
     _blueButton.reset();
+    _buttonActions.reset();
     _lastSampleMs = 0;
 }
 
@@ -34,13 +35,9 @@ FlightActionSample DualButtonActionSource::sampleActions(uint32_t nowMs)
         gpio_get_level(kRedButtonPin) == 0, nowMs);
     const ButtonTransition blue = _blueButton.update(
         gpio_get_level(kBlueButtonPin) == 0, nowMs);
-    if (red.clicked) result.actions.setPressed(FlightAction::ThrottleDown);
-    if (red.holdStarted) {
-        result.actions.setPressed(FlightAction::Reset);
-        result.actions.setPressed(FlightAction::ToggleImmersive);
-    }
-    if (blue.clicked) result.actions.setPressed(FlightAction::ThrottleUp);
-    result.actions.setHeld(FlightAction::Boost, blue.holding);
+    result.actions = _buttonActions.update(
+        red.pressed, blue.pressed, red.clicked, blue.clicked,
+        red.holdStarted, blue.holding);
     result.valid = true;
     _lastSampleMs = nowMs;
     return result;

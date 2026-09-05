@@ -1083,12 +1083,13 @@ void Renderer::renderGame(const FlightState& flight, const ExplicitCanyonStream&
                              canyonHudImpactClearance(collision), true);
         drawCenteredStatusText("HOLD K1", _height - 48, impact);
     } else if (flight.paused) {
-        constexpr int kPanelWidth = 76;
-        constexpr int kPanelHeight = 22;
+        constexpr int kPanelWidth = 92;
+        constexpr int kPanelHeight = 34;
         constexpr int kPanelTop = 188;
         drawStatusPanel(centerX - kPanelWidth / 2, kPanelTop,
                         kPanelWidth, kPanelHeight, hudDim);
-        drawCenteredStatusText("PAUSED", kPanelTop + 7, hudColor);
+        drawCenteredStatusText("PAUSED", kPanelTop + 6, hudColor);
+        drawCenteredStatusText("K1+K2 TAP", kPanelTop + 19, hudDim);
     } else if (collision.warning) {
         drawEdgeProximityCue(collision.warningHazard,
                              canyonHudWarningClearance(collision), false);

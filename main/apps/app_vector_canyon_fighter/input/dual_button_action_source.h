@@ -15,6 +15,7 @@ public:
 private:
     DebouncedActiveLowButton _redButton;
     DebouncedActiveLowButton _blueButton;
+    TwoButtonFlightActionMapper _buttonActions;
     uint32_t _lastSampleMs = 0;
     bool _opened = false;
 };

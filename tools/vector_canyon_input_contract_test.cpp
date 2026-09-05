@@ -95,6 +95,48 @@ bool validateActionEdgesAndHolds()
     return valid;
 }
 
+bool validateTwoButtonMapping()
+{
+    TwoButtonFlightActionMapper mapper;
+    mapper.update(true, false, false, false, false, false);
+    const FlightActions primary = mapper.update(
+        false, false, true, false, false, false);
+    bool valid = check(primary.wasPressed(FlightAction::ThrottleDown) &&
+                           !primary.wasPressed(FlightAction::Pause),
+                       "primary click lost throttle-down mapping");
+
+    mapper.update(false, true, false, false, false, false);
+    const FlightActions secondary = mapper.update(
+        false, false, false, true, false, false);
+    valid &= check(secondary.wasPressed(FlightAction::ThrottleUp) &&
+                       !secondary.wasPressed(FlightAction::Pause),
+                   "secondary click lost throttle-up mapping");
+
+    mapper.update(true, false, false, false, false, false);
+    const FlightActions chord = mapper.update(
+        true, true, false, false, false, false);
+    valid &= check(chord.wasPressed(FlightAction::Pause) &&
+                       !chord.wasPressed(FlightAction::ThrottleDown) &&
+                       !chord.wasPressed(FlightAction::ThrottleUp),
+                   "short chord did not exclusively map to pause");
+
+    const FlightActions staggeredRelease = mapper.update(
+        false, true, true, false, false, false);
+    const FlightActions finalRelease = mapper.update(
+        false, false, false, true, false, false);
+    valid &= check(!staggeredRelease.wasPressed(FlightAction::ThrottleDown) &&
+                       !finalRelease.wasPressed(FlightAction::ThrottleUp),
+                   "pause chord release leaked into throttle clicks");
+
+    const FlightActions held = mapper.update(
+        true, false, false, false, true, true);
+    valid &= check(held.wasPressed(FlightAction::Reset) &&
+                       held.wasPressed(FlightAction::ToggleImmersive) &&
+                       held.isHeld(FlightAction::Boost),
+                   "existing hold mappings regressed");
+    return valid;
+}
+
 bool validateIndependentDeviceSources()
 {
     FakeInputProvider provider(
@@ -167,6 +209,7 @@ int main()
                   "P0 status snapshot exceeded its fixed per-provider budget");
 
     bool valid = validateActionEdgesAndHolds();
+    valid &= validateTwoButtonMapping();
     valid &= validateIndependentDeviceSources();
     valid &= validateContinuousModelContract();
     return valid ? 0 : 1;

@@ -53,6 +53,49 @@ struct FlightActions {
     }
 };
 
+class TwoButtonFlightActionMapper {
+public:
+    FlightActions update(bool primaryPressed, bool secondaryPressed,
+                         bool primaryClicked, bool secondaryClicked,
+                         bool primaryHoldStarted, bool secondaryHolding)
+    {
+        FlightActions actions;
+        if (primaryPressed && secondaryPressed && !_chordActive) {
+            _chordActive = true;
+            _suppressPrimaryClick = true;
+            _suppressSecondaryClick = true;
+            actions.setPressed(FlightAction::Pause);
+        }
+        if (primaryClicked && !_suppressPrimaryClick) {
+            actions.setPressed(FlightAction::ThrottleDown);
+        }
+        if (secondaryClicked && !_suppressSecondaryClick) {
+            actions.setPressed(FlightAction::ThrottleUp);
+        }
+        if (!primaryPressed) _suppressPrimaryClick = false;
+        if (!secondaryPressed) _suppressSecondaryClick = false;
+        if (!primaryPressed && !secondaryPressed) _chordActive = false;
+        if (primaryHoldStarted) {
+            actions.setPressed(FlightAction::Reset);
+            actions.setPressed(FlightAction::ToggleImmersive);
+        }
+        actions.setHeld(FlightAction::Boost, secondaryHolding);
+        return actions;
+    }
+
+    void reset()
+    {
+        _chordActive = false;
+        _suppressPrimaryClick = false;
+        _suppressSecondaryClick = false;
+    }
+
+private:
+    bool _chordActive = false;
+    bool _suppressPrimaryClick = false;
+    bool _suppressSecondaryClick = false;
+};
+
 enum class FlightAxisSource : uint8_t {
     None,
     Imu,

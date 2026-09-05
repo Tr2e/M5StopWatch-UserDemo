@@ -123,6 +123,7 @@ void ImuButtonInputProvider::open()
     _lastAttitudeUpdateMs = 0;
     _lastValidSampleMs = 0;
     _consecutiveErrors = 0;
+    _buttonActions.reset();
     _opened = true;
     _latestAccelX.store(0.0f, std::memory_order_relaxed);
     _latestAccelY.store(0.0f, std::memory_order_relaxed);
@@ -294,8 +295,16 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
     const bool throttleDownPressed = GetHAL().btnA.wasClicked();
     const bool throttleUpPressed = GetHAL().btnB.wasClicked();
     const bool primaryHoldPressed = GetHAL().btnA.wasHold();
-    if (throttleDownPressed) _throttle = std::max(0.0f, _throttle - 0.08f);
-    if (throttleUpPressed) _throttle = std::min(1.0f, _throttle + 0.08f);
+    const FlightActions buttonActions = _buttonActions.update(
+        GetHAL().btnA.isPressed(), GetHAL().btnB.isPressed(),
+        throttleDownPressed, throttleUpPressed, primaryHoldPressed,
+        GetHAL().btnB.isHolding());
+    if (buttonActions.wasPressed(FlightAction::ThrottleDown)) {
+        _throttle = std::max(0.0f, _throttle - 0.08f);
+    }
+    if (buttonActions.wasPressed(FlightAction::ThrottleUp)) {
+        _throttle = std::min(1.0f, _throttle + 0.08f);
+    }
 
     FlightInput input;
     input.throttle = _throttle;
@@ -308,15 +317,7 @@ FlightInput ImuButtonInputProvider::sample(uint32_t nowMs)
 
     input.steer = _filteredSteer;
     input.pitch = _filteredPitch;
-    input.actions.setHeld(FlightAction::Boost, GetHAL().btnB.isHolding());
-    if (throttleDownPressed) input.actions.setPressed(FlightAction::ThrottleDown);
-    if (throttleUpPressed) input.actions.setPressed(FlightAction::ThrottleUp);
-    if (primaryHoldPressed) {
-        // The same physical hold is contextual: reset after impact, otherwise
-        // toggle the aircraft layer. The app consumes exactly one of them.
-        input.actions.setPressed(FlightAction::Reset);
-        input.actions.setPressed(FlightAction::ToggleImmersive);
-    }
+    input.actions = buttonActions;
     return input;
 }
 
