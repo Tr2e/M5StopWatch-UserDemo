@@ -23,6 +23,7 @@ constexpr uint16_t kMinimumCalibrationSamples = 20u;
 constexpr int16_t kMaximumCalibrationTravel = 180;
 constexpr float kOutputFilterStrength = 0.42f;
 constexpr uint32_t kSamplingTaskStackBytes = 4u * 1024u;
+constexpr uint32_t kRgbUpdatePeriodMs = 80u;
 
 uint32_t taskTimeMs()
 {
@@ -51,6 +52,34 @@ bool Joystick2AxisSource::readOffset(int16_t& x, int16_t& y)
     x = joystick2::decodeSignedLittleEndian(bytes);
     y = joystick2::decodeSignedLittleEndian(bytes + 2);
     return true;
+}
+
+bool Joystick2AxisSource::writeRgb(uint32_t packedColor)
+{
+    // The official API writes a little-endian 0x00RRGGBB value to 0x30.
+    const uint8_t bytes[4] = {
+        static_cast<uint8_t>(packedColor),
+        static_cast<uint8_t>(packedColor >> 8u),
+        static_cast<uint8_t>(packedColor >> 16u),
+        0u,
+    };
+    return i2c_bus_write_bytes(
+               static_cast<i2c_bus_device_handle_t>(_device),
+               joystick2::kRgbRegister, sizeof(bytes), bytes) == ESP_OK;
+}
+
+void Joystick2AxisSource::updateRgbFeedback(
+    uint32_t nowMs, joystick2::LedFeedbackState state, float steer,
+    float pitch, bool force)
+{
+    if (!_device) return;
+    const uint32_t color = joystick2::feedbackColor(
+                               steer, pitch, state, nowMs)
+                               .packed();
+    if (!force && nowMs - _lastRgbUpdateMs < kRgbUpdatePeriodMs) return;
+    _lastRgbUpdateMs = nowMs;
+    if (!force && color == _lastRgbColor) return;
+    if (writeRgb(color)) _lastRgbColor = color;
 }
 
 void Joystick2AxisSource::publishOffset(int16_t x, int16_t y)
@@ -144,6 +173,8 @@ void Joystick2AxisSource::open()
     _identified.store(false, std::memory_order_relaxed);
     _firmwareVersion.store(0u, std::memory_order_relaxed);
     _lastConsumedSequence = 0;
+    _lastRgbUpdateMs = 0;
+    _lastRgbColor = UINT32_MAX;
     _samplingTaskExited.store(!_opened, std::memory_order_relaxed);
     if (!_opened) {
         mclog::tagError("Vector Run", "Joystick2 I2C bus/device creation failed");
@@ -237,6 +268,15 @@ FlightAxisSample Joystick2AxisSource::sampleAxes(uint32_t nowMs)
         result.steer = _filteredSteer;
         result.pitch = _filteredPitch;
     }
+    const bool fault = _identified.load(std::memory_order_acquire) &&
+                       _consecutiveErrors.load(std::memory_order_acquire) >=
+                           kFaultAfterErrors;
+    updateRgbFeedback(nowMs,
+                      fault ? joystick2::LedFeedbackState::Fault
+                            : (_calibrated
+                                   ? joystick2::LedFeedbackState::Ready
+                                   : joystick2::LedFeedbackState::Calibrating),
+                      result.steer, result.pitch);
     return result;
 }
 
@@ -273,6 +313,7 @@ void Joystick2AxisSource::close()
     while (!_samplingTaskExited.load(std::memory_order_acquire)) {
         vTaskDelay(pdMS_TO_TICKS(1));
     }
+    if (_device) writeRgb(0u);
     if (_device) {
         auto device = static_cast<i2c_bus_device_handle_t>(_device);
         i2c_bus_device_delete(&device);

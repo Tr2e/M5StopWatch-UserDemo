@@ -33,6 +33,45 @@ bool validateJoystickProtocolAndCurve()
     return valid;
 }
 
+bool validateJoystickRgbFeedback()
+{
+    using joystick2::LedFeedbackState;
+    bool valid = check(
+        joystick2::feedbackColor(0.0f, 0.0f, LedFeedbackState::Ready, 0)
+                .packed() == 0x0000060eu,
+        "Joystick2 neutral feedback is not dim blue");
+    const auto left = joystick2::feedbackColor(
+        -1.0f, 0.0f, LedFeedbackState::Ready, 0);
+    const auto right = joystick2::feedbackColor(
+        1.0f, 0.0f, LedFeedbackState::Ready, 0);
+    const auto forward = joystick2::feedbackColor(
+        0.0f, -1.0f, LedFeedbackState::Ready, 0);
+    const auto back = joystick2::feedbackColor(
+        0.0f, 1.0f, LedFeedbackState::Ready, 0);
+    valid &= check(left.red > 0 && left.blue > left.red && left.green == 0,
+                   "Joystick2 left feedback is not violet");
+    valid &= check(right.red == 0 && right.green > 0 &&
+                       right.blue > right.green,
+                   "Joystick2 right feedback is not cyan");
+    valid &= check(forward.green > forward.red &&
+                       forward.green > forward.blue,
+                   "Joystick2 forward feedback is not green");
+    valid &= check(back.red > back.green && back.blue == 0,
+                   "Joystick2 back feedback is not orange");
+    valid &= check(
+        joystick2::feedbackColor(0.0f, 0.0f, LedFeedbackState::Fault, 0)
+                .packed() == 0x00400000u,
+        "Joystick2 fault feedback is not red");
+    const auto pulseLow = joystick2::feedbackColor(
+        0.0f, 0.0f, LedFeedbackState::Calibrating, 0);
+    const auto pulseHigh = joystick2::feedbackColor(
+        0.0f, 0.0f, LedFeedbackState::Calibrating, 400);
+    valid &= check(pulseHigh.red > pulseLow.red &&
+                       pulseHigh.green > pulseLow.green,
+                   "Joystick2 calibration feedback does not breathe");
+    return valid;
+}
+
 bool validateButtonDebounceAndHold()
 {
     DebouncedActiveLowButton button;
@@ -70,7 +109,8 @@ bool validateButtonDebounceAndHold()
 
 int main()
 {
-    return validateJoystickProtocolAndCurve() && validateButtonDebounceAndHold()
+    return validateJoystickProtocolAndCurve() && validateJoystickRgbFeedback() &&
+                   validateButtonDebounceAndHold()
                ? 0
                : 1;
 }

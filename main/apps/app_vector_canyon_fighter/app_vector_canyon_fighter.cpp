@@ -41,6 +41,13 @@ void AppVectorCanyonFighter::onOpen()
 #if VECTOR_CANYON_EXPLICIT_PREVIEW
     _inputProvider.reset();
 #else
+#if VECTOR_CANYON_USE_EXTERNAL_INPUT
+    // PORT.A's red wire is supplied by the PMIC-controlled 5VINOUT rail.
+    // Allow the rail to settle before the Joystick2 probe starts; later I2C
+    // failures remain recoverable through the provider's retry loop.
+    GetHAL().setGrove5VPower(true);
+    GetHAL().delay(20);
+#endif
     _inputProvider = vector_canyon_fighter::makeDefaultFlightInputProvider();
     _inputProvider->open();
     _inputStatus = _inputProvider->status(GetHAL().millis());
@@ -253,6 +260,9 @@ void AppVectorCanyonFighter::onClose()
     _renderer.close();
     if (_inputProvider) _inputProvider->close();
     _inputProvider.reset();
+#if VECTOR_CANYON_USE_EXTERNAL_INPUT && !VECTOR_CANYON_EXPLICIT_PREVIEW
+    GetHAL().setGrove5VPower(false);
+#endif
     _inputStatus = {};
     _keys.reset();
     GetHAL().startLvglUpdate();

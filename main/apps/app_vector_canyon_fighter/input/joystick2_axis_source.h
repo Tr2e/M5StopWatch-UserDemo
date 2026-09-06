@@ -1,5 +1,6 @@
 #pragma once
 
+#include "external_input_logic.h"
 #include "flight_input_sources.h"
 
 #include <atomic>
@@ -22,6 +23,10 @@ private:
     static void samplingTaskEntry(void* context);
     void samplingTask();
     bool readOffset(int16_t& x, int16_t& y);
+    bool writeRgb(uint32_t packedColor);
+    void updateRgbFeedback(uint32_t nowMs, joystick2::LedFeedbackState state,
+                           float steer = 0.0f, float pitch = 0.0f,
+                           bool force = false);
     void publishOffset(int16_t x, int16_t y);
     bool readPublishedOffset(int16_t& x, int16_t& y, uint32_t& sequence) const;
 
@@ -49,6 +54,8 @@ private:
     int16_t _neutralY = 0;
     float _filteredSteer = 0.0f;
     float _filteredPitch = 0.0f;
+    uint32_t _lastRgbUpdateMs = 0;
+    uint32_t _lastRgbColor = UINT32_MAX;
     bool _calibrated = false;
     bool _opened = false;
 };

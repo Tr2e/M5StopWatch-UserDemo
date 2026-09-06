@@ -16,9 +16,9 @@
 #define VECTOR_CANYON_EXPLICIT_EVENT_STREAM 0
 #endif
 
-// Remains off until the G4 wiring continuity/voltage checklist has passed.
+// The production controller is Joystick2 on PORT.A plus Dual Button on GPIO3/4.
 #ifndef VECTOR_CANYON_USE_EXTERNAL_INPUT
-#define VECTOR_CANYON_USE_EXTERNAL_INPUT 0
+#define VECTOR_CANYON_USE_EXTERNAL_INPUT 1
 #endif
 
 static_assert(VECTOR_CANYON_EXPLICIT_STATIC_BASELINE == 0 || VECTOR_CANYON_EXPLICIT_STATIC_BASELINE == 1,

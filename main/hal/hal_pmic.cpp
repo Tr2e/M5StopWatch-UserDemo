@@ -165,3 +165,23 @@ bool Hal::isBatteryCharging(bool strict)
     }
     return external_power_inserted;
 }
+
+bool Hal::setGrove5VPower(bool enabled)
+{
+    if (!_pm1) {
+        mclog::tagError(_tag, "cannot {} Grove 5V: PMIC unavailable",
+                        enabled ? "enable" : "disable");
+        return false;
+    }
+
+    const m5pm1_err_t result = _pm1->setBoostEnable(enabled);
+    if (result != M5PM1_OK) {
+        mclog::tagError(_tag, "failed to {} Grove 5V: error {}",
+                        enabled ? "enable" : "disable",
+                        static_cast<int>(result));
+        return false;
+    }
+
+    mclog::tagInfo(_tag, "Grove 5V {}", enabled ? "enabled" : "disabled");
+    return true;
+}
