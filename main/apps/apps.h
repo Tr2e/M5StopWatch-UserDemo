@@ -20,3 +20,4 @@
 #include "app_glow_field/app_glow_field.h"
 #include "app_vector_canyon_fighter/app_vector_canyon_fighter.h"
 #include "app_lets_and_go_racer/app_lets_and_go_racer.h"
+#include "app_fruit_snake/app_fruit_snake.h"
