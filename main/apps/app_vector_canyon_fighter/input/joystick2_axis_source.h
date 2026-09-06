@@ -17,6 +17,7 @@ public:
     FlightAxisSample sampleAxes(uint32_t nowMs) override;
     FlightAxisStatus axisStatus(uint32_t nowMs) const override;
     void requestAxisCalibration(uint32_t nowMs) override;
+    bool sampleStickButtonClick(uint32_t nowMs);
     void close() override;
 
 private:
@@ -37,6 +38,7 @@ private:
     std::atomic<uint32_t> _publishSequence{0};
     std::atomic<int16_t> _latestX{0};
     std::atomic<int16_t> _latestY{0};
+    std::atomic<bool> _stickButtonPressed{false};
     std::atomic<uint32_t> _lastValidSampleMs{0};
     std::atomic<uint16_t> _consecutiveErrors{0};
     std::atomic<bool> _identified{false};
@@ -56,6 +58,7 @@ private:
     float _filteredPitch = 0.0f;
     uint32_t _lastRgbUpdateMs = 0;
     uint32_t _lastRgbColor = UINT32_MAX;
+    DebouncedActiveLowButton _stickButton;
     bool _calibrated = false;
     bool _opened = false;
 };

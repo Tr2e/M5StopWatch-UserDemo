@@ -136,6 +136,13 @@ void Joystick2AxisSource::samplingTask()
             publishOffset(x, y);
             _lastValidSampleMs.store(taskTimeMs(), std::memory_order_release);
             _consecutiveErrors.store(0u, std::memory_order_release);
+            uint8_t buttonLevel = 1u;
+            if (i2c_bus_read_byte(
+                    static_cast<i2c_bus_device_handle_t>(_device),
+                    joystick2::kButtonRegister, &buttonLevel) == ESP_OK) {
+                _stickButtonPressed.store(buttonLevel == 0u,
+                                          std::memory_order_release);
+            }
         } else {
             const uint16_t errors = _consecutiveErrors.load(std::memory_order_relaxed);
             _consecutiveErrors.store(
@@ -170,11 +177,13 @@ void Joystick2AxisSource::open()
     _publishSequence.store(0u, std::memory_order_relaxed);
     _lastValidSampleMs.store(0u, std::memory_order_relaxed);
     _consecutiveErrors.store(0u, std::memory_order_relaxed);
+    _stickButtonPressed.store(false, std::memory_order_relaxed);
     _identified.store(false, std::memory_order_relaxed);
     _firmwareVersion.store(0u, std::memory_order_relaxed);
     _lastConsumedSequence = 0;
     _lastRgbUpdateMs = 0;
     _lastRgbColor = UINT32_MAX;
+    _stickButton.reset();
     _samplingTaskExited.store(!_opened, std::memory_order_relaxed);
     if (!_opened) {
         mclog::tagError("Vector Run", "Joystick2 I2C bus/device creation failed");
@@ -305,6 +314,14 @@ FlightAxisStatus Joystick2AxisSource::axisStatus(uint32_t nowMs) const
         result.calibrationProgress = 1.0f;
     }
     return result;
+}
+
+bool Joystick2AxisSource::sampleStickButtonClick(uint32_t nowMs)
+{
+    if (!_opened) return false;
+    return _stickButton
+        .update(_stickButtonPressed.load(std::memory_order_acquire), nowMs)
+        .clicked;
 }
 
 void Joystick2AxisSource::close()

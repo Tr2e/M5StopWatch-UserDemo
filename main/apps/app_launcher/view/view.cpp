@@ -10,6 +10,7 @@
 #include <hal/hal.h>
 #include <cstdint>
 #include <vector>
+#include <algorithm>
 
 using namespace view;
 using namespace uitk;
@@ -202,6 +203,11 @@ static std::unique_ptr<DynamicIconLabel> _dynamic_icon_label;
 
 LauncherView::~LauncherView()
 {
+    if (_external_joystick) _external_joystick->close();
+    if (_external_buttons) _external_buttons->close();
+    _external_joystick.reset();
+    _external_buttons.reset();
+    if (_external_power_enabled) GetHAL().setGrove5VPower(false);
     _icon_images.clear();
     _icon_panels.clear();
     _lr_indicators_images.clear();
@@ -216,6 +222,13 @@ void LauncherView::init(std::vector<mooncake::AppProps_t> appPorps)
     mclog::tagInfo(_tag, "init");
 
     _key_manager = std::make_unique<input::KeyManager>();
+    _external_power_enabled = GetHAL().setGrove5VPower(true);
+    _external_joystick =
+        std::make_unique<vector_canyon_fighter::Joystick2AxisSource>();
+    _external_buttons =
+        std::make_unique<vector_canyon_fighter::DualButtonActionSource>();
+    _external_joystick->open();
+    _external_buttons->open();
 
     /* ------------------------------ Screen setup ------------------------------ */
     ScreenActive screen;
@@ -261,6 +274,7 @@ void LauncherView::init(std::vector<mooncake::AppProps_t> appPorps)
 
             // Keep track of data for helpers
             icon_label_texts.push_back(props.info.name);
+            _icon_app_ids.push_back(app_id);
 
             uint32_t color = 0xDADADA;
             if (props.info.userData != nullptr) {
@@ -379,6 +393,7 @@ void LauncherView::update()
                 break;
         }
     }
+    update_external_controller();
 
     switch (_state) {
         case STATE_STARTUP:
@@ -390,6 +405,46 @@ void LauncherView::update()
         default:
             break;
     }
+}
+
+void LauncherView::update_external_controller()
+{
+    if (!_external_joystick || !_external_buttons) return;
+    const uint32_t nowMs = GetHAL().millis();
+    const auto axes = _external_joystick->sampleAxes(nowMs);
+    switch (_external_navigation.update(axes.steer, axes.valid, nowMs)) {
+        case launcher_input::NavigationStep::Previous:
+            scroll_to_nearby_icon(-1);
+            break;
+        case launcher_input::NavigationStep::Next:
+            scroll_to_nearby_icon(1);
+            break;
+        default:
+            break;
+    }
+
+    const auto buttons = _external_buttons->sampleActions(nowMs);
+    const bool dualButtonConfirm =
+        buttons.valid &&
+        (buttons.actions.wasPressed(
+             vector_canyon_fighter::FlightAction::ThrottleDown) ||
+         buttons.actions.wasPressed(
+             vector_canyon_fighter::FlightAction::ThrottleUp));
+    if (_external_joystick->sampleStickButtonClick(nowMs) ||
+        dualButtonConfirm) {
+        open_centered_app();
+    }
+}
+
+void LauncherView::open_centered_app()
+{
+    if (_icon_app_ids.empty()) return;
+    const int currentScrollX = _panel->getScrollX();
+    const int currentIndex = std::clamp(
+        (currentScrollX + _icon_gap / 2) / _icon_gap, 0,
+        static_cast<int>(_icon_app_ids.size()) - 1);
+    _clicked_app_id = _icon_app_ids[currentIndex];
+    _last_clicked_icon_pos_x = currentIndex * _icon_gap;
 }
 
 void LauncherView::scroll_to_nearby_icon(int direction)

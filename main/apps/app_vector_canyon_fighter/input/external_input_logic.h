@@ -10,6 +10,7 @@ namespace joystick2 {
 
 constexpr uint8_t kDefaultAddress = 0x63;
 constexpr uint8_t kOffsetRegister = 0x50;
+constexpr uint8_t kButtonRegister = 0x20;
 constexpr uint8_t kRgbRegister = 0x30;
 constexpr uint8_t kFirmwareVersionRegister = 0xfe;
 
