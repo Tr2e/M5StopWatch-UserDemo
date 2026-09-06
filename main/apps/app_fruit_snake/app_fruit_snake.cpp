@@ -9,6 +9,19 @@ using namespace mooncake;
 
 namespace {
 constexpr uint32_t kTouchSampleIntervalMs = 10;
+
+fruit_snake::Sound soundForFeedback(fruit_snake::FeedbackKind kind)
+{
+    switch (kind) {
+        case fruit_snake::FeedbackKind::FruitAdded: return fruit_snake::Sound::FruitAdded;
+        case fruit_snake::FeedbackKind::FruitEaten: return fruit_snake::Sound::FruitEaten;
+        case fruit_snake::FeedbackKind::SnakeShortened: return fruit_snake::Sound::SnakeShortened;
+        case fruit_snake::FeedbackKind::Tickled: return fruit_snake::Sound::Tickled;
+        case fruit_snake::FeedbackKind::EdgeBounce: return fruit_snake::Sound::EdgeBounce;
+        case fruit_snake::FeedbackKind::None: return fruit_snake::Sound::FruitAdded;
+    }
+    return fruit_snake::Sound::FruitAdded;
+}
 }
 
 AppFruitSnake::AppFruitSnake()
@@ -28,6 +41,9 @@ void AppFruitSnake::onOpen()
     _keys = std::make_unique<input::KeyManager>();
     _touching = false;
     _lastTouchSampleMs = 0;
+    _handledFeedbackStartedMs = 0;
+    _handledFeedbackKind = fruit_snake::FeedbackKind::None;
+    _sfx.reset();
     GetHAL().stopLvglUpdate();
     auto& display = GetHAL().getDisplay();
     const uint32_t nowMs = GetHAL().millis();
@@ -72,6 +88,14 @@ void AppFruitSnake::onRunning()
     }
 
     _engine.update(nowMs);
+    const fruit_snake::Feedback& feedback = _engine.feedback();
+    if (feedback.kind != fruit_snake::FeedbackKind::None &&
+        (feedback.startedMs != _handledFeedbackStartedMs ||
+         feedback.kind != _handledFeedbackKind)) {
+        _sfx.play(soundForFeedback(feedback.kind), nowMs);
+        _handledFeedbackStartedMs = feedback.startedMs;
+        _handledFeedbackKind = feedback.kind;
+    }
     _renderer.render(_engine, nowMs);
 }
 
