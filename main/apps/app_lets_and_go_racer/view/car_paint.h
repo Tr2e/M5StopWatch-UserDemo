@@ -84,13 +84,20 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
     case CarPaint::SpiderWing:
         return carLetter("BEAK",u,v,.04f,.22f,.38f,.56f) ||
                carLetter("SPIDER",u,v,.57f,.22f,.39f,.56f) ? white : 0x1082;
-    case CarPaint::StingerHood:
-        if(v>.40f && v<.82f && center<.27f &&
-           std::fmod(v*12.f+center*7.f,1.f)<.27f)return 0x1082;
+    case CarPaint::StingerHood: {
+        const float bend=v<.48f ? v*.5f : .24f-(v-.48f)*.33f;
+        if(v>.19f && v<.87f)for(int branch=0;branch<3;++branch) {
+            const float path=.13f+branch*.17f+bend;
+            if(std::abs(u-path)<(.075f+.008f*branch)*(1-v))return 0x1082;
+            if(v>.37f && v<.68f && std::abs(u-(path-(v-.37f)*.52f))<.013f)return 0x1082;
+        }
         return carTint(0xbdf7,.82f+.18f*(1-center*2));
+    }
     case CarPaint::StingerCowl: {
-        const float crack=std::fmod(u*5.f+std::abs(v-.4f)*4.f,1.f);
-        return crack<.055f || std::fmod(v*6.f+std::abs(u-.3f)*2.f,1.f)<.04f ? red : 0xbdf7;
+        const float bend=std::abs(std::fmod(v*3.f,1.f)-.5f)*.5f;
+        const float crack=std::fmod(u*3.f+bend,1.f);
+        const float cross=std::fmod(v*3.f+std::abs(u-.5f)*.55f,1.f);
+        return crack<.065f || (cross<.050f && u>.2f) ? red : 0xbdf7;
     }
     case CarPaint::StingerLamp:
         return u<.04f || u>.96f || v<.06f || v>.94f ? dark :

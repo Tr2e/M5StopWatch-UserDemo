@@ -167,7 +167,7 @@ public:
     }
     // A recessed duct, not a black disc over a closed cowl. +z is the mouth.
     // Keep the rear cap behind the lip so side views reveal the tunnel wall.
-    void duct(float side,float x,float y,float z,float rx,float ry,float depth,uint16_t rim) {
+    void duct(float side,float x,float y,float z,float rx,float ry,float depth,uint16_t rim,uint16_t shell=0) {
         const int n=segments/2;
         const auto p=[&](float radius,float a,float dz) {
             return CarPoint{side*(x+rx*radius*std::cos(a)),y+ry*radius*std::sin(a),z+dz};
@@ -176,7 +176,7 @@ public:
             const float a=i*6.2831853f/n,c=(i+1)*6.2831853f/n;
             quad(p(1,a,0),p(.79f,a,0),p(.79f,c,0),p(1,c,0),rim);
             quad(p(.79f,a,0),p(.64f,a,-depth),p(.64f,c,-depth),p(.79f,c,0),shade(graphite,.65f));
-            quad(p(1,a,-depth),p(1,a,0),p(1,c,0),p(1,c,-depth),rim);
+            quad(p(1,a,-depth),p(1,a,0),p(1,c,0),p(1,c,-depth),shell ? shell : rim);
             quad(p(0,a,-depth),p(.64f,a,-depth),p(.64f,c,-depth),p(0,a,-depth),0x1082);
         }
     }
@@ -519,8 +519,11 @@ void spider(Builder& b) {
 void stinger(Builder& b) {
     b.part=CarPart::Nose;
     b.chine({{-.72f,.11f,.22f,.33f,.39f},{-.46f,.12f,.22f,.35f,.40f},
-        {-.16f,.16f,.19f,.29f,.34f},{.15f,.12f,.12f,.24f,.28f},
-        {.42f,.08f,.10f,.17f,.21f},{.84f,.02f,.08f,.11f,.12f}},silver,CarPaint::StingerHood);
+        {-.16f,.18f,.19f,.29f,.34f},{.15f,.25f,.12f,.235f,.28f},
+        {.42f,.22f,.10f,.17f,.22f},{.68f,.12f,.09f,.115f,.16f},
+        {.84f,.02f,.08f,.11f,.12f}},silver,CarPaint::Solid);
+    b.chine({{-.20f,.035f,.30f,.385f,.405f},{.06f,.048f,.26f,.29f,.33f},
+        {.42f,.036f,.19f,.23f,.265f},{.84f,.008f,.10f,.125f,.135f}},silver,CarPaint::Solid);
     b.part=CarPart::Canopy;
     b.chine({{-.58f,.095f,.35f,.46f,.49f},{-.39f,.135f,.33f,.44f,.48f},
         {-.17f,.13f,.29f,.365f,.40f},{.06f,.065f,.25f,.275f,.29f}},glass,CarPaint::Glass);
@@ -531,29 +534,32 @@ void stinger(Builder& b) {
             {.83f,.31f,.43f,.14f,.17f},{.91f,.36f,.385f,.10f,.115f}},silver,CarPaint::StingerHood,CarPaint::Solid,.012f);
         b.part=CarPart::RearCowl;
         b.cowl(s,{{-.82f,.24f,.53f,.32f,.36f},{-.68f,.22f,.55f,.38f,.44f},
-            {-.49f,.23f,.55f,.39f,.45f},{-.30f,.25f,.49f,.34f,.40f}},silver,CarPaint::StingerCowl);
+            {-.49f,.23f,.55f,.39f,.45f},{-.37f,.25f,.50f,.35f,.435f}},silver,CarPaint::StingerCowl);
         b.part=CarPart::Intake;
-        // Paired gold circular intake mouths in each rear pod (four total).
-        for(float x:{.31f,.43f})for(int i=0;i<b.segments/2;++i) {
-            const float a=i*6.2831853f/(b.segments/2),c=(i+1)*6.2831853f/(b.segments/2);
-            const auto p=[&](float r,float t){return CarPoint{s*x+std::cos(t)*r,.40f+std::sin(t)*r,-.285f};};
-            b.quad(p(.049f,a),p(.034f,a),p(.034f,c),p(.049f,c),0xe5ca);
-            auto mid=p(0,a);mid.z-=.012f;
-            auto pa=p(.034f,a),pc=p(.034f,c);pa.z-=.01f;pc.z-=.01f;
-            b.quad(mid,pa,pc,mid,graphite);
-        }
+        for(float x:{.31f,.43f})b.duct(s,x,.40f,-.26f,.052f,.052f,.10f,0xe5ca,graphite);
         b.part=CarPart::SideWeb;
         b.box(std::min(s*.15f,s*.29f),std::max(s*.15f,s*.29f),.18f,.22f,-.29f,-.20f,silver);
+        b.cowl(s,{{-.30f,.17f,.44f,.30f,.34f},{-.14f,.18f,.46f,.31f,.35f},
+            {.10f,.20f,.38f,.245f,.295f},{.24f,.235f,.29f,.235f,.26f}},silver,CarPaint::Solid);
         b.part=CarPart::Intake;
-        for(int i=0;i<3;++i)b.tube({s*(.25f+i*.026f),.20f,-.19f},
-            {s*(.29f+i*.026f),.21f,.20f},.018f,silver);
+        for(int i=0;i<3;++i) {
+            const float y=.18f+i*.035f;
+            b.tube({s*.31f,y,-.25f},{s*.42f,y,-.10f},.015f,silver);
+            b.tube({s*.42f,y,-.10f},{s*.43f,y,.07f},.015f,silver);
+            b.tube({s*.43f,y,.07f},{s*.32f,y,.20f},.015f,silver);
+        }
         b.part=CarPart::FrontBridge;
         b.quad({s*.10f,.16f,.72f},{s*.25f,.17f,.73f},
             {s*.25f,.125f,.84f},{s*.07f,.13f,.84f},red,CarPaint::StingerLamp);
     }
     b.part=CarPart::TailFin;
-    b.quad({0,.39f,-.52f},{0,.42f,-.87f},{0,.59f,-.88f},{0,.53f,-.68f},silver);
-    b.quad({.012f,.39f,-.52f},{.012f,.53f,-.68f},{.012f,.59f,-.88f},{.012f,.42f,-.87f},silver);
+    const CarPoint outline[]={{0,.39f,-.52f},{0,.42f,-.87f},{0,.59f,-.88f},{0,.53f,-.68f}};
+    for(float s:{-1.f,1.f})b.quad({s*.006f,.39f,-.52f},{s*.006f,.42f,-.87f},
+        {s*.006f,.59f,-.88f},{s*.006f,.53f,-.68f},silver);
+    for(int i=0;i<4;++i) {
+        const auto a=outline[i],c=outline[(i+1)%4];
+        b.quad({-.006f,a.y,a.z},{.006f,a.y,a.z},{.006f,c.y,c.z},{-.006f,c.y,c.z},silver);
+    }
 }
 
 void diospada(Builder& b) {
@@ -608,6 +614,8 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
         b.quad({0,.10f,.80f},{s*.48f,.10f,.83f},{s*.58f,.10f,.94f},{0,.10f,.91f},chassis);
         if(car!=CarId::BeakSpider)
             b.quad({0,.10f,-.74f},{s*.49f,.10f,-.77f},{s*.57f,.10f,-.86f},{0,.10f,-.83f},chassis);
+        if(car==CarId::RayStinger)
+            b.box(std::min(s*.23f,s*.57f),std::max(s*.23f,s*.57f),.10f,.13f,.04f,.10f,chassis);
         b.part=CarPart::Wheel;
         const bool broad=car==CarId::CycloneMagnum || car==CarId::HurricaneSonic;
         const int spokes=car==CarId::BrockenGigant ? 6 : car==CarId::SpinCobra ? 3 : 5;
@@ -617,9 +625,13 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
         b.part=CarPart::Roller;
         const auto roller=car>=CarId::SpinCobra ? (car==CarId::BeakSpider ? blue : silver) :
             car==CarId::CycloneMagnum || car==CarId::NeoTridaggerZmc ? blue : red;
-        if(car==CarId::BeakSpider)b.roller(s*.55f,.90f,roller,1,.18f,.024f);
+        if(car==CarId::BeakSpider || car==CarId::RayStinger)b.roller(s*.55f,.90f,roller,1,.18f,.024f);
         else b.roller(s*.55f,.90f,roller);
-        if(car==CarId::BeakSpider)b.roller(s*.55f,-.105f,0x2495,1,.195f,.024f);
+        if(car==CarId::RayStinger) {
+            b.roller(s*.55f,.07f,silver,2,.14f,.025f);
+            b.roller(s*.55f,-.84f,silver,1,.18f,.025f);
+        }
+        else if(car==CarId::BeakSpider)b.roller(s*.55f,-.105f,0x2495,1,.195f,.024f);
         else if(car==CarId::NeoTridaggerZmc)b.roller(s*.55f,-.105f,0x246d,1,.195f);
         else if(car==CarId::BrockenGigant)b.roller(s*.55f,-.84f,red,1,.20f,.09f);
         else b.roller(s*.55f,-.84f,car>=CarId::SpinCobra ? roller : car==CarId::CycloneMagnum ? blue : red);

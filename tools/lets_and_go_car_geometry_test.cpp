@@ -443,9 +443,19 @@ bool validateRebuiltStructure(CarId car)
                                    "Spider retained empty generic rear roller stays");
         }
         if(car==CarId::RayStinger) {
-            valid &= check(parts[unsigned(CarPart::RearWing)]==0 && parts[unsigned(CarPart::TailFin)]==2 &&
+            valid &= check(parts[unsigned(CarPart::RearWing)]==0 && parts[unsigned(CarPart::TailFin)]==6 &&
                            parts[unsigned(CarPart::Intake)]>=48,
                            "Stinger four intakes/single fin structure regressed");
+            for(float s:{-1.f,1.f})for(float x:{.31f,.43f})
+                valid &= check(frontSurface(mesh,s*x,.40f,CarPart::Intake)<-.35f &&
+                               frontSurface(mesh,s*(x+.048f),.40f,CarPart::Intake)>-.27f,
+                               "Stinger bellmouth depth or gold rim missing");
+            valid &= check(surfaceHeight(mesh,0,.42f,CarPart::Nose)>
+                           surfaceHeight(mesh,.18f,.42f,CarPart::Nose)+.045f,
+                           "Stinger central raised blade merged into flat hood");
+            for(float s:{-1.f,1.f})
+                valid &= check(surfaceHeight(mesh,s*.55f,.07f,CarPart::Roller)>.20f,
+                               "Stinger middle dual roller missing");
         }
         if(car==CarId::Diospada) {
             valid &= check(surfaceHeight(mesh,0,-.83f,CarPart::RearWing)>.56f &&

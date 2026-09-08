@@ -32,6 +32,18 @@ High／Medium／Low：1,171／955／739 面，比 R23 更少而不是靠堆面�
 
 ![Spider 多视角及比赛生产输出](assets/lets-and-go-r24-spider.png)
 
-## 后续阶段
+## C. Ray Stinger / 19438 Premium
 
-Ray Stinger、Diospada 按相同流程逐台记录，完成后更新本节。
+参考：[官方产品页](https://www.tamiya.com/english/products/19438/index.html)、[实拍](https://d7z22c0gz59ng.cloudfront.net/japan_contents/img/usr/item/1/19438/19438_1.jpg)。重点是三尖前端、贯穿中央的银色刀脊、黑色座舱、四个金色喇叭口、弯折侧管与单片尾鳍。
+
+结构卡：R23 中轴过窄像独立细杆，进气口只有环片，侧管是直条，尾鳍未封边。拓宽刀脊下的主体并独立抬高脊线；四口使用内壁／后腔／口沿三层结构，银色弯管绕过两侧，中央尾鳍居中并补薄边。
+
+第一轮：三档四口深度、口沿、刀脊高差和轮胎间隙通过。去掉主车鼻错误的重复黑纹，只在前罩保留分叉纹；后罩红纹改成较疏的折线。
+
+第二轮：实渲染发现侧连接片仍像宽平板，改为四截面渐收肩壳；金色口沿之外的管壳改为深色，避免俯视呈金色方块。补实拍中部双层导轮和独立支架，前后导轮改为单层。Cobra／Spider 的九宫格生产输出与各自阶段版本逐字节一致。
+
+High／Medium／Low：1,565／1,265／965 面；全部回归与 ESP-IDF 编译通过，固件 `0x4a7fe0`，分区余量 `0x48020`（6%），缓存不变。
+
+![Stinger 多视角及比赛生产输出](assets/lets-and-go-r24-stinger.png)
+
+Diospada 待按相同流程完成。
