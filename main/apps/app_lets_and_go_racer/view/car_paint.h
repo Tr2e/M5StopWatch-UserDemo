@@ -44,8 +44,10 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         return blue;
     }
     case CarPaint::CobraHood:
-        if(v>.17f && v<.72f && center<.26f) {
-            if(std::abs(std::fmod(v*8.f+center*.7f,1.f))<.10f)return 0x7bef;
+        if(v>.42f && v<.85f && center<.38f-.13f*v) {
+            // Three swept chrome ribs stop short of the blue center spine.
+            if(center<.07f && v<.60f)return blue;
+            if(std::fmod((v-.42f)*7.f+center*.6f,1.f)<.055f)return 0x7bef;
             return carTint(0xdedb, .83f+.17f*(1-center*2));
         }
         return blue;

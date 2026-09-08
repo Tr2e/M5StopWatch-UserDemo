@@ -165,6 +165,21 @@ public:
                  CarPaint::Solid,0,1,0,1,index);
         }
     }
+    // A recessed duct, not a black disc over a closed cowl. +z is the mouth.
+    // Keep the rear cap behind the lip so side views reveal the tunnel wall.
+    void duct(float side,float x,float y,float z,float rx,float ry,float depth,uint16_t rim) {
+        const int n=segments/2;
+        const auto p=[&](float radius,float a,float dz) {
+            return CarPoint{side*(x+rx*radius*std::cos(a)),y+ry*radius*std::sin(a),z+dz};
+        };
+        for(int i=0;i<n;++i) {
+            const float a=i*6.2831853f/n,c=(i+1)*6.2831853f/n;
+            quad(p(1,a,0),p(.79f,a,0),p(.79f,c,0),p(1,c,0),rim);
+            quad(p(.79f,a,0),p(.64f,a,-depth),p(.64f,c,-depth),p(.79f,c,0),shade(graphite,.65f));
+            quad(p(1,a,-depth),p(1,a,0),p(1,c,0),p(1,c,-depth),rim);
+            quad(p(0,a,-depth),p(.64f,a,-depth),p(.64f,c,-depth),p(0,a,-depth),0x1082);
+        }
+    }
     void roller(float x,float z,uint16_t color,int layers=2,float baseY=.11f,float thickness=.018f) {
         const int n=segments/2;
         for(int layer=0;layer<layers;++layer) for(int i=0;i<n;++i) {
@@ -411,9 +426,9 @@ void brocken(Builder& b) {
 void cobra(Builder& b) {
     b.part=CarPart::Nose;
     b.chine({{-.65f,.14f,.22f,.32f,.36f},{-.40f,.17f,.22f,.32f,.36f},
-        {-.12f,.20f,.18f,.30f,.32f},{.16f,.27f,.12f,.26f,.29f},
-        {.40f,.29f,.10f,.22f,.255f},{.67f,.29f,.08f,.15f,.19f},
-        {.85f,.39f,.08f,.13f,.14f}},blue,CarPaint::CobraHood);
+        {-.12f,.155f,.18f,.30f,.32f},{.16f,.225f,.12f,.265f,.305f},
+        {.40f,.25f,.10f,.22f,.275f},{.67f,.23f,.08f,.15f,.19f},
+        {.81f,.30f,.08f,.13f,.15f}},blue,CarPaint::CobraHood);
     b.part=CarPart::Canopy;
     b.chine({{-.51f,.11f,.33f,.46f,.49f},{-.35f,.14f,.31f,.45f,.49f},
         {-.10f,.15f,.30f,.37f,.405f},{.12f,.10f,.29f,.30f,.31f}},glass,CarPaint::Glass);
@@ -422,18 +437,24 @@ void cobra(Builder& b) {
         b.cowl(s,{{.20f,.25f,.44f,.29f,.33f},{.36f,.27f,.54f,.345f,.38f},
             {.52f,.29f,.566f,.383f,.414f},{.64f,.29f,.55f,.35f,.386f},
             {.76f,.31f,.51f,.225f,.27f},{.855f,.34f,.47f,.13f,.16f}},blue,CarPaint::CobraFlame);
-        b.quad({s*.35f,.288f,.754f},{s*.45f,.290f,.754f},
+        b.quad({s*.35f,.340f,.700f},{s*.45f,.342f,.700f},
             {s*.43f,.182f,.848f},{s*.355f,.180f,.848f},silver,CarPaint::CobraLamp);
         b.part=CarPart::RearCowl;
         b.cowl(s,{{-.81f,.27f,.53f,.31f,.35f},{-.66f,.24f,.55f,.373f,.41f},
-            {-.50f,.23f,.55f,.385f,.42f},{-.30f,.23f,.53f,.30f,.35f},
-            {-.15f,.24f,.48f,.24f,.29f}},blue,CarPaint::CobraFlame);
+            {-.50f,.24f,.55f,.385f,.42f},{-.33f,.27f,.51f,.33f,.40f}},blue,CarPaint::CobraFlame);
         b.part=CarPart::SideWeb;
         b.quad({s*.20f,.22f,-.22f},{s*.50f,.21f,-.23f},
             {s*.51f,.20f,.24f},{s*.23f,.245f,.18f},blue,CarPaint::CobraFlame);
+        b.quad({s*.50f,.21f,-.23f},{s*.51f,.20f,.24f},
+            {s*.50f,.135f,.19f},{s*.49f,.145f,-.19f},blue);
         b.part=CarPart::Intake;
-        b.quad({s*.26f,.351f,-.295f},{s*.46f,.351f,-.295f},
-            {s*.43f,.282f,-.15f},{s*.28f,.282f,-.15f},graphite,CarPaint::MagnumVent);
+        b.duct(s,.385f,.355f,-.19f,.103f,.053f,.145f,blue);
+        // Tall cockpit sill and triangular side window are separate from the hood.
+        b.part=CarPart::Canopy;
+        b.quad({s*.15f,.305f,-.41f},{s*.135f,.455f,-.40f},
+            {s*.155f,.31f,-.08f},{s*.16f,.30f,-.08f},blue);
+        b.quad({s*.152f,.329f,-.36f},{s*.143f,.416f,-.36f},
+            {s*.157f,.327f,-.17f},{s*.157f,.327f,-.17f},glass);
         b.part=CarPart::RearWing;
         b.quad({s*.245f,.36f,-.67f},{s*.32f,.36f,-.68f},
             {s*.48f,.57f,-.955f},{s*.31f,.51f,-.92f},blue);
@@ -441,6 +462,8 @@ void cobra(Builder& b) {
     }
     b.part=CarPart::RearWing;
     b.chine({{-.94f,.40f,.465f,.49f,.50f},{-.86f,.34f,.455f,.48f,.49f}},blue,CarPaint::Solid);
+    b.part=CarPart::Canopy;
+    b.chine({{-.55f,.10f,.46f,.485f,.50f},{-.39f,.13f,.45f,.47f,.485f}},blue,CarPaint::Solid);
     b.part=CarPart::FrontBridge;
     b.chine({{.80f,.42f,.095f,.14f,.17f},{.875f,.41f,.09f,.12f,.14f}},blue,CarPaint::CobraBridge);
 }

@@ -215,6 +215,26 @@ float surfaceHeight(const CarDisplayMesh& mesh,float x,float z,CarPart part,bool
     return height;
 }
 
+// Front-facing probe: distinguish a recessed mouth from a painted flat disc.
+float frontSurface(const CarDisplayMesh& mesh,float x,float y,CarPart part)
+{
+    float depth=-2;
+    for(std::size_t i=0;i<mesh.count;++i) {
+        const auto& p=mesh.panels[i];
+        if(p.part!=part)continue;
+        for(int triangle=0;triangle<2;++triangle) {
+            const auto a=p.point[0],b=p.point[triangle+1],c=p.point[triangle+2];
+            const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+            if(std::abs(det)<1e-8f)continue;
+            const float u=((x-a.x)*(c.y-a.y)-(y-a.y)*(c.x-a.x))/det;
+            const float v=((b.x-a.x)*(y-a.y)-(b.y-a.y)*(x-a.x))/det;
+            if(u>=-1e-5f && v>=-1e-5f && u+v<=1.00001f)
+                depth=std::max(depth,a.z+u*(b.z-a.z)+v*(c.z-a.z));
+        }
+    }
+    return depth;
+}
+
 bool validateMagnumStructure()
 {
     bool valid=true;
@@ -390,6 +410,18 @@ bool validateRebuiltStructure(CarId car)
             valid &= check(surfaceHeight(mesh,.44f,.52f,CarPart::FrontCowl)>.39f &&
                            parts[unsigned(CarPart::FrontBridge)]>0 && parts[unsigned(CarPart::Intake)]>0,
                            "Cobra wide front fenders/independent nose/intakes missing");
+            for(float s:{-1.f,1.f}) {
+                valid &= check(surfaceHeight(mesh,s*.20f,-.12f,CarPart::Nose)<0 &&
+                               surfaceHeight(mesh,s*.23f,.40f,CarPart::Nose)>.21f,
+                               "Cobra cockpit waist must contract behind the chrome hood");
+                valid &= check(surfaceHeight(mesh,s*.22f,-.40f,CarPart::Unspecified,true)<.20f,
+                               "Cobra rear channel filled by the cockpit hull");
+                valid &= check(frontSurface(mesh,s*.385f,.355f,CarPart::Intake)<-.32f &&
+                               frontSurface(mesh,s*.480f,.355f,CarPart::Intake)>-.20f,
+                               "Cobra duct must have a recessed back and raised mouth rim");
+            }
+            valid &= check(parts[unsigned(CarPart::Intake)]>=48,
+                           "Cobra recessed ducts replaced by surface stickers");
         }
         if(car==CarId::BeakSpider) {
             valid &= check(surfaceHeight(mesh,.30f,-.92f,CarPart::RearWing)>.56f &&
