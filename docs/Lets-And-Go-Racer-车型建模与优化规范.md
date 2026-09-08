@@ -56,12 +56,14 @@
 ```sh
 SANITIZE=1 bash tools/test_lets_and_go.sh
 SANITIZE=1 bash tools/render_lets_and_go.sh /tmp/lets-go-model-review
-python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-model-review /tmp/lets-go-model-review/cobra.png --names cobra-top cobra-side cobra-front cobra-rear cobra-opposite cobra-medium cobra-low car-4 race-car-4
+python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-model-review /tmp/lets-go-model-review/cobra.png --names cobra-top cobra-side cobra-front cobra-rear cobra-opposite cobra-medium cobra-low car-4 showcase-4 race-car-4 race-close-car-4
 source ../esp-idf/export.sh
 idf.py build
 ```
 
 将例子的车型前缀和 ID 换成目标车型。所有预览必须来自生产 C++ 网格、材质及栅格器，不以 AI 效果图或图片修饰代替游戏效果。
+
+注意测试自身的有效性：展示阶段的车型来自已确认的 `GameFlow` 设置，不只是 `GarageSelection` 光标。必须先选择目标车型再确认，查看图中的车型名，并防止不同文件名实际输出同一台车。近距离对手图应使用合法的不同车型组合并避免目标主体完全藏在 HUD 下；保留原有极近裁剪压力测试，不能用“好看的取景”替代它。
 
 当前门禁：High ≤ 2,048 面，比赛 Medium ≤ 1,536 面，Low ≤ 1,024 面；保持现有渲染包围盒与圆屏安全区。记录实际面数和缓存，不把门禁当作必须用满的目标。R23 打开期车库／比赛缓存为 591,128／481,592 B；禁止未经说明扩大缓存或引入逐帧分配。固件必须通过分区尺寸检查，并记录剩余空间。
 

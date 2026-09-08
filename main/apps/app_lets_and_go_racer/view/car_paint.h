@@ -109,13 +109,19 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         }
         if(v<.45f && center>.32f && center<.40f)return white;
         return red;
+    case CarPaint::DiospadaCanopy:
+        if(u<.10f || u>.90f || v<.08f || v>.9f)
+            return (int(u*45)+int(v*45))%3 ? 0x4208 : 0x8410;
+        return carTint(0xacce,.85f+.28f*(1-u)+.08f*(1-v));
+    case CarPaint::DiospadaLamp: {
+        if(v<.1f || v>.9f)return dark;
+        const float lens=std::min(std::abs(u-.28f),std::abs(u-.72f));
+        return lens<.13f && std::abs(v-.5f)<.28f ? white : 0x7bef;
+    }
     case CarPaint::DiospadaWing:
         return carLetter("DIOSPADA",u,v,.07f,.23f,.86f,.49f) ? white : red;
     case CarPaint::DiospadaSide:
         if(v>.12f && v<.33f && u>.12f && u<.82f)return white;
-        return red;
-    case CarPaint::DiospadaLouver:
-        if(v<.30f && u>.14f && u<.90f && int(u*11)%3==1)return dark;
         return red;
     case CarPaint::Glass:
     case CarPaint::BronzeGlass:

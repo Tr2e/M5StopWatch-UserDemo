@@ -565,35 +565,62 @@ void stinger(Builder& b) {
 void diospada(Builder& b) {
     b.part=CarPart::Nose;
     b.chine({{-.70f,.13f,.22f,.29f,.32f},{-.43f,.17f,.20f,.30f,.34f},
-        {-.14f,.20f,.17f,.29f,.33f},{.15f,.25f,.14f,.26f,.29f},
-        {.42f,.25f,.10f,.21f,.245f},{.70f,.28f,.08f,.16f,.19f},
+        {-.14f,.18f,.17f,.29f,.33f},{.15f,.20f,.14f,.26f,.29f},
+        {.42f,.185f,.10f,.21f,.245f},{.70f,.24f,.08f,.16f,.19f},
         {.85f,.40f,.08f,.13f,.15f}},red,CarPaint::DiospadaHood);
+    b.chine({{.20f,.035f,.26f,.29f,.31f},{.43f,.030f,.21f,.255f,.27f},
+        {.73f,.012f,.15f,.18f,.19f}},red,CarPaint::Solid);
     b.part=CarPart::Canopy;
-    b.chine({{-.47f,.095f,.31f,.405f,.44f},{-.33f,.14f,.30f,.42f,.455f},
-        {-.13f,.15f,.28f,.37f,.405f},{.04f,.11f,.27f,.29f,.31f}},glass,CarPaint::BronzeGlass);
+    b.chine({{-.47f,.12f,.31f,.415f,.44f},{-.33f,.15f,.30f,.42f,.455f},
+        {-.13f,.155f,.28f,.37f,.405f},{.04f,.13f,.27f,.29f,.315f}},glass,CarPaint::DiospadaCanopy);
     for(float s:{-1.f,1.f}) {
         b.part=CarPart::FrontCowl;
         b.cowl(s,{{.25f,.25f,.44f,.29f,.33f},{.41f,.30f,.54f,.355f,.39f},
             {.54f,.31f,.55f,.38f,.41f},{.65f,.30f,.55f,.35f,.38f},
             {.77f,.29f,.53f,.22f,.26f},{.86f,.32f,.46f,.14f,.17f}},red,CarPaint::Solid);
         b.quad({s*.31f,.262f,.768f},{s*.475f,.262f,.766f},
-            {s*.44f,.18f,.85f},{s*.31f,.178f,.85f},silver,CarPaint::CobraLamp);
+            {s*.44f,.18f,.85f},{s*.31f,.178f,.85f},silver,CarPaint::DiospadaLamp);
         b.part=CarPart::RearCowl;
         b.cowl(s,{{-.84f,.25f,.53f,.32f,.355f},{-.69f,.25f,.55f,.375f,.41f},
             {-.51f,.24f,.55f,.39f,.42f},{-.29f,.24f,.49f,.295f,.34f}},red,CarPaint::Solid);
-        // Actual open side scoop: upper rail and lower sill, no flat fill.
+        // A forward-canted recessed side intake, framed by a swept roof/sill.
         b.part=CarPart::SideWeb;
-        b.quad({s*.23f,.29f,-.25f},{s*.49f,.31f,-.27f},
-            {s*.46f,.31f,.23f},{s*.25f,.28f,.20f},red,CarPaint::DiospadaSide);
+        b.cowl(s,{{-.29f,.16f,.49f,.31f,.35f},{-.14f,.20f,.49f,.32f,.355f},
+            {.09f,.225f,.46f,.325f,.35f},{.27f,.24f,.40f,.30f,.335f}},red,CarPaint::DiospadaSide);
         b.box(std::min(s*.23f,s*.47f),std::max(s*.23f,s*.47f),.105f,.14f,-.24f,.23f,red);
+        const auto mouth=[s](float r,float a,float depth) {
+            const float z=.10f+.22f*r*std::cos(a);
+            return CarPoint{s*(.39f-.50f*(z-.10f)-depth),.24f+.095f*r*std::sin(a),z};
+        };
+        for(int i=0;i<b.segments/2;++i) {
+            const float a=i*6.2831853f/(b.segments/2),c=(i+1)*6.2831853f/(b.segments/2);
+            b.quad(mouth(1,a,0),mouth(.78f,a,0),mouth(.78f,c,0),mouth(1,c,0),red);
+            b.quad(mouth(.78f,a,0),mouth(.65f,a,.10f),mouth(.65f,c,.10f),mouth(.78f,c,0),graphite);
+            b.quad(mouth(0,a,.10f),mouth(.65f,a,.10f),mouth(.65f,c,.10f),mouth(0,a,.10f),0x1082);
+        }
         b.part=CarPart::RearWing;
-        b.quad({s*.49f,.34f,-.68f},{s*.49f,.38f,-.92f},
-            {s*.41f,.57f,-.92f},{s*.41f,.555f,-.71f},red,CarPaint::DiospadaLouver);
-        b.quad({s*.47f,.34f,-.68f},{s*.40f,.535f,-.71f},
-            {s*.40f,.55f,-.92f},{s*.47f,.38f,-.92f},shade(red,.8f));
+        // Three true slots on each rolled shoulder: no dark paint masquerading
+        // as holes, and no rear face sealing them again from the opposite view.
+        const auto wing=[s](float u,float v,float inner=0.f) {
+            const float x=u<.35f ? .34f+u*.20f : .41f+(u-.35f)*(.09f/.65f);
+            const float y=u<.35f ? .575f-u*.043f : .56f-(u-.35f)*(.20f/.65f);
+            return CarPoint{s*(x-inner*.012f),y-.015f*v-inner*.008f,-.94f+.24f*v};
+        };
+        constexpr float us[]={0,.35f,.68f,.88f,1};
+        constexpr float vs[]={0,.12f,.29f,.39f,.56f,.66f,.83f,1};
+        for(int u=0;u<4;++u)for(int v=0;v<7;++v) {
+            if(u==2 && (v==1 || v==3 || v==5))continue;
+            b.quad(wing(us[u],vs[v]),wing(us[u+1],vs[v]),
+                   wing(us[u+1],vs[v+1]),wing(us[u],vs[v+1]),red);
+        }
+        for(int v:{1,3,5}) {
+            const float lo=vs[v],hi=vs[v+1];
+            for(float u:{.68f,.88f})b.quad(wing(u,lo),wing(u,hi),wing(u,hi,1),wing(u,lo,1),shade(red,.7f));
+            for(float z:{lo,hi})b.quad(wing(.68f,z),wing(.88f,z),wing(.88f,z,1),wing(.68f,z,1),shade(red,.7f));
+        }
     }
     b.part=CarPart::RearWing;
-    b.chine({{-.94f,.42f,.545f,.575f,.585f},{-.72f,.42f,.53f,.56f,.572f}},red,CarPaint::DiospadaWing);
+    b.chine({{-.94f,.34f,.545f,.575f,.585f},{-.70f,.34f,.53f,.56f,.572f}},red,CarPaint::DiospadaWing);
     b.part=CarPart::FrontBridge;
     b.chine({{.81f,.45f,.09f,.16f,.17f},{.88f,.41f,.085f,.12f,.135f}},red,CarPaint::Solid);
 }

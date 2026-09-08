@@ -353,9 +353,11 @@ int main(int argc, char** argv)
     std::cout << "Garage cameras: 8 cars x 9 forward/reverse states x 3 LODs x 6 poses; side-only wheel pixel checks\n";
     // The exact same production cache is exercised across every selection,
     // entrance scale, wheel phase and quality tier (not just a single hero shot).
+    std::array<uint64_t,kCarCount> showcaseHashes{};
     for(std::size_t i=0;i<kCarCount;++i) {
         GameFlow previewFlow;
         previewFlow.confirmInputAvailable(); previewFlow.completeCalibration(true);
+        previewFlow.selectPlayerCar(static_cast<CarId>(i));
         previewFlow.confirmPlayerCar();
         selection.reset(static_cast<CarId>(i));
         for(uint32_t time : {0u,120u,500u,900u,2500u}) {
@@ -364,6 +366,12 @@ int main(int argc, char** argv)
                 checkText();
             }
         }
+        uint64_t hash=1469598103934665603ULL;
+        for(auto pixel:canvas.frame())hash=(hash^pixel)*1099511628211ULL;
+        for(std::size_t previous=0;previous<i;++previous)if(showcaseHashes[previous]==hash) {
+            std::cerr<<"Different machines produced identical showcase images\n";valid=false;
+        }
+        showcaseHashes[i]=hash;
         save("showcase-"+std::to_string(i));
     }
     selection.reset();
@@ -493,6 +501,20 @@ int main(int argc, char** argv)
         state.cars[opponent].motion.lateralOffset=.65f;
         renderer.render(drive,run,results,0,false,PencilDetail::High);
         if(id==0)save("race-close");
+        // Exercise every catalogue car as a nearby opponent, not only as the
+        // player. Use a legal two-car grid with a different player machine.
+        GameFlow closeFlow;
+        closeFlow.confirmInputAvailable();closeFlow.completeCalibration(true);
+        closeFlow.selectPlayerCar(static_cast<CarId>((id+1)%kCarCount));closeFlow.confirmPlayerCar();
+        closeFlow.completeCarShowcase();closeFlow.toggleRival(static_cast<CarId>(id));
+        closeFlow.confirmRivals();closeFlow.confirmTrack();closeFlow.completeGridIntro();closeFlow.completeCountdown();
+        RaceController closeRace;closeRace.prepare(closeFlow.setup(),0x12345678u);
+        auto& nearState=const_cast<RaceSnapshot&>(closeRace.snapshot());
+        auto& nearRival=nearState.cars[1-nearState.playerIndex];
+        nearRival.motion.distance=nearState.player().motion.distance-.15f;
+        nearRival.motion.lateralOffset=.55f;
+        renderer.render(closeFlow,closeRace,results,0,false,PencilDetail::High);
+        save("race-close-car-"+std::to_string(id));
     }
     // All-new and mixed rosters, including a solo quality change between full
     // grids. Reused caches must match a clean renderer byte for byte.

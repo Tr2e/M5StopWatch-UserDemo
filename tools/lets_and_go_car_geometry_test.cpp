@@ -216,14 +216,15 @@ float surfaceHeight(const CarDisplayMesh& mesh,float x,float z,CarPart part,bool
 }
 
 // Front-facing probe: distinguish a recessed mouth from a painted flat disc.
-float frontSurface(const CarDisplayMesh& mesh,float x,float y,CarPart part)
+float frontSurface(const CarDisplayMesh& mesh,float x,float y,CarPart part,bool fromSide=false)
 {
     float depth=-2;
     for(std::size_t i=0;i<mesh.count;++i) {
         const auto& p=mesh.panels[i];
         if(p.part!=part)continue;
         for(int triangle=0;triangle<2;++triangle) {
-            const auto a=p.point[0],b=p.point[triangle+1],c=p.point[triangle+2];
+            const auto project=[fromSide](CarPoint q) {return fromSide ? CarPoint{q.z,q.y,q.x} : q;};
+            const auto a=project(p.point[0]),b=project(p.point[triangle+1]),c=project(p.point[triangle+2]);
             const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
             if(std::abs(det)<1e-8f)continue;
             const float u=((x-a.x)*(c.y-a.y)-(y-a.y)*(c.x-a.x))/det;
@@ -462,6 +463,18 @@ bool validateRebuiltStructure(CarId car)
                            surfaceHeight(mesh,.40f,-.83f,CarPart::RearWing)>.55f &&
                            parts[unsigned(CarPart::SideWeb)]>=12,
                            "Diospada arched wing or open scoop rails missing");
+            const float inside=frontSurface(mesh,.10f,.24f,CarPart::SideWeb,true);
+            valid &= check(inside>.28f && inside<.30f &&
+                           frontSurface(mesh,.305f,.24f,CarPart::SideWeb,true)>.28f,
+                           "Diospada side intake must have an inset wall behind its lip");
+            for(float v:{.20f,.475f,.745f}) {
+                const float z=-.94f+.24f*v,y=.56f-(.78f-.35f)*(.20f/.65f)-.015f*v;
+                valid &= check(frontSurface(mesh,z,y,CarPart::RearWing,true)<-1.f,
+                               "Diospada wing shoulder slot closed by a painted face");
+            }
+            valid &= check(frontSurface(mesh,-.94f+.24f*.34f,
+                               .56f-(.78f-.35f)*(.20f/.65f)-.015f*.34f,CarPart::RearWing,true)>.44f,
+                           "Diospada wing lost the bar between slots");
         }
     }
     std::cout<<carSpec(car).shortName<<" structure: tire clearance, mirrored UV and authored components across 3 LODs\n";
