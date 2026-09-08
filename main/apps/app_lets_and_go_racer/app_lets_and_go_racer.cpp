@@ -14,9 +14,7 @@ constexpr uint16_t kPencilFaintColor = 0x9cf3u;
 AppLetsAndGoRacer::AppLetsAndGoRacer()
 {
     setAppInfo().name = "Let's & Go!!";
-    // R2 replaces this temporary, always-valid launcher asset with the
-    // round-display adaptation of the TAMIYA twin-star mark.
-    setAppInfo().icon = (void*)&icon_vector_run;
+    setAppInfo().icon = (void*)&icon_lets_and_go;
 }
 
 void AppLetsAndGoRacer::onCreate()
