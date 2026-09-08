@@ -79,6 +79,10 @@ public:
             actions.setPressed(FlightAction::Reset);
             actions.setPressed(FlightAction::ToggleImmersive);
         }
+        // Keep the raw primary hold observable for domain-specific adapters.
+        // Vector Run still consumes only the click edge for throttle changes.
+        actions.setHeld(FlightAction::ThrottleDown, primaryPressed);
+        actions.setHeld(FlightAction::ThrottleUp, secondaryPressed);
         actions.setHeld(FlightAction::Boost, secondaryHolding);
         return actions;
     }

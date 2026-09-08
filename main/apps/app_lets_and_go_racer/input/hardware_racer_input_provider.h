@@ -1,0 +1,27 @@
+#pragma once
+
+#include "racer_input_logic.h"
+
+#include "../../app_vector_canyon_fighter/input/dual_button_action_source.h"
+#include "../../app_vector_canyon_fighter/input/joystick2_axis_source.h"
+
+namespace lets_and_go {
+
+class HardwareRacerInputProvider final : public RacerInputProvider {
+public:
+    ~HardwareRacerInputProvider() override;
+    void open() override;
+    RacerInput sample(uint32_t nowMs) override;
+    RacerInputStatus status(uint32_t nowMs) const override;
+    void requestCalibration(uint32_t nowMs) override;
+    void close() override;
+
+private:
+    vector_canyon_fighter::Joystick2AxisSource _axes;
+    vector_canyon_fighter::DualButtonActionSource _actions;
+    uint32_t _sequence = 0;
+    LongChordDetector _exitChord;
+    bool _opened = false;
+};
+
+}  // namespace lets_and_go

@@ -98,17 +98,24 @@ bool validateActionEdgesAndHolds()
 bool validateTwoButtonMapping()
 {
     TwoButtonFlightActionMapper mapper;
-    mapper.update(true, false, false, false, false, false);
+    const FlightActions primaryHeld = mapper.update(
+        true, false, false, false, false, false);
     const FlightActions primary = mapper.update(
         false, false, true, false, false, false);
-    bool valid = check(primary.wasPressed(FlightAction::ThrottleDown) &&
+    bool valid = check(primaryHeld.isHeld(FlightAction::ThrottleDown) &&
+                           primary.wasPressed(FlightAction::ThrottleDown) &&
+                           !primary.isHeld(FlightAction::ThrottleDown) &&
+                           !primary.isHeld(FlightAction::ThrottleUp) &&
                            !primary.wasPressed(FlightAction::Pause),
                        "primary click lost throttle-down mapping");
 
-    mapper.update(false, true, false, false, false, false);
+    const FlightActions secondaryHeld = mapper.update(
+        false, true, false, false, false, false);
     const FlightActions secondary = mapper.update(
         false, false, false, true, false, false);
-    valid &= check(secondary.wasPressed(FlightAction::ThrottleUp) &&
+    valid &= check(secondaryHeld.isHeld(FlightAction::ThrottleUp) &&
+                       secondary.wasPressed(FlightAction::ThrottleUp) &&
+                       !secondary.isHeld(FlightAction::ThrottleUp) &&
                        !secondary.wasPressed(FlightAction::Pause),
                    "secondary click lost throttle-up mapping");
 
@@ -132,6 +139,8 @@ bool validateTwoButtonMapping()
         true, false, false, false, true, true);
     valid &= check(held.wasPressed(FlightAction::Reset) &&
                        held.wasPressed(FlightAction::ToggleImmersive) &&
+                       held.isHeld(FlightAction::ThrottleDown) &&
+                       !held.isHeld(FlightAction::ThrottleUp) &&
                        held.isHeld(FlightAction::Boost),
                    "existing hold mappings regressed");
     return valid;
