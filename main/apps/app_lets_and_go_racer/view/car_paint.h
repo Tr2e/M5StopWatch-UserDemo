@@ -55,6 +55,13 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         if(carLetter(name,u,v,.11f,.26f,.78f,.52f))return paint==CarPaint::MagnumWing ? gold : white;
         return color;
     }
+    case CarPaint::NeoWingLeft:
+        if(v<.06f || v>.95f)return 0xb5d6;
+        return carLetter("TRIDAGGER",u,v,.06f,.3f,.90f,.43f) ? white : dark;
+    case CarPaint::NeoCanopy:
+        if(u<.03f || u>.97f || v<.025f || v>.97f ||
+           std::abs(u-.17f)<.011f || std::abs(u-.83f)<.011f)return 0x7bef;
+        return carTint(0xac6d,.78f+.28f*(1-u));
     case CarPaint::MagnumHood: {
         // Broad blue shoulders beside the cockpit become one tapered nose wedge.
         const float band=v<.43f ? .47f : .32f-.20f*((v-.43f)/.57f);
@@ -119,12 +126,14 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         }
         return base;
     case CarPaint::Flame: {
-        const float repeat=u*2.1f+.13f;
-        const float tooth=1-std::abs((repeat-std::floor(repeat))*2-1);
-        const float tip=.25f+.67f*tooth;
+        // Irregular red tongues with narrow yellow tips, not repeated yellow leaves.
+        constexpr float tips[]={.77f,.93f,.76f,.52f,.57f,.39f,.48f,.74f,.88f,.67f,.80f,.62f};
+        const float along=std::clamp(u,0.f,1.f)*11;
+        const int segment=std::min(10,int(along));
+        const float tip=tips[segment]+(tips[segment+1]-tips[segment])*(along-segment);
         if(v<tip && v>.04f) {
-            if(v>tip-.13f)return 0xeeca;
-            if(v>tip-.25f)return 0xe3e7;
+            if(v>tip-.04f)return 0xeeca;
+            if(v>tip-.085f)return 0xe3e7;
             return red;
         }
         return base;
@@ -148,10 +157,16 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         return carTint(0x7bef,.78f+.20f*(1-v));
     case CarPaint::NeoHood: {
         const float border=.38f-.10f*v;
-        if(v>.48f && center>border-.04f && center<border)return red;
-        if(v>.48f && center>border && center<border+.014f)return white;
-        if(v>.39f && v<.54f && center<.075f) {
-            const float y=(v-.39f)/.15f;
+        if(v>.58f) {
+            const float chevron=v-center*.29f;
+            for(float stripe : {.63f,.74f,.85f}) {
+                if(std::abs(chevron-stripe)<.010f)return red;
+                if(std::abs(chevron-stripe-.017f)<.004f)return white;
+            }
+        }
+        if(v>.48f && v<.65f && center>border-.04f && center<border)return red;
+        if(v>.69f && v<.76f && center<.13f) {
+            const float y=(v-.69f)/.07f;
             if(y<.16f || y>.84f || (y>.42f && y<.57f) ||
                (y<.5f ? u>.54f : u<.46f))return red;
             return white;

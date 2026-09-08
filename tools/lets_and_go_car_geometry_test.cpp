@@ -133,7 +133,7 @@ bool validateDisplayMeshes()
             const auto& face=mesh.panels[i];
             valid &= check(face.wheel<=4 && face.part<=CarPart::TailFin, "invalid panel metadata");
             valid &= check(face.u0<=face.u1 && face.v0<=face.v1 &&
-                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::SonicFront),
+                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::NeoWingLeft),
                            "invalid solid surface UV/material");
             valid &= check(face.parent==0xffffu || (face.parent<i &&
                            mesh.panels[face.parent].parent==0xffffu),
@@ -156,8 +156,8 @@ bool validateDisplayMeshes()
                 }
             }
         }
-        valid &= check(spokes==(spec.id==CarId::NeoTridaggerZmc ? 10u : 20u),
-                       "five-spoke wheels or Tridagger front caps regressed");
+        valid &= check(spokes==(spec.id==CarId::NeoTridaggerZmc ? 0u : 20u),
+                       "reviewed spoke count or Tridagger cap/dish wheels regressed");
         if(spec.id==CarId::BrockenGigant)
             valid &= check(maxY<.50f && spec.bodyColor==0xc9a7 && spec.wheelColor==0xe5ca,
                            "Brocken tall wing or incorrect livery returned");
@@ -353,6 +353,22 @@ bool validateRebuiltStructure(CarId car)
                            surfaceHeight(mesh,.31f,.69f,CarPart::FrontBridge)>.30f,
                            "Sonic front bridge must dip between raised cowls");
         }
+        if(car==CarId::NeoTridaggerZmc) {
+            valid &= check(surfaceHeight(mesh,0,.62f,CarPart::Nose)>
+                           surfaceHeight(mesh,.2f,.62f,CarPart::Nose)+.045f,
+                           "Neo lost separate central dagger ridge");
+            valid &= check(surfaceHeight(mesh,.11f,.28f,CarPart::Canopy)>.22f,
+                           "Neo windshield returned to pointed bubble");
+            valid &= check(surfaceHeight(mesh,0,-.90f,CarPart::RearWing)<0 &&
+                           surfaceHeight(mesh,.47f,-.90f,CarPart::RearWing)>.54f,
+                           "Neo swept split wing returned to straight plank");
+            for(float s : {-1.f,1.f})
+                valid &= check(surfaceHeight(mesh,s*.46f,.52f,CarPart::FrontCowl)<0,
+                               "Neo front tire opening filled by broad fender");
+            for(std::size_t i=0;i<mesh.count;++i)if(mesh.panels[i].part==CarPart::Roller)
+                for(const auto p : mesh.panels[i].point)
+                    valid &= check(p.z>-.18f,"Neo side roller incorrectly placed at rear bumper");
+        }
     }
     std::cout<<carSpec(car).shortName<<" structure: tire clearance, mirrored UV and authored components across 3 LODs\n";
     return valid;
@@ -362,5 +378,6 @@ bool validateRebuiltStructure(CarId car)
 int main()
 {
     return validateCatalog() && validateWireframes() && validateDisplayMeshes() && validateMagnumStructure() &&
-           validateRebuiltStructure(CarId::HurricaneSonic) ? 0 : 1;
+           validateRebuiltStructure(CarId::HurricaneSonic) &&
+           validateRebuiltStructure(CarId::NeoTridaggerZmc) ? 0 : 1;
 }
