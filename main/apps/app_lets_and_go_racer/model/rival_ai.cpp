@@ -1,4 +1,5 @@
 #include "rival_ai.h"
+#include "../lets_and_go_config.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +21,7 @@ void resetRivalAi(RivalAiState& state, uint32_t seed, float motorEfficiency)
 {
     state = {};
     state.randomState = seed == 0u ? 1u : seed;
-    state.motorEfficiency = std::clamp(motorEfficiency, 0.94f, 1.04f);
+    state.motorEfficiency = std::clamp(motorEfficiency, tuning::kRivalMinimumEfficiency, 1.04f);
     state.targetLateral = (randomUnit(state.randomState) - 0.5f) * 0.7f;
 }
 

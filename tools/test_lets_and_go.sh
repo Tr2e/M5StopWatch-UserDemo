@@ -64,6 +64,10 @@ compile_run race \
     "$repo_dir/tools/lets_and_go_race_test.cpp" \
     "${race_sources[@]}"
 
+compile_run balance \
+    "$repo_dir/tools/lets_and_go_balance_test.cpp" \
+    "${race_sources[@]}"
+
 compile_run results \
     "$repo_dir/tools/lets_and_go_results_test.cpp" \
     "$base/controller/results_selection.cpp" \
@@ -129,4 +133,4 @@ compile_run vector_explicit_integration \
 echo "[host-test] production_renderers"
 bash "$repo_dir/tools/render_lets_and_go.sh" "$out_dir/frames"
 
-echo "[host-test] all 11 game suites, 15 Vector Run suites, and Launcher regression passed"
+echo "[host-test] all 12 game suites, 15 Vector Run suites, and Launcher regression passed"

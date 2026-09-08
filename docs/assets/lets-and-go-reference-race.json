@@ -3,14 +3,14 @@
   "seed": "0x12345678",
   "track": "SKY LOOP 01",
   "laps": 3,
-  "elapsedSeconds": 14.800,
-  "playerFinishSeconds": 14.791,
-  "playerPosition": 4,
-  "playerBestLapSeconds": 4.610,
+  "elapsedSeconds": 15.767,
+  "playerFinishSeconds": 15.753,
+  "playerPosition": 2,
+  "playerBestLapSeconds": 4.999,
   "standingsAtPlayerFinish": [
     {"position": 1, "car": "Hurricane Sonic", "finished": true},
-    {"position": 2, "car": "Brocken Gigant", "finished": true},
-    {"position": 3, "car": "Neo Tridagger ZMC", "finished": true},
-    {"position": 4, "car": "Cyclone Magnum", "finished": true}
+    {"position": 2, "car": "Cyclone Magnum", "finished": true},
+    {"position": 3, "car": "Neo Tridagger ZMC", "finished": false},
+    {"position": 4, "car": "Brocken Gigant", "finished": false}
   ]
 }

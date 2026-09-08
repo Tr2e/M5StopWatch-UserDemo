@@ -14,6 +14,12 @@ inline constexpr float kCourseRadius = 12.0f;
 inline constexpr float kCourseBaseHeight = 0.35f;
 inline constexpr float kOverpassRise = 3.8f;
 
+// Bounded first-release AI pace: last-grid rolling starts must be recoverable
+// with boost AND a clean passing line, including the slower handling cars.
+inline constexpr float kRivalMotorEfficiency = 0.93f;
+inline constexpr float kRivalMotorVariation = 0.025f;
+inline constexpr float kRivalMinimumEfficiency = 0.88f;
+
 inline constexpr uint32_t kRenderOverloadMs = 39u;
 inline constexpr uint32_t kRenderSevereMs = 54u;
 inline constexpr uint32_t kRenderHealthyMs = 29u;

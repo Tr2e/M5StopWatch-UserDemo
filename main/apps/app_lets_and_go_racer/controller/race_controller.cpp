@@ -1,6 +1,7 @@
 #include "race_controller.h"
 
 #include "../model/car_catalog.h"
+#include "../lets_and_go_config.h"
 
 #include <algorithm>
 #include <cmath>
@@ -45,7 +46,8 @@ void RaceController::prepare(const RaceSetup& setup, uint32_t seed)
         _models[index].reset(entry.startDistance,
                              (index & 1u) == 0u ? -0.42f : 0.42f,
                              initialSpeed);
-        const float efficiency = 1.0f + randomSigned(random) * 0.03f;
+        const float efficiency = tuning::kRivalMotorEfficiency +
+                                 randomSigned(random) * tuning::kRivalMotorVariation;
         resetRivalAi(_ai[index], nextRandom(random), efficiency);
         ++index;
     }
