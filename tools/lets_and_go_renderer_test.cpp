@@ -6,12 +6,85 @@
 
 using namespace lets_and_go;
 
+bool validateTrackPaint()
+{
+    OverpassTrack course;
+    PencilTrack geometry;
+    geometry.open(course);
+    PencilOcclusion occlusion;
+    auto& canvas=GetHAL().getCanvas();
+    bool valid=true;
+    std::size_t maxSurfaces=0;
+    for(auto detail : {PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) {
+        for(int sample=0;sample<48;++sample) {
+            const auto frame=course.sample(course.length()*sample/48);
+            auto position=trackSubtract(frame.center,trackScale(frame.tangent,3.8f));
+            position.y+=2.15f;
+            const auto camera=makeTrackLookAtCamera(position,
+                trackAdd(frame.center,trackScale(frame.tangent,5.2f)),466,466);
+            canvas.fillScreen(0xef3a);
+            drawPencilTrack(canvas,camera,geometry,detail,&occlusion);
+            maxSurfaces=std::max(maxSurfaces,occlusion.count);
+            if(occlusion.overflowed || occlusion.count==0 ||
+               occlusion.count>4*PencilTrack::kSegments) valid=false;
+            for(std::size_t i=0;i<occlusion.count;++i)
+                if(occlusion.surfaces[i].count<3) valid=false;
+            const auto& pixels=canvas.frame();
+            if(std::count(pixels.begin(),pixels.end(),track_paint::coral)<8 ||
+               std::count(pixels.begin(),pixels.end(),track_paint::chalk)<8)
+                valid=false;
+        }
+    }
+    // Actual bridge underside (not an arbitrary triangle) must occlude a line
+    // on the upper deck while leaving a lower, camera-side line visible.
+    const auto& a=geometry.left[0];
+    const auto& b=geometry.right[0];
+    const auto midpoint=track_paint::mix(a,b,.5f);
+    const auto camera=makeTrackLookAtCamera({midpoint.x,midpoint.y-2,midpoint.z},
+        {midpoint.x+.001f,midpoint.y,midpoint.z+.001f},466,466);
+    canvas.fillScreen(0xef3a);
+    drawPencilTrack(canvas,camera,geometry,PencilDetail::High,&occlusion);
+    if(occlusion.overflowed) valid=false;
+    bool hidden=false;
+    const TrackVec3 upper=track_paint::mix(midpoint,
+        track_paint::mix(geometry.left[1],geometry.right[1],.5f),.2f);
+    TrackScreenPoint screen{};
+    const auto point=trackToCamera(camera,upper);
+    if(!projectTrackPoint(camera,point,screen)) valid=false;
+    for(std::size_t i=0;i<occlusion.count;++i) {
+        float enter=0,leave=0;
+        if(pencilHiddenInterval(occlusion.surfaces[i],screen,{screen.x+1,screen.y},
+                                1/point.z,1/point.z,enter,leave)) hidden=true;
+    }
+    if(!hidden) valid=false;
+    TrackVec3 lower=upper;
+    lower.y-=.6f;
+    const auto lowerCamera=trackToCamera(camera,lower);
+    TrackScreenPoint lowerScreen{};
+    if(!projectTrackPoint(camera,lowerCamera,lowerScreen)) valid=false;
+    for(std::size_t i=0;i<occlusion.count;++i) {
+        float enter=0,leave=0;
+        if(pencilHiddenInterval(occlusion.surfaces[i],lowerScreen,
+                               {lowerScreen.x+1,lowerScreen.y},1/lowerCamera.z,
+                               1/lowerCamera.z,enter,leave)) valid=false;
+    }
+    // Explicit capacity guard must flag overflow without indexing past storage.
+    const auto face=occlusion.surfaces[0];
+    occlusion.count=occlusion.surfaces.size();
+    occlusion.append(face);
+    if(!occlusion.overflowed || occlusion.count!=occlusion.surfaces.size()) valid=false;
+    std::cout << "Track paint: 144 full-course/detail poses, max occluders="
+              << maxSurfaces << '\n';
+    if(!valid) std::cerr << "Track paint geometry, palette or bridge occlusion regressed\n";
+    return valid;
+}
+
 int main(int argc, char** argv)
 {
     const std::string directory = argc > 1 ? argv[1] : "/tmp/lets-go-frames";
     std::filesystem::create_directories(directory);
     auto& canvas = GetHAL().getDisplay();
-    bool valid = true;
+    bool valid = validateTrackPaint();
     const auto checkText = [&] {
         for (const auto& label : canvas.texts) {
             const float halfWidth = label.value.size() * 3.0f * label.size;
@@ -115,6 +188,18 @@ int main(int argc, char** argv)
     for (unsigned orbit = 0; orbit < 16u; ++orbit) {
         garage.render(flow, selection, orbit * 2454u, PencilDetail::Low);
         checkText();
+        const auto& pixels=canvas.frame();
+        for(int y=0;y<466;++y) for(int x=0;x<466;++x) {
+            const auto color=pixels[y*466+x];
+            if(color!=track_paint::road && color!=track_paint::roadLight &&
+               color!=track_paint::coral && color!=track_paint::fascia) continue;
+            const int dx=x-233,dy=y-233;
+            if(y<110 || y>356 || dx*dx+dy*dy>220*220) {
+                std::cerr << "Track overview entered text/screen margin at " << x << "," << y << '\n';
+                valid=false;
+                break;
+            }
+        }
     }
     flow.confirmTrack();
     RaceController race;

@@ -38,7 +38,7 @@ private:
     int _height = 0;
 };
 
-static_assert(sizeof(RaceRenderer) <= 36000u,
+static_assert(sizeof(RaceRenderer) <= 55500u,
               "race renderer cache exceeded its reviewed resident budget");
 
 }  // namespace lets_and_go

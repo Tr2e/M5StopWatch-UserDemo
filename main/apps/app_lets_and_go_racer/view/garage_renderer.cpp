@@ -116,13 +116,16 @@ void drawMountains(LGFX_Sprite& canvas)
 void drawTrackPreview(LGFX_Sprite& canvas, const PencilTrack& preview,
                       uint32_t screenElapsedMs, PencilDetail detail)
 {
-    const float orbit = static_cast<float>(screenElapsedMs) * 0.00016f;
-    const TrackVec3 cameraPosition{std::sin(orbit) * 29.0f, 19.0f,
+    // A bounded three-quarter orbit keeps the bridge readable and the whole
+    // course inside the round display, even when the selection page is idle.
+    const float orbit = .55f + std::sin(static_cast<float>(screenElapsedMs)*.00016f)*.24f;
+    const TrackVec3 cameraPosition{std::sin(orbit) * 29.0f, 22.0f,
                                    -std::cos(orbit) * 29.0f};
     const TrackCamera camera = makeTrackLookAtCamera(cameraPosition,
                                                      {0.0f, 1.4f, 0.0f},
-                                                     canvas.width(), canvas.height(), 0.69f);
+                                                     canvas.width(), canvas.height(), 0.72f);
     drawMountains(canvas);
+    drawPencilTrackGround(canvas, camera, preview, detail);
     drawPencilTrack(canvas, camera, preview, detail);
 }
 

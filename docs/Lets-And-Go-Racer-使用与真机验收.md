@@ -58,6 +58,8 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 
 ## 桌面复验
 
+最新跑道视觉见 [R15 跑道视觉优化](Lets-And-Go-Racer-R15-跑道视觉优化.md) 和 `docs/assets/lets-and-go-r15-after.png`。桥底与侧面参与遮挡，比赛缓存比 R14 增加 18,440 bytes；真机优先测桥下四车场景的帧耗时、空闲堆与栈水位。
+
 ```sh
 tools/test_lets_and_go.sh
 SANITIZE=1 tools/test_lets_and_go.sh

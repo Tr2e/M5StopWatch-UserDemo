@@ -138,6 +138,20 @@ void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
              const std::array<int16_t, 32u>& mapX,
              const std::array<int16_t, 32u>& mapY)
 {
+    // Paper instrument cards keep labels readable below the dark bridge and
+    // on the newly coloured road, without text-sized cream cut-outs.
+    const auto card=[&](int x,int y,int width,int height,int radius) {
+        canvas.fillRect(x+radius,y,width-2*radius,height,kPaper);
+        canvas.fillRect(x,y+radius,width,height-2*radius,kPaper);
+        for(int cx : {x+radius,x+width-radius-1})
+            for(int cy : {y+radius,y+height-radius-1})
+                canvas.fillCircle(cx,cy,radius,kPaper);
+    };
+    card(106,35,253,39,12);
+    card(116,383,241,44,11);
+    canvas.fillCircle(365,104,33,kPaper);
+    canvas.drawLine(232,46,232,64,kFaint);
+    canvas.drawLine(241,394,241,416,kFaint);
     const RaceCarSnapshot& player = race.player();
     canvas.setTextDatum(textdatum_t::middle_center);
     canvas.setTextColor(kPencil, kPaper);
