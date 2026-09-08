@@ -4,10 +4,15 @@
 namespace lets_and_go {
 
 enum class CarSurfaceDetail : uint8_t { Low, Medium, High };
+enum class CarPart : uint8_t {
+    Unspecified, Chassis, Wheel, Roller, Nose, Canopy, RearCowl, FrontCowl,
+    SideWeb, Intake, RearWing
+};
 enum class CarPaint : uint8_t {
     Solid, MagnumHood, MagnumCowl, MagnumWing, SonicHood, SonicCowl, SonicWing,
     Flame, TridaggerWing, Tiger, BrockenHood, Glass, BronzeGlass, BlueGlass, Eye,
-    BrockenShell, FrontWing, NeoHood
+    BrockenShell, FrontWing, NeoHood, MagnumCanopy, MagnumCowlSide,
+    MagnumNoseSide, MagnumVent
 };
 
 // Authored curved-body panels shared by the garage and race solid renderers.
@@ -15,7 +20,7 @@ enum class CarPaint : uint8_t {
 struct CarPanel {
     std::array<CarPoint, 4> point{};
     uint16_t color = 0;
-    uint8_t edges = 0; // Legacy builder metadata; solid renderers do not draw edges.
+    CarPart part = CarPart::Unspecified; // Structural QA tag; no additional storage.
     uint8_t wheel = 0; // 1..4: only hub spokes rotate; tire envelopes stay round.
     uint16_t parent = 0xffffu; // Reserved legacy attachment metadata (not depth order).
     CarPaint paint = CarPaint::Solid;
@@ -36,5 +41,10 @@ struct CarSurfaceBuildResult {std::size_t count;bool overflowed;};
 CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t capacity,
                                         CarSurfaceDetail detail);
 CarPoint animateCarPanelPoint(CarPoint point, uint8_t wheel, float cosine, float sine);
+
+// Authored x points right in the garage's front view: the vehicle's LEFT.
+// Track/look-at cameras use vehicle-right/up/forward. Reflect only the model
+// coordinate, never the car's steering, lateral offset or world position.
+inline CarPoint carPointInTrackBasis(CarPoint point) {return {-point.x,point.y,point.z};}
 
 } // namespace lets_and_go

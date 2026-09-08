@@ -47,6 +47,7 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 - [ ] Dual Button Red/Blue 极性、短按、长按、组合 800 ms 与返回 Launcher。
 - [ ] 四辆车在 466×466 圆屏上的辨识度，文字和 HUD 无边缘裁切。
 - [ ] R16 四款实体车的轮罩、座舱、尾翼与轮毂清晰，比赛转弯/上下坡无角度跳变，近距离车辆无方形裁断。
+- [ ] R17 Magnum 宽肩收腰、座舱侧通道、独立轮罩在三档均保留，前轮罩不穿胎；选车和比赛材质方向一致（从车后观察文字允许自然倒向）。
 - [ ] 车库 High LOD、四车立交交叉的平均 FPS 不低于 30，压力时不低于 20。
 - [ ] 触发细节降级后 HUD、玩家车、双侧护栏仍清晰；负载恢复后画质不抖动。
 - [ ] 输入失联自动暂停，恢复后需要玩家主动继续且不会复用旧转向。
@@ -59,6 +60,8 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 关闭 App 后串口会输出车库/比赛各自的渲染帧数、峰值耗时、最终细节档和切换次数。真机验收时保存这两行日志，和 `docs/assets/lets-and-go-reference-race.json` 一并归档。
 
 ## 桌面复验
+
+第一辆车以 [R17 Magnum 腰线与结构复核](Lets-And-Go-Racer-R17-Magnum腰线与结构复核.md) 为准。最新对比是 `docs/assets/lets-and-go-r17-before.png` 与 `lets-and-go-r17-after.png`；俯视/侧视等结构检查图为 `lets-and-go-r17-structure.png`。其他三车模型仍为 R16。
 
 当前车辆视觉见 [R16 实体赛车与比赛细化](Lets-And-Go-Racer-R16-实体赛车与比赛细化.md) 和 `docs/assets/lets-and-go-r16-after.png`，四车比赛截图见 `docs/assets/lets-and-go-r16-race.png`。跑道沿用 [R15 跑道视觉优化](Lets-And-Go-Racer-R15-跑道视觉优化.md)，桥底与侧面继续参与遮挡。优先测实体车库、桥下四车、近距离放大车辆的帧耗时和内存。
 

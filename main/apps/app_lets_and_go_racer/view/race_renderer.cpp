@@ -46,6 +46,7 @@ CarPose makeCarPose(const TrackFrame& frame, const RaceCarSnapshot& car)
 
 TrackVec3 carPointToWorld(CarPoint point, const CarPose& pose)
 {
+    point=carPointInTrackBasis(point);
     constexpr float kCarWorldScale = 0.34f;
     TrackVec3 result = pose.base;
     result = trackAdd(result, trackScale(pose.lateral, point.x * kCarWorldScale));

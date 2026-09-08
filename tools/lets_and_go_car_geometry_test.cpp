@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include <algorithm>
 
 namespace {
 using namespace lets_and_go;
@@ -130,9 +131,9 @@ bool validateDisplayMeshes()
         float maxY=0;
         for (std::size_t i=0;i<mesh.count;++i) {
             const auto& face=mesh.panels[i];
-            valid &= check(face.wheel<=4 && face.edges<=15, "invalid panel metadata");
+            valid &= check(face.wheel<=4 && face.part<=CarPart::RearWing, "invalid panel metadata");
             valid &= check(face.u0<=face.u1 && face.v0<=face.v1 &&
-                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::NeoHood),
+                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::MagnumVent),
                            "invalid solid surface UV/material");
             valid &= check(face.parent==0xffffu || (face.parent<i &&
                            mesh.panels[face.parent].parent==0xffffu),
@@ -191,9 +192,105 @@ bool validateDisplayMeshes()
                    "solid mesh in-place builder exceeded buffer capacity");
     return valid;
 }
+
+// Intersect a vertical probe with the same two triangles used by production.
+float surfaceHeight(const CarDisplayMesh& mesh,float x,float z,CarPart part,bool all=false)
+{
+    float height=-1;
+    for(std::size_t i=0;i<mesh.count;++i) {
+        const auto& p=mesh.panels[i];
+        if(!all && p.part!=part)continue;
+        for(int triangle=0;triangle<2;++triangle) {
+            const auto a=p.point[0],b=p.point[triangle+1],c=p.point[triangle+2];
+            const float det=(b.x-a.x)*(c.z-a.z)-(b.z-a.z)*(c.x-a.x);
+            if(std::abs(det)<1e-8f)continue;
+            const float u=((x-a.x)*(c.z-a.z)-(z-a.z)*(c.x-a.x))/det;
+            const float v=((b.x-a.x)*(z-a.z)-(b.z-a.z)*(x-a.x))/det;
+            if(u>=-1e-5f && v>=-1e-5f && u+v<=1.00001f)
+                height=std::max(height,a.y+u*(b.y-a.y)+v*(c.y-a.y));
+        }
+    }
+    return height;
+}
+
+bool validateMagnumStructure()
+{
+    bool valid=true;
+    const auto trackPoint=carPointInTrackBasis({.3f,.4f,.5f});
+    valid &= check(trackPoint.x==-.3f && trackPoint.y==.4f && trackPoint.z==.5f,
+                   "garage-front and track-right handedness no longer agree");
+    for(auto detail : {CarSurfaceDetail::Low,CarSurfaceDetail::Medium,CarSurfaceDetail::High}) {
+        CarDisplayMesh mesh;
+        buildCarDisplayMesh(CarId::CycloneMagnum,mesh,detail);
+        std::array<unsigned,11> parts{};
+        unsigned penetrations=0;
+        float worst=0;
+        CarPoint worstPoint{};
+        CarPart worstPart=CarPart::Unspecified;
+        for(std::size_t i=0;i<mesh.count;++i) {
+            const auto& p=mesh.panels[i];
+            ++parts[static_cast<unsigned>(p.part)];
+            if((p.part==CarPart::RearCowl || p.part==CarPart::FrontCowl) &&
+                p.paint!=CarPaint::Solid && p.point[0].x>0) {
+                bool mirrored=false;
+                for(std::size_t j=0;j<mesh.count && !mirrored;++j) {
+                    const auto& q=mesh.panels[j];
+                    if(p.part!=q.part || p.paint!=q.paint || p.u0!=q.u0 || p.u1!=q.u1 ||
+                       p.v0!=q.v0 || p.v1!=q.v1 || p.light!=q.light)continue;
+                    mirrored=true;
+                    for(unsigned v=0;v<4;++v)
+                        mirrored &= std::abs(p.point[v].x+q.point[v].x)<1e-6f &&
+                                    p.point[v].y==q.point[v].y && p.point[v].z==q.point[v].z;
+                }
+                valid &= check(mirrored,"Magnum cowl paint/geometry no longer mirrors inner to outer");
+            }
+            if(p.part!=CarPart::RearCowl && p.part!=CarPart::FrontCowl && p.part!=CarPart::Nose)continue;
+            // Probe triangle interiors as well as vertices: a flat panel can cut
+            // through a round tire even when its corner points are outside it.
+            for(int tri=0;tri<2;++tri) for(int a=0;a<=10;++a) for(int b=0;b<=10-a;++b) {
+                const auto p0=p.point[0],p1=p.point[tri+1],p2=p.point[tri+2];
+                const float u=a/10.f,v=b/10.f;
+                const CarPoint q{p0.x+u*(p1.x-p0.x)+v*(p2.x-p0.x),
+                    p0.y+u*(p1.y-p0.y)+v*(p2.y-p0.y),p0.z+u*(p1.z-p0.z)+v*(p2.z-p0.z)};
+                const float x=std::abs(q.x);
+                if(x<.365f || x>.56f)continue;
+                const float radius=x<.39f ? .145f+(x-.365f)*1.2f :
+                                   x>.535f ? .175f-(x-.535f) : .175f;
+                for(float axle : {kModelFrontAxle,kModelRearAxle}) {
+                    const float overlap=radius-std::hypot(q.y-kModelWheelRadius,q.z-axle);
+                    if(overlap>worst) {worst=overlap;worstPoint=q;worstPart=p.part;}
+                    if(overlap>.003f)++penetrations;
+                }
+            }
+        }
+        if(penetrations)std::cerr<<"Magnum shell/tire penetrations="<<penetrations<<" worst="<<worst
+            <<" part="<<int(worstPart)<<" at "<<worstPoint.x<<','<<worstPoint.y<<','<<worstPoint.z<<'\n';
+        valid &= check(!penetrations,"Magnum cowls intersect tire envelope");
+        for(unsigned p=1;p<parts.size();++p)
+            valid &= check(parts[p]>0,"Magnum lost a distinct structural component");
+        for(float side : {-1.f,1.f}) {
+            valid &= check(surfaceHeight(mesh,side*.29f,.25f,CarPart::Nose)>.20f &&
+                           surfaceHeight(mesh,side*.20f,-.30f,CarPart::Nose)<0,
+                           "Magnum broad shoulder/narrow waist contrast lost");
+            for(float z : {-.55f,-.43f,-.18f})
+                valid &= check(surfaceHeight(mesh,side*.21f,z,CarPart::Unspecified,true)<.20f,
+                               "Magnum cockpit-to-rear-cowl air channel filled in");
+        }
+        valid &= check(surfaceHeight(mesh,0,-.39f,CarPart::Canopy)>.44f &&
+                       surfaceHeight(mesh,0,.05f,CarPart::Canopy)<.30f,
+                       "Magnum flat sloping canopy returned to bubble silhouette");
+        // Surface height symmetry complements the exact mirrored UV checks above.
+        for(float z : {-.67f,-.48f,-.29f,.64f,.735f})
+            valid &= check(std::abs(surfaceHeight(mesh,.4f,z,CarPart::Unspecified,true)-
+                                   surfaceHeight(mesh,-.4f,z,CarPart::Unspecified,true))<1e-5f,
+                           "Magnum left/right structural symmetry changed");
+    }
+    std::cout<<"Magnum structure: shoulder/waist, open channels, canopy and tire clearance across 3 LODs\n";
+    return valid;
+}
 }  // namespace
 
 int main()
 {
-    return validateCatalog() && validateWireframes() && validateDisplayMeshes() ? 0 : 1;
+    return validateCatalog() && validateWireframes() && validateDisplayMeshes() && validateMagnumStructure() ? 0 : 1;
 }

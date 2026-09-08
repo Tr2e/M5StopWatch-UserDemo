@@ -55,23 +55,42 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         if(carLetter(name,u,v,.11f,.26f,.78f,.52f))return paint==CarPaint::MagnumWing ? gold : white;
         return color;
     }
-    case CarPaint::MagnumHood:
+    case CarPaint::MagnumHood: {
+        // Broad blue shoulders beside the cockpit become one tapered nose wedge.
+        const float band=v<.43f ? .47f : .32f-.20f*((v-.43f)/.57f);
+        uint16_t color=center<band ? blue : white;
+        if(v>.57f && v<.94f && center>band+.065f && center<band+.12f)color=red;
+        if(carLetter("MAGNUM",u,v,.28f,.55f,.44f,.047f))color=white;
+        if(v>.65f && v<.745f && center<.08f && int(v*140+u*90)%3)color=gold;
+        return color;
+    }
     case CarPaint::SonicHood: {
-        const bool sonic=paint==CarPaint::SonicHood;
         const float band=.27f-.18f*v;
-        uint16_t color=center<band ? (sonic ? red : blue) : white;
+        uint16_t color=center<band ? red : white;
         if(v>.56f && v<.92f && center>band+.045f && center<band+.075f)color=red;
-        if(carLetter(sonic ? "SONIC" : "MAGNUM",u,v,.29f,.53f,.42f,.065f))color=white;
+        if(carLetter("SONIC",u,v,.29f,.53f,.42f,.065f))color=white;
         if(v>.64f && v<.73f && center<.06f && int(v*130+u*80)%3)color=gold;
         return color;
     }
     case CarPaint::MagnumCowl: {
-        const float zig=.38f+.16f*(v<.35f ? v/.35f : 1-(v-.35f)/.65f);
-        if(u>.78f)return blue;
-        if(v>.10f && v<.90f && std::abs(u-zig)<.085f)return red;
-        if(v>.12f && v<.83f && std::abs(u-(zig+.20f))<.045f)return red;
+        // u always runs inner -> outer on BOTH pods. The white/red lightning
+        // therefore mirrors across the car instead of blue appearing on one inner wall.
+        const float bolt=v<.25f ? .20f+v*.75f : v<.43f ? .39f-(v-.25f)*.9f :
+                         v<.60f ? .23f+(v-.43f)*1.7f : .52f-(v-.60f)*.8f;
+        if(u>.77f-.12f*v)return blue;
+        if(v>.07f && v<.94f && std::abs(u-bolt)<.07f*(1-.5f*v))return red;
+        if(v>.12f && v<.82f && std::abs(u-(bolt+.23f))<.045f)return red;
         return white;
     }
+    case CarPaint::MagnumCanopy:
+        if(u<.04f || u>.96f || v<.035f || v>.96f)return white;
+        return carTint(0x3188,.72f+.40f*std::max(0.f,1-std::abs(u-.36f)*3));
+    case CarPaint::MagnumCowlSide:
+        return (v>.12f && v<.84f && u>.2f && u<.4f) ? red : blue;
+    case CarPaint::MagnumNoseSide:
+        return v<.48f ? blue : carTint(white,.79f);
+    case CarPaint::MagnumVent:
+        return u<.06f || u>.94f || v<.08f || v>.92f ? 0x7bef : 0x18c3;
     case CarPaint::SonicCowl:
         if(u<.12f || u>.86f || v>.86f)return white;
         if(v>.63f && v<.78f && u>.25f && u<.75f)return int(u*90)%3 ? 0x7bef : dark;

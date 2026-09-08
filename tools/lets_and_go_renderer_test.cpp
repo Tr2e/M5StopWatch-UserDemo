@@ -135,10 +135,42 @@ bool validateTrackPaint()
     return valid;
 }
 
+void captureMagnumStructure(const std::string& directory)
+{
+    // Inspection cameras use the production mesh/material/raster directly.
+    // These views are QA artifacts, not extra in-game cameras or concept art.
+    auto raster=std::make_unique<CarSurfaceRaster<466,466>>();
+    auto mesh=std::make_unique<CarDisplayMesh>();
+    auto& canvas=GetHAL().getCanvas();
+    struct View {const char* name;TrackVec3 eye;CarSurfaceDetail detail;};
+    for(const auto view : {
+        View{"magnum-top",{0,3.2f,.001f},CarSurfaceDetail::High},
+        View{"magnum-side",{3.1f,.75f,0},CarSurfaceDetail::High},
+        View{"magnum-front",{0,1.4f,3.1f},CarSurfaceDetail::High},
+        View{"magnum-rear",{1.8f,1.6f,-2.6f},CarSurfaceDetail::High},
+        View{"magnum-opposite",{-1.8f,1.7f,2.6f},CarSurfaceDetail::High},
+        View{"magnum-medium",{1.8f,1.7f,2.6f},CarSurfaceDetail::Medium},
+        View{"magnum-low",{1.8f,1.7f,2.6f},CarSurfaceDetail::Low}}) {
+        canvas.fillScreen(0xef3a);
+        const auto camera=makeTrackLookAtCamera(view.eye,{0,.20f,0},466,466,1.02f);
+        buildCarDisplayMesh(CarId::CycloneMagnum,*mesh,view.detail);
+        raster->begin(0,0);
+        for(std::size_t i=0;i<mesh->count;++i)
+            raster->panel(camera,mesh->panels[i],[&](CarPoint p,uint8_t wheel) {
+                p=animateCarPanelPoint(p,wheel,.8f,.6f);
+                p=carPointInTrackBasis(p);
+                return trackToCamera(camera,{p.x,p.y,p.z});
+            });
+        raster->blit(canvas);
+        canvas.save(directory+"/"+view.name+".ppm");
+    }
+}
+
 int main(int argc, char** argv)
 {
     const std::string directory = argc > 1 ? argv[1] : "/tmp/lets-go-frames";
     std::filesystem::create_directories(directory);
+    captureMagnumStructure(directory);
     auto& canvas = GetHAL().getDisplay();
     bool valid = validateCarRaster() && validateTrackPaint();
     const auto checkText = [&] {
