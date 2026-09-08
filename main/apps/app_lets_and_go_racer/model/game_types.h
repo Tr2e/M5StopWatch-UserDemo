@@ -15,6 +15,7 @@ enum class CarId : uint8_t {
 
 enum class TrackId : uint8_t {
     SkyLoop = 0,
+    TriCross,
     Count,
 };
 

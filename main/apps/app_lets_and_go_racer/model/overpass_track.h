@@ -1,6 +1,7 @@
 #pragma once
 
 #include "track_types.h"
+#include "game_types.h"
 
 #include <array>
 #include <cstddef>
@@ -12,7 +13,9 @@ public:
     static constexpr std::size_t kArcTableSegments = 160u;
     static constexpr float kHalfWidth = 1.65f;
 
-    OverpassTrack();
+    explicit OverpassTrack(TrackId id = TrackId::SkyLoop);
+    void select(TrackId id);
+    TrackId id() const { return _id; }
 
     float length() const { return _length; }
     TrackFrame sample(float distance) const;
@@ -20,14 +23,15 @@ public:
     TrackLayer layer(float distance) const;
 
 private:
-    static TrackVec3 centerAtParameter(float parameter);
-    static TrackVec3 derivativeAtParameter(float parameter);
+    TrackVec3 centerAtParameter(float parameter) const;
+    TrackVec3 derivativeAtParameter(float parameter) const;
     float parameterAtDistance(float distance) const;
 
     std::array<float, kArcTableSegments + 1u> _arcLength{};
     float _length = 0.0f;
+    TrackId _id = TrackId::SkyLoop;
 };
 
-const char* overpassTrackName();
+const char* overpassTrackName(TrackId id = TrackId::SkyLoop);
 
 }  // namespace lets_and_go

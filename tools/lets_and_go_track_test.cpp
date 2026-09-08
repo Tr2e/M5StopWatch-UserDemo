@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <array>
 
 namespace {
 using namespace lets_and_go;
@@ -85,9 +86,53 @@ bool validateProjection()
                    "fully offscreen segment survived viewport clipping");
     return valid;
 }
+
+bool validateTriCross()
+{
+    OverpassTrack track(TrackId::TriCross);
+    bool valid=check(track.length()>125.f && track.length()<175.f,"Tri Cross length");
+    constexpr int count=720;
+    std::array<TrackFrame,count+1> frames{};
+    float maxCurvature=0,maxGrade=0,minClearance=100;
+    for(int i=0;i<=count;++i) {
+        frames[i]=track.sample(track.length()*i/count);
+        maxCurvature=std::max(maxCurvature,std::abs(frames[i].curvature));
+        maxGrade=std::max(maxGrade,std::abs(frames[i].tangent.y));
+        valid &= check(std::isfinite(frames[i].curvature) &&
+            std::abs(trackLength(frames[i].tangent)-1)<.001f,"Tri Cross finite normalized frame");
+        if(i)valid &= check(trackLength(trackSubtract(frames[i].center,frames[i-1].center))<.3f &&
+                             trackDot(frames[i].tangent,frames[i-1].tangent)>.99f,"Tri Cross smooth closure/arc table");
+    }
+    int crossings=0;
+    for(int i=0;i<count;++i)for(int j=i+2;j<count;++j) {
+        const int separation=std::min(j-i,count-(j-i));
+        if(separation*track.length()/count<6.f)continue;
+        const auto a=frames[i].center,b=frames[i+1].center,c=frames[j].center,d=frames[j+1].center;
+        if(std::hypot(a.x-c.x,a.z-c.z)<3.7f)minClearance=std::min(minClearance,std::abs(a.y-c.y));
+        const float ux=b.x-a.x,uz=b.z-a.z,vx=d.x-c.x,vz=d.z-c.z;
+        const float det=ux*vz-uz*vx;
+        if(std::abs(det)<1e-7f)continue;
+        const float t=((c.x-a.x)*vz-(c.z-a.z)*vx)/det;
+        const float s=((c.x-a.x)*uz-(c.z-a.z)*ux)/det;
+        if(t>=0 && t<1 && s>=0 && s<1) {
+            ++crossings;
+            valid &= check(std::abs(a.y+(b.y-a.y)*t-c.y-(d.y-c.y)*s)>4.2f,"crossing vertical clearance");
+        }
+    }
+    valid &= check(crossings==3,"expected exactly three overpasses");
+    valid &= check(minClearance>3.f,"nonadjacent road ribbons intersect");
+    valid &= check(maxGrade<.5f,"ramp is too steep");
+    valid &= check(maxCurvature*OverpassTrack::kHalfWidth<.8f,"inner road edge folds");
+    std::cout << "Tri Cross lap length=" << track.length() << '\n';
+    track.select(TrackId::SkyLoop);
+    valid &= check(track.length()<100.f && track.id()==TrackId::SkyLoop,"track switch left stale arc table");
+    std::cout << "Tri Cross: crossings=" << crossings << " clearance=" << minClearance
+              << " curvature=" << maxCurvature << " grade=" << maxGrade << '\n';
+    return valid;
+}
 }  // namespace
 
 int main()
 {
-    return validateTrack() && validateProjection() ? 0 : 1;
+    return validateTrack() && validateTriCross() && validateProjection() ? 0 : 1;
 }

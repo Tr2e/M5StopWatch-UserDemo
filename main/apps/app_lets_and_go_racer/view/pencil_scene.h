@@ -298,6 +298,19 @@ inline void drawPencilTrackGround(LGFX_Sprite& canvas,const TrackCamera& camera,
         const auto center=mix(track.left[i],track.right[i],.5f);
         if(center.y<1.8f || center.x*center.x+center.z*center.z<20.f) continue;
         for(const auto p : {track.left[i],track.right[i]}) {
+            // Crossings are no longer necessarily at the origin. Reject a bent
+            // above any lower ribbon, including the full carriageway width.
+            bool blocksRoad=false;
+            for(std::size_t j=0;j<PencilTrack::kSegments;++j) {
+                const auto a=mix(track.left[j],track.right[j],.5f);
+                const auto b=mix(track.left[j+1],track.right[j+1],.5f);
+                const float dx=b.x-a.x,dz=b.z-a.z;
+                const float t=std::clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/std::max(.001f,dx*dx+dz*dz),0.f,1.f);
+                const auto q=mix(a,b,t);
+                if(q.y<p.y-.6f && std::hypot(q.x-p.x,q.z-p.z)<OverpassTrack::kHalfWidth+.45f)
+                    blocksRoad=true;
+            }
+            if(blocksRoad)continue;
             const TrackVec3 top{p.x,p.y-.22f,p.z},foot{p.x,.05f,p.z};
             const TrackVec3 width=trackScale(trackNormalize(trackSubtract(track.right[i],track.left[i])),.16f);
             quad(canvas,camera,trackSubtract(foot,width),trackSubtract(top,width),

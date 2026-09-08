@@ -33,6 +33,7 @@ RaceSetup makeSetup(uint32_t scenario)
 {
     RaceSetup setup;
     setup.playerCar = static_cast<CarId>(scenario % kCarCount);
+    setup.track = static_cast<TrackId>((scenario/64u)%kTrackCount);
     const uint8_t wanted = static_cast<uint8_t>((scenario / kCarCount) % 4u);
     for (std::size_t index = 0; index < kCarCount && setup.rivalCount() < wanted; ++index) {
         const CarId car = static_cast<CarId>(index);
@@ -45,6 +46,7 @@ bool runScenario(uint32_t scenario)
 {
     RaceController race;
     race.prepare(makeSetup(scenario), 0x9e3779b9u ^ scenario * 0x45d9f3bu);
+    if(race.track().id()!=makeSetup(scenario).track)return false;
     RacerInput input;
     for (int step = 0; step < 60 * 180 && !race.snapshot().playerFinished; ++step) {
         const auto& player = race.snapshot().player();
@@ -71,12 +73,12 @@ bool runScenario(uint32_t scenario)
 
 int main()
 {
-    for (uint32_t scenario = 0; scenario < 64u; ++scenario) {
+    for (uint32_t scenario = 0; scenario < 64u*kTrackCount; ++scenario) {
         if (!runScenario(scenario)) {
             std::cerr << "FAIL: soak scenario " << scenario << '\n';
             return 1;
         }
     }
-    std::cout << "64 deterministic 180-second-bound scenarios passed\n";
+    std::cout << "128 deterministic 180-second-bound scenarios on two courses passed\n";
     return 0;
 }

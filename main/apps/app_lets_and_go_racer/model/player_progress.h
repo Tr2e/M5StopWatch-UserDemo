@@ -4,10 +4,11 @@
 
 #include <array>
 #include <cstdint>
+#include <cstring>
 
 namespace lets_and_go {
 
-inline constexpr uint8_t kPlayerProgressVersion = 1u;
+inline constexpr uint8_t kPlayerProgressVersion = 2u;
 
 struct PlayerProgress {
     uint8_t version = kPlayerProgressVersion;
@@ -24,6 +25,27 @@ inline PlayerProgress sanitizePlayerProgress(PlayerProgress progress)
         if (lap < 1000u || lap > 10u * 60u * 1000u) lap = 0u;
     }
     return progress;
+}
+
+// V1 persisted one track in an eight-byte native struct. Explicit migration
+// preserves the selected car and SKY LOOP record when adding the second track.
+inline PlayerProgress decodePlayerProgress(const void* bytes, std::size_t size)
+{
+    if (!bytes) return {};
+    PlayerProgress progress{};
+    if (size == sizeof(PlayerProgress)) {
+        std::memcpy(&progress, bytes, size);
+    } else {
+        struct LegacyProgress { uint8_t version; CarId lastCar; uint32_t lap; };
+        static_assert(sizeof(LegacyProgress)==8, "V1 NVS layout");
+        if (size != sizeof(LegacyProgress)) return {};
+        LegacyProgress legacy{};
+        std::memcpy(&legacy, bytes, size);
+        if (legacy.version != 1) return {};
+        progress.lastCar=legacy.lastCar;
+        progress.bestLapMilliseconds[0]=legacy.lap;
+    }
+    return sanitizePlayerProgress(progress);
 }
 
 inline bool recordBestLap(PlayerProgress& progress, TrackId track, float seconds)

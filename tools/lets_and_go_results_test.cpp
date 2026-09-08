@@ -66,6 +66,16 @@ bool validateProgress()
     valid &= check(sanitizePlayerProgress(progress).lastCar == CarId::CycloneMagnum &&
                        sanitizePlayerProgress(progress).bestLapMilliseconds[0] == 0u,
                    "corrupt progress did not reset safely");
+    struct Legacy { uint8_t version=1; CarId lastCar=CarId::HurricaneSonic; uint32_t lap=12345; } legacy;
+    auto migrated=decodePlayerProgress(&legacy,sizeof(legacy));
+    valid &= check(migrated.lastCar==legacy.lastCar && migrated.bestLapMilliseconds[0]==12345 &&
+                   migrated.bestLapMilliseconds[1]==0,"V1 record migration failed");
+    valid &= check(recordBestLap(migrated,TrackId::TriCross,20.f) && migrated.bestLapMilliseconds[0]==12345 &&
+                   migrated.bestLapMilliseconds[1]==20000,"track records are not independent");
+    auto reloaded=decodePlayerProgress(&migrated,sizeof(migrated));
+    valid &= check(reloaded.bestLapMilliseconds==migrated.bestLapMilliseconds,"V2 roundtrip failed");
+    valid &= check(decodePlayerProgress(&legacy,sizeof(legacy)-1).bestLapMilliseconds[0]==0,
+                   "truncated legacy save accepted");
     return valid;
 }
 }  // namespace

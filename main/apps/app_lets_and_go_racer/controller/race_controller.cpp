@@ -29,6 +29,7 @@ void RaceController::prepare(const RaceSetup& setup, uint32_t seed)
     _snapshot = {};
     _accumulator = 0.0f;
     _paused = false;
+    _track.select(setup.track);
     uint32_t random = seed == 0u ? 0x4c657473u : seed;
 
     const CarId playerCar = isValidCar(setup.playerCar)

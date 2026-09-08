@@ -14,12 +14,12 @@ PlayerProgress RaceProgressStore::load()
 {
     nvs_handle_t handle = 0;
     if (nvs_open(kNamespace, NVS_READONLY, &handle) != ESP_OK) return {};
-    PlayerProgress progress{};
-    std::size_t size = sizeof(progress);
-    const esp_err_t result = nvs_get_blob(handle, kProgressKey, &progress, &size);
+    std::array<uint8_t, sizeof(PlayerProgress)> bytes{};
+    std::size_t size = bytes.size();
+    const esp_err_t result = nvs_get_blob(handle, kProgressKey, bytes.data(), &size);
     nvs_close(handle);
-    if (result != ESP_OK || size != sizeof(progress)) return {};
-    return sanitizePlayerProgress(progress);
+    if (result != ESP_OK) return {};
+    return decodePlayerProgress(bytes.data(), size);
 }
 
 bool RaceProgressStore::save(const PlayerProgress& progress)

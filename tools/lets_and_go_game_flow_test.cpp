@@ -35,11 +35,15 @@ bool validateFullRaceAndRetry()
     valid &= check(flow.setup().rivalCount() == 3,
                    "rival count did not reach three");
     valid &= check(flow.confirmRivals() &&
-                       flow.selectTrack(TrackId::SkyLoop) && flow.confirmTrack() &&
+                       flow.moveTrack(1) && flow.setup().track==TrackId::TriCross &&
+                       flow.moveTrack(1) && flow.setup().track==TrackId::SkyLoop &&
+                       flow.moveTrack(-1) && flow.setup().track==TrackId::TriCross &&
+                       !flow.selectTrack(TrackId::Count) && flow.confirmTrack() &&
                        flow.completeGridIntro() && flow.completeCountdown(),
                    "failed to reach racing state");
     valid &= check(flow.screen() == GameScreen::Racing,
                    "countdown did not enter racing");
+    valid &= check(!flow.moveTrack(1) && flow.setup().track==TrackId::TriCross,"track changed during race");
     valid &= check(flow.togglePause() && flow.screen() == GameScreen::Paused &&
                        !flow.back() && flow.screen() == GameScreen::Paused &&
                        flow.togglePause() && flow.screen() == GameScreen::Racing,

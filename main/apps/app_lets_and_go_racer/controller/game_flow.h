@@ -51,6 +51,7 @@ public:
     bool toggleRival(CarId car);
     bool confirmRivals();
     bool selectTrack(TrackId track);
+    bool moveTrack(int direction);
     bool confirmTrack();
     bool completeGridIntro();
     bool completeCountdown();

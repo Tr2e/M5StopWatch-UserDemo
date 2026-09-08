@@ -108,6 +108,13 @@ bool GameFlow::confirmTrack()
     return true;
 }
 
+bool GameFlow::moveTrack(int direction)
+{
+    if (!direction || _screen != GameScreen::TrackSelect) return false;
+    const auto next = (std::size_t(_setup.track) + (direction > 0 ? 1 : kTrackCount - 1)) % kTrackCount;
+    return selectTrack(static_cast<TrackId>(next));
+}
+
 bool GameFlow::completeGridIntro()
 {
     return transition(GameScreen::GridIntro, GameScreen::Countdown);

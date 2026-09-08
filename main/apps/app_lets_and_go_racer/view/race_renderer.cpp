@@ -185,7 +185,7 @@ void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
         const RaceCarSnapshot& car = race.cars[index];
         if(!car.active || car.player!=(pass==1))continue;
         const TrackFrame marker = track.sample(car.motion.distance);
-        const auto point=TrackMiniMap::project(marker.center);
+        const auto point=miniMap.project(marker.center);
         const int x=point.x,y=point.y;
         const uint16_t color = carSpec(car.car).accentColor;
         if (car.player) {
@@ -266,9 +266,7 @@ void RaceRenderer::open(int width, int height)
         mesh.count=result.count;
         if(result.overflowed) _surface.reset();
     }
-    OverpassTrack track;
-    _trackGeometry.open(track);
-    _miniMap.open(_trackGeometry);
+    _cachedTrack = TrackId::Count;
 }
 
 void RaceRenderer::close()
@@ -306,6 +304,11 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
     if (flow.screen() == GameScreen::Results) {
         drawResults(canvas, race.snapshot(), results);
         return;
+    }
+    if (_cachedTrack != race.track().id()) {
+        _trackGeometry.open(race.track());
+        _miniMap.open(_trackGeometry);
+        _cachedTrack = race.track().id();
     }
     track_paint::backdrop(canvas,detail);
     const RaceSnapshot& snapshot = race.snapshot();

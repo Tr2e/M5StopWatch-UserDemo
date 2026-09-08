@@ -199,6 +199,7 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         return;
     }
     const bool acceptsNavigation = before == GameScreen::CarSelect ||
+                                   before == GameScreen::TrackSelect ||
                                    before == GameScreen::RivalSelect ||
                                    before == GameScreen::Results;
     if (!acceptsNavigation) _menuAxis.reset();
@@ -225,6 +226,8 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
             _selection.moveRival(navigation, _flow.setup().playerCar);
         } else if (before == GameScreen::Results) {
             _resultsSelection.move(navigation);
+        } else if (before == GameScreen::TrackSelect) {
+            _flow.moveTrack(navigation);
         }
     }
     if (input.cancelPressed || input.pausePressed) {
@@ -385,7 +388,9 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
     using lets_and_go::GameScreen;
     const GameScreen before = _flow.screen();
     if (event == input::KeyEvent::GoPrevious) {
-        if (before == GameScreen::CarSelect) {
+        if (before == GameScreen::TrackSelect) {
+            _flow.moveTrack(1);
+        } else if (before == GameScreen::CarSelect) {
             _selection.movePlayer(-1);
         } else if (before == GameScreen::RivalSelect) {
             _selection.moveRival(1, _flow.setup().playerCar);
@@ -425,7 +430,7 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
     }
     const bool navigated = event == input::KeyEvent::GoPrevious &&
         (before == GameScreen::CarSelect || before == GameScreen::RivalSelect ||
-         before == GameScreen::Results);
+         before == GameScreen::TrackSelect || before == GameScreen::Results);
     if(navigated)playSound(lets_and_go::SoundCue::Navigate);
     if (_flow.screen() != before || navigated) {
         _screenStartedMs = nowMs;

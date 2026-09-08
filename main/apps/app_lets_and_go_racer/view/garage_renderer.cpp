@@ -67,15 +67,18 @@ void drawHeader(LGFX_Sprite& canvas, const char* title)
 }
 
 void drawTrackPreview(LGFX_Sprite& canvas, const PencilTrack& preview,
-                      uint32_t screenElapsedMs, PencilDetail detail,PencilOcclusion& surfaces)
+                      uint32_t screenElapsedMs, PencilDetail detail,PencilOcclusion& surfaces,
+                      TrackId track)
 {
     // A bounded three-quarter orbit keeps the bridge readable and the whole
     // course inside the round display, even when the selection page is idle.
     const float orbit = .55f + std::sin(static_cast<float>(screenElapsedMs)*.00016f)*.24f;
-    const TrackVec3 cameraPosition{std::sin(orbit) * 29.0f, 22.0f,
-                                   -std::cos(orbit) * 29.0f};
+    const bool complex = track == TrackId::TriCross;
+    const float distance = complex ? 36.f : 29.f;
+    const TrackVec3 cameraPosition{std::sin(orbit) * distance, complex ? 28.f : 22.f,
+                                   -std::cos(orbit) * distance};
     TrackCamera camera = makeTrackLookAtCamera(cameraPosition,
-                                                     {0.0f, 1.4f, 0.0f},
+                                                     {0.0f, complex ? 2.0f : 1.4f, 0.0f},
                                                      canvas.width(), canvas.height(), 0.81f);
     camera.principalY-=18;
     track_paint::backdrop(canvas,detail);
@@ -211,7 +214,11 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     }
 
     if (screen == GameScreen::TrackSelect) {
-        drawTrackPreview(canvas, _trackPreview, screenElapsedMs, detail,_surface->trackSurfaces);
+        if (_track.id() != flow.setup().track) {
+            _track.select(flow.setup().track);
+            _trackPreview.open(_track);
+        }
+        drawTrackPreview(canvas, _trackPreview, screenElapsedMs, detail,_surface->trackSurfaces,_track.id());
         canvas.setTextDatum(textdatum_t::middle_center);
         canvas.setTextSize(1);
         canvas.setTextColor(track_paint::chalk,track_paint::night);
@@ -223,11 +230,11 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
                             index==1 ? track_paint::chalk : track_paint::blue);
         canvas.setTextSize(2);
         canvas.setTextColor(track_paint::chalk,track_paint::floor);
-        canvas.drawString(overpassTrackName(), _width / 2, 377);
+        canvas.drawString(overpassTrackName(_track.id()), _width / 2, 377);
         canvas.setTextSize(1);
         canvas.setTextColor(0x9d36u,track_paint::floor);
-        canvas.drawString("3 LAPS  /  OPEN LANE", _width / 2, 405);
-        canvas.drawString("BLUE: START", _width / 2, 430);
+        canvas.drawString(_track.id()==TrackId::TriCross ? "2/2  3 CROSSINGS  3 LAPS" : "1/2  1 CROSSING  3 LAPS", _width / 2, 405);
+        canvas.drawString("L/R: COURSE  BLUE: START", _width / 2, 430);
         return;
     }
 

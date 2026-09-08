@@ -66,9 +66,9 @@ bool validateCarRaster()
     return valid;
 }
 
-bool validateTrackPaint()
+bool validateTrackPaint(TrackId id = TrackId::SkyLoop)
 {
-    OverpassTrack course;
+    OverpassTrack course(id);
     PencilTrack geometry;
     geometry.open(course);
     PencilOcclusion occlusion;
@@ -98,6 +98,12 @@ bool validateTrackPaint()
         const int x=p.x-TrackMiniMap::centerX,y=p.y-TrackMiniMap::centerY;
         if(x*x+y*y>(TrackMiniMap::radius-4)*(TrackMiniMap::radius-4)) {
             std::cerr << "Map point outside locator-safe radius: " << x << ',' << y << '\n';valid=false;
+        }
+    }
+    for(int i=0;i<720;++i) {
+        const auto p=map.project(course.sample(course.length()*i/720).center);
+        if(std::hypot(float(p.x-TrackMiniMap::centerX),float(p.y-TrackMiniMap::centerY))>TrackMiniMap::radius-4) {
+            std::cerr << "player marker outside minimap\n";valid=false;
         }
     }
     for(auto color:{track_paint::road,track_paint::coral,track_paint::blue})
@@ -210,7 +216,7 @@ int main(int argc, char** argv)
     std::filesystem::create_directories(directory);
     captureCarStructures(directory);
     auto& canvas = GetHAL().getDisplay();
-    bool valid = validateCarRaster() && validateTrackPaint();
+    bool valid = validateCarRaster() && validateTrackPaint() && validateTrackPaint(TrackId::TriCross);
     const auto checkText = [&] {
         for (const auto& label : canvas.texts) {
             const float halfWidth = label.value.size() * 3.0f * label.size;
@@ -373,9 +379,12 @@ int main(int argc, char** argv)
     flow.confirmRivals();
     garage.render(flow, selection, 0u, PencilDetail::High);
     save("track");
-    for (unsigned orbit = 0; orbit < 16u; ++orbit) {
-        garage.render(flow, selection, orbit * 2454u, PencilDetail::Low);
+    for(auto track:{TrackId::SkyLoop,TrackId::TriCross,TrackId::SkyLoop}) {
+    flow.selectTrack(track);
+    for(auto detail:{PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) for (unsigned orbit = 0; orbit < 16u; ++orbit) {
+        garage.render(flow, selection, orbit * 2454u, detail);
         checkText();
+        if(orbit==0 && detail==PencilDetail::High)save(track==TrackId::SkyLoop ? "track-0" : "track-1");
         const auto& pixels=canvas.frame();
         for(int y=0;y<466;++y) for(int x=0;x<466;++x) {
             if(y>=87 && y<=89 && x>=215 && x<251)continue; // Header tricolor mark.
@@ -390,6 +399,7 @@ int main(int argc, char** argv)
                 break;
             }
         }
+    }
     }
     flow.confirmTrack();
     RaceController race;
@@ -441,6 +451,24 @@ int main(int argc, char** argv)
         if (sample == 24) save("curve-red");
         if (sample == 72) save("curve-blue");
         if (sample == 44) save("bridge-under");
+    }
+    // Reuse the same opened renderer across courses; stale road/minimap caches
+    // would make the following image differ from a freshly opened renderer.
+    for(auto track:{TrackId::TriCross,TrackId::SkyLoop}) {
+        auto setup=flow.setup();setup.track=track;race.prepare(setup,0x12345678u);
+        for(int sample=0;sample<96;++sample) {
+            auto& state=const_cast<RaceSnapshot&>(race.snapshot());
+            for(std::size_t i=0;i<state.carCount;++i)
+                state.cars[i].motion.distance=sample*race.track().length()/96+i*1.5f;
+            const auto detail=sample%3==0 ? PencilDetail::High : sample%3==1 ? PencilDetail::Medium : PencilDetail::Low;
+            renderer.render(flow,race,results,0,false,detail);checkText();
+            if(track==TrackId::TriCross && sample%16==0)save("tri-race-"+std::to_string(sample));
+        }
+        renderer.render(flow,race,results,0,false,PencilDetail::High);
+        const auto reused=canvas.frame();
+        renderer.close();renderer.open(466,466);
+        renderer.render(flow,race,results,0,false,PencilDetail::High);
+        if(reused!=canvas.frame()) {std::cerr << "stale track/minimap cache after course switch\n";valid=false;}
     }
     std::cout << "Renderer cache bytes: garage=" << sizeof(GarageRenderer)
               << " race=" << sizeof(RaceRenderer) << '\n';

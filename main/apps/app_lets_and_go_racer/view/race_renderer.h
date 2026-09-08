@@ -41,6 +41,7 @@ public:
 private:
     std::unique_ptr<RaceSurfaceCache> _surface;
     PencilTrack _trackGeometry{};
+    TrackId _cachedTrack = TrackId::Count;
     TrackMiniMap _miniMap{};
     int _width = 0;
     int _height = 0;
