@@ -131,9 +131,9 @@ bool validateDisplayMeshes()
         float maxY=0;
         for (std::size_t i=0;i<mesh.count;++i) {
             const auto& face=mesh.panels[i];
-            valid &= check(face.wheel<=4 && face.part<=CarPart::RearWing, "invalid panel metadata");
+            valid &= check(face.wheel<=4 && face.part<=CarPart::TailFin, "invalid panel metadata");
             valid &= check(face.u0<=face.u1 && face.v0<=face.v1 &&
-                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::MagnumVent),
+                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::SonicFront),
                            "invalid solid surface UV/material");
             valid &= check(face.parent==0xffffu || (face.parent<i &&
                            mesh.panels[face.parent].parent==0xffffu),
@@ -288,9 +288,79 @@ bool validateMagnumStructure()
     std::cout<<"Magnum structure: shoulder/waist, open channels, canopy and tire clearance across 3 LODs\n";
     return valid;
 }
+
+bool validateRebuiltStructure(CarId car)
+{
+    bool valid=true;
+    for(auto detail : {CarSurfaceDetail::Low,CarSurfaceDetail::Medium,CarSurfaceDetail::High}) {
+        CarDisplayMesh mesh;
+        buildCarDisplayMesh(car,mesh,detail);
+        std::array<unsigned,static_cast<unsigned>(CarPart::TailFin)+1> parts{};
+        float worst=0;
+        CarPoint worstPoint{};
+        CarPart worstPart=CarPart::Unspecified;
+        unsigned penetrations=0;
+        for(std::size_t i=0;i<mesh.count;++i) {
+            const auto& p=mesh.panels[i];
+            ++parts[static_cast<unsigned>(p.part)];
+            if(p.part!=CarPart::FrontCowl && p.part!=CarPart::RearCowl && p.part!=CarPart::Nose)continue;
+            if(p.paint!=CarPaint::Solid && p.part!=CarPart::Nose && p.point[0].x>0) {
+                bool mirrored=false;
+                for(std::size_t j=0;j<mesh.count && !mirrored;++j) {
+                    const auto& q=mesh.panels[j];
+                    if(p.part!=q.part || p.paint!=q.paint || p.u0!=q.u0 || p.u1!=q.u1 ||
+                       p.v0!=q.v0 || p.v1!=q.v1 || p.light!=q.light)continue;
+                    mirrored=true;
+                    for(unsigned v=0;v<4;++v)
+                        mirrored &= std::abs(p.point[v].x+q.point[v].x)<1e-6f &&
+                                    p.point[v].y==q.point[v].y && p.point[v].z==q.point[v].z;
+                }
+                valid &= check(mirrored,"rebuilt cowl lost mirrored geometry/UV");
+            }
+            for(int tri=0;tri<2;++tri) for(int a=0;a<=10;++a) for(int b=0;b<=10-a;++b) {
+                const auto p0=p.point[0],p1=p.point[tri+1],p2=p.point[tri+2];
+                const float u=a/10.f,v=b/10.f;
+                const CarPoint q{p0.x+u*(p1.x-p0.x)+v*(p2.x-p0.x),
+                    p0.y+u*(p1.y-p0.y)+v*(p2.y-p0.y),p0.z+u*(p1.z-p0.z)+v*(p2.z-p0.z)};
+                const float x=std::abs(q.x);
+                if(x<.365f || x>.56f)continue;
+                const float radius=x<.39f ? .145f+(x-.365f)*1.2f :
+                                   x>.535f ? .175f-(x-.535f) : .175f;
+                for(float axle : {kModelFrontAxle,kModelRearAxle}) {
+                    const float overlap=radius-std::hypot(q.y-kModelWheelRadius,q.z-axle);
+                    if(overlap>worst) {worst=overlap;worstPoint=q;worstPart=p.part;}
+                    if(overlap>.003f)++penetrations;
+                }
+            }
+        }
+        if(penetrations)std::cerr<<carSpec(car).shortName<<" shell/tire penetrations="<<penetrations
+            <<" worst="<<worst<<" part="<<int(worstPart)<<" at "
+            <<worstPoint.x<<','<<worstPoint.y<<','<<worstPoint.z<<'\n';
+        valid &= check(!penetrations,"rebuilt body intersects tire envelope");
+        for(auto part : {CarPart::Nose,CarPart::Canopy,CarPart::FrontCowl,CarPart::RearCowl})
+            valid &= check(parts[static_cast<unsigned>(part)]>0,"rebuilt car lost named structure");
+        if(car==CarId::HurricaneSonic) {
+            valid &= check(parts[static_cast<unsigned>(CarPart::FrontBridge)]>=3 &&
+                           parts[static_cast<unsigned>(CarPart::RearWing)]>0,
+                           "Sonic connecting front wing or integrated rear wing missing");
+            for(float s : {-1.f,1.f}) {
+                valid &= check(surfaceHeight(mesh,s*.22f,-.50f,CarPart::Unspecified,true)<.20f,
+                               "Sonic rear channel filled by generic central hull");
+                valid &= check(surfaceHeight(mesh,s*.29f,.24f,CarPart::Nose)>.20f,
+                               "Sonic nose lost wide shoulder");
+            }
+            valid &= check(surfaceHeight(mesh,0,.69f,CarPart::FrontBridge)>.24f &&
+                           surfaceHeight(mesh,.31f,.69f,CarPart::FrontBridge)>.30f,
+                           "Sonic front bridge must dip between raised cowls");
+        }
+    }
+    std::cout<<carSpec(car).shortName<<" structure: tire clearance, mirrored UV and authored components across 3 LODs\n";
+    return valid;
+}
 }  // namespace
 
 int main()
 {
-    return validateCatalog() && validateWireframes() && validateDisplayMeshes() && validateMagnumStructure() ? 0 : 1;
+    return validateCatalog() && validateWireframes() && validateDisplayMeshes() && validateMagnumStructure() &&
+           validateRebuiltStructure(CarId::HurricaneSonic) ? 0 : 1;
 }

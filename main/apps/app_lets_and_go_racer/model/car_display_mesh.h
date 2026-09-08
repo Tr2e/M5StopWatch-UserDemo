@@ -6,13 +6,13 @@ namespace lets_and_go {
 enum class CarSurfaceDetail : uint8_t { Low, Medium, High };
 enum class CarPart : uint8_t {
     Unspecified, Chassis, Wheel, Roller, Nose, Canopy, RearCowl, FrontCowl,
-    SideWeb, Intake, RearWing
+    SideWeb, Intake, RearWing, FrontBridge, SideGuard, MotorBlock, TailFin
 };
 enum class CarPaint : uint8_t {
     Solid, MagnumHood, MagnumCowl, MagnumWing, SonicHood, SonicCowl, SonicWing,
     Flame, TridaggerWing, Tiger, BrockenHood, Glass, BronzeGlass, BlueGlass, Eye,
     BrockenShell, FrontWing, NeoHood, MagnumCanopy, MagnumCowlSide,
-    MagnumNoseSide, MagnumVent
+    MagnumNoseSide, MagnumVent, SonicCanopy, SonicSide, SonicFront
 };
 
 // Authored curved-body panels shared by the garage and race solid renderers.

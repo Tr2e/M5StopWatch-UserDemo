@@ -65,7 +65,7 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         return color;
     }
     case CarPaint::SonicHood: {
-        const float band=.27f-.18f*v;
+        const float band=v<.40f ? .46f : .39f-.16f*v;
         uint16_t color=center<band ? red : white;
         if(v>.56f && v<.92f && center>band+.045f && center<band+.075f)color=red;
         if(carLetter("SONIC",u,v,.29f,.53f,.42f,.065f))color=white;
@@ -91,9 +91,25 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         return v<.48f ? blue : carTint(white,.79f);
     case CarPaint::MagnumVent:
         return u<.06f || u>.94f || v<.08f || v>.92f ? 0x7bef : 0x18c3;
-    case CarPaint::SonicCowl:
-        if(u<.12f || u>.86f || v>.86f)return white;
-        if(v>.63f && v<.78f && u>.25f && u<.75f)return int(u*90)%3 ? 0x7bef : dark;
+    case CarPaint::SonicCowl: {
+        if(v<.44f)return u<.08f || u>.93f ? white : red;
+        const float vent=.31f*(1-(v-.51f)/.44f);
+        if(v>.51f && v<.94f && std::abs(u-.52f)<vent)
+            return std::abs(u-.52f)>vent-.035f ? 0x7bef :
+                   (int(u*110)+int(v*100))%3 ? 0x5acb : dark;
+        return u>.88f ? red : white;
+    }
+    case CarPaint::SonicCanopy:
+        if(u<.035f || u>.965f || v<.025f || v>.97f)return white;
+        return carTint(0x3188,.7f+.5f*std::max(0.f,1-std::abs(u-.34f)*3));
+    case CarPaint::SonicSide:
+        return u<.18f ? white : u<.30f ? red : 0x246d;
+    case CarPaint::SonicFront:
+        if(u<.045f || u>.95f)return white;
+        if(v>.80f)return 0x246d;
+        if(v>.74f)return white;
+        if(v>.19f && v<.65f && std::abs(u-.48f)<.15f+.07f*v)
+            return (int(u*70)+int(v*80))%5<2 ? dark : v<.35f ? gold : 0xb5d6;
         return red;
     case CarPaint::Eye:
         if(u<.06f || u>.94f || v<.10f || v>.94f)return base;

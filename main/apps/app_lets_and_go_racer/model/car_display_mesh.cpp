@@ -254,34 +254,58 @@ void cyclone(Builder& b) {
 }
 
 void sonic(Builder& b) {
-    constexpr auto color=red;
-    b.skin(0,{{-.64f,.22f,.26f,.32f},{-.43f,.27f,.28f,.35f},
-        {-.16f,.285f,.25f,.32f},{.10f,.28f,.23f,.29f},{.35f,.255f,.20f,.24f},
-        {.60f,.175f,.135f,.17f},{.82f,.042f,.11f,.12f}},white,
-        CarPaint::SonicHood);
-    b.skin(0,{{-.47f,.09f,.34f,.40f},{-.36f,.145f,.335f,.43f},
-        {-.17f,.17f,.285f,.43f},{.02f,.133f,.27f,.365f},{.18f,.075f,.24f,.265f}},
-        glass,CarPaint::Glass,.24f);
+    b.part=CarPart::Nose;
+    b.chine({{-.72f,.13f,.23f,.30f,.34f},{-.49f,.17f,.225f,.305f,.33f},
+        {-.22f,.18f,.20f,.285f,.30f},{-.04f,.20f,.185f,.27f,.29f},
+        {.24f,.305f,.13f,.23f,.265f},{.43f,.25f,.12f,.18f,.225f},
+        {.65f,.125f,.095f,.13f,.17f},{.83f,.044f,.09f,.12f,.14f}},
+        white,CarPaint::SonicHood);
+    b.part=CarPart::Canopy;
+    b.chine({{-.52f,.118f,.31f,.41f,.46f},{-.37f,.148f,.30f,.42f,.46f},
+        {-.15f,.142f,.28f,.36f,.395f},{.065f,.084f,.267f,.28f,.295f}},
+        glass,CarPaint::SonicCanopy,CarPaint::SonicCanopy);
     for(float s : {-1.f,1.f}) {
-        b.skin(s*.37f,{{-.81f,.14f,.275f,.315f},{-.65f,.172f,.32f,.38f},
-            {-.49f,.172f,.32f,.39f},{-.30f,.16f,.255f,.32f},{-.14f,.115f,.22f,.25f}},
-            white,CarPaint::SonicCowl,.22f);
-        // Minimal front cowls stop ahead of the axle; most of the tire is exposed.
-        b.skin(s*.438f,{{.49f,.08f,.29f,.35f},{.60f,.10f,.245f,.30f},
-            {.73f,.107f,.15f,.205f},{.82f,.085f,.12f,.15f}},
-            color,CarPaint::Eye,.105f);
-        b.skin(s*.40f,{{-.71f,.14f,.335f,.385f},{-.43f,.15f,.31f,.37f}},
-               red,CarPaint::SonicWing,.31f);
-        for(int rib=0;rib<3;++rib)
-            b.box(s*.4f-.135f,s*.4f+.135f,.365f,.378f,-.64f+rib*.06f,-.629f+rib*.06f,white);
-        b.box(s*.52f-.016f,s*.52f+.016f,.12f,.165f,.66f,.79f,0x246d);
+        b.part=CarPart::RearCowl;
+        // Rear cowls rise into the stepped wing ramps, not two rounded pods
+        // underneath a disconnected flat spoiler.
+        b.cowl(s,{{-.93f,.26f,.51f,.458f,.48f},{-.76f,.25f,.535f,.425f,.452f},
+            {-.58f,.255f,.55f,.383f,.413f},{-.43f,.27f,.55f,.38f,.414f},
+            {-.25f,.305f,.52f,.315f,.36f},{-.10f,.335f,.48f,.265f,.30f}},
+            white,CarPaint::SonicCowl,CarPaint::SonicSide,.014f);
+        for(int rib=0;rib<3;++rib) {
+            const float z=-.86f+rib*.085f;
+            const float t=z<-.76f ? (z+.93f)/.17f : (z+.76f)/.18f;
+            const float crown=(z<-.76f ? .48f+(.452f-.48f)*t : .452f+(.413f-.452f)*t)+.008f;
+            const float edge=(z<-.76f ? .458f+(.425f-.458f)*t : .425f+(.383f-.425f)*t)+.008f;
+            // Follow the cowl cross-section; a single sloped strip was buried
+            // under the broad centre facet and disappeared in the top view.
+            b.cowl(s,{{z,.255f,.535f,edge,crown},{z+.018f,.255f,.535f,edge-.004f,crown-.004f}},
+                   white,CarPaint::Solid,CarPaint::Solid,.006f);
+        }
+        b.part=CarPart::SideWeb;
+        b.box(std::min(s*.16f,s*.30f),std::max(s*.16f,s*.30f),.215f,.238f,-.34f,-.28f,white);
+        b.part=CarPart::FrontCowl;
+        b.cowl(s,{{.555f,.325f,.445f,.386f,.414f},{.64f,.32f,.49f,.342f,.376f},
+            {.745f,.33f,.53f,.24f,.267f},{.84f,.365f,.515f,.135f,.16f}},
+            red,CarPaint::SonicFront,CarPaint::SonicSide,.012f);
+        b.box(std::min(s*.365f,s*.49f),std::max(s*.365f,s*.49f),.10f,.137f,.825f,.84f,0x246d);
+        b.part=CarPart::FrontBridge;
+        b.quad({s*.12f,.285f,.61f},{s*.325f,.39f,.565f},
+               {s*.32f,.265f,.795f},{s*.08f,.235f,.77f},silver);
     }
-    b.quad({-.30f,.31f,.51f},{.30f,.31f,.51f},{.22f,.18f,.78f},{-.22f,.18f,.78f},
-           graphite,CarPaint::FrontWing);
-    b.wing(color,.44f,CarPaint::SonicWing);
-    b.skin(0,{{-.58f,.08f,.365f,.40f},{-.48f,.075f,.395f,.455f},
-        {-.42f,.06f,.35f,.37f}},white,CarPaint::Solid,.33f);
-    b.box(-.048f,.048f,.392f,.422f,-.426f,-.418f,graphite);
+    b.quad({-.12f,.285f,.61f},{.12f,.285f,.61f},{.08f,.235f,.77f},{-.08f,.235f,.77f},
+           silver,CarPaint::FrontWing);
+    b.part=CarPart::Intake;
+    b.chine({{-.70f,.083f,.33f,.395f,.421f},{-.60f,.08f,.34f,.435f,.48f},
+        {-.53f,.065f,.33f,.425f,.447f}},white,CarPaint::Solid);
+    b.quad({-.057f,.448f,-.531f},{.057f,.448f,-.531f},
+           {.069f,.478f,-.596f},{-.069f,.478f,-.596f},graphite,CarPaint::MagnumVent);
+    b.part=CarPart::RearWing;
+    b.chine({{-.96f,.52f,.457f,.487f,.495f},{-.86f,.51f,.445f,.469f,.484f},
+        {-.76f,.49f,.43f,.452f,.462f}},red,CarPaint::SonicWing);
+    for(float s : {-1.f,1.f})
+        b.quad({s*.525f,.40f,-.76f},{s*.525f,.505f,-.73f},
+               {s*.525f,.54f,-.965f},{s*.525f,.45f,-.965f},white);
 }
 
 void neo(Builder& b) {
@@ -348,8 +372,9 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
         b.quad({0,.10f,.80f},{s*.48f,.10f,.83f},{s*.58f,.10f,.94f},{0,.10f,.91f},graphite);
         b.quad({0,.10f,-.74f},{s*.49f,.10f,-.77f},{s*.57f,.10f,-.86f},{0,.10f,-.83f},graphite);
         b.part=CarPart::Wheel;
-        b.wheel(s,kModelFrontAxle,spec.wheelColor,car==CarId::NeoTridaggerZmc,s<0 ? 1 : 2,car==CarId::CycloneMagnum);
-        b.wheel(s,kModelRearAxle,spec.wheelColor,false,s<0 ? 3 : 4,car==CarId::CycloneMagnum);
+        const bool broad=car==CarId::CycloneMagnum || car==CarId::HurricaneSonic;
+        b.wheel(s,kModelFrontAxle,spec.wheelColor,car==CarId::NeoTridaggerZmc,s<0 ? 1 : 2,broad);
+        b.wheel(s,kModelRearAxle,spec.wheelColor,false,s<0 ? 3 : 4,broad);
         b.part=CarPart::Roller;
         b.roller(s*.55f,.90f,car==CarId::CycloneMagnum || car==CarId::NeoTridaggerZmc ? blue : red);
         b.roller(s*.55f,-.84f,car==CarId::CycloneMagnum ? blue : car==CarId::NeoTridaggerZmc ? 0x246d : red);
