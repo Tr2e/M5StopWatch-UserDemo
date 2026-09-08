@@ -3,6 +3,7 @@
 #include <assets/assets.h>
 #include <hal/hal.h>
 #include <mooncake_log.h>
+#include <apps/common/audio/audio.h>
 
 #include <algorithm>
 
@@ -40,6 +41,8 @@ void AppLetsAndGoRacer::onOpen()
     _racerInput = std::make_unique<lets_and_go::HardwareRacerInputProvider>();
     _racerInput->open();
     _menuAxis.reset();
+    _garageBudget.reset();
+    _raceBudget.reset();
     _resultsSelection.reset();
     _progress = lets_and_go::RaceProgressStore::load();
     _flow.reset();
@@ -49,12 +52,22 @@ void AppLetsAndGoRacer::onOpen()
     _raceSeed = 0;
     _inputInvalidSinceMs = 0;
     _pausedForInputLoss = false;
+    _lastWallFeedbackMs = 0u;
+    _lastClampCount = 0u;
+    _feedbackScreen = _flow.screen();
+    _feedbackCountdown = 255u;
+    _feedbackLap = 0u;
+    _feedbackBoost = false;
+    _feedbackWallActive = false;
+    const auto& feedbackConfig = GetHAL().getButtonConfig(true);
+    _feedbackSfxEnabled = feedbackConfig.sfxEnabled;
+    _feedbackVibrateEnabled = feedbackConfig.vibrateEnabled;
     _screenStartedMs = _lastUpdateMs;
     GetHAL().stopLvglUpdate();
     const auto& display = GetHAL().getDisplay();
     _renderer.open(display.width(), display.height());
     _raceRenderer.open(display.width(), display.height());
-    _renderer.render(_flow, _selection, 0u);
+    _renderer.render(_flow, _selection, 0u, lets_and_go::PencilDetail::High);
 }
 
 void AppLetsAndGoRacer::onRunning()
@@ -131,14 +144,28 @@ void AppLetsAndGoRacer::onRunning()
         _selection.syncPlayer(_flow.setup().playerCar);
         _screenStartedMs = nowMs;
     }
+    updateFeedback(racerInput, nowMs);
     if (_lastFrameMs == 0u || nowMs - _lastFrameMs >= kGarageFrameIntervalMs) {
         _lastFrameMs = nowMs;
-        if (usesRaceRenderer(_flow.screen())) {
+        const uint32_t renderStartedMs = GetHAL().millis();
+        const bool raceView = usesRaceRenderer(_flow.screen());
+        if (raceView) {
             _raceRenderer.render(_flow, _race, _resultsSelection,
                                  nowMs - _screenStartedMs,
-                                 _pausedForInputLoss);
+                                 _pausedForInputLoss, _raceBudget.detail());
         } else {
-            _renderer.render(_flow, _selection, nowMs - _screenStartedMs);
+            _renderer.render(_flow, _selection, nowMs - _screenStartedMs,
+                             _garageBudget.detail());
+        }
+        const uint32_t renderMs = GetHAL().millis() - renderStartedMs;
+        const uint16_t clampCount = _race.prepared()
+                                        ? _race.snapshot().simulationClampCount : 0u;
+        const bool simulationClamped = clampCount != _lastClampCount;
+        _lastClampCount = clampCount;
+        if (raceView) {
+            _raceBudget.observe(renderMs, simulationClamped);
+        } else {
+            _garageBudget.observe(renderMs, false);
         }
     }
 }
@@ -230,6 +257,73 @@ void AppLetsAndGoRacer::persistSelectedCar()
     }
 }
 
+void AppLetsAndGoRacer::updateFeedback(const lets_and_go::RacerInput& input,
+                                       uint32_t nowMs)
+{
+    using lets_and_go::GameScreen;
+    const GameScreen screen = _flow.screen();
+    if (screen == GameScreen::Countdown) {
+        const uint8_t tick = static_cast<uint8_t>(
+            std::min<uint32_t>(2u, (nowMs - _screenStartedMs) / 1000u));
+        if (tick != _feedbackCountdown) {
+            _feedbackCountdown = tick;
+            playFeedbackTone(720 + static_cast<int>(tick) * 140, 0.035f, 0.35f);
+            vibrateFeedback(18, 35);
+        }
+    } else {
+        _feedbackCountdown = 255u;
+    }
+    if (screen != _feedbackScreen) {
+        if (screen == GameScreen::Racing) {
+            playFeedbackTone(1380, 0.07f, 0.45f);
+            vibrateFeedback(42, 62);
+        } else if (screen == GameScreen::Finish) {
+            playFeedbackTone(1760, 0.12f, 0.48f);
+            vibrateFeedback(95, 85);
+        }
+        _feedbackScreen = screen;
+    }
+    if (screen == GameScreen::Racing && _race.prepared()) {
+        const auto& player = _race.snapshot().player();
+        if (input.valid && input.boostHeld && !_feedbackBoost) {
+            playFeedbackTone(1120, 0.025f, 0.28f);
+            vibrateFeedback(22, 42);
+        }
+        _feedbackBoost = input.valid && input.boostHeld;
+        const bool wallHit = player.motion.wallImpact > 0.75f;
+        if (wallHit && !_feedbackWallActive &&
+            (_lastWallFeedbackMs == 0u || nowMs - _lastWallFeedbackMs >= 300u)) {
+            _lastWallFeedbackMs = nowMs;
+            playFeedbackTone(230, 0.045f, 0.42f);
+            vibrateFeedback(55, 76);
+        }
+        _feedbackWallActive = wallHit;
+        if (player.completedLaps != _feedbackLap) {
+            _feedbackLap = player.completedLaps;
+            if (_feedbackLap == 2u) {
+                playFeedbackTone(1540, 0.08f, 0.40f);
+                vibrateFeedback(50, 68);
+            }
+        }
+    } else {
+        _feedbackBoost = false;
+        _feedbackWallActive = false;
+    }
+}
+
+void AppLetsAndGoRacer::playFeedbackTone(int frequencyHz, float durationSeconds,
+                                         float volume)
+{
+    if (_feedbackSfxEnabled) {
+        audio::play_tone(frequencyHz, durationSeconds, volume);
+    }
+}
+
+void AppLetsAndGoRacer::vibrateFeedback(uint8_t strength, uint16_t durationMs)
+{
+    if (_feedbackVibrateEnabled) GetHAL().vibrate(strength, durationMs);
+}
+
 void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
 {
     using lets_and_go::GameScreen;
@@ -277,6 +371,18 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
 
 void AppLetsAndGoRacer::onClose()
 {
+    const auto& garageStats = _garageBudget.stats();
+    const auto& raceStats = _raceBudget.stats();
+    mclog::tagInfo(getAppInfo().name,
+                   "render budget garage: frames={}, peak={}ms, detail={}, transitions={}",
+                   garageStats.frameCount, garageStats.peakRenderMs,
+                   lets_and_go::pencilDetailLabel(_garageBudget.detail()),
+                   garageStats.detailTransitions);
+    mclog::tagInfo(getAppInfo().name,
+                   "render budget race: frames={}, peak={}ms, detail={}, transitions={}",
+                   raceStats.frameCount, raceStats.peakRenderMs,
+                   lets_and_go::pencilDetailLabel(_raceBudget.detail()),
+                   raceStats.detailTransitions);
     mclog::tagInfo(getAppInfo().name, "on close");
     _keys.reset();
     if (_racerInput) _racerInput->close();
@@ -293,5 +399,14 @@ void AppLetsAndGoRacer::onClose()
     _raceSeed = 0;
     _inputInvalidSinceMs = 0;
     _pausedForInputLoss = false;
+    _garageBudget.reset();
+    _raceBudget.reset();
+    _lastWallFeedbackMs = 0u;
+    _lastClampCount = 0u;
+    _feedbackScreen = lets_and_go::GameScreen::InputCheck;
+    _feedbackCountdown = 255u;
+    _feedbackLap = 0u;
+    _feedbackBoost = false;
+    _feedbackWallActive = false;
     GetHAL().startLvglUpdate();
 }

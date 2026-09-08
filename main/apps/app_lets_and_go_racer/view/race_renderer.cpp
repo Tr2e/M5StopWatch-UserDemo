@@ -47,16 +47,18 @@ TrackVec3 roadEdge(const TrackFrame& frame, float side, float lift = 0.0f)
 }
 
 void drawRoad(LGFX_Device& canvas, const TrackCamera& camera,
-              const OverpassTrack& track, float playerDistance)
+              const OverpassTrack& track, float playerDistance, PencilDetail detail)
 {
     constexpr std::size_t kFrameCount = 36u;
+    const std::size_t sampleCount = detail == PencilDetail::High ? 36u
+                                    : detail == PencilDetail::Medium ? 30u : 24u;
     constexpr float kStep = 0.92f;
     std::array<TrackFrame, kFrameCount> frames{};
-    for (std::size_t index = 0; index < kFrameCount; ++index) {
+    for (std::size_t index = 0; index < sampleCount; ++index) {
         frames[index] = track.sample(playerDistance - 1.8f +
                                      static_cast<float>(index) * kStep);
     }
-    for (std::size_t reverse = kFrameCount - 1u; reverse > 0u; --reverse) {
+    for (std::size_t reverse = sampleCount - 1u; reverse > 0u; --reverse) {
         const TrackFrame& from = frames[reverse - 1u];
         const TrackFrame& to = frames[reverse];
         const TrackVec3 fromLeft = roadEdge(from, -1.0f);
@@ -69,10 +71,10 @@ void drawRoad(LGFX_Device& canvas, const TrackCamera& camera,
                           roadEdge(to, -1.0f, 0.45f), kCourse);
         drawProjectedLine(canvas, camera, roadEdge(from, 1.0f, 0.45f),
                           roadEdge(to, 1.0f, 0.45f), kCourse);
-        if ((reverse & 1u) == 0u) {
+        if (detail != PencilDetail::Low && (reverse & 1u) == 0u) {
             drawProjectedLine(canvas, camera, fromLeft, fromRight, kRoad);
         }
-        if ((reverse % 4u) == 0u) {
+        if (detail == PencilDetail::High && (reverse % 4u) == 0u) {
             drawProjectedLine(canvas, camera, fromLeft,
                               roadEdge(from, -1.0f, 0.45f), kFaint);
             drawProjectedLine(canvas, camera, fromRight,
@@ -129,7 +131,8 @@ TrackVec3 carPointToWorld(CarPoint point, const CarPose& pose)
 
 void drawRaceCar(LGFX_Device& canvas, const TrackCamera& camera,
                  const OverpassTrack& track, const RaceCarSnapshot& car,
-                 const CompactRaceMesh& mesh, float elapsedSeconds)
+                 const CompactRaceMesh& mesh, float elapsedSeconds,
+                 PencilDetail detail)
 {
     const TrackFrame frame = track.sample(car.motion.distance);
     const CarPose pose = makeCarPose(frame, car);
@@ -139,6 +142,9 @@ void drawRaceCar(LGFX_Device& canvas, const TrackCamera& camera,
     const CarSpec& spec = carSpec(car.car);
     for (std::size_t index = 0; index < mesh.lineCount; ++index) {
         const WireLine& line = mesh.lines[index];
+        if (!car.player && detail != PencilDetail::High &&
+            line.stroke == WireStroke::Mechanical && (index & 1u) != 0u) continue;
+        if (!car.player && detail == PencilDetail::Low && (index % 3u) == 2u) continue;
         const CarPoint from = spinWheel(line.from, spec, line.stroke,
                                         wheelCosine, wheelSine);
         const CarPoint to = spinWheel(line.to, spec, line.stroke,
@@ -151,9 +157,11 @@ void drawRaceCar(LGFX_Device& canvas, const TrackCamera& camera,
 }
 
 void drawSpeedLines(LGFX_Device& canvas, const RaceCarSnapshot& player,
-                    uint32_t elapsedMs)
+                    uint32_t elapsedMs, PencilDetail detail)
 {
-    const int count = player.motion.speed > 18.0f ? 10 : player.motion.speed > 12.0f ? 6 : 2;
+    int count = player.motion.speed > 18.0f ? 10 : player.motion.speed > 12.0f ? 6 : 2;
+    if (detail == PencilDetail::Medium) count = std::max(2, count - 2);
+    if (detail == PencilDetail::Low) count = std::max(1, count / 2);
     for (int index = 0; index < count; ++index) {
         const uint32_t hash = static_cast<uint32_t>(index * 67) + elapsedMs / 12u;
         const int x = 55 + static_cast<int>((hash * 37u) % 355u);
@@ -163,10 +171,12 @@ void drawSpeedLines(LGFX_Device& canvas, const RaceCarSnapshot& player,
     }
 }
 
-void drawPaperAndMountains(LGFX_Device& canvas)
+void drawPaperAndMountains(LGFX_Device& canvas, PencilDetail detail)
 {
     uint32_t hash = 0xa341316cu;
-    for (int index = 0; index < 26; ++index) {
+    const int textureCount = detail == PencilDetail::High ? 26
+                             : detail == PencilDetail::Medium ? 16 : 8;
+    for (int index = 0; index < textureCount; ++index) {
         hash = hash * 1664525u + 1013904223u;
         const int x = 40 + static_cast<int>((hash >> 8u) % 386u);
         hash = hash * 1664525u + 1013904223u;
@@ -174,7 +184,8 @@ void drawPaperAndMountains(LGFX_Device& canvas)
         canvas.drawLine(x, y, x + 3, y, kFaint);
     }
     constexpr int kHorizon = 148;
-    for (int x = 38; x < 430; x += 38) {
+    const int mountainStep = detail == PencilDetail::Low ? 76 : 38;
+    for (int x = 38; x < 430; x += mountainStep) {
         const int peak = kHorizon - 9 - ((x * 13) % 24);
         canvas.drawLine(x - 38, kHorizon, x, peak, kFaint);
         canvas.drawLine(x, peak, x + 39, kHorizon, kFaint);
@@ -240,7 +251,7 @@ void drawResults(LGFX_Device& canvas, const RaceSnapshot& race,
                  const ResultsSelection& selection)
 {
     canvas.fillScreen(kPaper);
-    drawPaperAndMountains(canvas);
+    drawPaperAndMountains(canvas, PencilDetail::High);
     const RaceCarSnapshot& player = race.player();
     canvas.setTextDatum(textdatum_t::middle_center);
     canvas.setTextColor(carSpec(player.car).accentColor, kPaper);
@@ -305,7 +316,8 @@ void RaceRenderer::close()
 
 void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
                           const ResultsSelection& results,
-                          uint32_t screenElapsedMs, bool pausedForInputLoss)
+                          uint32_t screenElapsedMs, bool pausedForInputLoss,
+                          PencilDetail detail)
 {
     if (_width <= 0 || _height <= 0 || !race.prepared()) return;
     auto& canvas = GetHAL().getDisplay();
@@ -314,7 +326,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         return;
     }
     canvas.fillScreen(kPaper);
-    drawPaperAndMountains(canvas);
+    drawPaperAndMountains(canvas, detail);
     const RaceSnapshot& snapshot = race.snapshot();
     const RaceCarSnapshot& player = snapshot.player();
     const TrackFrame playerFrame = race.track().sample(player.motion.distance);
@@ -327,7 +339,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
     target.y += 0.35f;
     const TrackCamera camera = makeTrackLookAtCamera(cameraPosition, target,
                                                      _width, _height, 0.78f);
-    drawRoad(canvas, camera, race.track(), player.motion.distance);
+    drawRoad(canvas, camera, race.track(), player.motion.distance, detail);
 
     std::array<std::size_t, kMaximumRaceCars> order{};
     for (std::size_t index = 0; index < snapshot.carCount; ++index) order[index] = index;
@@ -341,9 +353,10 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         if (car.motion.distance < player.motion.distance - 5.0f ||
             car.motion.distance > player.motion.distance + 34.0f) continue;
         drawRaceCar(canvas, camera, race.track(), car,
-                    _meshes[static_cast<std::size_t>(car.car)], snapshot.elapsedSeconds);
+                    _meshes[static_cast<std::size_t>(car.car)], snapshot.elapsedSeconds,
+                    detail);
     }
-    drawSpeedLines(canvas, player, screenElapsedMs);
+    drawSpeedLines(canvas, player, screenElapsedMs, detail);
     drawHud(canvas, snapshot, race.track(), _mapX, _mapY);
 
     canvas.setTextDatum(textdatum_t::middle_center);

@@ -4,6 +4,7 @@
 #include "../controller/garage_selection.h"
 #include "../model/car_catalog.h"
 #include "../model/overpass_track.h"
+#include "render_budget.h"
 
 #include <cstdint>
 #include <array>
@@ -22,7 +23,7 @@ public:
     void open(int width, int height);
     void close();
     void render(const GameFlow& flow, const GarageSelection& selection,
-                uint32_t screenElapsedMs);
+                uint32_t screenElapsedMs, PencilDetail detail);
 
 private:
     const CarWireframe& showcaseMesh(CarId car);

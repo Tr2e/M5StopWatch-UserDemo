@@ -65,10 +65,12 @@ uint16_t strokeColor(const CarSpec& spec, WireStroke stroke)
     return kPencil;
 }
 
-void drawPaperTexture(LGFX_Device& canvas)
+void drawPaperTexture(LGFX_Device& canvas, PencilDetail detail)
 {
     uint32_t state = 0x6d2b79f5u;
-    for (int index = 0; index < 34; ++index) {
+    const int count = detail == PencilDetail::High ? 34
+                      : detail == PencilDetail::Medium ? 22 : 12;
+    for (int index = 0; index < count; ++index) {
         state = state * 1664525u + 1013904223u;
         const int x = 38 + static_cast<int>((state >> 8u) % 390u);
         state = state * 1664525u + 1013904223u;
@@ -78,7 +80,8 @@ void drawPaperTexture(LGFX_Device& canvas)
 }
 
 void drawCar(LGFX_Device& canvas, const CarSpec& spec, const CarWireframe& mesh,
-             int centerX, int centerY, float scale, float yaw, float wheelPhase)
+             int centerX, int centerY, float scale, float yaw, float wheelPhase,
+             PencilDetail detail)
 {
     const float yawCosine = std::cos(yaw);
     const float yawSine = std::sin(yaw);
@@ -86,6 +89,8 @@ void drawCar(LGFX_Device& canvas, const CarSpec& spec, const CarWireframe& mesh,
     const float wheelSine = std::sin(wheelPhase);
     for (std::size_t index = 0; index < mesh.lineCount; ++index) {
         const WireLine& line = mesh.lines[index];
+        if (detail == PencilDetail::Low && line.stroke == WireStroke::Mechanical &&
+            (index & 1u) != 0u) continue;
         const CarPoint from = animateWheelPoint(line.from, spec, line.stroke,
                                                 wheelCosine, wheelSine);
         const CarPoint to = animateWheelPoint(line.to, spec, line.stroke,
@@ -138,7 +143,8 @@ void drawMountains(LGFX_Device& canvas)
 }
 
 void drawTrackLayer(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
-                    const TrackCamera& camera, TrackLayer requestedLayer)
+                    const TrackCamera& camera, TrackLayer requestedLayer,
+                    PencilDetail detail)
 {
     for (std::size_t index = 0; index < TrackPreviewGeometry::kSegments; ++index) {
         if (preview.layer[index] != requestedLayer) continue;
@@ -148,7 +154,7 @@ void drawTrackLayer(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
         const TrackVec3 nextRight = preview.right[index + 1u];
         drawWorldLine(canvas, camera, left, nextLeft, kCourseEdge);
         drawWorldLine(canvas, camera, right, nextRight, kCourseEdge);
-        if ((index & 1u) == 0u) {
+        if (detail != PencilDetail::Low && (index & 1u) == 0u) {
             drawWorldLine(canvas, camera, left, right, kCourseFaint);
         }
         const TrackVec3 railLift{0.0f, 0.48f, 0.0f};
@@ -156,7 +162,7 @@ void drawTrackLayer(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
                       trackAdd(nextLeft, railLift), kCourseEdge);
         drawWorldLine(canvas, camera, trackAdd(right, railLift),
                       trackAdd(nextRight, railLift), kCourseEdge);
-        if ((index % 4u) == 0u) {
+        if (detail == PencilDetail::High && (index % 4u) == 0u) {
             drawWorldLine(canvas, camera, left, trackAdd(left, railLift), kCourseFaint);
             drawWorldLine(canvas, camera, right, trackAdd(right, railLift), kCourseFaint);
         }
@@ -164,7 +170,7 @@ void drawTrackLayer(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
 }
 
 void drawTrackPreview(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
-                      uint32_t screenElapsedMs)
+                      uint32_t screenElapsedMs, PencilDetail detail)
 {
     const float orbit = static_cast<float>(screenElapsedMs) * 0.00016f;
     const TrackVec3 cameraPosition{std::sin(orbit) * 21.0f, 13.0f,
@@ -173,12 +179,12 @@ void drawTrackPreview(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
                                                      {0.0f, 1.4f, 0.0f},
                                                      canvas.width(), canvas.height(), 0.69f);
     drawMountains(canvas);
-    drawTrackLayer(canvas, preview, camera, TrackLayer::Lower);
-    drawTrackLayer(canvas, preview, camera, TrackLayer::Transition);
+    drawTrackLayer(canvas, preview, camera, TrackLayer::Lower, detail);
+    drawTrackLayer(canvas, preview, camera, TrackLayer::Transition, detail);
 
     // The upper deck is deliberately last at the crossing: there is no center
     // divider, only the two external guard rails.
-    drawTrackLayer(canvas, preview, camera, TrackLayer::Upper);
+    drawTrackLayer(canvas, preview, camera, TrackLayer::Upper, detail);
 }
 
 }  // namespace
@@ -218,12 +224,12 @@ const CarWireframe& GarageRenderer::showcaseMesh(CarId car)
 }
 
 void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selection,
-                            uint32_t screenElapsedMs)
+                            uint32_t screenElapsedMs, PencilDetail detail)
 {
     if (_width <= 0 || _height <= 0) return;
     auto& canvas = GetHAL().getDisplay();
     canvas.fillScreen(kPaper);
-    drawPaperTexture(canvas);
+    drawPaperTexture(canvas, detail);
 
     const GameScreen screen = flow.screen();
     CarId visibleCar = flow.setup().playerCar;
@@ -238,7 +244,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     if (screen == GameScreen::CarSelect) {
         drawHeader(canvas, "SELECT MACHINE");
         drawCar(canvas, spec, mesh, _width / 2, 267, 112.0f,
-                -0.52f + std::sin(seconds * 0.7f) * 0.08f, seconds * 7.0f);
+                -0.52f + std::sin(seconds * 0.7f) * 0.08f, seconds * 7.0f, detail);
         canvas.setTextColor(kPencil, kPaper);
         canvas.setTextSize(2);
         canvas.drawString(spec.officialName, _width / 2, 365);
@@ -262,7 +268,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
                                     ? std::sin(seconds * 80.0f) * 1.4f
                                     : 0.0f;
         drawCar(canvas, spec, mesh, _width / 2 + static_cast<int>(vibration), 282,
-                scale, -0.82f + entrance * 0.62f, seconds * 13.0f);
+                scale, -0.82f + entrance * 0.62f, seconds * 13.0f, detail);
         if (screenElapsedMs > 520u) {
             for (int line = 0; line < 5; ++line) {
                 const int y = 320 + line * 12;
@@ -284,7 +290,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
             canvas.drawString("RACE READY", _width / 2, 230);
         } else {
             drawCar(canvas, spec, mesh, _width / 2, 260, 96.0f, -0.55f,
-                    seconds * 5.0f);
+                    seconds * 5.0f, detail);
             canvas.setTextColor(spec.accentColor, kPaper);
             canvas.setTextSize(2);
             canvas.drawString(spec.shortName, _width / 2, 355);
@@ -304,7 +310,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
 
     if (screen == GameScreen::TrackSelect) {
         drawHeader(canvas, "SELECT COURSE");
-        drawTrackPreview(canvas, _trackPreview, screenElapsedMs);
+        drawTrackPreview(canvas, _trackPreview, screenElapsedMs, detail);
         canvas.setTextSize(2);
         canvas.setTextColor(kCourseEdge, kPaper);
         canvas.drawString(overpassTrackName(), _width / 2, 377);

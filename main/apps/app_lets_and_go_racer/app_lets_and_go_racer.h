@@ -27,6 +27,9 @@ private:
     void handleRacerInput(const lets_and_go::RacerInput& input, uint32_t nowMs);
     void prepareRace(uint32_t nowMs);
     void persistSelectedCar();
+    void updateFeedback(const lets_and_go::RacerInput& input, uint32_t nowMs);
+    void playFeedbackTone(int frequencyHz, float durationSeconds, float volume);
+    void vibrateFeedback(uint8_t strength, uint16_t durationMs);
 
     std::unique_ptr<input::KeyManager> _keys;
     std::unique_ptr<lets_and_go::RacerInputProvider> _racerInput;
@@ -38,10 +41,21 @@ private:
     lets_and_go::PlayerProgress _progress;
     lets_and_go::GarageRenderer _renderer;
     lets_and_go::RaceRenderer _raceRenderer;
+    lets_and_go::FrameBudgetController _garageBudget;
+    lets_and_go::FrameBudgetController _raceBudget;
     uint32_t _lastFrameMs = 0;
     uint32_t _screenStartedMs = 0;
     uint32_t _lastUpdateMs = 0;
     uint32_t _raceSeed = 0;
     uint32_t _inputInvalidSinceMs = 0;
+    uint32_t _lastWallFeedbackMs = 0;
+    uint16_t _lastClampCount = 0;
+    lets_and_go::GameScreen _feedbackScreen = lets_and_go::GameScreen::InputCheck;
+    uint8_t _feedbackCountdown = 255u;
+    uint8_t _feedbackLap = 0u;
+    bool _feedbackBoost = false;
+    bool _feedbackWallActive = false;
+    bool _feedbackSfxEnabled = true;
+    bool _feedbackVibrateEnabled = true;
     bool _pausedForInputLoss = false;
 };

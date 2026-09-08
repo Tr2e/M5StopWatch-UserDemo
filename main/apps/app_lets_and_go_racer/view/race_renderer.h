@@ -4,6 +4,7 @@
 #include "../controller/race_controller.h"
 #include "../controller/results_selection.h"
 #include "../model/car_catalog.h"
+#include "render_budget.h"
 
 #include <array>
 #include <cstddef>
@@ -23,7 +24,8 @@ public:
     void close();
     void render(const GameFlow& flow, const RaceController& race,
                 const ResultsSelection& results,
-                uint32_t screenElapsedMs, bool pausedForInputLoss);
+                uint32_t screenElapsedMs, bool pausedForInputLoss,
+                PencilDetail detail);
 
 private:
     std::array<CompactRaceMesh, kCarCount> _meshes{};
