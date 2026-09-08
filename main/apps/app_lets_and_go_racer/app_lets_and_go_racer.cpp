@@ -1,4 +1,5 @@
 #include "app_lets_and_go_racer.h"
+#include "lets_and_go_config.h"
 
 #include <assets/assets.h>
 #include <hal/hal.h>
@@ -8,12 +9,6 @@
 #include <algorithm>
 
 namespace {
-constexpr uint32_t kGarageFrameIntervalMs = 33u;
-constexpr uint32_t kShowcaseDurationMs = 1500u;
-constexpr uint32_t kGridIntroDurationMs = 1300u;
-constexpr uint32_t kCountdownDurationMs = 3000u;
-constexpr uint32_t kFinishDurationMs = 1200u;
-
 bool usesRaceRenderer(lets_and_go::GameScreen screen)
 {
     using lets_and_go::GameScreen;
@@ -21,6 +16,7 @@ bool usesRaceRenderer(lets_and_go::GameScreen screen)
            screen == GameScreen::Racing || screen == GameScreen::Paused ||
            screen == GameScreen::Finish || screen == GameScreen::Results;
 }
+
 }
 
 AppLetsAndGoRacer::AppLetsAndGoRacer()
@@ -103,11 +99,11 @@ void AppLetsAndGoRacer::onRunning()
     }
 
     if (_flow.screen() == lets_and_go::GameScreen::GridIntro &&
-        nowMs - _screenStartedMs >= kGridIntroDurationMs &&
+        nowMs - _screenStartedMs >= lets_and_go::tuning::kGridIntroDurationMs &&
         _flow.completeGridIntro()) {
         _screenStartedMs = nowMs;
     } else if (_flow.screen() == lets_and_go::GameScreen::Countdown &&
-               nowMs - _screenStartedMs >= kCountdownDurationMs &&
+               nowMs - _screenStartedMs >= lets_and_go::tuning::kCountdownDurationMs &&
                _flow.completeCountdown()) {
         _screenStartedMs = nowMs;
     } else if (_flow.screen() == lets_and_go::GameScreen::Racing) {
@@ -126,7 +122,7 @@ void AppLetsAndGoRacer::onRunning()
             _screenStartedMs = nowMs;
         }
     } else if (_flow.screen() == lets_and_go::GameScreen::Finish &&
-               nowMs - _screenStartedMs >= kFinishDurationMs &&
+               nowMs - _screenStartedMs >= lets_and_go::tuning::kFinishDurationMs &&
                _flow.showResults()) {
         _resultsSelection.reset();
         _progress.lastCar = _flow.setup().playerCar;
@@ -139,13 +135,14 @@ void AppLetsAndGoRacer::onRunning()
     }
 
     if (_flow.screen() == lets_and_go::GameScreen::CarShowcase &&
-        nowMs - _screenStartedMs >= kShowcaseDurationMs &&
+        nowMs - _screenStartedMs >= lets_and_go::tuning::kShowcaseDurationMs &&
         _flow.completeCarShowcase()) {
         _selection.syncPlayer(_flow.setup().playerCar);
         _screenStartedMs = nowMs;
     }
     updateFeedback(racerInput, nowMs);
-    if (_lastFrameMs == 0u || nowMs - _lastFrameMs >= kGarageFrameIntervalMs) {
+    if (_lastFrameMs == 0u ||
+        nowMs - _lastFrameMs >= lets_and_go::tuning::kFrameIntervalMs) {
         _lastFrameMs = nowMs;
         const uint32_t renderStartedMs = GetHAL().millis();
         const bool raceView = usesRaceRenderer(_flow.screen());
@@ -204,7 +201,10 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         }
     }
     if (input.cancelPressed) {
-        if (_flow.back() && before == GameScreen::Results) {
+        const bool changed = before == GameScreen::RivalSelect
+                                 ? _selection.cancelRival(_flow)
+                                 : _flow.back();
+        if (changed && before == GameScreen::Results) {
             _raceSeed = 0u;
             _selection.reset(_progress.lastCar);
         }
@@ -261,48 +261,48 @@ void AppLetsAndGoRacer::updateFeedback(const lets_and_go::RacerInput& input,
                                        uint32_t nowMs)
 {
     using lets_and_go::GameScreen;
+    const auto playCue = [this](const lets_and_go::tuning::FeedbackCue& cue) {
+        playFeedbackTone(cue.frequencyHz, cue.durationSeconds, cue.volume);
+        vibrateFeedback(cue.vibrationStrength, cue.vibrationDurationMs);
+    };
     const GameScreen screen = _flow.screen();
     if (screen == GameScreen::Countdown) {
         const uint8_t tick = static_cast<uint8_t>(
             std::min<uint32_t>(2u, (nowMs - _screenStartedMs) / 1000u));
         if (tick != _feedbackCountdown) {
             _feedbackCountdown = tick;
-            playFeedbackTone(720 + static_cast<int>(tick) * 140, 0.035f, 0.35f);
-            vibrateFeedback(18, 35);
+            auto cue = lets_and_go::tuning::kCountdownCue;
+            cue.frequencyHz += static_cast<int>(tick) * 140;
+            playCue(cue);
         }
     } else {
         _feedbackCountdown = 255u;
     }
     if (screen != _feedbackScreen) {
         if (screen == GameScreen::Racing) {
-            playFeedbackTone(1380, 0.07f, 0.45f);
-            vibrateFeedback(42, 62);
+            playCue(lets_and_go::tuning::kGoCue);
         } else if (screen == GameScreen::Finish) {
-            playFeedbackTone(1760, 0.12f, 0.48f);
-            vibrateFeedback(95, 85);
+            playCue(lets_and_go::tuning::kFinishCue);
         }
         _feedbackScreen = screen;
     }
     if (screen == GameScreen::Racing && _race.prepared()) {
         const auto& player = _race.snapshot().player();
         if (input.valid && input.boostHeld && !_feedbackBoost) {
-            playFeedbackTone(1120, 0.025f, 0.28f);
-            vibrateFeedback(22, 42);
+            playCue(lets_and_go::tuning::kBoostCue);
         }
         _feedbackBoost = input.valid && input.boostHeld;
         const bool wallHit = player.motion.wallImpact > 0.75f;
         if (wallHit && !_feedbackWallActive &&
             (_lastWallFeedbackMs == 0u || nowMs - _lastWallFeedbackMs >= 300u)) {
             _lastWallFeedbackMs = nowMs;
-            playFeedbackTone(230, 0.045f, 0.42f);
-            vibrateFeedback(55, 76);
+            playCue(lets_and_go::tuning::kWallCue);
         }
         _feedbackWallActive = wallHit;
         if (player.completedLaps != _feedbackLap) {
             _feedbackLap = player.completedLaps;
             if (_feedbackLap == 2u) {
-                playFeedbackTone(1540, 0.08f, 0.40f);
-                vibrateFeedback(50, 68);
+                playCue(lets_and_go::tuning::kFinalLapCue);
             }
         }
     } else {

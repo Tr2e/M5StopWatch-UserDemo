@@ -50,6 +50,17 @@ bool validateRivalSkipToggleAndDone()
                    "zero direction unexpectedly moved rival cursor");
     valid &= check(selection.activateRival(flow) && flow.setup().rivalCount() == 1,
                    "rival toggle failed");
+    valid &= check(selection.cancelRival(flow) && flow.setup().rivalCount() == 0 &&
+                       flow.screen() == GameScreen::RivalSelect,
+                   "cancel did not remove the selected rival in place");
+    valid &= check(selection.cancelRival(flow) &&
+                       flow.screen() == GameScreen::CarSelect,
+                   "cancel on an unselected rival did not return to car select");
+    valid &= check(flow.confirmPlayerCar() && flow.completeCarShowcase(),
+                   "failed to re-enter rival select after cancel test");
+    selection.syncPlayer(CarId::HurricaneSonic);
+    valid &= check(selection.activateRival(flow) && flow.setup().rivalCount() == 1,
+                   "rival could not be selected after re-entering selection");
     for (int step = 0; step < 5 && !selection.rivalCursorIsDone(); ++step) {
         selection.moveRival(1, flow.setup().playerCar);
     }

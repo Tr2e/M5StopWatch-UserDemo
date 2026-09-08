@@ -54,4 +54,12 @@ bool GarageSelection::activateRival(GameFlow& flow)
     return flow.toggleRival(rivalCursorCar());
 }
 
+bool GarageSelection::cancelRival(GameFlow& flow)
+{
+    if (!rivalCursorIsDone() && flow.setup().hasRival(rivalCursorCar())) {
+        return flow.toggleRival(rivalCursorCar());
+    }
+    return flow.back();
+}
+
 }  // namespace lets_and_go

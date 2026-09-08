@@ -37,4 +37,7 @@ private:
     int _height = 0;
 };
 
+static_assert(sizeof(GarageRenderer) <= 10000u,
+              "garage renderer cache exceeded its reviewed resident budget");
+
 }  // namespace lets_and_go

@@ -17,6 +17,7 @@ public:
     void moveRival(int direction, CarId player);
     bool activatePlayer(GameFlow& flow);
     bool activateRival(GameFlow& flow);
+    bool cancelRival(GameFlow& flow);
 
     constexpr CarId playerCursor() const
     {

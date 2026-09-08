@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../lets_and_go_config.h"
+
 #include <cstdint>
 
 namespace lets_and_go {
@@ -43,9 +45,9 @@ public:
         _stats.lastRenderMs = renderMs;
         if (renderMs > _stats.peakRenderMs) _stats.peakRenderMs = renderMs;
         const PencilDetail before = _detail;
-        const bool severe = renderMs > 54u || simulationClamped;
-        const bool overloaded = severe || renderMs > 39u;
-        const bool healthy = renderMs <= 29u && !simulationClamped;
+        const bool severe = renderMs > tuning::kRenderSevereMs || simulationClamped;
+        const bool overloaded = severe || renderMs > tuning::kRenderOverloadMs;
+        const bool healthy = renderMs <= tuning::kRenderHealthyMs && !simulationClamped;
         if (overloaded) {
             _overloadedFrames = _overloadedFrames < 30u
                 ? static_cast<uint8_t>(_overloadedFrames + 1u) : _overloadedFrames;
@@ -59,16 +61,20 @@ public:
             _healthyFrames = 0;
         }
 
-        if (_detail == PencilDetail::High && _overloadedFrames >= 10u) {
+        if (_detail == PencilDetail::High &&
+            _overloadedFrames >= tuning::kFramesToDegrade) {
             _detail = PencilDetail::Medium;
             _overloadedFrames = 0;
-        } else if (_detail == PencilDetail::Medium && _overloadedFrames >= 10u) {
+        } else if (_detail == PencilDetail::Medium &&
+                   _overloadedFrames >= tuning::kFramesToDegrade) {
             _detail = PencilDetail::Low;
             _overloadedFrames = 0;
-        } else if (_detail == PencilDetail::Low && _healthyFrames >= 120u) {
+        } else if (_detail == PencilDetail::Low &&
+                   _healthyFrames >= tuning::kFramesToRecoverMedium) {
             _detail = PencilDetail::Medium;
             _healthyFrames = 0;
-        } else if (_detail == PencilDetail::Medium && _healthyFrames >= 150u) {
+        } else if (_detail == PencilDetail::Medium &&
+                   _healthyFrames >= tuning::kFramesToRecoverHigh) {
             _detail = PencilDetail::High;
             _healthyFrames = 0;
         }

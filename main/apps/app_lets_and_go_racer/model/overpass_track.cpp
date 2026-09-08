@@ -1,4 +1,5 @@
 #include "overpass_track.h"
+#include "../lets_and_go_config.h"
 
 #include <algorithm>
 #include <cmath>
@@ -8,9 +9,9 @@ namespace {
 
 constexpr float kPi = 3.14159265358979323846f;
 constexpr float kTau = 2.0f * kPi;
-constexpr float kCourseRadius = 12.0f;
-constexpr float kLowerHeight = 0.35f;
-constexpr float kOverpassRise = 3.8f;
+constexpr float kCourseRadius = tuning::kCourseRadius;
+constexpr float kLowerHeight = tuning::kCourseBaseHeight;
+constexpr float kOverpassRise = tuning::kOverpassRise;
 
 float wrapDistance(float distance, float length)
 {
