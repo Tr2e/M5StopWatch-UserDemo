@@ -1,5 +1,7 @@
 # Let's & Go!! Racer：完整实施计划
 
+> 二次审查进展：R11 修正比赛与输入逻辑；R12 修正生产画面、桥面遮挡及渲染栈占用。详见同目录两份审查记录。R0–R10 的阶段完成记录不替代后续缺陷修正与真机验收。
+
 > 实施分支：`feat/lets-and-go-racer`
 >
 > 基线：`github/feat/vector-canyon-fighter` 的远端最新提交 `0f5b1ff`

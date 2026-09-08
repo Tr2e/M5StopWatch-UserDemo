@@ -69,16 +69,23 @@ constexpr std::array<CarSpec, kCarCount> kCars = {{
     },
 }};
 
-void addLine(CarWireframe& mesh, CarPoint from, CarPoint to, WireStroke stroke)
+struct CarMeshWriter {
+    WireLine* lines;
+    std::size_t capacity;
+    std::size_t lineCount = 0;
+    bool overflowed = false;
+};
+
+void addLine(CarMeshWriter& mesh, CarPoint from, CarPoint to, WireStroke stroke)
 {
-    if (mesh.lineCount >= mesh.lines.size()) {
+    if (mesh.lineCount >= mesh.capacity) {
         mesh.overflowed = true;
         return;
     }
     mesh.lines[mesh.lineCount++] = {from, to, stroke};
 }
 
-void addRing(CarWireframe& mesh, float x, float centerY, float centerZ,
+void addRing(CarMeshWriter& mesh, float x, float centerY, float centerZ,
              float radius, int segments, WireStroke stroke, bool horizontal)
 {
     constexpr float kTau = 6.28318530718f;
@@ -95,7 +102,7 @@ void addRing(CarWireframe& mesh, float x, float centerY, float centerZ,
     }
 }
 
-void addStation(CarWireframe& mesh, const CarProfileStation& station, bool detailed)
+void addStation(CarMeshWriter& mesh, const CarProfileStation& station, bool detailed)
 {
     const CarPoint leftSill{-station.halfWidth, station.sillY, station.z};
     const CarPoint rightSill{station.halfWidth, station.sillY, station.z};
@@ -112,7 +119,7 @@ void addStation(CarWireframe& mesh, const CarProfileStation& station, bool detai
     }
 }
 
-void connectStations(CarWireframe& mesh, const CarProfileStation& from,
+void connectStations(CarMeshWriter& mesh, const CarProfileStation& from,
                      const CarProfileStation& to)
 {
     addLine(mesh, {-from.halfWidth, from.sillY, from.z},
@@ -127,7 +134,7 @@ void connectStations(CarWireframe& mesh, const CarProfileStation& from,
             {0.0f, to.centerY, to.z}, WireStroke::Accent);
 }
 
-void addWing(CarWireframe& mesh, const CarSpec& spec, CarLod lod)
+void addWing(CarMeshWriter& mesh, const CarSpec& spec, CarLod lod)
 {
     const float rearZ = spec.wingZ - spec.wingChord * 0.5f;
     const float frontZ = spec.wingZ + spec.wingChord * 0.5f;
@@ -162,10 +169,11 @@ const CarSpec& carSpec(CarId id)
     return kCars[isValidCar(id) ? static_cast<std::size_t>(id) : 0u];
 }
 
-CarWireframe buildCarWireframe(CarId id, CarLod lod)
+CarMeshBuildResult buildCarWireframeInto(CarId id, CarLod lod,
+                                         WireLine* output, std::size_t capacity)
 {
     const CarSpec& spec = carSpec(id);
-    CarWireframe mesh;
+    CarMeshWriter mesh{output, output ? capacity : 0u};
     const bool showcase = lod == CarLod::Showcase;
     constexpr std::array<std::size_t, 4> kRaceStations = {{0u, 2u, 4u, 6u}};
 
@@ -201,6 +209,15 @@ CarWireframe buildCarWireframe(CarId id, CarLod lod)
         }
     }
     addWing(mesh, spec, lod);
+    return {mesh.lineCount, mesh.overflowed};
+}
+
+CarWireframe buildCarWireframe(CarId id, CarLod lod)
+{
+    CarWireframe mesh;
+    const auto result = buildCarWireframeInto(id, lod, mesh.lines.data(), mesh.lines.size());
+    mesh.lineCount = result.lineCount;
+    mesh.overflowed = result.overflowed;
     return mesh;
 }
 

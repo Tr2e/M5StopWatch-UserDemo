@@ -60,6 +60,10 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 ```sh
 tools/test_lets_and_go.sh
 SANITIZE=1 tools/test_lets_and_go.sh
+bash tools/render_lets_and_go.sh /tmp/lets-go-review
+python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-review /tmp/lets-go-review/contact.png
 ```
 
-基准生成器源码是 `tools/lets_and_go_reference_generator.cpp`；提交内已包含静态 SVG 和固定种子 `0x12345678` 的 JSON 摘要。
+当前画面与二次审查见 `Lets-And-Go-Racer-R12-二次视觉审查.md`。生产渲染回归已并入主机门禁（11 游戏 + 15 Vector Run + Launcher）；对比 PNG 在 `docs/assets/lets-and-go-r12-before.png` 与 `lets-and-go-r12-after.png`。
+
+基准生成器是 `tools/lets_and_go_reference_generator.cpp`；固定种子 `0x12345678` 的 JSON 已更新为 v2，包含共同终点的插值冲线时间。静态 SVG 是 R10 历史设计稿，不代表当前生产渲染器。

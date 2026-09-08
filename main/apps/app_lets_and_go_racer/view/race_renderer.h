@@ -5,6 +5,7 @@
 #include "../controller/results_selection.h"
 #include "../model/car_catalog.h"
 #include "render_budget.h"
+#include "pencil_scene.h"
 
 #include <array>
 #include <cstddef>
@@ -29,13 +30,15 @@ public:
 
 private:
     std::array<CompactRaceMesh, kCarCount> _meshes{};
+    PencilTrack _trackGeometry{};
+    PencilOcclusion _occlusion{};
     std::array<int16_t, 32u> _mapX{};
     std::array<int16_t, 32u> _mapY{};
     int _width = 0;
     int _height = 0;
 };
 
-static_assert(sizeof(RaceRenderer) <= 8000u,
+static_assert(sizeof(RaceRenderer) <= 30000u,
               "race renderer cache exceeded its reviewed resident budget");
 
 }  // namespace lets_and_go

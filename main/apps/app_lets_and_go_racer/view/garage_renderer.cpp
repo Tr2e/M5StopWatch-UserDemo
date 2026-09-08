@@ -15,7 +15,6 @@ constexpr uint16_t kPencil = 0x4269u;
 constexpr uint16_t kPencilFaint = 0x9cd3u;
 constexpr uint16_t kPencilLight = 0xc638u;
 constexpr uint16_t kCourseEdge = 0x31e8u;
-constexpr uint16_t kCourseFaint = 0x8490u;
 
 CarPoint animateWheelPoint(CarPoint point, const CarSpec& spec, WireStroke stroke,
                            float wheelCosine, float wheelSine)
@@ -57,15 +56,15 @@ uint16_t strokeColor(const CarSpec& spec, WireStroke stroke)
 {
     switch (stroke) {
         case WireStroke::Accent: return spec.accentColor;
-        case WireStroke::Mechanical: return kPencil;
+        case WireStroke::Mechanical: return spec.wheelColor;
         // The paper is the white body fill. A graphite outline stays readable for
         // all four liveries while the official identity color remains an accent.
-        case WireStroke::Body: return kPencil;
+        case WireStroke::Body: return spec.bodyColor == 0x2145u ? spec.bodyColor : kPencil;
     }
     return kPencil;
 }
 
-void drawPaperTexture(LGFX_Device& canvas, PencilDetail detail)
+void drawPaperTexture(LGFX_Sprite& canvas, PencilDetail detail)
 {
     uint32_t state = 0x6d2b79f5u;
     const int count = detail == PencilDetail::High ? 34
@@ -79,7 +78,7 @@ void drawPaperTexture(LGFX_Device& canvas, PencilDetail detail)
     }
 }
 
-void drawCar(LGFX_Device& canvas, const CarSpec& spec, const CarWireframe& mesh,
+void drawCar(LGFX_Sprite& canvas, const CarSpec& spec, const CarWireframe& mesh,
              int centerX, int centerY, float scale, float yaw, float wheelPhase,
              PencilDetail detail)
 {
@@ -87,6 +86,53 @@ void drawCar(LGFX_Device& canvas, const CarSpec& spec, const CarWireframe& mesh,
     const float yawSine = std::sin(yaw);
     const float wheelCosine = std::cos(wheelPhase);
     const float wheelSine = std::sin(wheelPhase);
+    const auto triangle = [&](CarPoint a, CarPoint b, CarPoint c, uint16_t color) {
+        const auto p = project(a, yawCosine, yawSine, scale, centerX, centerY);
+        const auto q = project(b, yawCosine, yawSine, scale, centerX, centerY);
+        const auto r = project(c, yawCosine, yawSine, scale, centerX, centerY);
+        canvas.fillTriangle(p.x, p.y, q.x, q.y, r.x, r.y, color);
+    };
+    // Flat pigment washes under the wireframe retain the official white/blue,
+    // white/red and dark/red liveries, rather than making every body paper-white.
+    for (float axle : {spec.rearAxleZ, spec.frontAxleZ}) {
+        for (float side : {-0.59f, 0.59f}) {
+            for (int segment = 0; segment < 12; ++segment) {
+                const float a = segment * 6.2831853f / 12.0f;
+                const float b = (segment + 1) * 6.2831853f / 12.0f;
+                for (int ring = 0; ring < 2; ++ring) {
+                    const float radius = spec.wheelRadius * (ring == 0 ? 1.0f : 0.58f);
+                    triangle({side, spec.wheelRadius, axle},
+                        {side, spec.wheelRadius + std::sin(a) * radius, axle + std::cos(a) * radius},
+                        {side, spec.wheelRadius + std::sin(b) * radius, axle + std::cos(b) * radius},
+                        ring == 0 ? kPencil : spec.wheelColor);
+                }
+            }
+        }
+    }
+    const uint16_t wash = spec.bodyColor == 0x2145u ? 0x5aebu : spec.bodyColor;
+    for (std::size_t i = 1; i < spec.profile.size(); ++i) {
+        const auto& a = spec.profile[i - 1u];
+        const auto& b = spec.profile[i];
+        const auto station = [](const CarProfileStation& p) {
+            return std::array<CarPoint, 5>{{{-p.halfWidth, p.sillY, p.z},
+                {-p.halfWidth * 0.72f, p.deckY, p.z}, {0, p.centerY, p.z},
+                {p.halfWidth * 0.72f, p.deckY, p.z}, {p.halfWidth, p.sillY, p.z}}};
+        };
+        const auto from = station(a), to = station(b);
+        for (std::size_t face = 0; face < 4u; ++face) {
+            triangle(from[face], from[face + 1u], to[face + 1u], wash);
+            triangle(from[face], to[face + 1u], to[face], wash);
+        }
+        // Central canopy and paired body streaks, anchored to the car geometry.
+        for (float side : {-1.0f, 1.0f}) {
+            const auto stripe = [side](const CarProfileStation& p, float t) {
+                return CarPoint{side * p.halfWidth * 0.72f * t,
+                    p.centerY + (p.deckY - p.centerY) * t, p.z};
+            };
+            triangle(stripe(a, 0.50f), stripe(a, 0.73f), stripe(b, 0.73f), spec.accentColor);
+            triangle(stripe(a, 0.50f), stripe(b, 0.73f), stripe(b, 0.50f), spec.accentColor);
+        }
+    }
     for (std::size_t index = 0; index < mesh.lineCount; ++index) {
         const WireLine& line = mesh.lines[index];
         if (detail == PencilDetail::Low && line.stroke == WireStroke::Mechanical &&
@@ -97,11 +143,15 @@ void drawCar(LGFX_Device& canvas, const CarSpec& spec, const CarWireframe& mesh,
                                               wheelCosine, wheelSine);
         const ScreenPoint a = project(from, yawCosine, yawSine, scale, centerX, centerY);
         const ScreenPoint b = project(to, yawCosine, yawSine, scale, centerX, centerY);
-        canvas.drawLine(a.x, a.y, b.x, b.y, strokeColor(spec, line.stroke));
+        const bool wheel = line.stroke == WireStroke::Mechanical &&
+                           std::abs(std::abs(line.from.x) - 0.59f) < 0.02f;
+        const uint16_t color = line.stroke == WireStroke::Mechanical && !wheel
+                                   ? kPencil : strokeColor(spec, line.stroke);
+        canvas.drawLine(a.x, a.y, b.x, b.y, color);
     }
 }
 
-void drawHeader(LGFX_Device& canvas, const char* title)
+void drawHeader(LGFX_Sprite& canvas, const char* title)
 {
     canvas.setTextDatum(textdatum_t::middle_center);
     canvas.setTextSize(1);
@@ -111,27 +161,7 @@ void drawHeader(LGFX_Device& canvas, const char* title)
     canvas.drawString(title, canvas.width() / 2, 68);
 }
 
-bool drawWorldLine(LGFX_Device& canvas, const TrackCamera& camera,
-                   TrackVec3 fromWorld, TrackVec3 toWorld, uint16_t color)
-{
-    TrackCameraPoint from = trackToCamera(camera, fromWorld);
-    TrackCameraPoint to = trackToCamera(camera, toWorld);
-    if (!clipTrackSegmentToNear(from, to)) return false;
-    TrackScreenPoint a{};
-    TrackScreenPoint b{};
-    if (!projectTrackPoint(camera, from, a) || !projectTrackPoint(camera, to, b)) {
-        return false;
-    }
-    constexpr float kGuard = 24.0f;
-    if (!clipTrackSegmentToViewport(a, b, static_cast<float>(canvas.width()),
-                                    static_cast<float>(canvas.height()), kGuard)) return false;
-    canvas.drawLine(static_cast<int>(std::lround(a.x)), static_cast<int>(std::lround(a.y)),
-                    static_cast<int>(std::lround(b.x)), static_cast<int>(std::lround(b.y)),
-                    color);
-    return true;
-}
-
-void drawMountains(LGFX_Device& canvas)
+void drawMountains(LGFX_Sprite& canvas)
 {
     constexpr int kHorizonY = 151;
     canvas.drawLine(36, kHorizonY, 430, kHorizonY, kPencilLight);
@@ -142,49 +172,17 @@ void drawMountains(LGFX_Device& canvas)
     }
 }
 
-void drawTrackLayer(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
-                    const TrackCamera& camera, TrackLayer requestedLayer,
-                    PencilDetail detail)
-{
-    for (std::size_t index = 0; index < TrackPreviewGeometry::kSegments; ++index) {
-        if (preview.layer[index] != requestedLayer) continue;
-        const TrackVec3 left = preview.left[index];
-        const TrackVec3 right = preview.right[index];
-        const TrackVec3 nextLeft = preview.left[index + 1u];
-        const TrackVec3 nextRight = preview.right[index + 1u];
-        drawWorldLine(canvas, camera, left, nextLeft, kCourseEdge);
-        drawWorldLine(canvas, camera, right, nextRight, kCourseEdge);
-        if (detail != PencilDetail::Low && (index & 1u) == 0u) {
-            drawWorldLine(canvas, camera, left, right, kCourseFaint);
-        }
-        const TrackVec3 railLift{0.0f, 0.48f, 0.0f};
-        drawWorldLine(canvas, camera, trackAdd(left, railLift),
-                      trackAdd(nextLeft, railLift), kCourseEdge);
-        drawWorldLine(canvas, camera, trackAdd(right, railLift),
-                      trackAdd(nextRight, railLift), kCourseEdge);
-        if (detail == PencilDetail::High && (index % 4u) == 0u) {
-            drawWorldLine(canvas, camera, left, trackAdd(left, railLift), kCourseFaint);
-            drawWorldLine(canvas, camera, right, trackAdd(right, railLift), kCourseFaint);
-        }
-    }
-}
-
-void drawTrackPreview(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
+void drawTrackPreview(LGFX_Sprite& canvas, const PencilTrack& preview,
                       uint32_t screenElapsedMs, PencilDetail detail)
 {
     const float orbit = static_cast<float>(screenElapsedMs) * 0.00016f;
-    const TrackVec3 cameraPosition{std::sin(orbit) * 21.0f, 13.0f,
-                                   -std::cos(orbit) * 21.0f};
+    const TrackVec3 cameraPosition{std::sin(orbit) * 29.0f, 19.0f,
+                                   -std::cos(orbit) * 29.0f};
     const TrackCamera camera = makeTrackLookAtCamera(cameraPosition,
                                                      {0.0f, 1.4f, 0.0f},
                                                      canvas.width(), canvas.height(), 0.69f);
     drawMountains(canvas);
-    drawTrackLayer(canvas, preview, camera, TrackLayer::Lower, detail);
-    drawTrackLayer(canvas, preview, camera, TrackLayer::Transition, detail);
-
-    // The upper deck is deliberately last at the crossing: there is no center
-    // divider, only the two external guard rails.
-    drawTrackLayer(canvas, preview, camera, TrackLayer::Upper, detail);
+    drawPencilTrack(canvas, camera, preview, detail);
 }
 
 }  // namespace
@@ -194,16 +192,7 @@ void GarageRenderer::open(int width, int height)
     _width = width;
     _height = height;
     _meshCached = false;
-    const float step = _track.length() /
-                       static_cast<float>(TrackPreviewGeometry::kSegments);
-    for (std::size_t index = 0; index <= TrackPreviewGeometry::kSegments; ++index) {
-        const float distance = step * static_cast<float>(index);
-        _trackPreview.left[index] = _track.edge(distance, -1.0f);
-        _trackPreview.right[index] = _track.edge(distance, 1.0f);
-        if (index < TrackPreviewGeometry::kSegments) {
-            _trackPreview.layer[index] = _track.layer(distance + step * 0.5f);
-        }
-    }
+    _trackPreview.open(_track);
 }
 
 void GarageRenderer::close()
@@ -216,7 +205,10 @@ void GarageRenderer::close()
 const CarWireframe& GarageRenderer::showcaseMesh(CarId car)
 {
     if (!_meshCached || car != _cachedCar) {
-        _showcaseMesh = buildCarWireframe(car, CarLod::Showcase);
+        const auto result = buildCarWireframeInto(car, CarLod::Showcase,
+            _showcaseMesh.lines.data(), _showcaseMesh.lines.size());
+        _showcaseMesh.lineCount = result.lineCount;
+        _showcaseMesh.overflowed = result.overflowed;
         _cachedCar = car;
         _meshCached = true;
     }
@@ -224,10 +216,11 @@ const CarWireframe& GarageRenderer::showcaseMesh(CarId car)
 }
 
 void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selection,
-                            uint32_t screenElapsedMs, PencilDetail detail)
+                            uint32_t screenElapsedMs, PencilDetail detail,
+                            const RacerInputStatus& inputStatus)
 {
     if (_width <= 0 || _height <= 0) return;
-    auto& canvas = GetHAL().getDisplay();
+    auto& canvas = GetHAL().getCanvas();
     canvas.fillScreen(kPaper);
     drawPaperTexture(canvas, detail);
 
@@ -256,7 +249,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         canvas.setTextSize(1);
         canvas.setTextColor(kPencilFaint, kPaper);
         canvas.drawString(stats, _width / 2, 398);
-        canvas.drawString("A: CHANGE   B: SELECT", _width / 2, 425);
+        canvas.drawString("STICK: CHANGE  BLUE: SELECT", _width / 2, 425);
         return;
     }
 
@@ -296,7 +289,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
             canvas.drawString(spec.shortName, _width / 2, 355);
             canvas.setTextSize(1);
             canvas.setTextColor(kPencilFaint, kPaper);
-            canvas.drawString(flow.setup().hasRival(visibleCar) ? "SELECTED" : "B: TOGGLE",
+            canvas.drawString(flow.setup().hasRival(visibleCar) ? "SELECTED" : "BLUE: TOGGLE",
                               _width / 2, 382);
         }
         char count[24] = {};
@@ -317,13 +310,31 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         canvas.setTextSize(1);
         canvas.setTextColor(kPencilFaint, kPaper);
         canvas.drawString("3 LAPS  /  OPEN LANE", _width / 2, 405);
-        canvas.drawString("B: START", _width / 2, 430);
+        canvas.drawString("BLUE: START", _width / 2, 430);
         return;
     }
 
     drawHeader(canvas, gameScreenLabel(screen));
     canvas.setTextColor(kPencilFaint, kPaper);
-    canvas.drawString("NEXT STAGE IN DEVELOPMENT", _width / 2, _height / 2);
+    canvas.setTextSize(2);
+    canvas.setTextColor(kPencil, kPaper);
+    canvas.drawString(screen == GameScreen::InputCalibration ? "CENTER THE STICK" : "CONNECT CONTROLS",
+                      _width / 2, 184);
+    canvas.setTextSize(1);
+    canvas.drawString(inputStatus.axesConnected ? "JOYSTICK2  CONNECTED" : "JOYSTICK2  WAITING",
+                      _width / 2, 238);
+    canvas.drawString(inputStatus.actionsConfigured ? "DUAL BUTTON  CONFIGURED" : "DUAL BUTTON  CHECK SETTINGS",
+                      _width / 2, 266);
+    if (screen == GameScreen::InputCalibration) {
+        const float progress = std::isfinite(inputStatus.calibrationProgress)
+                                   ? std::clamp(inputStatus.calibrationProgress, 0.0f, 1.0f) : 0.0f;
+        canvas.drawRect(143, 298, 180, 12, kPencilFaint);
+        canvas.fillRect(145, 300, static_cast<int>(176 * progress), 8, kCourseEdge);
+    }
+    canvas.setTextColor(kPencilFaint, kPaper);
+    canvas.drawString(inputStatus.readiness == RacerInputReadiness::Fault
+                          ? "INPUT FAULT - CHECK CABLE" : "CONTINUES WHEN READY", _width / 2, 345);
+    canvas.drawString("HOLD BOTH BUTTONS TO EXIT", _width / 2, 405);
 }
 
 }  // namespace lets_and_go

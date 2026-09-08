@@ -126,4 +126,7 @@ compile_run vector_explicit_integration \
     "$repo_dir/tools/vector_canyon_explicit_integration_test.cpp" \
     "$vector_stream" "$vector_collision" "$vector_flight"
 
-echo "[host-test] all 10 game suites, 15 Vector Run suites, and Launcher regression passed"
+echo "[host-test] production_renderers"
+bash "$repo_dir/tools/render_lets_and_go.sh" "$out_dir/frames"
+
+echo "[host-test] all 11 game suites, 15 Vector Run suites, and Launcher regression passed"

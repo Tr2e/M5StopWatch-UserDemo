@@ -107,9 +107,10 @@ bool writeSummary(const std::string& path, uint32_t seed, const RaceSnapshot& ra
     std::ofstream output(path);
     if (!output) return false;
     output << std::fixed << std::setprecision(3)
-           << "{\n  \"formatVersion\": 1,\n  \"seed\": \"0x" << std::hex << seed
+           << "{\n  \"formatVersion\": 2,\n  \"seed\": \"0x" << std::hex << seed
            << std::dec << "\",\n  \"track\": \"SKY LOOP 01\",\n"
            << "  \"laps\": 3,\n  \"elapsedSeconds\": " << race.elapsedSeconds
+           << ",\n  \"playerFinishSeconds\": " << race.player().finishSeconds
            << ",\n  \"playerPosition\": "
            << static_cast<unsigned>(race.player().position)
            << ",\n  \"playerBestLapSeconds\": " << race.player().bestLapSeconds

@@ -64,6 +64,7 @@ void AppLetsAndGoRacer::onOpen()
     _renderer.open(display.width(), display.height());
     _raceRenderer.open(display.width(), display.height());
     _renderer.render(_flow, _selection, 0u, lets_and_go::PencilDetail::High);
+    GetHAL().updateCanvas();
 }
 
 void AppLetsAndGoRacer::onRunning()
@@ -152,8 +153,9 @@ void AppLetsAndGoRacer::onRunning()
                                  _pausedForInputLoss, _raceBudget.detail());
         } else {
             _renderer.render(_flow, _selection, nowMs - _screenStartedMs,
-                             _garageBudget.detail());
+                             _garageBudget.detail(), racerStatus);
         }
+        GetHAL().updateCanvas();
         const uint32_t renderMs = GetHAL().millis() - renderStartedMs;
         const uint16_t clampCount = _race.prepared()
                                         ? _race.snapshot().simulationClampCount : 0u;

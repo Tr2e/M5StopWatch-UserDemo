@@ -75,4 +75,11 @@ const std::array<CarSpec, kCarCount>& carCatalog();
 const CarSpec& carSpec(CarId id);
 CarWireframe buildCarWireframe(CarId id, CarLod lod);
 
+struct CarMeshBuildResult {
+    std::size_t lineCount;
+    bool overflowed;
+};
+CarMeshBuildResult buildCarWireframeInto(CarId id, CarLod lod,
+                                        WireLine* output, std::size_t capacity);
+
 }  // namespace lets_and_go

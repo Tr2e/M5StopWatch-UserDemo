@@ -65,6 +65,21 @@ bool validateWireframes()
         const CarId id = static_cast<CarId>(index);
         const CarWireframe race = buildCarWireframe(id, CarLod::Race);
         const CarWireframe showcase = buildCarWireframe(id, CarLod::Showcase);
+        std::array<WireLine, 64u> compact{};
+        const auto built = buildCarWireframeInto(id, CarLod::Race, compact.data(), compact.size());
+        valid &= check(!built.overflowed && built.lineCount == race.lineCount,
+                       "in-place race mesh differs from reference builder");
+        for (std::size_t line = 0; line < built.lineCount; ++line) {
+            const auto& a = compact[line];
+            const auto& b = race.lines[line];
+            valid &= check(a.from.x == b.from.x && a.from.y == b.from.y && a.from.z == b.from.z &&
+                               a.to.x == b.to.x && a.to.y == b.to.y && a.to.z == b.to.z && a.stroke == b.stroke,
+                           "in-place mesh geometry changed");
+        }
+        const auto shortBuffer = buildCarWireframeInto(id, CarLod::Race, compact.data(), 2u);
+        valid &= check(shortBuffer.overflowed && shortBuffer.lineCount == 2u &&
+                           buildCarWireframeInto(id, CarLod::Showcase, nullptr, 0u).overflowed,
+                       "mesh capacity limit was not enforced");
         showcaseCounts[index] = showcase.lineCount;
         valid &= check(race.lineCount >= 35u && race.lineCount <= 60u,
                        "race LOD left the line budget");
