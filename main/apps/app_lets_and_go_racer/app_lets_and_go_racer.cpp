@@ -5,10 +5,8 @@
 #include <mooncake_log.h>
 
 namespace {
-constexpr uint32_t kShellFrameIntervalMs = 100u;
-constexpr uint16_t kPaperColor = 0xef3au;
-constexpr uint16_t kPencilColor = 0x52abu;
-constexpr uint16_t kPencilFaintColor = 0x9cf3u;
+constexpr uint32_t kGarageFrameIntervalMs = 33u;
+constexpr uint32_t kShowcaseDurationMs = 1500u;
 }
 
 AppLetsAndGoRacer::AppLetsAndGoRacer()
@@ -27,48 +25,75 @@ void AppLetsAndGoRacer::onOpen()
     mclog::tagInfo(getAppInfo().name, "on open");
     _keys = std::make_unique<input::KeyManager>();
     _flow.reset();
+    _selection.reset(_flow.setup().playerCar);
     _lastFrameMs = 0;
+    _screenStartedMs = GetHAL().millis();
     GetHAL().stopLvglUpdate();
-    renderShell(GetHAL().millis());
+    const auto& display = GetHAL().getDisplay();
+    _renderer.open(display.width(), display.height());
+    _renderer.render(_flow, _selection, 0u);
 }
 
 void AppLetsAndGoRacer::onRunning()
 {
     GetHAL().updateButtonStates();
-    if (_keys && _keys->update(false) == input::KeyEvent::GoHome) {
+    const uint32_t nowMs = GetHAL().millis();
+    const input::KeyEvent event = _keys ? _keys->update(false) : input::KeyEvent::None;
+    if (event == input::KeyEvent::GoHome) {
         _flow.requestExit();
+    } else if (event != input::KeyEvent::None) {
+        handleKey(event, nowMs);
     }
     if (_flow.screen() == lets_and_go::GameScreen::ExitRequested) {
         close();
         return;
     }
 
-    const uint32_t nowMs = GetHAL().millis();
-    if (_lastFrameMs == 0u || nowMs - _lastFrameMs >= kShellFrameIntervalMs) {
-        renderShell(nowMs);
+    if (_flow.screen() == lets_and_go::GameScreen::CarShowcase &&
+        nowMs - _screenStartedMs >= kShowcaseDurationMs &&
+        _flow.completeCarShowcase()) {
+        _selection.syncPlayer(_flow.setup().playerCar);
+        _screenStartedMs = nowMs;
+    }
+    if (_lastFrameMs == 0u || nowMs - _lastFrameMs >= kGarageFrameIntervalMs) {
+        _lastFrameMs = nowMs;
+        _renderer.render(_flow, _selection, nowMs - _screenStartedMs);
     }
 }
 
-void AppLetsAndGoRacer::renderShell(uint32_t nowMs)
+void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
 {
-    _lastFrameMs = nowMs;
-    auto& canvas = GetHAL().getDisplay();
-    canvas.fillScreen(kPaperColor);
-    canvas.setTextDatum(textdatum_t::middle_center);
-    canvas.setTextColor(kPencilColor, kPaperColor);
-    canvas.setTextSize(2);
-    canvas.drawString("LET'S & GO!!", canvas.width() / 2, canvas.height() / 2 - 28);
-    canvas.setTextColor(kPencilFaintColor, kPaperColor);
-    canvas.setTextSize(1);
-    canvas.drawString(lets_and_go::gameScreenLabel(_flow.screen()),
-                      canvas.width() / 2, canvas.height() / 2 + 18);
+    using lets_and_go::GameScreen;
+    const GameScreen before = _flow.screen();
+    if (event == input::KeyEvent::GoPrevious) {
+        if (before == GameScreen::CarSelect) {
+            _selection.movePlayer(-1);
+        } else if (before == GameScreen::RivalSelect) {
+            _selection.moveRival(1, _flow.setup().playerCar);
+        }
+    } else if (event == input::KeyEvent::GoNext) {
+        switch (before) {
+            case GameScreen::InputCheck: _flow.confirmInputAvailable(); break;
+            case GameScreen::InputCalibration: _flow.completeCalibration(true); break;
+            case GameScreen::CarSelect: _selection.activatePlayer(_flow); break;
+            case GameScreen::RivalSelect: _selection.activateRival(_flow); break;
+            case GameScreen::TrackSelect: _flow.confirmTrack(); break;
+            default: break;
+        }
+    }
+    if (_flow.screen() != before || event == input::KeyEvent::GoPrevious) {
+        _screenStartedMs = nowMs;
+    }
 }
 
 void AppLetsAndGoRacer::onClose()
 {
     mclog::tagInfo(getAppInfo().name, "on close");
     _keys.reset();
+    _renderer.close();
     _flow.reset();
+    _selection.reset();
     _lastFrameMs = 0;
+    _screenStartedMs = 0;
     GetHAL().startLvglUpdate();
 }
