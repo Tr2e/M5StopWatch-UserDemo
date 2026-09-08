@@ -40,8 +40,12 @@ bool validateDriving()
                    "boost did not trade charge for speed");
     input.boostHeld = false;
     input.brakeHeld = true;
+    input.boostHeld = true;
+    const float chargeBeforeBrake = model.state().boostCharge;
     for (int step = 0; step < 120; ++step) model.step(input, car, track, 1.0f / 60.0f);
     valid &= check(model.state().speed < 2.0f, "held brake did not decelerate car");
+    valid &= check(model.state().boostCharge >= chargeBeforeBrake,
+                   "braking consumed boost charge");
     return valid;
 }
 

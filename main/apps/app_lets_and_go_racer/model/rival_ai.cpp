@@ -26,7 +26,7 @@ void resetRivalAi(RivalAiState& state, uint32_t seed, float motorEfficiency)
 
 RacerInput updateRivalAi(RivalAiState& state, const RaceSnapshot& race,
                          std::size_t racerIndex, const TrackFrame& track,
-                         float deltaSeconds)
+                         float deltaSeconds, float trackLength)
 {
     RacerInput input;
     input.valid = true;
@@ -39,8 +39,10 @@ RacerInput updateRivalAi(RivalAiState& state, const RaceSnapshot& race,
         // if another car occupies the next 1.8 m of course.
         state.targetLateral = std::clamp(-track.curvature * 2.2f, -0.75f, 0.75f);
         for (std::size_t index = 0; index < race.carCount; ++index) {
-            if (index == racerIndex || !race.cars[index].active) continue;
-            const float gap = race.cars[index].motion.distance - self.motion.distance;
+            if (index == racerIndex || !race.cars[index].active ||
+                race.cars[index].finished) continue;
+            const float gap = std::remainder(
+                race.cars[index].motion.distance - self.motion.distance, trackLength);
             if (gap > 0.0f && gap < 1.8f &&
                 std::abs(race.cars[index].motion.lateralOffset -
                          self.motion.lateralOffset) < 0.55f) {

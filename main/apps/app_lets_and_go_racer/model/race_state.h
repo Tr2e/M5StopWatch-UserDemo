@@ -18,6 +18,7 @@ struct RaceCarSnapshot {
     float startDistance = 0.0f;
     float raceProgress = 0.0f;
     float bestLapSeconds = 0.0f;
+    float finishSeconds = 0.0f;
     uint8_t completedLaps = 0;
     uint8_t position = 1;
     uint8_t finishOrder = 0;
@@ -36,6 +37,19 @@ struct RaceSnapshot {
 
     const RaceCarSnapshot& player() const { return cars[playerIndex]; }
 };
+
+inline bool raceCarAhead(const RaceCarSnapshot& a, std::size_t aIndex,
+                         const RaceCarSnapshot& b, std::size_t bIndex)
+{
+    if (a.finished != b.finished) return a.finished;
+    if (a.finished && a.finishSeconds != b.finishSeconds) {
+        return a.finishSeconds < b.finishSeconds;
+    }
+    if (!a.finished && a.motion.distance != b.motion.distance) {
+        return a.motion.distance > b.motion.distance;
+    }
+    return aIndex < bIndex; // Stable, unique positions even on an exact tie.
+}
 
 static_assert(kMaximumRaceCars == 4u, "first release supports exactly four grid slots");
 static_assert(sizeof(RaceSnapshot) <= 320u,

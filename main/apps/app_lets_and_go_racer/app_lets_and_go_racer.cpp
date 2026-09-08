@@ -200,8 +200,8 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
             _resultsSelection.move(navigation);
         }
     }
-    if (input.cancelPressed) {
-        const bool changed = before == GameScreen::RivalSelect
+    if (input.cancelPressed || input.pausePressed) {
+        const bool changed = before == GameScreen::RivalSelect && !input.pausePressed
                                  ? _selection.cancelRival(_flow)
                                  : _flow.back();
         if (changed && before == GameScreen::Results) {
@@ -279,7 +279,7 @@ void AppLetsAndGoRacer::updateFeedback(const lets_and_go::RacerInput& input,
         _feedbackCountdown = 255u;
     }
     if (screen != _feedbackScreen) {
-        if (screen == GameScreen::Racing) {
+        if (screen == GameScreen::Racing && _feedbackScreen == GameScreen::Countdown) {
             playCue(lets_and_go::tuning::kGoCue);
         } else if (screen == GameScreen::Finish) {
             playCue(lets_and_go::tuning::kFinishCue);
@@ -288,10 +288,12 @@ void AppLetsAndGoRacer::updateFeedback(const lets_and_go::RacerInput& input,
     }
     if (screen == GameScreen::Racing && _race.prepared()) {
         const auto& player = _race.snapshot().player();
-        if (input.valid && input.boostHeld && !_feedbackBoost) {
+        const bool boosting = input.valid && input.boostHeld && !input.brakeHeld &&
+                              player.motion.boostCharge > 0.02f;
+        if (boosting && !_feedbackBoost) {
             playCue(lets_and_go::tuning::kBoostCue);
         }
-        _feedbackBoost = input.valid && input.boostHeld;
+        _feedbackBoost = boosting;
         const bool wallHit = player.motion.wallImpact > 0.75f;
         if (wallHit && !_feedbackWallActive &&
             (_lastWallFeedbackMs == 0u || nowMs - _lastWallFeedbackMs >= 300u)) {
@@ -338,8 +340,7 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
         }
     } else if (event == input::KeyEvent::GoNext) {
         switch (before) {
-            case GameScreen::InputCheck: _flow.confirmInputAvailable(); break;
-            case GameScreen::InputCalibration: _flow.completeCalibration(true); break;
+            // Hardware readiness/calibration cannot be bypassed by body buttons.
             case GameScreen::CarSelect:
                 if (_selection.activatePlayer(_flow)) {
                     persistSelectedCar();
@@ -364,7 +365,10 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
             default: break;
         }
     }
-    if (_flow.screen() != before || event == input::KeyEvent::GoPrevious) {
+    const bool navigated = event == input::KeyEvent::GoPrevious &&
+        (before == GameScreen::CarSelect || before == GameScreen::RivalSelect ||
+         before == GameScreen::Results);
+    if (_flow.screen() != before || navigated) {
         _screenStartedMs = nowMs;
     }
 }

@@ -25,7 +25,7 @@ public:
     bool prepared() const { return _prepared; }
 
 private:
-    void updateLapAndFinish(std::size_t index);
+    void updateLapAndFinish(std::size_t index, float previousDistance);
     void updatePositions();
     void resolveCarContacts();
 
@@ -35,7 +35,6 @@ private:
     std::array<float, kMaximumRaceCars> _lastLapCrossing{};
     RaceSnapshot _snapshot{};
     float _accumulator = 0.0f;
-    uint8_t _nextFinishOrder = 1u;
     bool _paused = false;
     bool _prepared = false;
 };

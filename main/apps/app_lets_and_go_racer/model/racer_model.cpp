@@ -23,9 +23,9 @@ void RacerModel::step(const RacerInput& input, const CarSpec& car,
     const float steer = input.valid && std::isfinite(input.steer)
                             ? std::clamp(input.steer, -1.0f, 1.0f)
                             : 0.0f;
-    const bool boosting = input.valid && input.boostHeld &&
-                          _state.boostCharge > 0.02f;
     const bool braking = input.valid ? input.brakeHeld : true;
+    const bool boosting = input.valid && input.boostHeld && !braking &&
+                          _state.boostCharge > 0.02f;
 
     const float efficiency = std::isfinite(motorEfficiency)
                                  ? std::clamp(motorEfficiency, 0.75f, 1.20f)

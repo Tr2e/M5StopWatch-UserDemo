@@ -27,17 +27,28 @@ bool validateMapping()
     raw.chordStarted = true;
     const RacerInput mapped = mapRacerInput(raw, 7u);
     bool valid = check(mapped.valid && mapped.steer == 1.0f &&
-                           mapped.confirmPressed && mapped.cancelPressed &&
-                           mapped.brakeHeld && mapped.boostHeld &&
-                           mapped.pausePressed && mapped.exitPressed &&
+                           !mapped.confirmPressed && !mapped.cancelPressed &&
+                           !mapped.brakeHeld && !mapped.boostHeld &&
+                           !mapped.pausePressed && mapped.exitPressed &&
                            mapped.sequence == 7u,
                        "valid input mapping failed");
     raw.axesValid = false;
     const RacerInput stale = mapRacerInput(raw, 8u);
     valid &= check(!stale.valid && stale.steer == 0.0f && !stale.brakeHeld &&
-                       !stale.boostHeld && !stale.exitPressed,
+                       !stale.boostHeld && stale.exitPressed,
                    "invalid input did not fail neutral");
+    raw.actionsValid = false;
+    valid &= check(!mapRacerInput(raw, 8u).exitPressed,
+                   "invalid buttons triggered exit");
+    raw.actionsValid = true;
     raw.axesValid = true;
+    raw.redHeld = false;
+    raw.redHoldStarted = false;
+    raw.redClicked = false;
+    raw.chordStarted = false;
+    valid &= check(mapRacerInput(raw, 8u).confirmPressed &&
+                       mapRacerInput(raw, 8u).boostHeld,
+                   "single blue button mapping failed");
     raw.steer = std::numeric_limits<float>::quiet_NaN();
     valid &= check(!mapRacerInput(raw, 9u).valid, "NaN steering was accepted");
     return valid;

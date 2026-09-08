@@ -23,15 +23,18 @@ inline RacerInput mapRacerInput(const RawRacerInput& raw, uint32_t sequence)
 {
     RacerInput result;
     result.sequence = sequence;
+    // Exit remains available when the joystick is disconnected; button validity
+    // is independent. A chord must not also pause, confirm or consume boost.
+    result.exitPressed = raw.actionsValid && raw.chordStarted;
     result.valid = raw.axesValid && raw.actionsValid && std::isfinite(raw.steer);
     if (!result.valid) return result;  // Fail neutral: never replay steer/buttons.
     result.steer = std::clamp(raw.steer, -1.0f, 1.0f);
+    if (raw.redHeld && raw.blueHeld) return result;
     result.confirmPressed = raw.blueClicked;
     result.cancelPressed = raw.redClicked;
     result.brakeHeld = raw.redHeld;
     result.boostHeld = raw.blueHeld;
     result.pausePressed = raw.redHoldStarted;
-    result.exitPressed = raw.chordStarted;
     return result;
 }
 

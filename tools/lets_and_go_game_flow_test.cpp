@@ -41,6 +41,7 @@ bool validateFullRaceAndRetry()
     valid &= check(flow.screen() == GameScreen::Racing,
                    "countdown did not enter racing");
     valid &= check(flow.togglePause() && flow.screen() == GameScreen::Paused &&
+                       !flow.back() && flow.screen() == GameScreen::Paused &&
                        flow.togglePause() && flow.screen() == GameScreen::Racing,
                    "pause round trip failed");
     valid &= check(flow.finishRace() && flow.showResults(),

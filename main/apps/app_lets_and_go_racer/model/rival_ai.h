@@ -14,6 +14,6 @@ struct RivalAiState {
 void resetRivalAi(RivalAiState& state, uint32_t seed, float motorEfficiency);
 RacerInput updateRivalAi(RivalAiState& state, const RaceSnapshot& race,
                          std::size_t racerIndex, const TrackFrame& track,
-                         float deltaSeconds);
+                         float deltaSeconds, float trackLength);
 
 }  // namespace lets_and_go

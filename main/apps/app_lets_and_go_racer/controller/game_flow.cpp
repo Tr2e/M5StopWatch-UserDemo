@@ -176,9 +176,7 @@ bool GameFlow::back()
         case GameScreen::TrackSelect:
             _screen = GameScreen::RivalSelect;
             return true;
-        case GameScreen::Paused:
-            _screen = GameScreen::Racing;
-            return true;
+        // Pause/resume must go through togglePause so the controller stays in sync.
         case GameScreen::Results:
             return backToGarage();
         default:
