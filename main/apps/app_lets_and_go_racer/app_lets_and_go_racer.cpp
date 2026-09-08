@@ -4,9 +4,14 @@
 #include <hal/hal.h>
 #include <mooncake_log.h>
 
+#include <algorithm>
+
 namespace {
 constexpr uint32_t kGarageFrameIntervalMs = 33u;
 constexpr uint32_t kShowcaseDurationMs = 1500u;
+constexpr uint32_t kGridIntroDurationMs = 1300u;
+constexpr uint32_t kCountdownDurationMs = 3000u;
+constexpr uint32_t kFinishDurationMs = 1200u;
 }
 
 AppLetsAndGoRacer::AppLetsAndGoRacer()
@@ -30,7 +35,11 @@ void AppLetsAndGoRacer::onOpen()
     _flow.reset();
     _selection.reset(_flow.setup().playerCar);
     _lastFrameMs = 0;
-    _screenStartedMs = GetHAL().millis();
+    _lastUpdateMs = GetHAL().millis();
+    _raceSeed = 0;
+    _inputInvalidSinceMs = 0;
+    _pausedForInputLoss = false;
+    _screenStartedMs = _lastUpdateMs;
     GetHAL().stopLvglUpdate();
     const auto& display = GetHAL().getDisplay();
     _renderer.open(display.width(), display.height());
@@ -41,6 +50,9 @@ void AppLetsAndGoRacer::onRunning()
 {
     GetHAL().updateButtonStates();
     const uint32_t nowMs = GetHAL().millis();
+    const float deltaSeconds =
+        std::min<uint32_t>(nowMs - _lastUpdateMs, 250u) * 0.001f;
+    _lastUpdateMs = nowMs;
     const lets_and_go::RacerInput racerInput =
         _racerInput ? _racerInput->sample(nowMs) : lets_and_go::RacerInput{};
     const lets_and_go::RacerInputStatus racerStatus =
@@ -66,6 +78,35 @@ void AppLetsAndGoRacer::onRunning()
         return;
     }
 
+    if (_flow.screen() == lets_and_go::GameScreen::GridIntro &&
+        nowMs - _screenStartedMs >= kGridIntroDurationMs &&
+        _flow.completeGridIntro()) {
+        _screenStartedMs = nowMs;
+    } else if (_flow.screen() == lets_and_go::GameScreen::Countdown &&
+               nowMs - _screenStartedMs >= kCountdownDurationMs &&
+               _flow.completeCountdown()) {
+        _screenStartedMs = nowMs;
+    } else if (_flow.screen() == lets_and_go::GameScreen::Racing) {
+        if (!racerInput.valid) {
+            if (_inputInvalidSinceMs == 0u) _inputInvalidSinceMs = nowMs;
+            if (nowMs - _inputInvalidSinceMs >= 600u && _flow.togglePause()) {
+                _race.setPaused(true);
+                _pausedForInputLoss = true;
+                _screenStartedMs = nowMs;
+            }
+        } else {
+            _inputInvalidSinceMs = 0u;
+        }
+        _race.advance(racerInput, deltaSeconds);
+        if (_race.snapshot().playerFinished && _flow.finishRace()) {
+            _screenStartedMs = nowMs;
+        }
+    } else if (_flow.screen() == lets_and_go::GameScreen::Finish &&
+               nowMs - _screenStartedMs >= kFinishDurationMs &&
+               _flow.showResults()) {
+        _screenStartedMs = nowMs;
+    }
+
     if (_flow.screen() == lets_and_go::GameScreen::CarShowcase &&
         nowMs - _screenStartedMs >= kShowcaseDurationMs &&
         _flow.completeCarShowcase()) {
@@ -87,6 +128,15 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         return;
     }
     const GameScreen before = _flow.screen();
+    if (input.pausePressed &&
+        (before == GameScreen::Racing || before == GameScreen::Paused)) {
+        if (_flow.togglePause()) {
+            _race.setPaused(_flow.screen() == GameScreen::Paused);
+            _pausedForInputLoss = false;
+            _screenStartedMs = nowMs;
+        }
+        return;
+    }
     const int navigation = _menuAxis.update(input.valid ? input.steer : 0.0f, nowMs);
     if (navigation != 0) {
         if (before == GameScreen::CarSelect) {
@@ -101,11 +151,24 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         switch (before) {
             case GameScreen::CarSelect: _selection.activatePlayer(_flow); break;
             case GameScreen::RivalSelect: _selection.activateRival(_flow); break;
-            case GameScreen::TrackSelect: _flow.confirmTrack(); break;
+            case GameScreen::TrackSelect:
+                if (_flow.confirmTrack()) prepareRace(nowMs);
+                break;
             default: break;
         }
     }
     if (_flow.screen() != before || navigation != 0) _screenStartedMs = nowMs;
+}
+
+void AppLetsAndGoRacer::prepareRace(uint32_t nowMs)
+{
+    _inputInvalidSinceMs = 0u;
+    _pausedForInputLoss = false;
+    if (_raceSeed == 0u) {
+        _raceSeed = nowMs ^ (static_cast<uint32_t>(_flow.setup().rivalMask) << 16u) ^
+                    (static_cast<uint32_t>(_flow.setup().playerCar) << 24u) ^ 0x4c264721u;
+    }
+    _race.prepare(_flow.setup(), _raceSeed);
 }
 
 void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
@@ -124,7 +187,9 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
             case GameScreen::InputCalibration: _flow.completeCalibration(true); break;
             case GameScreen::CarSelect: _selection.activatePlayer(_flow); break;
             case GameScreen::RivalSelect: _selection.activateRival(_flow); break;
-            case GameScreen::TrackSelect: _flow.confirmTrack(); break;
+            case GameScreen::TrackSelect:
+                if (_flow.confirmTrack()) prepareRace(nowMs);
+                break;
             default: break;
         }
     }
@@ -145,5 +210,9 @@ void AppLetsAndGoRacer::onClose()
     _selection.reset();
     _lastFrameMs = 0;
     _screenStartedMs = 0;
+    _lastUpdateMs = 0;
+    _raceSeed = 0;
+    _inputInvalidSinceMs = 0;
+    _pausedForInputLoss = false;
     GetHAL().startLvglUpdate();
 }

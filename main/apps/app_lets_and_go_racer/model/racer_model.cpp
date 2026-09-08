@@ -15,7 +15,8 @@ void RacerModel::reset(float distance, float lateralOffset, float speed)
 }
 
 void RacerModel::step(const RacerInput& input, const CarSpec& car,
-                      const TrackFrame& track, float deltaSeconds)
+                      const TrackFrame& track, float deltaSeconds,
+                      float motorEfficiency)
 {
     if (!std::isfinite(deltaSeconds) || deltaSeconds <= 0.0f) return;
     const float dt = std::min(deltaSeconds, 0.05f);
@@ -26,13 +27,16 @@ void RacerModel::step(const RacerInput& input, const CarSpec& car,
                           _state.boostCharge > 0.02f;
     const bool braking = input.valid ? input.brakeHeld : true;
 
-    const float maximumSpeed = 13.0f + car.performance.topSpeed * 8.0f;
+    const float efficiency = std::isfinite(motorEfficiency)
+                                 ? std::clamp(motorEfficiency, 0.75f, 1.20f)
+                                 : 1.0f;
+    const float maximumSpeed = (13.0f + car.performance.topSpeed * 8.0f) * efficiency;
     const float curveLoad = std::min(1.0f, std::abs(track.curvature) * 5.5f);
     const float curveLimit = maximumSpeed *
         (1.0f - curveLoad * (0.28f - car.performance.stability * 0.12f));
     const float boostMultiplier = boosting ? 1.13f : 1.0f;
     const float targetSpeed = braking ? 0.0f : curveLimit * boostMultiplier;
-    const float acceleration = 4.0f + car.performance.acceleration * 4.5f;
+    const float acceleration = (4.0f + car.performance.acceleration * 4.5f) * efficiency;
     const float deceleration = braking ? 13.0f : 5.5f;
     const float speedRate = targetSpeed > _state.speed ? acceleration : deceleration;
     const float speedDelta = std::clamp(targetSpeed - _state.speed,

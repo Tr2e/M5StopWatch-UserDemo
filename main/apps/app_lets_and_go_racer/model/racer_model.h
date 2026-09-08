@@ -22,7 +22,8 @@ public:
     void reset(float distance = 0.0f, float lateralOffset = 0.0f,
                float speed = 0.0f);
     void step(const RacerInput& input, const CarSpec& car,
-              const TrackFrame& track, float deltaSeconds);
+              const TrackFrame& track, float deltaSeconds,
+              float motorEfficiency = 1.0f);
 
     const RacerState& state() const { return _state; }
     RacerState& mutableState() { return _state; }
