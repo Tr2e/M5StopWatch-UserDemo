@@ -18,7 +18,7 @@ bool usesRaceRenderer(lets_and_go::GameScreen screen)
     using lets_and_go::GameScreen;
     return screen == GameScreen::GridIntro || screen == GameScreen::Countdown ||
            screen == GameScreen::Racing || screen == GameScreen::Paused ||
-           screen == GameScreen::Finish;
+           screen == GameScreen::Finish || screen == GameScreen::Results;
 }
 }
 
@@ -40,8 +40,10 @@ void AppLetsAndGoRacer::onOpen()
     _racerInput = std::make_unique<lets_and_go::HardwareRacerInputProvider>();
     _racerInput->open();
     _menuAxis.reset();
+    _resultsSelection.reset();
+    _progress = lets_and_go::RaceProgressStore::load();
     _flow.reset();
-    _selection.reset(_flow.setup().playerCar);
+    _selection.reset(_progress.lastCar);
     _lastFrameMs = 0;
     _lastUpdateMs = GetHAL().millis();
     _raceSeed = 0;
@@ -113,6 +115,13 @@ void AppLetsAndGoRacer::onRunning()
     } else if (_flow.screen() == lets_and_go::GameScreen::Finish &&
                nowMs - _screenStartedMs >= kFinishDurationMs &&
                _flow.showResults()) {
+        _resultsSelection.reset();
+        _progress.lastCar = _flow.setup().playerCar;
+        if (lets_and_go::recordBestLap(_progress, _flow.setup().track,
+                                       _race.snapshot().player().bestLapSeconds) &&
+            !lets_and_go::RaceProgressStore::save(_progress)) {
+            mclog::tagWarn(getAppInfo().name, "failed to save best lap");
+        }
         _screenStartedMs = nowMs;
     }
 
@@ -125,7 +134,8 @@ void AppLetsAndGoRacer::onRunning()
     if (_lastFrameMs == 0u || nowMs - _lastFrameMs >= kGarageFrameIntervalMs) {
         _lastFrameMs = nowMs;
         if (usesRaceRenderer(_flow.screen())) {
-            _raceRenderer.render(_flow, _race, nowMs - _screenStartedMs,
+            _raceRenderer.render(_flow, _race, _resultsSelection,
+                                 nowMs - _screenStartedMs,
                                  _pausedForInputLoss);
         } else {
             _renderer.render(_flow, _selection, nowMs - _screenStartedMs);
@@ -151,23 +161,49 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         }
         return;
     }
-    const int navigation = _menuAxis.update(input.valid ? input.steer : 0.0f, nowMs);
+    const bool acceptsNavigation = before == GameScreen::CarSelect ||
+                                   before == GameScreen::RivalSelect ||
+                                   before == GameScreen::Results;
+    if (!acceptsNavigation) _menuAxis.reset();
+    const int navigation = acceptsNavigation
+        ? _menuAxis.update(input.valid ? input.steer : 0.0f, nowMs) : 0;
     if (navigation != 0) {
         if (before == GameScreen::CarSelect) {
             _selection.movePlayer(navigation);
         } else if (before == GameScreen::RivalSelect) {
             _selection.moveRival(navigation, _flow.setup().playerCar);
+        } else if (before == GameScreen::Results) {
+            _resultsSelection.move(navigation);
         }
     }
     if (input.cancelPressed) {
-        _flow.back();
+        if (_flow.back() && before == GameScreen::Results) {
+            _raceSeed = 0u;
+            _selection.reset(_progress.lastCar);
+        }
     } else if (input.confirmPressed) {
         switch (before) {
-            case GameScreen::CarSelect: _selection.activatePlayer(_flow); break;
+            case GameScreen::CarSelect:
+                if (_selection.activatePlayer(_flow)) {
+                    persistSelectedCar();
+                }
+                break;
             case GameScreen::RivalSelect: _selection.activateRival(_flow); break;
             case GameScreen::TrackSelect:
                 if (_flow.confirmTrack()) prepareRace(nowMs);
                 break;
+            case GameScreen::Results: {
+                const lets_and_go::ResultAction action = _resultsSelection.cursor();
+                if (_resultsSelection.activate(_flow)) {
+                    if (action == lets_and_go::ResultAction::Retry) {
+                        prepareRace(nowMs);
+                    } else if (action == lets_and_go::ResultAction::Garage) {
+                        _raceSeed = 0u;
+                        _selection.reset(_progress.lastCar);
+                    }
+                }
+                break;
+            }
             default: break;
         }
     }
@@ -185,6 +221,15 @@ void AppLetsAndGoRacer::prepareRace(uint32_t nowMs)
     _race.prepare(_flow.setup(), _raceSeed);
 }
 
+void AppLetsAndGoRacer::persistSelectedCar()
+{
+    if (_progress.lastCar == _flow.setup().playerCar) return;
+    _progress.lastCar = _flow.setup().playerCar;
+    if (!lets_and_go::RaceProgressStore::save(_progress)) {
+        mclog::tagWarn(getAppInfo().name, "failed to save selected car");
+    }
+}
+
 void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
 {
     using lets_and_go::GameScreen;
@@ -194,16 +239,34 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
             _selection.movePlayer(-1);
         } else if (before == GameScreen::RivalSelect) {
             _selection.moveRival(1, _flow.setup().playerCar);
+        } else if (before == GameScreen::Results) {
+            _resultsSelection.move(1);
         }
     } else if (event == input::KeyEvent::GoNext) {
         switch (before) {
             case GameScreen::InputCheck: _flow.confirmInputAvailable(); break;
             case GameScreen::InputCalibration: _flow.completeCalibration(true); break;
-            case GameScreen::CarSelect: _selection.activatePlayer(_flow); break;
+            case GameScreen::CarSelect:
+                if (_selection.activatePlayer(_flow)) {
+                    persistSelectedCar();
+                }
+                break;
             case GameScreen::RivalSelect: _selection.activateRival(_flow); break;
             case GameScreen::TrackSelect:
                 if (_flow.confirmTrack()) prepareRace(nowMs);
                 break;
+            case GameScreen::Results: {
+                const lets_and_go::ResultAction action = _resultsSelection.cursor();
+                if (_resultsSelection.activate(_flow)) {
+                    if (action == lets_and_go::ResultAction::Retry) {
+                        prepareRace(nowMs);
+                    } else if (action == lets_and_go::ResultAction::Garage) {
+                        _raceSeed = 0u;
+                        _selection.reset(_progress.lastCar);
+                    }
+                }
+                break;
+            }
             default: break;
         }
     }
@@ -223,6 +286,7 @@ void AppLetsAndGoRacer::onClose()
     _raceRenderer.close();
     _flow.reset();
     _selection.reset();
+    _resultsSelection.reset();
     _lastFrameMs = 0;
     _screenStartedMs = 0;
     _lastUpdateMs = 0;

@@ -2,6 +2,7 @@
 
 #include "../controller/game_flow.h"
 #include "../controller/race_controller.h"
+#include "../controller/results_selection.h"
 #include "../model/car_catalog.h"
 
 #include <array>
@@ -21,6 +22,7 @@ public:
     void open(int width, int height);
     void close();
     void render(const GameFlow& flow, const RaceController& race,
+                const ResultsSelection& results,
                 uint32_t screenElapsedMs, bool pausedForInputLoss);
 
 private:

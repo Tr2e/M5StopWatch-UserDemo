@@ -3,10 +3,12 @@
 #include "controller/game_flow.h"
 #include "controller/garage_selection.h"
 #include "controller/race_controller.h"
+#include "controller/results_selection.h"
 #include "input/hardware_racer_input_provider.h"
 #include "input/racer_input_logic.h"
 #include "view/garage_renderer.h"
 #include "view/race_renderer.h"
+#include "model/race_progress_store.h"
 
 #include <apps/common/key_manager/key_manager.h>
 #include <memory>
@@ -24,6 +26,7 @@ private:
     void handleKey(input::KeyEvent event, uint32_t nowMs);
     void handleRacerInput(const lets_and_go::RacerInput& input, uint32_t nowMs);
     void prepareRace(uint32_t nowMs);
+    void persistSelectedCar();
 
     std::unique_ptr<input::KeyManager> _keys;
     std::unique_ptr<lets_and_go::RacerInputProvider> _racerInput;
@@ -31,6 +34,8 @@ private:
     lets_and_go::GameFlow _flow;
     lets_and_go::GarageSelection _selection;
     lets_and_go::RaceController _race;
+    lets_and_go::ResultsSelection _resultsSelection;
+    lets_and_go::PlayerProgress _progress;
     lets_and_go::GarageRenderer _renderer;
     lets_and_go::RaceRenderer _raceRenderer;
     uint32_t _lastFrameMs = 0;

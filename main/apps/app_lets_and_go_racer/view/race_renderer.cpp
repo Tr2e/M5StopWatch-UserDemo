@@ -224,6 +224,58 @@ void drawHud(LGFX_Device& canvas, const RaceSnapshot& race,
     }
 }
 
+void formatRaceTime(float seconds, char* output, std::size_t capacity)
+{
+    const uint32_t milliseconds = seconds > 0.0f
+        ? static_cast<uint32_t>(seconds * 1000.0f + 0.5f) : 0u;
+    const uint32_t minutes = milliseconds / 60000u;
+    const uint32_t remainder = milliseconds % 60000u;
+    std::snprintf(output, capacity, "%02u:%02u.%03u",
+                  static_cast<unsigned>(minutes),
+                  static_cast<unsigned>(remainder / 1000u),
+                  static_cast<unsigned>(remainder % 1000u));
+}
+
+void drawResults(LGFX_Device& canvas, const RaceSnapshot& race,
+                 const ResultsSelection& selection)
+{
+    canvas.fillScreen(kPaper);
+    drawPaperAndMountains(canvas);
+    const RaceCarSnapshot& player = race.player();
+    canvas.setTextDatum(textdatum_t::middle_center);
+    canvas.setTextColor(carSpec(player.car).accentColor, kPaper);
+    canvas.setTextSize(4);
+    char position[20] = {};
+    std::snprintf(position, sizeof(position), "PLACE %u/%u",
+                  static_cast<unsigned>(player.position),
+                  static_cast<unsigned>(race.carCount));
+    canvas.drawString(position, canvas.width() / 2, 92);
+    char time[20] = {};
+    formatRaceTime(race.elapsedSeconds, time, sizeof(time));
+    canvas.setTextSize(2);
+    canvas.setTextColor(kPencil, kPaper);
+    canvas.drawString(time, canvas.width() / 2, 145);
+    char best[32] = "BEST --:--.---";
+    if (player.bestLapSeconds > 0.0f) {
+        char lap[20] = {};
+        formatRaceTime(player.bestLapSeconds, lap, sizeof(lap));
+        std::snprintf(best, sizeof(best), "BEST %s", lap);
+    }
+    canvas.setTextSize(1);
+    canvas.setTextColor(kFaint, kPaper);
+    canvas.drawString(best, canvas.width() / 2, 177);
+    for (int index = 0; index < static_cast<int>(ResultAction::Count); ++index) {
+        const ResultAction action = static_cast<ResultAction>(index);
+        const bool selected = action == selection.cursor();
+        const int y = 245 + index * 50;
+        if (selected) canvas.drawRoundRect(116, y - 17, 234, 36, 8,
+                                           carSpec(player.car).accentColor);
+        canvas.setTextSize(selected ? 2 : 1);
+        canvas.setTextColor(selected ? kPencil : kFaint, kPaper);
+        canvas.drawString(resultActionLabel(action), canvas.width() / 2, y);
+    }
+}
+
 }  // namespace
 
 void RaceRenderer::open(int width, int height)
@@ -252,10 +304,15 @@ void RaceRenderer::close()
 }
 
 void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
+                          const ResultsSelection& results,
                           uint32_t screenElapsedMs, bool pausedForInputLoss)
 {
     if (_width <= 0 || _height <= 0 || !race.prepared()) return;
     auto& canvas = GetHAL().getDisplay();
+    if (flow.screen() == GameScreen::Results) {
+        drawResults(canvas, race.snapshot(), results);
+        return;
+    }
     canvas.fillScreen(kPaper);
     drawPaperAndMountains(canvas);
     const RaceSnapshot& snapshot = race.snapshot();
