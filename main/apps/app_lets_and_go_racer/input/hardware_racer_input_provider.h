@@ -4,6 +4,8 @@
 
 #include "../../app_vector_canyon_fighter/input/dual_button_action_source.h"
 #include "../../app_vector_canyon_fighter/input/joystick2_axis_source.h"
+#include <atomic>
+#include <mutex>
 
 namespace lets_and_go {
 
@@ -17,10 +19,17 @@ public:
     void close() override;
 
 private:
+    void samplingTask();
+    void poll(uint32_t nowMs);
     vector_canyon_fighter::Joystick2AxisSource _axes;
     vector_canyon_fighter::DualButtonActionSource _actions;
     uint32_t _sequence = 0;
+    uint32_t _lastDiagnosticMs = 0;
     LongChordDetector _exitChord;
+    mutable std::mutex _mutex;
+    RacerInputMailbox _mailbox;
+    std::atomic<bool> _sampling{false};
+    std::atomic<bool> _samplingExited{true};
     bool _opened = false;
 };
 

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <driver/gpio.h>
+#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <i2c_bus.h>
@@ -27,7 +28,8 @@ constexpr uint32_t kRgbUpdatePeriodMs = 80u;
 
 uint32_t taskTimeMs()
 {
-    return static_cast<uint32_t>(xTaskGetTickCount() * portTICK_PERIOD_MS);
+    // Samples are consumed with Hal::millis(), whose epoch is esp_timer.
+    return static_cast<uint32_t>(esp_timer_get_time() / 1000);
 }
 
 }  // namespace
@@ -270,7 +272,7 @@ FlightAxisSample Joystick2AxisSource::sampleAxes(uint32_t nowMs)
 
     const uint32_t lastValid = _lastValidSampleMs.load(std::memory_order_acquire);
     result.valid = _calibrated && lastValid != 0u &&
-                   nowMs - lastValid <= kStaleAfterMs &&
+                   taskTimeMs() - lastValid <= kStaleAfterMs &&
                    _consecutiveErrors.load(std::memory_order_acquire) <
                        kFaultAfterErrors;
     if (result.valid) {
@@ -297,7 +299,7 @@ FlightAxisStatus Joystick2AxisSource::axisStatus(uint32_t nowMs) const
     result.lastValidSampleMs = _lastValidSampleMs.load(std::memory_order_acquire);
     result.consecutiveErrors = _consecutiveErrors.load(std::memory_order_acquire);
     const bool fresh = result.lastValidSampleMs != 0u &&
-                       nowMs - result.lastValidSampleMs <= kStaleAfterMs;
+                       taskTimeMs() - result.lastValidSampleMs <= kStaleAfterMs;
     result.connected = _opened &&
                        _identified.load(std::memory_order_acquire) && fresh;
     if (!_opened || !fresh) {

@@ -33,6 +33,11 @@ void AppLetsAndGoRacer::onOpen()
 {
     mclog::tagInfo(getAppInfo().name, "on open");
     _keys = std::make_unique<input::KeyManager>();
+    // Match Vector Run's external-controller startup sequence. PORT.A's red
+    // wire is supplied by the PMIC-controlled 5VINOUT rail, so the Joystick2
+    // probe must not start until that rail has had time to settle.
+    GetHAL().setGrove5VPower(true);
+    GetHAL().delay(20);
     _racerInput = std::make_unique<lets_and_go::HardwareRacerInputProvider>();
     _racerInput->open();
     _menuAxis.reset();
@@ -91,9 +96,11 @@ void AppLetsAndGoRacer::onRunning()
         racerStatus.axesConnected && racerStatus.actionsConfigured &&
         _flow.confirmInputAvailable()) {
         _racerInput->requestCalibration(nowMs);
+        mclog::tagInfo(getAppInfo().name, "controls connected; calibrating");
         _screenStartedMs = nowMs;
     } else if (_flow.screen() == lets_and_go::GameScreen::InputCalibration &&
         racerStatus.ready() && _flow.completeCalibration(true)) {
+        mclog::tagInfo(getAppInfo().name, "controls ready; SELECT MACHINE");
         _screenStartedMs = nowMs;
     }
     handleRacerInput(racerInput, nowMs);
@@ -269,7 +276,12 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
             default: break;
         }
     }
-    if (_flow.screen() != before || navigation != 0) _screenStartedMs = nowMs;
+    if (_flow.screen() != before || navigation != 0) {
+        _screenStartedMs = nowMs;
+        mclog::tagInfo(getAppInfo().name, "input: {} -> {} navigation={}",
+                       lets_and_go::gameScreenLabel(before),
+                       lets_and_go::gameScreenLabel(_flow.screen()), navigation);
+    }
 }
 
 void AppLetsAndGoRacer::prepareRace(uint32_t nowMs)
@@ -456,6 +468,7 @@ void AppLetsAndGoRacer::onClose()
     _keys.reset();
     if (_racerInput) _racerInput->close();
     _racerInput.reset();
+    GetHAL().setGrove5VPower(false);
     _menuAxis.reset();
     _renderer.close();
     _garageNavigation.reset();

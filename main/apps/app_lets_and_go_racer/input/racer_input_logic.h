@@ -24,15 +24,20 @@ inline RacerInput mapRacerInput(const RawRacerInput& raw, uint32_t sequence)
 {
     RacerInput result;
     result.sequence = sequence;
-    // Exit remains available when the joystick is disconnected; button validity
-    // is independent. A chord must not also pause, confirm or consume boost.
+    // Axis and action devices are independent. A Joystick2 calibration or
+    // disconnect must not erase a valid Dual Button edge on a selection page.
     result.exitPressed = raw.actionsValid && raw.chordStarted;
     result.menuBlocked = raw.actionsValid && raw.redHeld && raw.blueHeld;
     result.valid = raw.axesValid && raw.actionsValid && std::isfinite(raw.steer);
-    if (!result.valid) return result;  // Fail neutral: never replay steer/buttons.
-    result.steer = std::clamp(raw.steer, -1.0f, 1.0f);
-    if (raw.redHeld && raw.blueHeld) return result;
-    result.viewAxis = std::isfinite(raw.viewAxis) ? std::clamp(raw.viewAxis,-1.0f,1.0f) : 0.0f;
+    if (result.valid) {
+        result.steer = std::clamp(raw.steer, -1.0f, 1.0f);
+    }
+    if (!raw.actionsValid || (raw.redHeld && raw.blueHeld)) return result;
+    if (result.valid) {
+        result.viewAxis = std::isfinite(raw.viewAxis)
+                              ? std::clamp(raw.viewAxis, -1.0f, 1.0f)
+                              : 0.0f;
+    }
     result.confirmPressed = raw.blueClicked;
     result.cancelPressed = raw.redClicked;
     result.brakeHeld = raw.redHeld;
@@ -40,6 +45,42 @@ inline RacerInput mapRacerInput(const RawRacerInput& raw, uint32_t sequence)
     result.pausePressed = raw.redHoldStarted;
     return result;
 }
+
+// Single-consumer mailbox. The hardware adapter holds its mutex around both
+// operations. Continuous state is latest-wins; short edges survive slow frames
+// and are consumed once, even if press and release happen during rendering.
+class RacerInputMailbox {
+public:
+    void publish(const RacerInput& input)
+    {
+        RacerInput next = input;
+        next.confirmPressed |= _latest.confirmPressed;
+        next.cancelPressed |= _latest.cancelPressed;
+        next.pausePressed |= _latest.pausePressed;
+        next.exitPressed |= _latest.exitPressed;
+        if (next.menuBlocked || next.exitPressed) {
+            next.confirmPressed = false;
+            next.cancelPressed = false;
+            next.pausePressed = false;
+        }
+        _latest = next;
+    }
+
+    RacerInput consume()
+    {
+        const RacerInput result = _latest;
+        _latest.confirmPressed = false;
+        _latest.cancelPressed = false;
+        _latest.pausePressed = false;
+        _latest.exitPressed = false;
+        return result;
+    }
+
+    void reset() { _latest = {}; }
+
+private:
+    RacerInput _latest;
+};
 
 class MenuAxisRepeater {
 public:
