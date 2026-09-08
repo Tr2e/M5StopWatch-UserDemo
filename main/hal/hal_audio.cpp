@@ -218,11 +218,10 @@ private:
 
                 if (idle) {
                     if (wasStreaming) {
-                        // Drain the last nonzero block on release; no callback
-                        // or owner access occurs after stopStream returns.
-                        _stream_buffer.fill(0);
-                        esp_codec_dev_write(_codec_dev,_stream_buffer.data(),
-                                            _stream_buffer.size()*sizeof(int16_t));
+                        // Flush the whole DMA ring, not just one 512-sample
+                        // block. The task owns this write after owner release.
+                        esp_codec_dev_write(_codec_dev, _silence_buffer.data(),
+                                            _silence_buffer.size()*sizeof(int16_t));
                         wasStreaming = false;
                     }
                     std::lock_guard<std::mutex> lock(_mutex);
@@ -302,6 +301,9 @@ private:
         mclog::tagInfo(_tag, "i2s init");
 
         i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_PORT, I2S_ROLE_MASTER);
+        // Once the producer stops (or misses a deadline), consumed descriptors
+        // must become silence instead of replaying the last PCM indefinitely.
+        chan_cfg.auto_clear_after_cb = true;
         i2s_std_config_t std_cfg   = {
             .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate),
             .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),

@@ -223,6 +223,10 @@ void LauncherView::init(std::vector<mooncake::AppProps_t> appPorps)
 
     _key_manager = std::make_unique<input::KeyManager>();
     _external_power_enabled = GetHAL().setGrove5VPower(true);
+    // Keep the controller startup sequence identical to Vector Run. The
+    // Joystick2 is powered by the PMIC-controlled 5VINOUT rail and must not be
+    // probed while that rail is still rising.
+    GetHAL().delay(20);
     _external_joystick =
         std::make_unique<vector_canyon_fighter::Joystick2AxisSource>();
     _external_buttons =

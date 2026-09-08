@@ -1,4 +1,6 @@
 #include "../main/apps/app_lets_and_go_racer/input/racer_input_logic.h"
+#include "../main/apps/app_vector_canyon_fighter/input/external_input_logic.h"
+#include "../main/apps/app_vector_canyon_fighter/input/flight_input.h"
 
 #include <cmath>
 #include <iostream>
@@ -41,6 +43,14 @@ bool validateMapping()
     raw.actionsValid = false;
     valid &= check(!mapRacerInput(raw, 8u).exitPressed,
                    "invalid buttons triggered exit");
+    RawRacerInput buttonOnly;
+    buttonOnly.actionsValid = true;
+    buttonOnly.redClicked = true;
+    const RacerInput buttonsWithoutAxes = mapRacerInput(buttonOnly, 8u);
+    valid &= check(!buttonsWithoutAxes.valid &&
+                       buttonsWithoutAxes.cancelPressed &&
+                       !buttonsWithoutAxes.confirmPressed,
+                   "valid Dual Button edge was coupled to invalid axes");
     raw.actionsValid = true;
     raw.axesValid = true;
     raw.redHeld = false;
@@ -94,9 +104,64 @@ bool validateLongChord()
                    "long chord reset or millis rollover failed");
     return valid;
 }
+
+bool validateSlowFrameInput()
+{
+    using namespace vector_canyon_fighter;
+    DebouncedActiveLowButton red, blue;
+    TwoButtonFlightActionMapper actions;
+    LongChordDetector chord;
+    RacerInputMailbox mailbox;
+    const auto poll = [&](bool redDown, bool blueDown, uint32_t now) {
+        const auto r = red.update(redDown, now);
+        const auto b = blue.update(blueDown, now);
+        const auto a = actions.update(r.pressed, b.pressed, r.clicked,
+                                      b.clicked, r.holdStarted, b.holding);
+        RawRacerInput raw;
+        raw.axesValid = raw.actionsValid = true;
+        raw.steer = 0.8f;
+        raw.viewAxis = -0.9f;
+        raw.redClicked = a.wasPressed(FlightAction::ThrottleDown);
+        raw.blueClicked = a.wasPressed(FlightAction::ThrottleUp);
+        raw.redHeld = a.isHeld(FlightAction::ThrottleDown);
+        raw.blueHeld = a.isHeld(FlightAction::ThrottleUp);
+        raw.redHoldStarted = a.wasPressed(FlightAction::ToggleImmersive);
+        raw.chordStarted = chord.update(raw.redHeld, raw.blueHeld, now);
+        mailbox.publish(mapRacerInput(raw, now));
+    };
+    // One 100 ms click is entirely inside a 400 ms render stall.
+    for (uint32_t t = 0; t <= 400; t += 10)
+        poll(false, t >= 50 && t < 150, t);
+    auto input = mailbox.consume();
+    bool valid = check(input.confirmPressed && !input.boostHeld && input.valid &&
+                           input.steer == 0.8f && input.viewAxis == -0.9f,
+                       "slow render lost short blue click or latest axes");
+    valid &= check(!mailbox.consume().confirmPressed,
+                   "buffered click replayed on a second frame");
+    for (uint32_t t = 410; t <= 800; t += 10)
+        poll(t >= 450 && t < 550, false, t);
+    valid &= check(mailbox.consume().cancelPressed,
+                   "slow render lost short red click");
+    // Hold both through an entire long frame and release before consumption.
+    for (uint32_t t = 810; t <= 2100; t += 10)
+        poll(t >= 850 && t < 1850, t >= 850 && t < 1850, t);
+    input = mailbox.consume();
+    valid &= check(input.exitPressed && !input.confirmPressed &&
+                       !input.cancelPressed && !input.pausePressed,
+                   "buffered exit chord leaked pause or release clicks");
+    valid &= check(!mailbox.consume().exitPressed, "exit chord replayed");
+    RacerInput stale;
+    stale.confirmPressed = true;
+    mailbox.publish(stale);
+    mailbox.reset();
+    valid &= check(!mailbox.consume().confirmPressed,
+                   "close/recalibration kept a queued click");
+    return valid;
+}
 }  // namespace
 
 int main()
 {
-    return validateMapping() && validateMenuRepeater() && validateLongChord() ? 0 : 1;
+    return validateMapping() && validateMenuRepeater() && validateLongChord() &&
+           validateSlowFrameInput() ? 0 : 1;
 }
