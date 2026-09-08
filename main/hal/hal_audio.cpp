@@ -131,6 +131,7 @@ public:
         if (async) {
             // Support interruption: overwrite data and notify task
             _audio_data = data;
+            ++_play_generation;
             _is_playing = true;
             xTaskNotifyGive(_task_handle);
         } else {
@@ -160,27 +161,84 @@ public:
         }
     }
 
+    bool startStream(void* owner, Hal::AudioStreamCallback callback)
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (!owner || !callback || !_task_handle || (_stream_owner && _stream_owner != owner)) return false;
+        _stream_owner = owner;
+        _stream_callback = callback;
+        xTaskNotifyGive(_task_handle);
+        return true;
+    }
+
+    void stopStream(void* owner)
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (!owner || _stream_owner != owner) return;
+        _stream_callback = nullptr;
+        _stream_owner = nullptr;
+        xTaskNotifyGive(_task_handle);
+    }
+
 private:
+    void* _stream_owner = nullptr;
+    Hal::AudioStreamCallback _stream_callback = nullptr;
+    std::array<int16_t,512> _stream_buffer{};
+    uint32_t _play_generation = 0;
+
     void _task_entry()
     {
         mclog::tagInfo(_tag, "start audio play task");
         std::vector<int16_t> current_data;
+        bool wasStreaming = false;
+        uint32_t currentGeneration = 0;
 
         while (1) {
             // Wait for play request
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
             while (true) {
+                bool streaming = false;
+                bool idle = false;
                 // Fetch data safely
                 {
                     std::lock_guard<std::mutex> lock(_mutex);
-                    if (_audio_data.empty()) {
-                        _is_playing = false;
-                        break;
+                    if (_audio_data.empty() && _stream_callback) {
+                        _stream_callback(_stream_owner, _stream_buffer.data(), _stream_buffer.size());
+                        streaming = true;
+                    } else if (_audio_data.empty()) {
+                        idle = true;
+                    } else {
+                        current_data = _audio_data;
+                        currentGeneration = _play_generation;
+                        _audio_data.clear();
                     }
-                    current_data = _audio_data;
-                    _audio_data.clear();
                     _is_playing = true;
+                }
+
+                if (idle) {
+                    if (wasStreaming) {
+                        // Drain the last nonzero block on release; no callback
+                        // or owner access occurs after stopStream returns.
+                        _stream_buffer.fill(0);
+                        esp_codec_dev_write(_codec_dev,_stream_buffer.data(),
+                                            _stream_buffer.size()*sizeof(int16_t));
+                        wasStreaming = false;
+                    }
+                    std::lock_guard<std::mutex> lock(_mutex);
+                    _is_playing = _stream_callback || !_audio_data.empty();
+                    break;
+                }
+
+                if (streaming) {
+                    wasStreaming = true;
+                    // A control change can discard this block before I2S. The
+                    // only blocking operation stays on the existing audio task.
+                    if (ulTaskNotifyTake(pdTRUE, 0) == 0 &&
+                        esp_codec_dev_write(_codec_dev, _stream_buffer.data(),
+                                            _stream_buffer.size()*sizeof(int16_t)) != ESP_OK)
+                        vTaskDelay(pdMS_TO_TICKS(12)); // No hot spin if I2S fails.
+                    continue;
                 }
 
                 if (current_data.empty()) {
@@ -196,9 +254,13 @@ private:
                 while (offset < total_samples) {
                     // Check for interruption (new play request)
                     if (ulTaskNotifyTake(pdTRUE, 0) > 0) {
-                        // mclog::tagInfo(_tag, "playback interrupted");
-                        interrupted = true;
-                        break;
+                        std::lock_guard<std::mutex> lock(_mutex);
+                        // Stream registration/release must not cancel an
+                        // unrelated alarm/notification that is already playing.
+                        if(currentGeneration != _play_generation) {
+                            interrupted = true;
+                            break;
+                        }
                     }
 
                     size_t remain        = total_samples - offset;
@@ -215,9 +277,16 @@ private:
                     continue;
                 }
 
-                // Normal finish, play silence to avoid pop/waiting
-                esp_codec_dev_write(_codec_dev, (void*)_silence_buffer.data(),
-                                    _silence_buffer.size() * sizeof(int16_t));
+                // External one-shots (e.g. alarms) take priority; resume a
+                // registered stream without inserting the usual 100 ms gap.
+                bool resumeStream;
+                {
+                    std::lock_guard<std::mutex> lock(_mutex);
+                    resumeStream = _stream_callback != nullptr;
+                }
+                if (!resumeStream)
+                    esp_codec_dev_write(_codec_dev, (void*)_silence_buffer.data(),
+                                        _silence_buffer.size() * sizeof(int16_t));
             }
         }
     }
@@ -567,6 +636,16 @@ void Hal::audioRecord(std::vector<int16_t>& data, uint16_t durationMs, float gai
 void Hal::audioPlay(std::vector<int16_t>& data, bool async)
 {
     _audio_codec.play(data, async);
+}
+
+bool Hal::audioStartStream(void* owner, AudioStreamCallback callback)
+{
+    return _audio_codec.startStream(owner, callback);
+}
+
+void Hal::audioStopStream(void* owner)
+{
+    _audio_codec.stopStream(owner);
 }
 
 int Hal::getAudioSampleRate()

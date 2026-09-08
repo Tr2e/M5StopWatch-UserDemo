@@ -191,6 +191,11 @@ public:
     int getAudioSampleRate();
     void audioRecord(std::vector<int16_t>& data, uint16_t durationMs, float gain = 30.0f);
     void audioPlay(std::vector<int16_t>& data, bool async = true);
+    // Callback runs on the audio task; it must not call HAL audio methods.
+    // Stop synchronizes with callbacks before the owner's memory is released.
+    using AudioStreamCallback = void (*)(void*, int16_t*, std::size_t);
+    bool audioStartStream(void* owner, AudioStreamCallback callback);
+    void audioStopStream(void* owner);
 
     struct AudioSpectrumFrame {
         static constexpr std::size_t bandCount = 20;

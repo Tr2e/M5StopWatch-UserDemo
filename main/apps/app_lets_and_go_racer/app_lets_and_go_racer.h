@@ -9,6 +9,7 @@
 #include "view/garage_renderer.h"
 #include "view/race_renderer.h"
 #include "model/race_progress_store.h"
+#include "audio/racer_audio.h"
 
 #include <apps/common/key_manager/key_manager.h>
 #include <memory>
@@ -28,10 +29,11 @@ private:
     void prepareRace(uint32_t nowMs);
     void persistSelectedCar();
     void updateFeedback(const lets_and_go::RacerInput& input, uint32_t nowMs);
-    void playFeedbackTone(int frequencyHz, float durationSeconds, float volume);
+    void playSound(lets_and_go::SoundCue cue);
     void vibrateFeedback(uint8_t strength, uint16_t durationMs);
 
     std::unique_ptr<input::KeyManager> _keys;
+    std::unique_ptr<lets_and_go::RacerAudio> _audio;
     std::unique_ptr<lets_and_go::RacerInputProvider> _racerInput;
     lets_and_go::MenuAxisRepeater _menuAxis;
     lets_and_go::GameFlow _flow;
@@ -54,6 +56,7 @@ private:
     uint8_t _feedbackCountdown = 255u;
     uint8_t _feedbackLap = 0u;
     bool _feedbackBoost = false;
+    bool _feedbackBrake = false;
     bool _feedbackWallActive = false;
     bool _feedbackSfxEnabled = true;
     bool _feedbackVibrateEnabled = true;

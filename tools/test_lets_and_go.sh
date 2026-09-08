@@ -25,6 +25,14 @@ compile_run game_flow \
     "$repo_dir/tools/lets_and_go_game_flow_test.cpp" \
     "$base/controller/game_flow.cpp"
 
+compile_run chip_audio \
+    "$repo_dir/tools/lets_and_go_audio_test.cpp" \
+    "$base/audio/chip_synth.cpp"
+
+compile_run audio_lifecycle -pthread -I"$repo_dir/tools/lets_and_go_audio_host" \
+    "$repo_dir/tools/lets_and_go_audio_lifecycle_test.cpp" \
+    "$base/audio/racer_audio.cpp" "$base/audio/chip_synth.cpp"
+
 compile_run car_geometry \
     "$repo_dir/tools/lets_and_go_car_geometry_test.cpp" \
     "$base/model/car_catalog.cpp" "$base/model/car_display_mesh.cpp"
@@ -133,4 +141,4 @@ compile_run vector_explicit_integration \
 echo "[host-test] production_renderers"
 bash "$repo_dir/tools/render_lets_and_go.sh" "$out_dir/frames"
 
-echo "[host-test] all 12 game suites, 15 Vector Run suites, and Launcher regression passed"
+echo "[host-test] all 14 game suites, 15 Vector Run suites, and Launcher regression passed"

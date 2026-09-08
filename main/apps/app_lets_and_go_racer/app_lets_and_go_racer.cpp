@@ -4,7 +4,6 @@
 #include <assets/assets.h>
 #include <hal/hal.h>
 #include <mooncake_log.h>
-#include <apps/common/audio/audio.h>
 
 #include <algorithm>
 
@@ -54,10 +53,18 @@ void AppLetsAndGoRacer::onOpen()
     _feedbackCountdown = 255u;
     _feedbackLap = 0u;
     _feedbackBoost = false;
+    _feedbackBrake = false;
     _feedbackWallActive = false;
     const auto& feedbackConfig = GetHAL().getButtonConfig(true);
     _feedbackSfxEnabled = feedbackConfig.sfxEnabled;
     _feedbackVibrateEnabled = feedbackConfig.vibrateEnabled;
+    if(_feedbackSfxEnabled) {
+        _audio=std::make_unique<lets_and_go::RacerAudio>(GetHAL().getAudioSampleRate());
+        if(!_audio->open()) {
+            mclog::tagWarn(getAppInfo().name,"audio stream unavailable; continuing silently");
+            _audio.reset();
+        }
+    }
     _screenStartedMs = _lastUpdateMs;
     GetHAL().stopLvglUpdate();
     const auto& display = GetHAL().getDisplay();
@@ -194,6 +201,7 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
     const int navigation = acceptsNavigation
         ? _menuAxis.update(input.valid ? input.steer : 0.0f, nowMs) : 0;
     if (navigation != 0) {
+        playSound(lets_and_go::SoundCue::Navigate);
         if (before == GameScreen::CarSelect) {
             _selection.movePlayer(navigation);
         } else if (before == GameScreen::RivalSelect) {
@@ -206,6 +214,7 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         const bool changed = before == GameScreen::RivalSelect && !input.pausePressed
                                  ? _selection.cancelRival(_flow)
                                  : _flow.back();
+        if(changed)playSound(lets_and_go::SoundCue::Back);
         if (changed && before == GameScreen::Results) {
             _raceSeed = 0u;
             _selection.reset(_progress.lastCar);
@@ -214,16 +223,20 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         switch (before) {
             case GameScreen::CarSelect:
                 if (_selection.activatePlayer(_flow)) {
+                    playSound(lets_and_go::SoundCue::Confirm);
                     persistSelectedCar();
                 }
                 break;
-            case GameScreen::RivalSelect: _selection.activateRival(_flow); break;
+            case GameScreen::RivalSelect:
+                playSound(_selection.activateRival(_flow) ? lets_and_go::SoundCue::Confirm : lets_and_go::SoundCue::Reject);
+                break;
             case GameScreen::TrackSelect:
-                if (_flow.confirmTrack()) prepareRace(nowMs);
+                if (_flow.confirmTrack()) { playSound(lets_and_go::SoundCue::Confirm);prepareRace(nowMs); }
                 break;
             case GameScreen::Results: {
                 const lets_and_go::ResultAction action = _resultsSelection.cursor();
                 if (_resultsSelection.activate(_flow)) {
+                    playSound(lets_and_go::SoundCue::Confirm);
                     if (action == lets_and_go::ResultAction::Retry) {
                         prepareRace(nowMs);
                     } else if (action == lets_and_go::ResultAction::Garage) {
@@ -241,6 +254,10 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
 
 void AppLetsAndGoRacer::prepareRace(uint32_t nowMs)
 {
+    _feedbackLap=0;
+    _feedbackBoost=false;
+    _feedbackBrake=false;
+    _feedbackWallActive=false;
     _inputInvalidSinceMs = 0u;
     _pausedForInputLoss = false;
     if (_raceSeed == 0u) {
@@ -263,28 +280,43 @@ void AppLetsAndGoRacer::updateFeedback(const lets_and_go::RacerInput& input,
                                        uint32_t nowMs)
 {
     using lets_and_go::GameScreen;
-    const auto playCue = [this](const lets_and_go::tuning::FeedbackCue& cue) {
-        playFeedbackTone(cue.frequencyHz, cue.durationSeconds, cue.volume);
+    using lets_and_go::SoundCue;
+    using lets_and_go::MusicScene;
+    const auto playCue = [this](const lets_and_go::tuning::FeedbackCue& cue,SoundCue sound) {
+        playSound(sound);
         vibrateFeedback(cue.vibrationStrength, cue.vibrationDurationMs);
     };
     const GameScreen screen = _flow.screen();
+    if(_audio) {
+        MusicScene scene=MusicScene::Off;
+        if(screen==GameScreen::CarSelect || screen==GameScreen::CarShowcase ||
+           screen==GameScreen::RivalSelect || screen==GameScreen::TrackSelect || screen==GameScreen::GridIntro)
+            scene=MusicScene::Garage;
+        else if(screen==GameScreen::Racing)
+            scene=_race.snapshot().player().completedLaps>=2 ? MusicScene::FinalLap : MusicScene::Race;
+        else if(screen==GameScreen::Paused)scene=MusicScene::Paused;
+        else if(screen==GameScreen::Finish || screen==GameScreen::Results)scene=MusicScene::Results;
+        _audio->setScene(scene);
+    }
     if (screen == GameScreen::Countdown) {
         const uint8_t tick = static_cast<uint8_t>(
             std::min<uint32_t>(2u, (nowMs - _screenStartedMs) / 1000u));
         if (tick != _feedbackCountdown) {
             _feedbackCountdown = tick;
-            auto cue = lets_and_go::tuning::kCountdownCue;
-            cue.frequencyHz += static_cast<int>(tick) * 140;
-            playCue(cue);
+            playCue(lets_and_go::tuning::kCountdownCue,SoundCue::Countdown);
         }
     } else {
         _feedbackCountdown = 255u;
     }
     if (screen != _feedbackScreen) {
         if (screen == GameScreen::Racing && _feedbackScreen == GameScreen::Countdown) {
-            playCue(lets_and_go::tuning::kGoCue);
+            playCue(lets_and_go::tuning::kGoCue,SoundCue::Go);
         } else if (screen == GameScreen::Finish) {
-            playCue(lets_and_go::tuning::kFinishCue);
+            playCue(lets_and_go::tuning::kFinishCue,SoundCue::Finish);
+        } else if(screen==GameScreen::Paused) {
+            playSound(SoundCue::Pause);
+        } else if(screen==GameScreen::Racing && _feedbackScreen==GameScreen::Paused) {
+            playSound(SoundCue::Resume);
         }
         _feedbackScreen = screen;
     }
@@ -293,39 +325,42 @@ void AppLetsAndGoRacer::updateFeedback(const lets_and_go::RacerInput& input,
         const bool boosting = input.valid && input.boostHeld && !input.brakeHeld &&
                               player.motion.boostCharge > 0.02f;
         if (boosting && !_feedbackBoost) {
-            playCue(lets_and_go::tuning::kBoostCue);
+            playCue(lets_and_go::tuning::kBoostCue,SoundCue::Boost);
         }
         _feedbackBoost = boosting;
+        const bool braking=input.valid && input.brakeHeld;
+        if(braking && !_feedbackBrake)playSound(SoundCue::Brake);
+        _feedbackBrake=braking;
         const bool wallHit = player.motion.wallImpact > 0.75f;
         if (wallHit && !_feedbackWallActive &&
             (_lastWallFeedbackMs == 0u || nowMs - _lastWallFeedbackMs >= 300u)) {
             _lastWallFeedbackMs = nowMs;
-            playCue(lets_and_go::tuning::kWallCue);
+            playCue(lets_and_go::tuning::kWallCue,SoundCue::Wall);
         }
         _feedbackWallActive = wallHit;
         if (player.completedLaps != _feedbackLap) {
             _feedbackLap = player.completedLaps;
             if (_feedbackLap == 2u) {
-                playCue(lets_and_go::tuning::kFinalLapCue);
+                playCue(lets_and_go::tuning::kFinalLapCue,SoundCue::FinalLap);
+            } else if(_feedbackLap==1u) {
+                playSound(SoundCue::Lap);
             }
         }
     } else {
         _feedbackBoost = false;
+        _feedbackBrake = false;
         _feedbackWallActive = false;
     }
 }
 
-void AppLetsAndGoRacer::playFeedbackTone(int frequencyHz, float durationSeconds,
-                                         float volume)
+void AppLetsAndGoRacer::playSound(lets_and_go::SoundCue cue)
 {
-    if (_feedbackSfxEnabled) {
-        audio::play_tone(frequencyHz, durationSeconds, volume);
-    }
+    if (_audio) _audio->trigger(cue);
 }
 
 void AppLetsAndGoRacer::vibrateFeedback(uint8_t strength, uint16_t durationMs)
 {
-    if (_feedbackVibrateEnabled) GetHAL().vibrate(strength, durationMs);
+    if (_feedbackVibrateEnabled) GetHAL().vibrate(durationMs, strength);
 }
 
 void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
@@ -345,16 +380,20 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
             // Hardware readiness/calibration cannot be bypassed by body buttons.
             case GameScreen::CarSelect:
                 if (_selection.activatePlayer(_flow)) {
+                    playSound(lets_and_go::SoundCue::Confirm);
                     persistSelectedCar();
                 }
                 break;
-            case GameScreen::RivalSelect: _selection.activateRival(_flow); break;
+            case GameScreen::RivalSelect:
+                playSound(_selection.activateRival(_flow) ? lets_and_go::SoundCue::Confirm : lets_and_go::SoundCue::Reject);
+                break;
             case GameScreen::TrackSelect:
-                if (_flow.confirmTrack()) prepareRace(nowMs);
+                if (_flow.confirmTrack()) { playSound(lets_and_go::SoundCue::Confirm);prepareRace(nowMs); }
                 break;
             case GameScreen::Results: {
                 const lets_and_go::ResultAction action = _resultsSelection.cursor();
                 if (_resultsSelection.activate(_flow)) {
+                    playSound(lets_and_go::SoundCue::Confirm);
                     if (action == lets_and_go::ResultAction::Retry) {
                         prepareRace(nowMs);
                     } else if (action == lets_and_go::ResultAction::Garage) {
@@ -370,6 +409,7 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
     const bool navigated = event == input::KeyEvent::GoPrevious &&
         (before == GameScreen::CarSelect || before == GameScreen::RivalSelect ||
          before == GameScreen::Results);
+    if(navigated)playSound(lets_and_go::SoundCue::Navigate);
     if (_flow.screen() != before || navigated) {
         _screenStartedMs = nowMs;
     }
@@ -377,6 +417,7 @@ void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
 
 void AppLetsAndGoRacer::onClose()
 {
+    _audio.reset(); // Synchronize with the audio task before releasing owner memory.
     const auto& garageStats = _garageBudget.stats();
     const auto& raceStats = _raceBudget.stats();
     mclog::tagInfo(getAppInfo().name,
@@ -413,6 +454,7 @@ void AppLetsAndGoRacer::onClose()
     _feedbackCountdown = 255u;
     _feedbackLap = 0u;
     _feedbackBoost = false;
+    _feedbackBrake = false;
     _feedbackWallActive = false;
     GetHAL().startLvglUpdate();
 }
