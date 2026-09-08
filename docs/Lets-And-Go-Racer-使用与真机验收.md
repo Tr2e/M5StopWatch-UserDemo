@@ -65,6 +65,6 @@ bash tools/render_lets_and_go.sh /tmp/lets-go-review
 python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-review /tmp/lets-go-review/contact.png
 ```
 
-当前画面见 `Lets-And-Go-Racer-R12-二次视觉审查.md`；可玩性修正见 R13。生产渲染和 384 场输入策略回归已并入门禁（12 游戏 + 15 Vector Run + Launcher）；对比 PNG 在 `docs/assets/lets-and-go-r12-before.png` 与 `lets-and-go-r12-after.png`。
+当前四车外形和官方实物对照见 [R14 实车模型重建](Lets-And-Go-Racer-R14-实车模型重建.md)；道路视觉见 R12，可玩性见 R13。28 套回归继续覆盖生产渲染与 384 场策略比赛。最新对比图为 `docs/assets/lets-and-go-r14-before.png` 与 `lets-and-go-r14-after.png`。R14 增加约 40 KB 渲染实例缓存，真机需重点复验空闲堆与三档帧耗时。
 
 基准生成器是 `tools/lets_and_go_reference_generator.cpp`；固定种子 `0x12345678` 的 JSON 已更新为 v2，包含共同终点的插值冲线时间。静态 SVG 是 R10 历史设计稿，不代表当前生产渲染器。

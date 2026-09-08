@@ -79,10 +79,25 @@ int main(int argc, char** argv)
         const auto& pixels = canvas.frame();
         if (std::count(pixels.begin(), pixels.end(), spec.accentColor) < 10 ||
             std::count(pixels.begin(), pixels.end(), spec.wheelColor) < 10) {
-            std::cerr << "Official accent/wheel color missing from garage\n";
+            std::cerr << spec.shortName << ": official accent/wheel color missing from garage\n";
             valid = false;
         }
         save("car-" + std::to_string(i));
+    }
+    // The exact same production cache is exercised across every selection,
+    // entrance scale, wheel phase and quality tier (not just a single hero shot).
+    for(std::size_t i=0;i<kCarCount;++i) {
+        GameFlow previewFlow;
+        previewFlow.confirmInputAvailable(); previewFlow.completeCalibration(true);
+        previewFlow.confirmPlayerCar();
+        selection.reset(static_cast<CarId>(i));
+        for(uint32_t time : {0u,120u,500u,900u,2500u}) {
+            for(auto quality : {PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) {
+                garage.render(previewFlow,selection,time,quality);
+                checkText();
+            }
+        }
+        save("showcase-"+std::to_string(i));
     }
     selection.reset();
     flow.confirmPlayerCar();

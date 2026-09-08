@@ -1,4 +1,5 @@
 #include "../main/apps/app_lets_and_go_racer/model/car_catalog.h"
+#include "../main/apps/app_lets_and_go_racer/model/car_display_mesh.h"
 
 #include <cmath>
 #include <cstring>
@@ -65,7 +66,9 @@ bool validateWireframes()
         const CarId id = static_cast<CarId>(index);
         const CarWireframe race = buildCarWireframe(id, CarLod::Race);
         const CarWireframe showcase = buildCarWireframe(id, CarLod::Showcase);
-        std::array<WireLine, 64u> compact{};
+        std::cout << carSpec(id).shortName << " wire lines: race=" << race.lineCount
+                  << " reference=" << showcase.lineCount << '\n';
+        std::array<WireLine, 128u> compact{};
         const auto built = buildCarWireframeInto(id, CarLod::Race, compact.data(), compact.size());
         valid &= check(!built.overflowed && built.lineCount == race.lineCount,
                        "in-place race mesh differs from reference builder");
@@ -81,9 +84,9 @@ bool validateWireframes()
                            buildCarWireframeInto(id, CarLod::Showcase, nullptr, 0u).overflowed,
                        "mesh capacity limit was not enforced");
         showcaseCounts[index] = showcase.lineCount;
-        valid &= check(race.lineCount >= 35u && race.lineCount <= 60u,
+        valid &= check(race.lineCount >= 100u && race.lineCount <= 128u,
                        "race LOD left the line budget");
-        valid &= check(showcase.lineCount >= 80u && showcase.lineCount <= 140u,
+        valid &= check(showcase.lineCount >= 140u && showcase.lineCount <= 192u,
                        "showcase LOD left the line budget");
         valid &= check(showcase.lineCount > race.lineCount,
                        "showcase LOD is not richer than race LOD");
@@ -102,8 +105,9 @@ bool validateWireframes()
                            "wireframe escaped normalized car bounds");
         }
     }
-    valid &= check(showcaseCounts[1] > showcaseCounts[0],
-                   "Hurricane Sonic lost its three-plane rear wing signature");
+    valid &= check(carSpec(CarId::HurricaneSonic).wingPlanes == 1 &&
+                       carSpec(CarId::BrockenGigant).wingPlanes == 0,
+                   "official wing configuration regressed");
     valid &= check(carSpec(CarId::BrockenGigant).profile[5].halfWidth >
                        carSpec(CarId::CycloneMagnum).profile[5].halfWidth,
                    "Brocken Gigant lost its broad front-motor silhouette");
@@ -112,9 +116,71 @@ bool validateWireframes()
                    "Neo Tridagger ZMC height signature changed");
     return valid;
 }
+
+bool validateDisplayMeshes()
+{
+    bool valid=true;
+    for (const auto& spec : carCatalog()) {
+        CarDisplayMesh mesh;
+        buildCarDisplayMesh(spec.id,mesh);
+        std::cout << spec.shortName << " display panels: " << mesh.count << '\n';
+        valid &= check(!mesh.overflowed && mesh.count > 350 &&
+                       mesh.count < mesh.panels.size(), "display mesh exceeded fixed budget");
+        unsigned spokes=0;
+        float maxY=0;
+        for (std::size_t i=0;i<mesh.count;++i) {
+            const auto& face=mesh.panels[i];
+            valid &= check(face.wheel<=4 && face.edges<=15, "invalid panel metadata");
+            valid &= check(face.parent==0xffffu || (face.parent<i &&
+                           mesh.panels[face.parent].parent==0xffffu),
+                           "decal parent is invalid, cyclic or nested");
+            if(face.wheel) ++spokes;
+            for (const auto p : face.point) {
+                maxY=std::max(maxY,p.y);
+                valid &= check(finitePoint(p) && std::abs(p.x)<.7f &&
+                               std::abs(p.z)<1.01f && p.y>=0 && p.y<.71f,
+                               "display vertex outside normalized envelope");
+                const float axle=face.wheel<=2 ? kModelFrontAxle : kModelRearAxle;
+                const auto q=animateCarPanelPoint(p,face.wheel,0,1);
+                if(face.wheel) {
+                    const float r=std::hypot(p.y-kModelWheelRadius,p.z-axle);
+                    valid &= check(std::abs(r-std::hypot(q.y-kModelWheelRadius,q.z-axle))<1e-6f &&
+                                   q.x==p.x, "hub rotation changed radius or axle");
+                } else {
+                    valid &= check(q.x==p.x && q.y==p.y && q.z==p.z,
+                                   "non-wheel body panel rotates");
+                }
+            }
+        }
+        valid &= check(spokes==(spec.id==CarId::NeoTridaggerZmc ? 10u : 20u),
+                       "five-spoke wheels or Tridagger front caps regressed");
+        if(spec.id==CarId::BrockenGigant)
+            valid &= check(maxY<.50f && spec.bodyColor==0xc9a7 && spec.wheelColor==0xe5ca,
+                           "Brocken tall wing or incorrect livery returned");
+        const auto highCount=mesh.count;
+        buildCarDisplayMesh(spec.id,mesh,CarSurfaceDetail::Medium);
+        const auto mediumCount=mesh.count;
+        valid &= check(!mesh.overflowed, "medium surface mesh overflow");
+        buildCarDisplayMesh(spec.id,mesh,CarSurfaceDetail::Low);
+        valid &= check(!mesh.overflowed && mesh.count<mediumCount && mediumCount<highCount,
+                       "adaptive surface quality does not reduce geometry");
+        for(std::size_t i=0;i<mesh.count;++i)
+            valid &= check(mesh.panels[i].parent==0xffffu || mesh.panels[i].parent<i,
+                           "low detail invalidated attached decal index");
+    }
+    CarDisplayMesh fallback,magnum;
+    buildCarDisplayMesh(static_cast<CarId>(255),fallback);
+    buildCarDisplayMesh(CarId::CycloneMagnum,magnum);
+    valid &= check(fallback.count==magnum.count && !fallback.overflowed,
+                   "invalid car fallback changed display geometry");
+    for(std::size_t i=0;i<magnum.count;++i)
+        valid &= check(fallback.panels[i].color==magnum.panels[i].color,
+                       "invalid car fallback changed livery");
+    return valid;
+}
 }  // namespace
 
 int main()
 {
-    return validateCatalog() && validateWireframes() ? 0 : 1;
+    return validateCatalog() && validateWireframes() && validateDisplayMeshes() ? 0 : 1;
 }

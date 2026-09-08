@@ -14,7 +14,7 @@
 namespace lets_and_go {
 
 struct CompactRaceMesh {
-    static constexpr std::size_t kMaximumLines = 64u;
+    static constexpr std::size_t kMaximumLines = 128u;
     std::array<WireLine, kMaximumLines> lines{};
     std::size_t lineCount = 0;
 };
@@ -38,7 +38,7 @@ private:
     int _height = 0;
 };
 
-static_assert(sizeof(RaceRenderer) <= 30000u,
+static_assert(sizeof(RaceRenderer) <= 36000u,
               "race renderer cache exceeded its reviewed resident budget");
 
 }  // namespace lets_and_go

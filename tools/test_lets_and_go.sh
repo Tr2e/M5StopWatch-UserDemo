@@ -27,7 +27,7 @@ compile_run game_flow \
 
 compile_run car_geometry \
     "$repo_dir/tools/lets_and_go_car_geometry_test.cpp" \
-    "$base/model/car_catalog.cpp"
+    "$base/model/car_catalog.cpp" "$base/model/car_display_mesh.cpp"
 
 compile_run garage_selection \
     "$repo_dir/tools/lets_and_go_garage_selection_test.cpp" \

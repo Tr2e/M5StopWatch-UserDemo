@@ -17,17 +17,14 @@ constexpr uint16_t kPencil = 0x4269u;
 constexpr uint16_t kFaint = 0x9cd3u;
 constexpr uint16_t kWarning = 0xd945u;
 
-CarPoint spinWheel(CarPoint point, const CarSpec& spec, WireStroke stroke,
+CarPoint spinWheel(CarPoint point, WireStroke stroke,
                    float cosine, float sine)
 {
-    if (stroke != WireStroke::Mechanical ||
-        std::abs(std::abs(point.x) - 0.59f) > 0.02f) return point;
-    const float axle = std::abs(point.z - spec.frontAxleZ) <
-                               std::abs(point.z - spec.rearAxleZ)
-                           ? spec.frontAxleZ : spec.rearAxleZ;
-    const float y = point.y - spec.wheelRadius;
+    if (stroke != WireStroke::WheelSpoke) return point;
+    const float axle = point.z > 0 ? kModelFrontAxle : kModelRearAxle;
+    const float y = point.y - kModelWheelRadius;
     const float z = point.z - axle;
-    point.y = spec.wheelRadius + y * cosine - z * sine;
+    point.y = kModelWheelRadius + y * cosine - z * sine;
     point.z = axle + y * sine + z * cosine;
     return point;
 }
@@ -75,20 +72,24 @@ void drawRaceCar(LGFX_Sprite& canvas, const TrackCamera& camera,
     const TrackFrame frame = track.sample(car.motion.distance);
     const CarPose pose = makeCarPose(frame, car);
     const CarSpec& spec = carSpec(car.car);
-    const float wheelPhase = car.motion.distance / (0.34f * spec.wheelRadius);
+    const float wheelPhase = car.motion.distance / (0.34f * kModelWheelRadius);
     const float wheelCosine = std::cos(wheelPhase);
     const float wheelSine = std::sin(wheelPhase);
     for (std::size_t index = 0; index < mesh.lineCount; ++index) {
         const WireLine& line = mesh.lines[index];
         if (!car.player && detail != PencilDetail::High &&
             line.stroke == WireStroke::Mechanical && (index & 1u) != 0u) continue;
-        const CarPoint from = spinWheel(line.from, spec, line.stroke,
+        const CarPoint from = spinWheel(line.from, line.stroke,
                                         wheelCosine, wheelSine);
-        const CarPoint to = spinWheel(line.to, spec, line.stroke,
+        const CarPoint to = spinWheel(line.to, line.stroke,
                                       wheelCosine, wheelSine);
         const uint16_t color = line.stroke == WireStroke::Accent
-                                   ? spec.accentColor : line.stroke == WireStroke::Mechanical
-                                   ? spec.wheelColor : spec.bodyColor == 0x2145u ? spec.bodyColor : kPencil;
+                                   ? spec.accentColor : line.stroke == WireStroke::WheelSpoke
+                                   ? spec.wheelColor : line.stroke == WireStroke::Glass
+                                   ? (car.car==CarId::BrockenGigant ? spec.accentColor :
+                                      car.car==CarId::NeoTridaggerZmc ? 0x9c4cu : kPencil)
+                                   : line.stroke == WireStroke::Mechanical ? kPencil
+                                   : spec.bodyColor == 0xef7du ? kPencil : spec.bodyColor;
         occlusion.drawLine(canvas, camera,
                           carPointToWorld(from, pose), carPointToWorld(to, pose), color);
     }

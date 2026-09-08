@@ -3,6 +3,7 @@
 #include "../controller/game_flow.h"
 #include "../controller/garage_selection.h"
 #include "../model/car_catalog.h"
+#include "../model/car_display_mesh.h"
 #include "../model/overpass_track.h"
 #include "render_budget.h"
 #include "pencil_scene.h"
@@ -13,6 +14,8 @@
 
 namespace lets_and_go {
 
+struct CarPanelOrder { float depth; uint16_t index; };
+
 class GarageRenderer {
 public:
     void open(int width, int height);
@@ -22,18 +25,20 @@ public:
                 const RacerInputStatus& inputStatus = {});
 
 private:
-    const CarWireframe& showcaseMesh(CarId car);
+    const CarDisplayMesh& showcaseMesh(CarId car, PencilDetail detail);
 
-    CarWireframe _showcaseMesh{};
+    CarDisplayMesh _showcaseMesh{};
+    std::array<CarPanelOrder, CarDisplayMesh::kMaximumPanels> _panelOrder{};
     OverpassTrack _track{};
     PencilTrack _trackPreview{};
     CarId _cachedCar = CarId::CycloneMagnum;
+    PencilDetail _cachedDetail = PencilDetail::High;
     bool _meshCached = false;
     int _width = 0;
     int _height = 0;
 };
 
-static_assert(sizeof(GarageRenderer) <= 10000u,
+static_assert(sizeof(GarageRenderer) <= 40500u,
               "garage renderer cache exceeded its reviewed resident budget");
 
 }  // namespace lets_and_go

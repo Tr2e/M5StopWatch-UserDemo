@@ -9,7 +9,11 @@
 namespace lets_and_go {
 
 enum class CarLod : uint8_t { Race, Showcase };
-enum class WireStroke : uint8_t { Body, Accent, Mechanical };
+enum class WireStroke : uint8_t { Body, Accent, Mechanical, WheelSpoke, Glass };
+
+inline constexpr float kModelWheelRadius = 0.175f;
+inline constexpr float kModelFrontAxle = 0.52f;
+inline constexpr float kModelRearAxle = -0.55f;
 
 struct CarPoint {
     float x = 0.0f;
@@ -65,7 +69,7 @@ struct CarSpec {
 };
 
 struct CarWireframe {
-    static constexpr std::size_t kMaximumLines = 144;
+    static constexpr std::size_t kMaximumLines = 192;
     std::array<WireLine, kMaximumLines> lines{};
     std::size_t lineCount = 0;
     bool overflowed = false;

@@ -7,12 +7,11 @@ namespace lets_and_go {
 namespace {
 
 constexpr uint16_t kWhite = 0xef7du;
-constexpr uint16_t kBlue = 0x32bdu;
-constexpr uint16_t kRed = 0xd945u;
-constexpr uint16_t kGreen = 0x566bu;
+constexpr uint16_t kBlue = 0x3275u;
+constexpr uint16_t kRed = 0xc9a7u;
+constexpr uint16_t kGreen = 0x36a8u;
 constexpr uint16_t kBlack = 0x2145u;
-constexpr uint16_t kYellow = 0xeec4u;
-constexpr uint16_t kGray = 0x7befu;
+constexpr uint16_t kYellow = 0xe5cau;
 
 constexpr std::array<CarSpec, kCarCount> kCars = {{
     {
@@ -39,7 +38,7 @@ constexpr std::array<CarSpec, kCarCount> kCars = {{
           { 0.34f, 0.59f, 0.06f, 0.27f, 0.38f},
           { 0.70f, 0.52f, 0.06f, 0.20f, 0.26f},
           { 1.00f, 0.20f, 0.07f, 0.13f, 0.15f}}},
-        0.58f, -0.58f, 0.21f, -0.78f, 0.60f, 0.64f, 0.14f, 3,
+        0.58f, -0.58f, 0.21f, -0.78f, 0.48f, 0.50f, 0.22f, 1,
     },
     {
         CarId::NeoTridaggerZmc, "Neo Tridagger ZMC", "TRIDAGGER",
@@ -57,7 +56,7 @@ constexpr std::array<CarSpec, kCarCount> kCars = {{
     {
         CarId::BrockenGigant, "Brocken Gigant", "BROCKEN",
         {156, 97, 38}, {0.92f, 0.76f, 0.68f, 0.99f},
-        kBlack, kRed, kGray,
+        kRed, kBlue, kYellow,
         {{{-1.00f, 0.55f, 0.08f, 0.20f, 0.25f},
           {-0.72f, 0.62f, 0.07f, 0.24f, 0.30f},
           {-0.38f, 0.61f, 0.06f, 0.28f, 0.38f},
@@ -65,7 +64,7 @@ constexpr std::array<CarSpec, kCarCount> kCars = {{
           { 0.34f, 0.64f, 0.05f, 0.30f, 0.38f},
           { 0.70f, 0.64f, 0.05f, 0.26f, 0.31f},
           { 1.00f, 0.42f, 0.06f, 0.20f, 0.23f}}},
-        0.62f, -0.56f, 0.23f, -0.72f, 0.48f, 0.58f, 0.14f, 1,
+        0.62f, -0.56f, 0.23f, -0.72f, 0.48f, 0.58f, 0.14f, 0,
     },
 }};
 
@@ -102,58 +101,68 @@ void addRing(CarMeshWriter& mesh, float x, float centerY, float centerZ,
     }
 }
 
-void addStation(CarMeshWriter& mesh, const CarProfileStation& station, bool detailed)
+void quadWire(CarMeshWriter& mesh, CarPoint a, CarPoint b, CarPoint c, CarPoint d,
+              WireStroke stroke)
 {
-    const CarPoint leftSill{-station.halfWidth, station.sillY, station.z};
-    const CarPoint rightSill{station.halfWidth, station.sillY, station.z};
-    const CarPoint leftDeck{-station.halfWidth * 0.72f, station.deckY, station.z};
-    const CarPoint rightDeck{station.halfWidth * 0.72f, station.deckY, station.z};
-    const CarPoint center{0.0f, station.centerY, station.z};
-    addLine(mesh, leftSill, rightSill, WireStroke::Body);
-    addLine(mesh, leftSill, leftDeck, WireStroke::Body);
-    addLine(mesh, rightSill, rightDeck, WireStroke::Body);
-    addLine(mesh, leftDeck, rightDeck, WireStroke::Accent);
-    if (detailed) {
-        addLine(mesh, leftDeck, center, WireStroke::Accent);
-        addLine(mesh, center, rightDeck, WireStroke::Accent);
-    }
+    addLine(mesh,a,b,stroke); addLine(mesh,b,c,stroke);
+    addLine(mesh,c,d,stroke); addLine(mesh,d,a,stroke);
 }
 
-void connectStations(CarMeshWriter& mesh, const CarProfileStation& from,
-                     const CarProfileStation& to)
+void bodyWires(CarMeshWriter& mesh, CarId id, bool detailed)
 {
-    addLine(mesh, {-from.halfWidth, from.sillY, from.z},
-            {-to.halfWidth, to.sillY, to.z}, WireStroke::Body);
-    addLine(mesh, {from.halfWidth, from.sillY, from.z},
-            {to.halfWidth, to.sillY, to.z}, WireStroke::Body);
-    addLine(mesh, {-from.halfWidth * 0.72f, from.deckY, from.z},
-            {-to.halfWidth * 0.72f, to.deckY, to.z}, WireStroke::Body);
-    addLine(mesh, {from.halfWidth * 0.72f, from.deckY, from.z},
-            {to.halfWidth * 0.72f, to.deckY, to.z}, WireStroke::Body);
-    addLine(mesh, {0.0f, from.centerY, from.z},
-            {0.0f, to.centerY, to.z}, WireStroke::Accent);
-}
-
-void addWing(CarMeshWriter& mesh, const CarSpec& spec, CarLod lod)
-{
-    const float rearZ = spec.wingZ - spec.wingChord * 0.5f;
-    const float frontZ = spec.wingZ + spec.wingChord * 0.5f;
-    for (uint8_t plane = 0; plane < spec.wingPlanes; ++plane) {
-        const float y = spec.wingY + static_cast<float>(plane) * 0.055f;
-        addLine(mesh, {-spec.wingHalfWidth, y, rearZ},
-                {spec.wingHalfWidth, y, rearZ}, WireStroke::Accent);
-        addLine(mesh, {-spec.wingHalfWidth, y, frontZ},
-                {spec.wingHalfWidth, y, frontZ}, WireStroke::Accent);
-        addLine(mesh, {-spec.wingHalfWidth, y, rearZ},
-                {-spec.wingHalfWidth, y, frontZ}, WireStroke::Accent);
-        if (lod == CarLod::Showcase) {
-            addLine(mesh, {spec.wingHalfWidth, y, rearZ},
-                    {spec.wingHalfWidth, y, frontZ}, WireStroke::Accent);
-            addLine(mesh, {-spec.wingHalfWidth * 0.58f, y, frontZ},
-                    {-spec.wingHalfWidth * 0.48f, 0.28f, frontZ}, WireStroke::Mechanical);
-            addLine(mesh, {spec.wingHalfWidth * 0.58f, y, frontZ},
-                    {spec.wingHalfWidth * 0.48f, 0.28f, frontZ}, WireStroke::Mechanical);
+    const bool brocken=id==CarId::BrockenGigant, neo=id==CarId::NeoTridaggerZmc;
+    const float width=brocken ? .28f : neo ? .23f : .19f;
+    const float nose=brocken ? .12f : neo ? .11f : .045f;
+    // Separate central shell, windscreen and four cowls; no boat-shaped envelope.
+    quadWire(mesh,{-width,.30f,-.48f},{width,.30f,-.48f},
+        {nose,.12f,.86f},{-nose,.12f,.86f},WireStroke::Body);
+    quadWire(mesh,{-width,.12f,-.48f},{width,.12f,-.48f},
+        {nose,.09f,.86f},{-nose,.09f,.86f},WireStroke::Body);
+    for(float side : {-1.f,1.f}) {
+        addLine(mesh,{side*width,.12f,-.48f},{side*width,.30f,-.48f},WireStroke::Body);
+        addLine(mesh,{side*nose,.09f,.86f},{side*nose,.12f,.86f},WireStroke::Body);
+        quadWire(mesh,{side*.29f,.34f,-.76f},{side*.53f,.34f,-.76f},
+            {side*.51f,.28f,-.27f},{side*.29f,.28f,-.27f},WireStroke::Body);
+        quadWire(mesh,{side*.34f,.34f,.47f},{side*.54f,.34f,.47f},
+            {side*.52f,.15f,.81f},{side*.34f,.15f,.81f},WireStroke::Accent);
+        addLine(mesh,{side*.54f,.34f,.47f},{side*.55f,.12f,.54f},WireStroke::Body);
+        if(brocken) {
+            addLine(mesh,{side*.585f,.165f,-.57f},{side*.585f,.165f,.58f},WireStroke::Mechanical);
+            addLine(mesh,{side*.15f,.29f,-.63f},{side*.15f,.49f,-.63f},WireStroke::Mechanical);
         }
+        if(neo) {
+            addLine(mesh,{side*.31f,.35f,.49f},{side*.37f,.18f,.80f},WireStroke::Accent);
+            addLine(mesh,{side*.37f,.18f,.80f},{side*.44f,.35f,.49f},WireStroke::Accent);
+        }
+    }
+    const float back=brocken ? -.08f : -.23f, roof=neo ? .48f : .45f;
+    quadWire(mesh,{-.15f,roof,back},{.15f,roof,back},
+        {.10f,brocken ? .326f : .30f,.19f},{-.10f,brocken ? .326f : .30f,.19f},WireStroke::Glass);
+    addLine(mesh,{-.15f,roof,back},{-.135f,.33f,-.43f},WireStroke::Body);
+    addLine(mesh,{.15f,roof,back},{.135f,.33f,-.43f},WireStroke::Body);
+    for(float z : {-.85f,.88f})
+        quadWire(mesh,{-.55f,.08f,z-.035f},{.55f,.08f,z-.035f},
+            {.55f,.08f,z+.035f},{-.55f,.08f,z+.035f},WireStroke::Mechanical);
+    if(!brocken) {
+        const float h=neo ? .59f : .48f;
+        quadWire(mesh,{-.50f,h,-.98f},{.50f,h,-.98f},
+            {.50f,h,-.76f},{-.50f,h,-.76f},WireStroke::Accent);
+        for(float side : {-1.f,1.f}) {
+            addLine(mesh,{side*.25f,.30f,-.83f},{side*.25f,h,-.83f},WireStroke::Body);
+            addLine(mesh,{side*.50f,h,-.98f},{side*.50f,h+.10f,-.77f},WireStroke::Body);
+        }
+    } else {
+        for(int rib=0;rib<4;++rib) {
+            const float x=-.15f+rib*.10f;
+            addLine(mesh,{x,.34f,.23f},{x,.34f,.46f},WireStroke::Body);
+        }
+    }
+    if(id==CarId::HurricaneSonic) {
+        quadWire(mesh,{-.32f,.29f,.52f},{.32f,.29f,.52f},
+            {.22f,.18f,.78f},{-.22f,.18f,.78f},WireStroke::Body);
+        if(detailed) for(float side : {-1.f,1.f}) for(int rib=0;rib<3;++rib)
+            addLine(mesh,{side*.29f,.405f,-.68f+rib*.065f},
+                {side*.51f,.405f,-.68f+rib*.065f},WireStroke::Body);
     }
 }
 
@@ -172,43 +181,24 @@ const CarSpec& carSpec(CarId id)
 CarMeshBuildResult buildCarWireframeInto(CarId id, CarLod lod,
                                          WireLine* output, std::size_t capacity)
 {
-    const CarSpec& spec = carSpec(id);
+    id = carSpec(id).id;
     CarMeshWriter mesh{output, output ? capacity : 0u};
-    const bool showcase = lod == CarLod::Showcase;
-    constexpr std::array<std::size_t, 4> kRaceStations = {{0u, 2u, 4u, 6u}};
-
-    if (showcase) {
-        for (const auto& station : spec.profile) addStation(mesh, station, true);
-        for (std::size_t index = 1; index < spec.profile.size(); ++index) {
-            connectStations(mesh, spec.profile[index - 1], spec.profile[index]);
-        }
-    } else {
-        for (const std::size_t index : kRaceStations) {
-            addStation(mesh, spec.profile[index], false);
-        }
-        for (std::size_t index = 1; index < kRaceStations.size(); ++index) {
-            connectStations(mesh, spec.profile[kRaceStations[index - 1]],
-                            spec.profile[kRaceStations[index]]);
+    const bool detailed=lod==CarLod::Showcase;
+    bodyWires(mesh,id,detailed);
+    for(float axle : {kModelFrontAxle,kModelRearAxle}) for(float side : {-1.f,1.f}) {
+        addRing(mesh,side*.553f,kModelWheelRadius,axle,kModelWheelRadius,
+                detailed ? 12 : 8,WireStroke::Mechanical,false);
+        if(detailed) addRing(mesh,side*.395f,kModelWheelRadius,axle,kModelWheelRadius,
+                             6,WireStroke::Body,false);
+        if(id!=CarId::NeoTridaggerZmc || axle==kModelRearAxle) {
+            addLine(mesh,{side*.555f,kModelWheelRadius,axle},
+                {side*.555f,kModelWheelRadius+.12f,axle},WireStroke::WheelSpoke);
+            addLine(mesh,{side*.555f,kModelWheelRadius,axle},
+                {side*.555f,kModelWheelRadius,axle+.12f},WireStroke::WheelSpoke);
         }
     }
-
-    const int wheelSegments = showcase ? 8 : 4;
-    const float wheelX = 0.59f;
-    for (const float axleZ : {spec.frontAxleZ, spec.rearAxleZ}) {
-        addRing(mesh, -wheelX, spec.wheelRadius, axleZ, spec.wheelRadius,
-                wheelSegments, WireStroke::Mechanical, false);
-        addRing(mesh, wheelX, spec.wheelRadius, axleZ, spec.wheelRadius,
-                wheelSegments, WireStroke::Mechanical, false);
-    }
-    if (showcase) {
-        for (const float rollerZ : {-0.92f, 0.90f}) {
-            addRing(mesh, -0.70f, 0.10f, rollerZ, 0.08f, 4,
-                    WireStroke::Mechanical, true);
-            addRing(mesh, 0.70f, 0.10f, rollerZ, 0.08f, 4,
-                    WireStroke::Mechanical, true);
-        }
-    }
-    addWing(mesh, spec, lod);
+    for(float side : {-1.f,1.f}) for(float z : {-.84f,.90f})
+        addRing(mesh,side*.55f,.13f,z,.073f,4,WireStroke::Mechanical,true);
     return {mesh.lineCount, mesh.overflowed};
 }
 
