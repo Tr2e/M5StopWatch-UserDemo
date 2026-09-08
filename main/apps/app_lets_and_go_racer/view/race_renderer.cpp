@@ -8,6 +8,7 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <new>
 
 namespace lets_and_go {
 namespace {
@@ -17,17 +18,6 @@ constexpr uint16_t kPencil = 0x4269u;
 constexpr uint16_t kFaint = 0x9cd3u;
 constexpr uint16_t kWarning = 0xd945u;
 
-CarPoint spinWheel(CarPoint point, WireStroke stroke,
-                   float cosine, float sine)
-{
-    if (stroke != WireStroke::WheelSpoke) return point;
-    const float axle = point.z > 0 ? kModelFrontAxle : kModelRearAxle;
-    const float y = point.y - kModelWheelRadius;
-    const float z = point.z - axle;
-    point.y = kModelWheelRadius + y * cosine - z * sine;
-    point.z = axle + y * sine + z * cosine;
-    return point;
-}
 
 struct CarPose {
     TrackVec3 base;
@@ -64,34 +54,48 @@ TrackVec3 carPointToWorld(CarPoint point, const CarPose& pose)
     return result;
 }
 
-void drawRaceCar(LGFX_Sprite& canvas, const TrackCamera& camera,
-                 const OverpassTrack& track, const RaceCarSnapshot& car,
-                 const CompactRaceMesh& mesh, const PencilOcclusion& occlusion,
-                 PencilDetail detail)
+void drawRaceCar(LGFX_Sprite& canvas,const TrackCamera& camera,
+                 const OverpassTrack& track,const RaceCarSnapshot& car,
+                 const RaceSurfaceMesh& mesh,CarSurfaceRaster<112,112>& raster,
+                 const PencilOcclusion& occlusion,PencilDetail)
 {
-    const TrackFrame frame = track.sample(car.motion.distance);
-    const CarPose pose = makeCarPose(frame, car);
-    const CarSpec& spec = carSpec(car.car);
-    const float wheelPhase = car.motion.distance / (0.34f * kModelWheelRadius);
-    const float wheelCosine = std::cos(wheelPhase);
-    const float wheelSine = std::sin(wheelPhase);
-    for (std::size_t index = 0; index < mesh.lineCount; ++index) {
-        const WireLine& line = mesh.lines[index];
-        if (!car.player && detail != PencilDetail::High &&
-            line.stroke == WireStroke::Mechanical && (index & 1u) != 0u) continue;
-        const CarPoint from = spinWheel(line.from, line.stroke,
-                                        wheelCosine, wheelSine);
-        const CarPoint to = spinWheel(line.to, line.stroke,
-                                      wheelCosine, wheelSine);
-        const uint16_t color = line.stroke == WireStroke::Accent
-                                   ? spec.accentColor : line.stroke == WireStroke::WheelSpoke
-                                   ? spec.wheelColor : line.stroke == WireStroke::Glass
-                                   ? (car.car==CarId::BrockenGigant ? spec.accentColor :
-                                      car.car==CarId::NeoTridaggerZmc ? 0x9c4cu : kPencil)
-                                   : line.stroke == WireStroke::Mechanical ? kPencil
-                                   : spec.bodyColor == 0xef7du ? kPencil : spec.bodyColor;
-        occlusion.drawLine(canvas, camera,
-                          carPointToWorld(from, pose), carPointToWorld(to, pose), color);
+    const auto frame=track.sample(car.motion.distance);
+    const auto pose=makeCarPose(frame,car);
+    // Derive screen bounds from the complete rotated car, not from its centre.
+    // Very close/lapped cars may span several tiles; they must not get square-cut.
+    float left=float(canvas.width()),right=0,top=float(canvas.height()),bottom=0;
+    bool inFront=false,nearClipped=false;
+    for(float x : {-.64f,.64f}) for(float y : {0.f,.64f}) for(float z : {-1.f,1.f}) {
+        const auto point=trackToCamera(camera,carPointToWorld({x,y,z},pose));
+        if(point.z<kTrackNearPlane) {nearClipped=true;continue;}
+        TrackScreenPoint p{};
+        if(!projectTrackPoint(camera,point,p))continue;
+        inFront=true;left=std::min(left,p.x);right=std::max(right,p.x);
+        top=std::min(top,p.y);bottom=std::max(bottom,p.y);
+    }
+    if(!inFront)return;
+    if(nearClipped) {left=0;top=0;right=canvas.width()-1;bottom=canvas.height()-1;}
+    if(right<0 || bottom<0 || left>=canvas.width() || top>=canvas.height())return;
+    const int x0=int(std::max(0.f,std::floor(left))),y0=int(std::max(0.f,std::floor(top)));
+    const int x1=int(std::min(float(canvas.width()-1),std::ceil(right)));
+    const int y1=int(std::min(float(canvas.height()-1),std::ceil(bottom)));
+    const float phase=car.motion.distance/(.34f*kModelWheelRadius);
+    const float cosine=std::cos(phase),sine=std::sin(phase);
+    const auto transform=[&](CarPoint p,uint8_t wheel) {
+        return trackToCamera(camera,carPointToWorld(animateCarPanelPoint(p,wheel,cosine,sine),pose));
+    };
+    for(int y=y0;y<=y1;y+=112) for(int x=x0;x<=x1;x+=112) {
+        raster.begin(x,y);
+        for(int i=0;i<12;++i) {
+            const float a=i*6.2831853f/12,b=(i+1)*6.2831853f/12;
+            CarPanel shadow;
+            shadow.point={{{0,.001f,0},{.52f*std::cos(a),.001f,.82f*std::sin(a)},
+                           {.52f*std::cos(b),.001f,.82f*std::sin(b)},{0,.001f,0}}};
+            shadow.color=0x9cd3;
+            raster.panel(camera,shadow,transform);
+        }
+        for(std::size_t i=0;i<mesh.count;++i)raster.panel(camera,mesh.panels[i],transform);
+        raster.blit(canvas,&occlusion);
     }
 }
 
@@ -248,11 +252,13 @@ void RaceRenderer::open(int width, int height)
 {
     _width = width;
     _height = height;
-    for (std::size_t car = 0; car < kCarCount; ++car) {
-        CompactRaceMesh& target = _meshes[car];
-        const auto result = buildCarWireframeInto(static_cast<CarId>(car), CarLod::Race,
-            target.lines.data(), target.lines.size());
-        target.lineCount = result.lineCount;
+    _surface.reset(new(std::nothrow) RaceSurfaceCache);
+    for (std::size_t car = 0; _surface && car < kCarCount; ++car) {
+        auto& mesh=_surface->meshes[car];
+        const auto result=buildCarSurfaceInto(static_cast<CarId>(car),mesh.panels.data(),
+                                              mesh.panels.size(),CarSurfaceDetail::Medium);
+        mesh.count=result.count;
+        if(result.overflowed) _surface.reset();
     }
     OverpassTrack track;
     _trackGeometry.open(track);
@@ -268,6 +274,7 @@ void RaceRenderer::close()
 {
     _width = 0;
     _height = 0;
+    _surface.reset();
 }
 
 void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
@@ -277,6 +284,24 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
 {
     if (_width <= 0 || _height <= 0 || !race.prepared()) return;
     auto& canvas = GetHAL().getCanvas();
+    if(!_surface) {
+        canvas.fillScreen(kPaper);
+        canvas.setTextDatum(textdatum_t::middle_center);
+        canvas.setTextSize(1);canvas.setTextColor(kWarning,kPaper);
+        canvas.drawString("RENDER MEMORY LOW",_width/2,220);
+        canvas.drawString("HOLD BOTH BUTTONS TO EXIT",_width/2,244);
+        return;
+    }
+    const auto surfaceDetail=detail==PencilDetail::Low ? CarSurfaceDetail::Low : CarSurfaceDetail::Medium;
+    if(_surface->detail!=surfaceDetail) {
+        for(std::size_t i=0;i<kCarCount;++i) {
+            auto& mesh=_surface->meshes[i];
+            const auto built=buildCarSurfaceInto(static_cast<CarId>(i),mesh.panels.data(),
+                                                 mesh.panels.size(),surfaceDetail);
+            mesh.count=built.count;
+        }
+        _surface->detail=surfaceDetail;
+    }
     if (flow.screen() == GameScreen::Results) {
         drawResults(canvas, race.snapshot(), results);
         return;
@@ -286,15 +311,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
     const RaceSnapshot& snapshot = race.snapshot();
     const RaceCarSnapshot& player = snapshot.player();
     const TrackFrame playerFrame = race.track().sample(player.motion.distance);
-    TrackVec3 cameraPosition = trackSubtract(playerFrame.center,
-                                              trackScale(playerFrame.tangent, 3.8f));
-    cameraPosition = trackAdd(cameraPosition,
-                              trackScale(playerFrame.lateral, player.motion.lateralOffset));
-    cameraPosition.y += 2.15f;
-    TrackVec3 target = trackAdd(playerFrame.center, trackScale(playerFrame.tangent, 5.2f));
-    target.y += 0.35f;
-    const TrackCamera camera = makeTrackLookAtCamera(cameraPosition, target,
-                                                     _width, _height, 0.78f);
+    const TrackCamera camera=makeRacerChaseCamera(playerFrame,player.motion.lateralOffset,_width,_height);
     drawPencilTrack(canvas, camera, _trackGeometry, detail, &_occlusion);
 
     std::array<std::size_t, kMaximumRaceCars> order{};
@@ -310,7 +327,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         if (depth[order[slot]] < kTrackNearPlane || !car.active ||
             (car.finished && !car.player)) continue;
         drawRaceCar(canvas, camera, race.track(), car,
-                    _meshes[static_cast<std::size_t>(car.car)], _occlusion, detail);
+                    _surface->meshes[static_cast<std::size_t>(car.car)], _surface->raster, _occlusion, detail);
     }
     if (flow.screen() == GameScreen::Racing)
         drawSpeedLines(canvas, player, screenElapsedMs, detail);

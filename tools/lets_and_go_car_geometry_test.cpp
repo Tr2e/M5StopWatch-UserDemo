@@ -131,6 +131,9 @@ bool validateDisplayMeshes()
         for (std::size_t i=0;i<mesh.count;++i) {
             const auto& face=mesh.panels[i];
             valid &= check(face.wheel<=4 && face.edges<=15, "invalid panel metadata");
+            valid &= check(face.u0<=face.u1 && face.v0<=face.v1 &&
+                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::NeoHood),
+                           "invalid solid surface UV/material");
             valid &= check(face.parent==0xffffu || (face.parent<i &&
                            mesh.panels[face.parent].parent==0xffffu),
                            "decal parent is invalid, cyclic or nested");
@@ -160,10 +163,14 @@ bool validateDisplayMeshes()
         const auto highCount=mesh.count;
         buildCarDisplayMesh(spec.id,mesh,CarSurfaceDetail::Medium);
         const auto mediumCount=mesh.count;
+        std::cout << spec.shortName << " medium race panels: " << mediumCount << '\n';
+        valid &= check(mediumCount<=1536,"medium race geometry exceeded storage");
         valid &= check(!mesh.overflowed, "medium surface mesh overflow");
         buildCarDisplayMesh(spec.id,mesh,CarSurfaceDetail::Low);
+        std::cout << spec.shortName << " solid race panels: " << mesh.count << '\n';
         valid &= check(!mesh.overflowed && mesh.count<mediumCount && mediumCount<highCount,
                        "adaptive surface quality does not reduce geometry");
+        valid &= check(mesh.count<=1024, "race solid mesh exceeds compact storage");
         for(std::size_t i=0;i<mesh.count;++i)
             valid &= check(mesh.panels[i].parent==0xffffu || mesh.panels[i].parent<i,
                            "low detail invalidated attached decal index");
@@ -176,6 +183,12 @@ bool validateDisplayMeshes()
     for(std::size_t i=0;i<magnum.count;++i)
         valid &= check(fallback.panels[i].color==magnum.panels[i].color,
                        "invalid car fallback changed livery");
+    std::array<CarPanel,3> small{};
+    small[2].color=0x1234;
+    const auto limited=buildCarSurfaceInto(CarId::BrockenGigant,small.data(),2,CarSurfaceDetail::High);
+    valid &= check(limited.overflowed && limited.count==2 && small[2].color==0x1234 &&
+                   buildCarSurfaceInto(CarId::CycloneMagnum,nullptr,0,CarSurfaceDetail::Low).overflowed,
+                   "solid mesh in-place builder exceeded buffer capacity");
     return valid;
 }
 }  // namespace

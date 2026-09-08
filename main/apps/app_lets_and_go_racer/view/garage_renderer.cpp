@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <new>
 
 namespace lets_and_go {
 namespace {
@@ -16,26 +17,6 @@ constexpr uint16_t kPencilFaint = 0x9cd3u;
 constexpr uint16_t kPencilLight = 0xc638u;
 constexpr uint16_t kCourseEdge = 0x31e8u;
 
-struct ScreenPoint { int16_t x, y; };
-
-struct CarCamera {
-    float cosine, sine, scale, widthScale;
-    int x, y;
-    CarPoint rotate(CarPoint p) const {
-        p.x *= widthScale;
-        return {p.x*cosine+p.z*sine, p.y, p.z*cosine-p.x*sine};
-    }
-    float depth(CarPoint p) const {
-        p = rotate(p);
-        return p.z*.84f+p.y*.54f;
-    }
-    ScreenPoint project(CarPoint p) const {
-        p = rotate(p);
-        const float perspective = 4.8f/(4.8f-(p.z*.84f+p.y*.54f)*.35f);
-        return {static_cast<int16_t>(std::lround(x+p.x*scale*perspective)),
-            static_cast<int16_t>(std::lround(y+(p.z*.54f-p.y*.84f)*scale*perspective))};
-    }
-};
 
 void drawPaperTexture(LGFX_Sprite& canvas, PencilDetail detail)
 {
@@ -51,45 +32,34 @@ void drawPaperTexture(LGFX_Sprite& canvas, PencilDetail detail)
     }
 }
 
-void drawCar(LGFX_Sprite& canvas, const CarSpec& spec, const CarDisplayMesh& mesh,
-             std::array<CarPanelOrder, CarDisplayMesh::kMaximumPanels>& order,
-             int centerX, int centerY, float scale, float yaw, float wheelPhase,
-             PencilDetail detail)
+void drawCar(LGFX_Sprite& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
+             CarSurfaceRaster<352,288>& raster,
+             int centerX,int centerY,float scale,float yaw,float wheelPhase,PencilDetail)
 {
-    const CarCamera camera{std::cos(yaw),std::sin(yaw),scale,
-        (float(spec.dimensions.width)/spec.dimensions.length)/(97.0f/155.0f),
-        centerX,centerY};
-    const float cosine=std::cos(wheelPhase), sine=std::sin(wheelPhase);
-    // Paint individual faces far-to-near. Outlines belong to the face, so the
-    // near cowl hides the far tire, chassis and wing support instead of X-rays.
-    for (std::size_t i=0;i<mesh.count;++i) {
-        float depth=0;
-        const auto& face=mesh.panels[i].parent<mesh.count
-                             ? mesh.panels[mesh.panels[i].parent] : mesh.panels[i];
-        for (auto p : face.point)
-            depth += camera.depth(animateCarPanelPoint(p,face.wheel,cosine,sine));
-        order[i]={depth*.25f,static_cast<uint16_t>(i)};
+    TrackCamera camera{};
+    camera.principalX=centerX;camera.principalY=centerY;camera.focalLength=scale*5.8f;
+    raster.begin(centerX-176,centerY-162);
+    const float cosine=std::cos(yaw),sine=std::sin(yaw);
+    const float wheelCosine=std::cos(wheelPhase),wheelSine=std::sin(wheelPhase);
+    const float widthScale=(float(spec.dimensions.width)/spec.dimensions.length)/(97.f/155.f);
+    const auto transform=[&](CarPoint p,uint8_t wheel) {
+        p=animateCarPanelPoint(p,wheel,wheelCosine,wheelSine);
+        p.x*=widthScale;
+        const float x=p.x*cosine+p.z*sine,z=p.z*cosine-p.x*sine;
+        return TrackCameraPoint{x,p.y*.84f-z*.54f,5.8f-(z*.84f+p.y*.54f)};
+    };
+    for(int ring=0;ring<2;++ring) for(int i=0;i<24;++i) {
+        const float a=i*6.2831853f/24,b=(i+1)*6.2831853f/24;
+        const float radius=ring==0 ? 1.f : .82f;
+        TrackScreenPoint center{},p{},q{};
+        projectTrackPoint(camera,transform({.025f,-.02f,0},0),center);
+        projectTrackPoint(camera,transform({.025f+.56f*radius*std::cos(a),-.02f,.86f*radius*std::sin(a)},0),p);
+        projectTrackPoint(camera,transform({.025f+.56f*radius*std::cos(b),-.02f,.86f*radius*std::sin(b)},0),q);
+        canvas.fillTriangle(std::lround(center.x),std::lround(center.y),std::lround(p.x),
+                            std::lround(p.y),std::lround(q.x),std::lround(q.y),ring==0 ? 0xdeb8 : 0xceb7);
     }
-    std::sort(order.begin(),order.begin()+mesh.count,
-        [](const CarPanelOrder& a,const CarPanelOrder& b) {
-            return a.depth==b.depth ? a.index<b.index : a.depth<b.depth;
-        });
-    for (std::size_t i=0;i<mesh.count;++i) {
-        const auto& panel=mesh.panels[order[i].index];
-        std::array<ScreenPoint,4> p;
-        for (std::size_t v=0;v<4;++v)
-            p[v]=camera.project(animateCarPanelPoint(panel.point[v],panel.wheel,cosine,sine));
-        canvas.fillTriangle(p[0].x,p[0].y,p[1].x,p[1].y,p[2].x,p[2].y,panel.color);
-        canvas.fillTriangle(p[0].x,p[0].y,p[2].x,p[2].y,p[3].x,p[3].y,panel.color);
-        for (std::size_t edge=0;edge<4;++edge) {
-            if (!(panel.edges & (1u<<edge))) continue;
-            const auto a=p[edge], b=p[(edge+1)%4];
-            const int minimumLength=detail==PencilDetail::Low ? 10 :
-                                    detail==PencilDetail::Medium ? 4 : 0;
-            if(std::abs(a.x-b.x)+std::abs(a.y-b.y)<minimumLength) continue;
-            canvas.drawLine(a.x,a.y,b.x,b.y,kPencil);
-        }
-    }
+    for(std::size_t i=0;i<mesh.count;++i)raster.panel(camera,mesh.panels[i],transform);
+    raster.blit(canvas);
 }
 
 void drawHeader(LGFX_Sprite& canvas, const char* title)
@@ -136,6 +106,7 @@ void GarageRenderer::open(int width, int height)
     _width = width;
     _height = height;
     _meshCached = false;
+    _surface.reset(new(std::nothrow) GarageSurfaceCache);
     _trackPreview.open(_track);
 }
 
@@ -144,19 +115,20 @@ void GarageRenderer::close()
     _width = 0;
     _height = 0;
     _meshCached = false;
+    _surface.reset();
 }
 
 const CarDisplayMesh& GarageRenderer::showcaseMesh(CarId car, PencilDetail detail)
 {
     if (!_meshCached || car != _cachedCar || detail != _cachedDetail) {
-        buildCarDisplayMesh(car, _showcaseMesh,
+        buildCarDisplayMesh(car, _surface->mesh,
             detail==PencilDetail::High ? CarSurfaceDetail::High :
             detail==PencilDetail::Medium ? CarSurfaceDetail::Medium : CarSurfaceDetail::Low);
         _cachedCar = car;
         _cachedDetail = detail;
         _meshCached = true;
     }
-    return _showcaseMesh;
+    return _surface->mesh;
 }
 
 void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selection,
@@ -167,6 +139,11 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     auto& canvas = GetHAL().getCanvas();
     canvas.fillScreen(kPaper);
     drawPaperTexture(canvas, detail);
+    if(!_surface) {
+        drawHeader(canvas,"RENDER MEMORY LOW");
+        canvas.drawString("HOLD BOTH BUTTONS TO EXIT",_width/2,233);
+        return;
+    }
 
     const GameScreen screen = flow.screen();
     CarId visibleCar = flow.setup().playerCar;
@@ -180,8 +157,8 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
 
     if (screen == GameScreen::CarSelect) {
         drawHeader(canvas, "SELECT MACHINE");
-        drawCar(canvas, spec, mesh, _panelOrder, _width / 2, 273, 151.0f,
-                -0.52f + std::sin(seconds * 0.7f) * 0.08f, seconds * 7.0f, detail);
+        drawCar(canvas, spec, mesh, _surface->raster, _width / 2, 268, 146.0f,
+                -0.65f + std::sin(seconds * 0.7f) * 0.06f, seconds * 7.0f, detail);
         canvas.setTextColor(kPencil, kPaper);
         canvas.setTextSize(2);
         canvas.drawString(spec.officialName, _width / 2, 365);
@@ -200,7 +177,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     if (screen == GameScreen::CarShowcase) {
         drawHeader(canvas, "MACHINE READY");
         const float entrance = std::min(1.0f, static_cast<float>(screenElapsedMs) / 480.0f);
-        const float scale = 151.0f + 16.0f * entrance;
+        const float scale = 146.0f + 9.0f * entrance;
         const float vibration = screenElapsedMs > 450u
                                     ? std::sin(seconds * 80.0f) * 1.4f
                                     : 0.0f;
@@ -211,7 +188,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
                 canvas.drawLine(34 + travel, y, 82 + travel, y - 3, kPencilFaint);
             }
         }
-        drawCar(canvas, spec, mesh, _panelOrder, _width / 2 + static_cast<int>(vibration), 282,
+        drawCar(canvas, spec, mesh, _surface->raster, _width / 2 + static_cast<int>(vibration), 282,
                 scale, -0.82f + entrance * 0.20f, seconds * 13.0f, detail);
         canvas.setTextSize(2);
         canvas.setTextColor(spec.accentColor, kPaper);
@@ -226,7 +203,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
             canvas.setTextSize(3);
             canvas.drawString("RACE READY", _width / 2, 230);
         } else {
-            drawCar(canvas, spec, mesh, _panelOrder, _width / 2, 270, 140.0f, -0.65f,
+            drawCar(canvas, spec, mesh, _surface->raster, _width / 2, 270, 137.0f, -0.65f,
                     seconds * 5.0f, detail);
             canvas.setTextColor(spec.accentColor, kPaper);
             canvas.setTextSize(2);

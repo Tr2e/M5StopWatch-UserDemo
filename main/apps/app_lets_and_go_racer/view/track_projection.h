@@ -55,6 +55,19 @@ inline TrackCameraPoint trackToCamera(const TrackCamera& camera, TrackVec3 world
             trackDot(relative, camera.forward)};
 }
 
+inline TrackCamera makeRacerChaseCamera(const TrackFrame& frame,float lateralOffset,int width,int height)
+{
+    auto position=trackSubtract(frame.center,trackScale(frame.tangent,2.65f));
+    position=trackAdd(position,trackScale(frame.lateral,lateralOffset));
+    position.y+=1.50f;
+    auto target=trackAdd(frame.center,trackScale(frame.tangent,4.4f));
+    target.y+=.35f;
+    auto camera=makeTrackLookAtCamera(position,target,width,height,.78f);
+    // Reserve room below the enlarged player model for the unchanged HUD card.
+    camera.principalY=height*.46f;
+    return camera;
+}
+
 inline bool clipTrackSegmentToNear(TrackCameraPoint& from, TrackCameraPoint& to)
 {
     const bool fromVisible = from.z >= kTrackNearPlane;

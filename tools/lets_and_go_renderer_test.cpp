@@ -6,6 +6,65 @@
 
 using namespace lets_and_go;
 
+bool validateCarRaster()
+{
+    auto& canvas=GetHAL().getCanvas();
+    CarSurfaceRaster<32,32> raster;
+    const CarScreenVertex a{180,180,.5f,0,0},b{212,180,.5f,.5f,0},c{180,212,.5f,0,.5f};
+    auto farA=a,farB=b,farC=c;
+    farA.depth=farB.depth=farC.depth=.25f;
+    bool valid=true;
+    for(bool reverse : {false,true}) {
+        raster.begin(180,180);
+        if(reverse) raster.triangle(a,b,c,0xc9a7,CarPaint::Solid,255);
+        raster.triangle(farA,farB,farC,0x3275,CarPaint::Solid,255);
+        if(!reverse) raster.triangle(a,b,c,0xc9a7,CarPaint::Solid,255);
+        canvas.fillScreen(0xef3a);raster.blit(canvas);
+        if(canvas.frame()[185*466+185]!=0xc9a7 || raster.depthAt(5,5)!=4096)valid=false;
+    }
+    auto camera=makeTrackLookAtCamera({0,0,0},{0,0,1},466,466);
+    camera.principalX=camera.principalY=196;camera.focalLength=32;
+    PencilOcclusion occlusion;
+    occlusion.append(projectPencilSurface(camera,{-1,1,1},{1,1,1},{-1,-1,1},466,466));
+    canvas.fillScreen(0xef3a);raster.blit(canvas,&occlusion);
+    if(canvas.frame()[185*466+185]!=0xef3a)valid=false;
+    occlusion.count=0;
+    occlusion.append(projectPencilSurface(camera,{-3,3,3},{3,3,3},{-3,-3,3},466,466));
+    canvas.fillScreen(0xef3a);raster.blit(canvas,&occlusion);
+    if(canvas.frame()[185*466+185]!=0xc9a7)valid=false;
+    raster.begin(180,180);
+    raster.cameraTriangle(camera,{-.2f,.2f,.1f,0,0},{.4f,.2f,1,1,0},
+                          {-.2f,-.4f,1,0,1},0xc9a7,CarPaint::Solid,255);
+    int painted=0;
+    for(int y=0;y<32;++y)for(int x=0;x<32;++x) {
+        if(raster.depthAt(x,y))++painted;
+        if(raster.depthAt(x,y)>40960)valid=false;
+    }
+    if(!painted)valid=false;
+    // Tile boundaries must not change depth/UV evaluation or cut a close car.
+    CarSurfaceRaster<64,32> wide;
+    const CarScreenVertex d{244,200,.38f,.38f,.38f};
+    wide.begin(180,180);wide.triangle(a,b,d,0xf7be,CarPaint::MagnumHood,255);
+    canvas.fillScreen(0xef3a);wide.blit(canvas);
+    const auto whole=canvas.frame();
+    canvas.fillScreen(0xef3a);
+    for(int x : {180,212}) {
+        raster.begin(x,180);raster.triangle(a,b,d,0xf7be,CarPaint::MagnumHood,255);raster.blit(canvas);
+    }
+    if(canvas.frame()!=whole)valid=false;
+    uint32_t random=7;
+    const auto value=[&] {random=random*1664525u+1013904223u;return (random&65535u)/65535.f;};
+    for(int i=0;i<1000;++i) {
+        raster.begin(180,180);
+        const auto vertex=[&] {return CarSurfaceVertex{value()*4-2,value()*4-2,value()*2-.2f,value(),value()};};
+        const auto p=vertex(),q=vertex(),r=vertex();
+        raster.cameraTriangle(camera,p,q,r,0xf7be,CarPaint::MagnumHood,255);
+    }
+    std::cout << "Solid car raster: depth ordering, bridge visibility, near clipping, UV tiles and 1000 fuzz triangles\n";
+    if(!valid)std::cerr << "Solid car raster regression\n";
+    return valid;
+}
+
 bool validateTrackPaint()
 {
     OverpassTrack course;
@@ -18,10 +77,7 @@ bool validateTrackPaint()
     for(auto detail : {PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) {
         for(int sample=0;sample<48;++sample) {
             const auto frame=course.sample(course.length()*sample/48);
-            auto position=trackSubtract(frame.center,trackScale(frame.tangent,3.8f));
-            position.y+=2.15f;
-            const auto camera=makeTrackLookAtCamera(position,
-                trackAdd(frame.center,trackScale(frame.tangent,5.2f)),466,466);
+            const auto camera=makeRacerChaseCamera(frame,0,466,466);
             canvas.fillScreen(0xef3a);
             drawPencilTrack(canvas,camera,geometry,detail,&occlusion);
             maxSurfaces=std::max(maxSurfaces,occlusion.count);
@@ -84,7 +140,7 @@ int main(int argc, char** argv)
     const std::string directory = argc > 1 ? argv[1] : "/tmp/lets-go-frames";
     std::filesystem::create_directories(directory);
     auto& canvas = GetHAL().getDisplay();
-    bool valid = validateTrackPaint();
+    bool valid = validateCarRaster() && validateTrackPaint();
     const auto checkText = [&] {
         for (const auto& label : canvas.texts) {
             const float halfWidth = label.value.size() * 3.0f * label.size;
@@ -150,7 +206,12 @@ int main(int argc, char** argv)
         garage.render(flow, selection, 500u, PencilDetail::High);
         const auto& spec = carSpec(static_cast<CarId>(i));
         const auto& pixels = canvas.frame();
-        if (std::count(pixels.begin(), pixels.end(), spec.accentColor) < 10 ||
+        const auto accentPixels=spec.id==CarId::BrockenGigant
+            ? std::count_if(pixels.begin(),pixels.end(),[](uint16_t c) {
+                return (c&31)>((c>>11)&31)*1.4f && (c&31)>8;
+              })
+            : std::count(pixels.begin(),pixels.end(),spec.accentColor);
+        if (accentPixels < (spec.id==CarId::BrockenGigant ? 80 : 10) ||
             std::count(pixels.begin(), pixels.end(), spec.wheelColor) < 10) {
             std::cerr << spec.shortName << ": official accent/wheel color missing from garage\n";
             valid = false;
@@ -251,6 +312,37 @@ int main(int argc, char** argv)
     }
     std::cout << "Renderer cache bytes: garage=" << sizeof(GarageRenderer)
               << " race=" << sizeof(RaceRenderer) << '\n';
+    std::cout << "Open-only surface storage: garage=" << sizeof(GarageSurfaceCache)
+              << " race=" << sizeof(RaceSurfaceCache) << '\n';
+    for(std::size_t id=0;id<kCarCount;++id) {
+        GameFlow drive;
+        drive.confirmInputAvailable();drive.completeCalibration(true);
+        drive.selectPlayerCar(static_cast<CarId>(id));drive.confirmPlayerCar();
+        drive.completeCarShowcase();
+        for(std::size_t rival=0;rival<kCarCount;++rival)
+            if(rival!=id)drive.toggleRival(static_cast<CarId>(rival));
+        drive.confirmRivals();drive.confirmTrack();drive.completeGridIntro();drive.completeCountdown();
+        RaceController run;run.prepare(drive.setup(),0x12345678u);
+        renderer.render(drive,run,results,0,false,PencilDetail::High);
+        save("race-car-"+std::to_string(id));
+        // A nearby following opponent exercises foreground bounds. Exact near
+        // clipping and multi-tile equivalence are tested in validateCarRaster.
+        auto& state=const_cast<RaceSnapshot&>(run.snapshot());
+        const auto opponent=(state.playerIndex+1)%state.carCount;
+        state.cars[opponent].motion.distance=state.player().motion.distance-.7f;
+        state.cars[opponent].motion.lateralOffset=.65f;
+        renderer.render(drive,run,results,0,false,PencilDetail::High);
+        if(id==0)save("race-close");
+    }
+    // Repeated entry releases large PSRAM-oriented storage instead of keeping
+    // it resident in the Launcher for the lifetime of the installed App object.
+    for(int cycle=0;cycle<3;++cycle) {
+        garage.close();renderer.close();
+        garage.open(466,466);renderer.open(466,466);
+        renderer.render(flow,race,results,0,false,PencilDetail::High);
+        checkText();
+    }
+    garage.close();renderer.close();
     std::cout << "Production renderer frames: " << directory << '\n';
     return valid ? 0 : 1;
 }

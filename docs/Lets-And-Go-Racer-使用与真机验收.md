@@ -46,19 +46,21 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 - [ ] Joystick2 中点、X 轴极性、死区、满量程和 I2C 连续 30 分钟稳定性。
 - [ ] Dual Button Red/Blue 极性、短按、长按、组合 800 ms 与返回 Launcher。
 - [ ] 四辆车在 466×466 圆屏上的辨识度，文字和 HUD 无边缘裁切。
+- [ ] R16 四款实体车的轮罩、座舱、尾翼与轮毂清晰，比赛转弯/上下坡无角度跳变，近距离车辆无方形裁断。
 - [ ] 车库 High LOD、四车立交交叉的平均 FPS 不低于 30，压力时不低于 20。
 - [ ] 触发细节降级后 HUD、玩家车、双侧护栏仍清晰；负载恢复后画质不抖动。
 - [ ] 输入失联自动暂停，恢复后需要玩家主动继续且不会复用旧转向。
 - [ ] 音效/振动系统开关生效；连续贴墙不会周期性狂震。
 - [ ] 三圈、名次、最佳圈、同种子重赛与 NVS 断电保存正确。
 - [ ] 连续运行 30 分钟无看门狗、明显堆下降或异常温升。
+- [ ] 反复进入/退出游戏后 PSRAM 空闲量恢复；约 925 KiB 的打开期曲面缓存分配成功，记录剩余 PSRAM、内部堆和栈水位。
 - [ ] 米白全屏的功耗、AMOLED 温升、拖影与可接受亮度。
 
 关闭 App 后串口会输出车库/比赛各自的渲染帧数、峰值耗时、最终细节档和切换次数。真机验收时保存这两行日志，和 `docs/assets/lets-and-go-reference-race.json` 一并归档。
 
 ## 桌面复验
 
-最新跑道视觉见 [R15 跑道视觉优化](Lets-And-Go-Racer-R15-跑道视觉优化.md) 和 `docs/assets/lets-and-go-r15-after.png`。桥底与侧面参与遮挡，比赛缓存比 R14 增加 18,440 bytes；真机优先测桥下四车场景的帧耗时、空闲堆与栈水位。
+当前车辆视觉见 [R16 实体赛车与比赛细化](Lets-And-Go-Racer-R16-实体赛车与比赛细化.md) 和 `docs/assets/lets-and-go-r16-after.png`，四车比赛截图见 `docs/assets/lets-and-go-r16-race.png`。跑道沿用 [R15 跑道视觉优化](Lets-And-Go-Racer-R15-跑道视觉优化.md)，桥底与侧面继续参与遮挡。优先测实体车库、桥下四车、近距离放大车辆的帧耗时和内存。
 
 ```sh
 tools/test_lets_and_go.sh
@@ -67,6 +69,6 @@ bash tools/render_lets_and_go.sh /tmp/lets-go-review
 python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-review /tmp/lets-go-review/contact.png
 ```
 
-当前四车外形和官方实物对照见 [R14 实车模型重建](Lets-And-Go-Racer-R14-实车模型重建.md)；道路视觉见 R12，可玩性见 R13。28 套回归继续覆盖生产渲染与 384 场策略比赛。最新对比图为 `docs/assets/lets-and-go-r14-before.png` 与 `lets-and-go-r14-after.png`。R14 增加约 40 KB 渲染实例缓存，真机需重点复验空闲堆与三档帧耗时。
+R16 重新参照四款田宫实物照片手工建模，不是官方 CAD 或扫描资产。28 套回归继续覆盖生产渲染与 384 场策略比赛，增加实体深度、近裁剪、透视 UV 分块一致性和缓存生命周期测试。当前对比图为 `docs/assets/lets-and-go-r16-before.png` 与 `lets-and-go-r16-after.png`。桌面量得车库/比赛实例合计 42,352 bytes，打开期曲面缓存合计 947,272 bytes；不代表真机空闲内存或达标 FPS。
 
 基准生成器是 `tools/lets_and_go_reference_generator.cpp`；固定种子 `0x12345678` 的 JSON 已更新为 v2，包含共同终点的插值冲线时间。静态 SVG 是 R10 历史设计稿，不代表当前生产渲染器。
