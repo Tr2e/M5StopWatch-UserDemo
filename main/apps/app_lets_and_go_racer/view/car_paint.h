@@ -34,7 +34,67 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
     constexpr uint16_t white=0xf7be,blue=0x3275,red=0xc9a7,gold=0xe5ca,dark=0x2946;
     const float center=std::abs(u-.5f);
     switch(paint) {
+    case CarPaint::Count:
     case CarPaint::Solid:return base;
+    case CarPaint::CobraFlame: {
+        const float zig=v<.35f ? .24f+v*.8f : v<.6f ? .52f-(v-.35f)*1.1f : .245f+(v-.6f)*.6f;
+        const float width=.17f*(1.f-v*.7f);
+        if(std::abs(u-zig)<width)return gold;
+        if(std::abs(u-zig)<width+.055f)return red;
+        return blue;
+    }
+    case CarPaint::CobraHood:
+        if(v>.17f && v<.72f && center<.26f) {
+            if(std::abs(std::fmod(v*8.f+center*.7f,1.f))<.10f)return 0x7bef;
+            return carTint(0xdedb, .83f+.17f*(1-center*2));
+        }
+        return blue;
+    case CarPaint::CobraBridge:
+        return carLetter("SPIN COBRA",u,v,.10f,.20f,.80f,.60f) ? white : blue;
+    case CarPaint::CobraLamp: {
+        const float ellipse=(u-.5f)*(u-.5f)*3.5f+(v-.5f)*(v-.5f)*3.5f;
+        if(ellipse>.70f)return dark;
+        if(ellipse>.46f)return 0xbdf7;
+        return (int(u*14)+int(v*11))%3==0 ? white : 0x7bef;
+    }
+    case CarPaint::SpiderWeb: {
+        const float x=u-.5f,y=v-.35f;
+        const float ring=std::fmod((std::abs(x)+std::abs(y)*.70f)*4.f,1.f);
+        const float spoke=std::min({std::abs(x),std::abs(y),std::abs(x-y*.7f),std::abs(x+y*.7f)});
+        if(ring<.035f || spoke<.008f)return white;
+        if(ring<.075f || spoke<.018f)return 0x44bf;
+        return 0x1082;
+    }
+    case CarPaint::SpiderCowl:
+        return u>.48f-v*.30f && u<.80f-v*.16f ? red : 0x1082;
+    case CarPaint::SpiderWing:
+        return carLetter("BEAK SPIDER",u,v,.06f,.22f,.88f,.56f) ? white : 0x1082;
+    case CarPaint::StingerHood:
+        if(v>.40f && v<.82f && center<.27f &&
+           std::fmod(v*12.f+center*7.f,1.f)<.27f)return 0x1082;
+        return carTint(0xbdf7,.82f+.18f*(1-center*2));
+    case CarPaint::StingerCowl: {
+        const float crack=std::fmod(u*5.f+std::abs(v-.4f)*4.f,1.f);
+        return crack<.055f || std::fmod(v*6.f+std::abs(u-.3f)*2.f,1.f)<.04f ? red : 0xbdf7;
+    }
+    case CarPaint::StingerLamp:
+        return u<.04f || u>.96f || v<.06f || v>.94f ? dark :
+            int(u*10)%2 ? red : 0xfbcf;
+    case CarPaint::DiospadaHood:
+        if(center<.23f+.05f*v) {
+            if(center<.025f && v>.37f)return red;
+            return (int(u*110)+int(v*100))%3 ? 0x4208 : 0x8410;
+        }
+        if(v<.45f && center>.32f && center<.40f)return white;
+        return red;
+    case CarPaint::DiospadaWing:
+        return carLetter("DIOSPADA",u,v,.07f,.23f,.86f,.49f) ? white : red;
+    case CarPaint::DiospadaSide:
+        if(v>.12f && v<.33f && u>.12f && u<.82f)return white;
+        return red;
+    case CarPaint::DiospadaLouver:
+        if(v<.30f && u>.14f && u<.90f && int(u*11)%3==1)return dark;
+        return red;
     case CarPaint::Glass:
     case CarPaint::BronzeGlass:
     case CarPaint::BlueGlass: {

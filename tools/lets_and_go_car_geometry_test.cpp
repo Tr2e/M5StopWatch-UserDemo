@@ -24,7 +24,7 @@ bool finitePoint(const CarPoint& point)
 bool validateCatalog()
 {
     const auto& cars = carCatalog();
-    bool valid = check(cars.size() == 4u, "official launch roster changed");
+    bool valid = check(cars.size() == 8u, "eight-car roster changed");
     uint8_t ids = 0;
     for (const auto& car : cars) {
         valid &= check(isValidCar(car.id), "catalog contains invalid car id");
@@ -34,7 +34,8 @@ bool validateCatalog()
                        "car name is empty");
         valid &= check(car.dimensions.length >= 130 && car.dimensions.length <= 160 &&
                            car.dimensions.width >= 88 && car.dimensions.width <= 100 &&
-                           car.dimensions.height >= 35 && car.dimensions.height <= 48,
+                           ((car.id==CarId::RayStinger || car.id==CarId::Diospada) ? car.dimensions.height==0 :
+                            car.dimensions.height >= 35 && car.dimensions.height <= 48),
                        "official dimensions left reviewed Mini 4WD range");
         for (const auto& station : car.profile) {
             valid &= check(station.halfWidth > 0.0f && station.halfWidth <= 0.66f &&
@@ -133,7 +134,7 @@ bool validateDisplayMeshes()
             const auto& face=mesh.panels[i];
             valid &= check(face.wheel<=4 && face.part<=CarPart::TailFin, "invalid panel metadata");
             valid &= check(face.u0<=face.u1 && face.v0<=face.v1 &&
-                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::BrockenCabinSide),
+                           face.paint<CarPaint::Count,
                            "invalid solid surface UV/material");
             valid &= check(face.parent==0xffffu || (face.parent<i &&
                            mesh.panels[face.parent].parent==0xffffu),
@@ -156,7 +157,8 @@ bool validateDisplayMeshes()
                 }
             }
         }
-        valid &= check(spokes==(spec.id==CarId::NeoTridaggerZmc ? 0u : spec.id==CarId::BrockenGigant ? 48u : 20u),
+        valid &= check(spokes==(spec.id==CarId::NeoTridaggerZmc || spec.id==CarId::BeakSpider ? 0u :
+                               spec.id==CarId::BrockenGigant ? 48u : spec.id==CarId::SpinCobra ? 12u : 20u),
                        "reviewed spoke count or Tridagger cap/dish wheels regressed");
         if(spec.id==CarId::BrockenGigant)
             valid &= check(maxY<.50f && spec.bodyColor==0xc9a7 && spec.wheelColor==0xe5ca,
@@ -384,6 +386,28 @@ bool validateRebuiltStructure(CarId car)
                 valid &= check(surfaceHeight(mesh,s*.60f,.45f,CarPart::SideGuard)>.17f,
                                "Brocken outer pipe guard missing at wheel");
         }
+        if(car==CarId::SpinCobra) {
+            valid &= check(surfaceHeight(mesh,.44f,.52f,CarPart::FrontCowl)>.39f &&
+                           parts[unsigned(CarPart::FrontBridge)]>0 && parts[unsigned(CarPart::Intake)]>0,
+                           "Cobra wide front fenders/independent nose/intakes missing");
+        }
+        if(car==CarId::BeakSpider) {
+            valid &= check(surfaceHeight(mesh,.30f,-.92f,CarPart::RearWing)>.56f &&
+                           surfaceHeight(mesh,.30f,-.79f,CarPart::RearWing)>.50f &&
+                           surfaceHeight(mesh,.30f,-.66f,CarPart::RearWing)>.45f,
+                           "Spider three separate rear wing planes missing");
+        }
+        if(car==CarId::RayStinger) {
+            valid &= check(parts[unsigned(CarPart::RearWing)]==0 && parts[unsigned(CarPart::TailFin)]==2 &&
+                           parts[unsigned(CarPart::Intake)]>=48,
+                           "Stinger four intakes/single fin structure regressed");
+        }
+        if(car==CarId::Diospada) {
+            valid &= check(surfaceHeight(mesh,0,-.83f,CarPart::RearWing)>.56f &&
+                           surfaceHeight(mesh,.40f,-.83f,CarPart::RearWing)>.55f &&
+                           parts[unsigned(CarPart::SideWeb)]>=12,
+                           "Diospada arched wing or open scoop rails missing");
+        }
     }
     std::cout<<carSpec(car).shortName<<" structure: tire clearance, mirrored UV and authored components across 3 LODs\n";
     return valid;
@@ -395,5 +419,9 @@ int main()
     return validateCatalog() && validateWireframes() && validateDisplayMeshes() && validateMagnumStructure() &&
            validateRebuiltStructure(CarId::HurricaneSonic) &&
            validateRebuiltStructure(CarId::NeoTridaggerZmc) &&
-           validateRebuiltStructure(CarId::BrockenGigant) ? 0 : 1;
+           validateRebuiltStructure(CarId::BrockenGigant) &&
+           validateRebuiltStructure(CarId::SpinCobra) &&
+           validateRebuiltStructure(CarId::BeakSpider) &&
+           validateRebuiltStructure(CarId::RayStinger) &&
+           validateRebuiltStructure(CarId::Diospada) ? 0 : 1;
 }

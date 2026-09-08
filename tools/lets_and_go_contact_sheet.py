@@ -10,11 +10,12 @@ from PIL import Image, ImageDraw
 parser = argparse.ArgumentParser()
 parser.add_argument("frames", type=Path)
 parser.add_argument("output", type=Path)
+parser.add_argument("--columns", type=int, choices=range(1,5), default=3)
 parser.add_argument("--names", nargs="+", default=[
     "car-0", "car-2", "track", "race-0", "race-4", "race-7",
 ])
 args = parser.parse_args()
-columns = 3
+columns = args.columns
 sheet = Image.new("RGB", (466 * columns, 490 * ((len(args.names) + columns - 1) // columns)), "#191b1d")
 labels = ImageDraw.Draw(sheet)
 for index, name in enumerate(args.names):

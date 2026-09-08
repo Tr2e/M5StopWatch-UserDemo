@@ -131,5 +131,15 @@ bool validateDeterminismAndModes()
 
 int main()
 {
+    // Every legal roster, including bit 7, still fits the four-car race arrays.
+    for(std::size_t player=0;player<kCarCount;++player)for(unsigned mask=0;mask<256;++mask) {
+        RaceSetup setup;setup.playerCar=static_cast<CarId>(player);setup.rivalMask=uint8_t(mask);
+        if(setup.hasRival(setup.playerCar) || setup.rivalCount()>3)continue;
+        RaceController race;race.prepare(setup,123);
+        if(race.snapshot().carCount!=setup.rivalCount()+1 || race.snapshot().player().car!=setup.playerCar)return 1;
+        RacerInput input;input.valid=true;race.stepFixed(input);
+        for(std::size_t i=0;i<race.snapshot().carCount;++i)
+            if(!race.snapshot().cars[i].player && !setup.hasRival(race.snapshot().cars[i].car))return 1;
+    }
     return validateDeterminismAndModes() ? 0 : 1;
 }

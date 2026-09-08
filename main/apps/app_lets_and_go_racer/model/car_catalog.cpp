@@ -13,6 +13,14 @@ constexpr uint16_t kGreen = 0x36a8u;
 constexpr uint16_t kBlack = 0x2145u;
 constexpr uint16_t kYellow = 0xe5cau;
 
+// Catalogue envelope for legacy wire inspection; solid bodies are independently
+// authored in car_display_mesh.cpp. A zero kit height means not published.
+constexpr std::array<CarProfileStation,7> kAddedProfile{{
+    {-1,.48f,.09f,.26f,.30f},{-.72f,.56f,.10f,.35f,.40f},
+    {-.38f,.48f,.12f,.32f,.45f},{0,.25f,.12f,.31f,.43f},
+    {.34f,.44f,.10f,.28f,.32f},{.70f,.52f,.09f,.24f,.27f},
+    {1,.30f,.08f,.13f,.16f}}};
+
 constexpr std::array<CarSpec, kCarCount> kCars = {{
     {
         CarId::CycloneMagnum, "Cyclone Magnum", "MAGNUM",
@@ -66,6 +74,18 @@ constexpr std::array<CarSpec, kCarCount> kCars = {{
           { 1.00f, 0.42f, 0.06f, 0.20f, 0.23f}}},
         0.62f, -0.56f, 0.23f, -0.72f, 0.48f, 0.58f, 0.14f, 0,
     },
+    {CarId::SpinCobra,"Spin Cobra","COBRA",{150,97,38},
+     {.86f,.90f,.97f,.88f},kBlue,kYellow,kYellow,kAddedProfile,
+     .52f,-.55f,.175f,-.84f,.50f,.46f,.15f,1},
+    {CarId::BeakSpider,"Beak Spider","SPIDER",{132,90,41},
+     {.93f,.86f,.80f,.85f},kBlack,kRed,kRed,kAddedProfile,
+     .52f,-.55f,.175f,-.80f,.54f,.49f,.08f,3},
+    {CarId::RayStinger,"Ray Stinger","STINGER",{150,97,0},
+     {.95f,.92f,.74f,.82f},0xbdf7,kRed,kWhite,kAddedProfile,
+     .52f,-.55f,.175f,-.66f,.55f,.04f,.22f,0},
+    {CarId::Diospada,"Diospada","DIOSPADA",{155,97,0},
+     {.89f,.86f,.92f,.94f},kRed,kWhite,kWhite,kAddedProfile,
+     .52f,-.55f,.175f,-.84f,.57f,.50f,.22f,1},
 }};
 
 struct CarMeshWriter {

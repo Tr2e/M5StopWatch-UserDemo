@@ -74,6 +74,9 @@ bool validateProgress()
                    migrated.bestLapMilliseconds[1]==20000,"track records are not independent");
     auto reloaded=decodePlayerProgress(&migrated,sizeof(migrated));
     valid &= check(reloaded.bestLapMilliseconds==migrated.bestLapMilliseconds,"V2 roundtrip failed");
+    migrated.lastCar=CarId::Diospada;
+    valid &= check(decodePlayerProgress(&migrated,sizeof(migrated)).lastCar==CarId::Diospada,
+                   "eighth car does not survive progress roundtrip");
     valid &= check(decodePlayerProgress(&legacy,sizeof(legacy)-1).bestLapMilliseconds[0]==0,
                    "truncated legacy save accepted");
     return valid;

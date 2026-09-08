@@ -22,7 +22,8 @@ struct RaceSurfaceMesh {
     std::size_t count=0;
 };
 struct RaceSurfaceCache {
-    std::array<RaceSurfaceMesh,kCarCount> meshes{};
+    std::array<RaceSurfaceMesh,kMaximumRaceCars> meshes{};
+    std::array<CarId,kMaximumRaceCars> cars{CarId::Count,CarId::Count,CarId::Count,CarId::Count};
     CarSurfaceRaster<112,112> raster{};
     PencilOcclusion occlusion{};
     CarSurfaceDetail detail=CarSurfaceDetail::Medium;

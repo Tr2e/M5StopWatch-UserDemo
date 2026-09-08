@@ -143,7 +143,9 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     const float seconds = static_cast<float>(screenElapsedMs) * 0.001f;
 
     if (screen == GameScreen::CarSelect) {
-        drawHeader(canvas, "SELECT MACHINE");
+        char title[32]{};
+        std::snprintf(title,sizeof(title),"SELECT MACHINE  %u/%u",unsigned(visibleCar)+1,unsigned(kCarCount));
+        drawHeader(canvas, title);
         canvas.setTextColor(kPencilFaint,kPaper);
         canvas.drawString(garageViewLabel(view.preset),_width/2,97);
         drawCar(canvas, spec, mesh, _surface->raster, _width / 2+std::lround(view.carSlide),
@@ -182,7 +184,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         drawCar(canvas, spec, mesh, _surface->raster, _width / 2 + static_cast<int>(vibration),
                 std::lround(view.centerY+12.f*entrance),scale,view.yaw,view.wheelPhase,detail,view.pitch);
         canvas.setTextSize(2);
-        canvas.setTextColor(spec.accentColor, kPaper);
+        canvas.setTextColor(kPencil, kPaper);
         canvas.drawString(spec.officialName, _width / 2, 397);
         return;
     }
@@ -196,7 +198,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         } else {
             drawCar(canvas, spec, mesh, _surface->raster, _width / 2, 270, 137.0f, -0.65f,
                     0.f, detail);
-            canvas.setTextColor(spec.accentColor, kPaper);
+            canvas.setTextColor(kPencil, kPaper);
             canvas.setTextSize(2);
             canvas.drawString(spec.shortName, _width / 2, 355);
             canvas.setTextSize(1);
@@ -210,6 +212,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         canvas.setTextSize(1);
         canvas.setTextColor(kPencil, kPaper);
         canvas.drawString(count, _width / 2, 420);
+        canvas.drawString("L/R: RIVAL / READY",_width/2,441);
         return;
     }
 

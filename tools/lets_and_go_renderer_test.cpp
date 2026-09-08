@@ -186,7 +186,7 @@ void captureCarStructures(const std::string& directory)
     auto mesh=std::make_unique<CarDisplayMesh>();
     auto& canvas=GetHAL().getCanvas();
     struct View {const char* name;TrackVec3 eye;CarSurfaceDetail detail;};
-    const char* names[]={"magnum","sonic","neo","brocken"};
+    const char* names[]={"magnum","sonic","neo","brocken","cobra","spider","stinger","diospada"};
     for(unsigned car=0;car<kCarCount;++car) for(const auto view : {
         View{"top",{0,3.2f,.001f},CarSurfaceDetail::High},
         View{"side",{3.1f,.75f,0},CarSurfaceDetail::High},
@@ -343,14 +343,14 @@ int main(int argc, char** argv)
             const bool moves=first!=canvas.frame();
             // Neo's official smooth caps/dishes have no spokes; their perfectly
             // rotationally symmetric surface has no visible phase difference.
-            const bool hasSpokes=id!=CarId::NeoTridaggerZmc;
+            const bool hasSpokes=id!=CarId::NeoTridaggerZmc && id!=CarId::BeakSpider;
             if(moves!=(preset==0 || (preset==1 && hasSpokes)) ||
                (preset!=1 && motion.state(start+500).wheelPhase!=motion.state(start+680).wheelPhase)) {
                 std::cerr << "Garage wheels must move ONLY in side view\n";valid=false;
             }
         }
     }
-    std::cout << "Garage cameras: 4 cars x 9 forward/reverse states x 3 LODs x 6 poses; side-only wheel pixel checks\n";
+    std::cout << "Garage cameras: 8 cars x 9 forward/reverse states x 3 LODs x 6 poses; side-only wheel pixel checks\n";
     // The exact same production cache is exercised across every selection,
     // entrance scale, wheel phase and quality tier (not just a single hero shot).
     for(std::size_t i=0;i<kCarCount;++i) {
@@ -493,6 +493,20 @@ int main(int argc, char** argv)
         state.cars[opponent].motion.lateralOffset=.65f;
         renderer.render(drive,run,results,0,false,PencilDetail::High);
         if(id==0)save("race-close");
+    }
+    // All-new and mixed rosters, including a solo quality change between full
+    // grids. Reused caches must match a clean renderer byte for byte.
+    for(unsigned cycle=0;cycle<6;++cycle) {
+        RaceSetup setup;setup.playerCar=cycle<3 ? CarId::Diospada : CarId::SpinCobra;
+        if(cycle%3!=1)setup.rivalMask=cycle<3 ? uint8_t(0x70) : uint8_t(0x89);
+        RaceController run;run.prepare(setup,42);
+        const auto detail=cycle%3==0 ? PencilDetail::High : PencilDetail::Low;
+        renderer.render(flow,run,results,0,false,detail);
+        const auto cached=canvas.frame();
+        RaceRenderer clean;clean.open(466,466);clean.render(flow,run,results,0,false,detail);
+        if(cached!=canvas.frame()) {std::cerr << "Roster/quality cache mismatch\n";valid=false;}
+        clean.close();
+        if(cycle==0)save("race-new-roster");
     }
     // Repeated entry releases large PSRAM-oriented storage instead of keeping
     // it resident in the Launcher for the lifetime of the installed App object.

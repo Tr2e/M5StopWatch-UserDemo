@@ -406,6 +406,159 @@ void brocken(Builder& b) {
     b.quad({-.025f,.421f,-.439f},{.025f,.421f,-.439f},
            {.025f,.465f,-.439f},{-.025f,.465f,-.439f},graphite);
 }
+// R23 bodies are authored from the Tamiya 19450/19408/19438/19443 photos.
+// Common rolling hardware is shared, not the silhouettes or body panels.
+void cobra(Builder& b) {
+    b.part=CarPart::Nose;
+    b.chine({{-.65f,.14f,.22f,.32f,.36f},{-.40f,.17f,.22f,.32f,.36f},
+        {-.12f,.20f,.18f,.30f,.32f},{.16f,.27f,.12f,.26f,.29f},
+        {.40f,.29f,.10f,.22f,.255f},{.67f,.29f,.08f,.15f,.19f},
+        {.85f,.39f,.08f,.13f,.14f}},blue,CarPaint::CobraHood);
+    b.part=CarPart::Canopy;
+    b.chine({{-.51f,.11f,.33f,.46f,.49f},{-.35f,.14f,.31f,.45f,.49f},
+        {-.10f,.15f,.30f,.37f,.405f},{.12f,.10f,.29f,.30f,.31f}},glass,CarPaint::Glass);
+    for(float s:{-1.f,1.f}) {
+        b.part=CarPart::FrontCowl;
+        b.cowl(s,{{.20f,.25f,.44f,.29f,.33f},{.36f,.27f,.54f,.345f,.38f},
+            {.52f,.29f,.566f,.383f,.414f},{.64f,.29f,.55f,.35f,.386f},
+            {.76f,.31f,.51f,.225f,.27f},{.855f,.34f,.47f,.13f,.16f}},blue,CarPaint::CobraFlame);
+        b.quad({s*.35f,.288f,.754f},{s*.45f,.290f,.754f},
+            {s*.43f,.182f,.848f},{s*.355f,.180f,.848f},silver,CarPaint::CobraLamp);
+        b.part=CarPart::RearCowl;
+        b.cowl(s,{{-.81f,.27f,.53f,.31f,.35f},{-.66f,.24f,.55f,.373f,.41f},
+            {-.50f,.23f,.55f,.385f,.42f},{-.30f,.23f,.53f,.30f,.35f},
+            {-.15f,.24f,.48f,.24f,.29f}},blue,CarPaint::CobraFlame);
+        b.part=CarPart::SideWeb;
+        b.quad({s*.20f,.22f,-.22f},{s*.50f,.21f,-.23f},
+            {s*.51f,.20f,.24f},{s*.23f,.245f,.18f},blue,CarPaint::CobraFlame);
+        b.part=CarPart::Intake;
+        b.quad({s*.26f,.351f,-.295f},{s*.46f,.351f,-.295f},
+            {s*.43f,.282f,-.15f},{s*.28f,.282f,-.15f},graphite,CarPaint::MagnumVent);
+        b.part=CarPart::RearWing;
+        b.quad({s*.245f,.36f,-.67f},{s*.32f,.36f,-.68f},
+            {s*.48f,.57f,-.955f},{s*.31f,.51f,-.92f},blue);
+        b.box(std::min(s*.20f,s*.27f),std::max(s*.20f,s*.27f),.28f,.38f,-.71f,-.65f,blue);
+    }
+    b.part=CarPart::RearWing;
+    b.chine({{-.94f,.40f,.465f,.49f,.50f},{-.86f,.34f,.455f,.48f,.49f}},blue,CarPaint::Solid);
+    b.part=CarPart::FrontBridge;
+    b.chine({{.80f,.42f,.095f,.14f,.17f},{.875f,.41f,.09f,.12f,.14f}},blue,CarPaint::CobraBridge);
+}
+
+void spider(Builder& b) {
+    b.part=CarPart::Nose;
+    b.chine({{-.70f,.12f,.21f,.30f,.34f},{-.42f,.15f,.20f,.30f,.34f},
+        {-.12f,.19f,.16f,.285f,.31f},{.18f,.255f,.12f,.24f,.29f},
+        {.43f,.27f,.10f,.20f,.24f},{.70f,.31f,.09f,.17f,.19f},
+        {.85f,.44f,.085f,.13f,.15f}},graphite,CarPaint::SpiderWeb);
+    b.part=CarPart::Canopy;
+    b.chine({{-.46f,.10f,.31f,.46f,.48f},{-.30f,.155f,.285f,.425f,.46f},
+        {-.08f,.165f,.265f,.35f,.39f},{.13f,.09f,.26f,.275f,.29f}},glass,CarPaint::BronzeGlass);
+    for(float s:{-1.f,1.f}) {
+        b.part=CarPart::FrontCowl;
+        b.cowl(s,{{.26f,.26f,.43f,.30f,.335f},{.40f,.29f,.54f,.355f,.39f},
+            {.55f,.31f,.55f,.375f,.405f},{.68f,.31f,.55f,.315f,.35f},
+            {.81f,.32f,.525f,.17f,.20f}},graphite,CarPaint::SpiderWeb);
+        b.quad({s*.36f,.207f,.802f},{s*.49f,.205f,.803f},
+            {s*.48f,.141f,.858f},{s*.34f,.143f,.86f},red,CarPaint::StingerLamp);
+        b.part=CarPart::RearCowl;
+        b.cowl(s,{{-.81f,.26f,.53f,.32f,.35f},{-.66f,.25f,.55f,.373f,.414f},
+            {-.48f,.24f,.55f,.38f,.423f},{-.28f,.26f,.48f,.26f,.32f}},graphite,CarPaint::SpiderCowl);
+        b.part=CarPart::SideGuard;
+        b.quad({s*.595f,.13f,.78f},{s*.595f,.13f,.25f},
+            {s*.58f,.24f,.26f},{s*.58f,.18f,.78f},graphite,CarPaint::SpiderWeb);
+        b.part=CarPart::SideWeb;
+        b.box(std::min(s*.15f,s*.29f),std::max(s*.15f,s*.29f),.19f,.225f,-.28f,-.22f,graphite);
+        b.part=CarPart::RearWing;
+        b.quad({s*.48f,.31f,-.75f},{s*.48f,.60f,-.96f},
+            {s*.48f,.59f,-.64f},{s*.48f,.36f,-.60f},graphite);
+    }
+    b.part=CarPart::RearWing;
+    for(int i=0;i<3;++i) {
+        const float z=-.95f+i*.13f,y=.565f-i*.055f;
+        b.chine({{z,.48f,y-.02f,y,y+.007f},{z+.068f,.48f,y-.02f,y,y+.007f}},
+                 graphite,i==0 ? CarPaint::SpiderWing : CarPaint::Solid);
+    }
+    b.part=CarPart::TailFin;
+    b.chine({{-.96f,.027f,.54f,.60f,.608f},{-.66f,.04f,.43f,.53f,.54f},
+        {-.45f,.075f,.30f,.37f,.39f}},graphite,CarPaint::SpiderWeb);
+}
+
+void stinger(Builder& b) {
+    b.part=CarPart::Nose;
+    b.chine({{-.72f,.11f,.22f,.33f,.39f},{-.46f,.12f,.22f,.35f,.40f},
+        {-.16f,.16f,.19f,.29f,.34f},{.15f,.12f,.12f,.24f,.28f},
+        {.42f,.08f,.10f,.17f,.21f},{.84f,.02f,.08f,.11f,.12f}},silver,CarPaint::StingerHood);
+    b.part=CarPart::Canopy;
+    b.chine({{-.58f,.095f,.35f,.46f,.49f},{-.39f,.135f,.33f,.44f,.48f},
+        {-.17f,.13f,.29f,.365f,.40f},{.06f,.065f,.25f,.275f,.29f}},glass,CarPaint::Glass);
+    for(float s:{-1.f,1.f}) {
+        b.part=CarPart::FrontCowl;
+        b.cowl(s,{{.25f,.22f,.43f,.285f,.32f},{.41f,.28f,.55f,.354f,.395f},
+            {.53f,.30f,.55f,.38f,.413f},{.67f,.27f,.50f,.32f,.357f},
+            {.83f,.31f,.43f,.14f,.17f},{.91f,.36f,.385f,.10f,.115f}},silver,CarPaint::StingerHood,CarPaint::Solid,.012f);
+        b.part=CarPart::RearCowl;
+        b.cowl(s,{{-.82f,.24f,.53f,.32f,.36f},{-.68f,.22f,.55f,.38f,.44f},
+            {-.49f,.23f,.55f,.39f,.45f},{-.30f,.25f,.49f,.34f,.40f}},silver,CarPaint::StingerCowl);
+        b.part=CarPart::Intake;
+        // Paired gold circular intake mouths in each rear pod (four total).
+        for(float x:{.31f,.43f})for(int i=0;i<b.segments/2;++i) {
+            const float a=i*6.2831853f/(b.segments/2),c=(i+1)*6.2831853f/(b.segments/2);
+            const auto p=[&](float r,float t){return CarPoint{s*x+std::cos(t)*r,.40f+std::sin(t)*r,-.285f};};
+            b.quad(p(.049f,a),p(.034f,a),p(.034f,c),p(.049f,c),0xe5ca);
+            auto mid=p(0,a);mid.z-=.012f;
+            auto pa=p(.034f,a),pc=p(.034f,c);pa.z-=.01f;pc.z-=.01f;
+            b.quad(mid,pa,pc,mid,graphite);
+        }
+        b.part=CarPart::SideWeb;
+        b.box(std::min(s*.15f,s*.29f),std::max(s*.15f,s*.29f),.18f,.22f,-.29f,-.20f,silver);
+        b.part=CarPart::Intake;
+        for(int i=0;i<3;++i)b.tube({s*(.25f+i*.026f),.20f,-.19f},
+            {s*(.29f+i*.026f),.21f,.20f},.018f,silver);
+        b.part=CarPart::FrontBridge;
+        b.quad({s*.10f,.16f,.72f},{s*.25f,.17f,.73f},
+            {s*.25f,.125f,.84f},{s*.07f,.13f,.84f},red,CarPaint::StingerLamp);
+    }
+    b.part=CarPart::TailFin;
+    b.quad({0,.39f,-.52f},{0,.42f,-.87f},{0,.59f,-.88f},{0,.53f,-.68f},silver);
+    b.quad({.012f,.39f,-.52f},{.012f,.53f,-.68f},{.012f,.59f,-.88f},{.012f,.42f,-.87f},silver);
+}
+
+void diospada(Builder& b) {
+    b.part=CarPart::Nose;
+    b.chine({{-.70f,.13f,.22f,.29f,.32f},{-.43f,.17f,.20f,.30f,.34f},
+        {-.14f,.20f,.17f,.29f,.33f},{.15f,.25f,.14f,.26f,.29f},
+        {.42f,.25f,.10f,.21f,.245f},{.70f,.28f,.08f,.16f,.19f},
+        {.85f,.40f,.08f,.13f,.15f}},red,CarPaint::DiospadaHood);
+    b.part=CarPart::Canopy;
+    b.chine({{-.47f,.095f,.31f,.405f,.44f},{-.33f,.14f,.30f,.42f,.455f},
+        {-.13f,.15f,.28f,.37f,.405f},{.04f,.11f,.27f,.29f,.31f}},glass,CarPaint::BronzeGlass);
+    for(float s:{-1.f,1.f}) {
+        b.part=CarPart::FrontCowl;
+        b.cowl(s,{{.25f,.25f,.44f,.29f,.33f},{.41f,.30f,.54f,.355f,.39f},
+            {.54f,.31f,.55f,.38f,.41f},{.65f,.30f,.55f,.35f,.38f},
+            {.77f,.29f,.53f,.22f,.26f},{.86f,.32f,.46f,.14f,.17f}},red,CarPaint::Solid);
+        b.quad({s*.31f,.262f,.768f},{s*.475f,.262f,.766f},
+            {s*.44f,.18f,.85f},{s*.31f,.178f,.85f},silver,CarPaint::CobraLamp);
+        b.part=CarPart::RearCowl;
+        b.cowl(s,{{-.84f,.25f,.53f,.32f,.355f},{-.69f,.25f,.55f,.375f,.41f},
+            {-.51f,.24f,.55f,.39f,.42f},{-.29f,.24f,.49f,.295f,.34f}},red,CarPaint::Solid);
+        // Actual open side scoop: upper rail and lower sill, no flat fill.
+        b.part=CarPart::SideWeb;
+        b.quad({s*.23f,.29f,-.25f},{s*.49f,.31f,-.27f},
+            {s*.46f,.31f,.23f},{s*.25f,.28f,.20f},red,CarPaint::DiospadaSide);
+        b.box(std::min(s*.23f,s*.47f),std::max(s*.23f,s*.47f),.105f,.14f,-.24f,.23f,red);
+        b.part=CarPart::RearWing;
+        b.quad({s*.49f,.34f,-.68f},{s*.49f,.38f,-.92f},
+            {s*.41f,.57f,-.92f},{s*.41f,.555f,-.71f},red,CarPaint::DiospadaLouver);
+        b.quad({s*.47f,.34f,-.68f},{s*.40f,.535f,-.71f},
+            {s*.40f,.55f,-.92f},{s*.47f,.38f,-.92f},shade(red,.8f));
+    }
+    b.part=CarPart::RearWing;
+    b.chine({{-.94f,.42f,.545f,.575f,.585f},{-.72f,.42f,.53f,.56f,.572f}},red,CarPaint::DiospadaWing);
+    b.part=CarPart::FrontBridge;
+    b.chine({{.81f,.45f,.09f,.16f,.17f},{.88f,.41f,.085f,.12f,.135f}},red,CarPaint::Solid);
+}
 } // namespace
 
 CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t capacity,
@@ -415,22 +568,26 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
     Builder b{mesh,detail==CarSurfaceDetail::High ? 24 : detail==CarSurfaceDetail::Medium ? 18 : 12};
     const auto& spec=carSpec(car);
     b.part=CarPart::Chassis;
-    b.box(-.245f,.245f,.05f,.105f,-.79f,.83f,graphite);
+    const auto chassis=car==CarId::SpinCobra ? white : car==CarId::BeakSpider || car==CarId::RayStinger ? blue : graphite;
+    b.box(-.245f,.245f,.05f,.105f,-.79f,.83f,chassis);
     // Contoured bumper stays instead of a rectangular full-width plank.
     for(float s : {-1.f,1.f}) {
         b.part=CarPart::Chassis;
-        b.quad({0,.10f,.80f},{s*.48f,.10f,.83f},{s*.58f,.10f,.94f},{0,.10f,.91f},graphite);
-        b.quad({0,.10f,-.74f},{s*.49f,.10f,-.77f},{s*.57f,.10f,-.86f},{0,.10f,-.83f},graphite);
+        b.quad({0,.10f,.80f},{s*.48f,.10f,.83f},{s*.58f,.10f,.94f},{0,.10f,.91f},chassis);
+        b.quad({0,.10f,-.74f},{s*.49f,.10f,-.77f},{s*.57f,.10f,-.86f},{0,.10f,-.83f},chassis);
         b.part=CarPart::Wheel;
         const bool broad=car==CarId::CycloneMagnum || car==CarId::HurricaneSonic;
-        const int spokes=car==CarId::BrockenGigant ? 6 : 5;
-        b.wheel(s,kModelFrontAxle,spec.wheelColor,car==CarId::NeoTridaggerZmc,s<0 ? 1 : 2,broad,false,spokes);
-        b.wheel(s,kModelRearAxle,spec.wheelColor,false,s<0 ? 3 : 4,broad,car==CarId::NeoTridaggerZmc,spokes);
+        const int spokes=car==CarId::BrockenGigant ? 6 : car==CarId::SpinCobra ? 3 : 5;
+        const bool dish=car==CarId::BeakSpider;
+        b.wheel(s,kModelFrontAxle,spec.wheelColor,car==CarId::NeoTridaggerZmc,s<0 ? 1 : 2,broad,dish,spokes);
+        b.wheel(s,kModelRearAxle,spec.wheelColor,false,s<0 ? 3 : 4,broad,dish || car==CarId::NeoTridaggerZmc,spokes);
         b.part=CarPart::Roller;
-        b.roller(s*.55f,.90f,car==CarId::CycloneMagnum || car==CarId::NeoTridaggerZmc ? blue : red);
+        const auto roller=car>=CarId::SpinCobra ? (car==CarId::BeakSpider ? blue : silver) :
+            car==CarId::CycloneMagnum || car==CarId::NeoTridaggerZmc ? blue : red;
+        b.roller(s*.55f,.90f,roller);
         if(car==CarId::NeoTridaggerZmc)b.roller(s*.55f,-.105f,0x246d,1,.195f);
         else if(car==CarId::BrockenGigant)b.roller(s*.55f,-.84f,red,1,.20f,.09f);
-        else b.roller(s*.55f,-.84f,car==CarId::CycloneMagnum ? blue : red);
+        else b.roller(s*.55f,-.84f,car>=CarId::SpinCobra ? roller : car==CarId::CycloneMagnum ? blue : red);
     }
     b.part=CarPart::Unspecified;
     switch(car) {
@@ -438,6 +595,10 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
         case CarId::HurricaneSonic:sonic(b);break;
         case CarId::NeoTridaggerZmc:neo(b);break;
         case CarId::BrockenGigant:brocken(b);break;
+        case CarId::SpinCobra:cobra(b);break;
+        case CarId::BeakSpider:spider(b);break;
+        case CarId::RayStinger:stinger(b);break;
+        case CarId::Diospada:diospada(b);break;
         default:cyclone(b);break;
     }
     return {mesh.count,mesh.overflowed};

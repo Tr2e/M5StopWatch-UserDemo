@@ -35,7 +35,7 @@ void RaceController::prepare(const RaceSetup& setup, uint32_t seed)
     const CarId playerCar = isValidCar(setup.playerCar)
                                 ? setup.playerCar : CarId::CycloneMagnum;
     std::size_t index = 0;
-    for (std::size_t carIndex = 0; carIndex < kCarCount; ++carIndex) {
+    for (std::size_t carIndex = 0; carIndex < kCarCount && index < kMaximumRivals; ++carIndex) {
         const CarId car = static_cast<CarId>(carIndex);
         if (car == playerCar || !setup.hasRival(car)) continue;
         RaceCarSnapshot& entry = _snapshot.cars[index];

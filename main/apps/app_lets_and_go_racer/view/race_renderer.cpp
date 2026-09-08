@@ -259,13 +259,6 @@ void RaceRenderer::open(int width, int height)
     _width = width;
     _height = height;
     _surface.reset(new(std::nothrow) RaceSurfaceCache);
-    for (std::size_t car = 0; _surface && car < kCarCount; ++car) {
-        auto& mesh=_surface->meshes[car];
-        const auto result=buildCarSurfaceInto(static_cast<CarId>(car),mesh.panels.data(),
-                                              mesh.panels.size(),CarSurfaceDetail::Medium);
-        mesh.count=result.count;
-        if(result.overflowed) _surface.reset();
-    }
     _cachedTrack = TrackId::Count;
 }
 
@@ -292,13 +285,21 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         return;
     }
     const auto surfaceDetail=detail==PencilDetail::Low ? CarSurfaceDetail::Low : CarSurfaceDetail::Medium;
-    if(_surface->detail!=surfaceDetail) {
-        for(std::size_t i=0;i<kCarCount;++i) {
+    {
+        for(std::size_t i=0;i<race.snapshot().carCount;++i) {
+            const auto id=race.snapshot().cars[i].car;
+            if(_surface->detail==surfaceDetail && _surface->cars[i]==id)continue;
             auto& mesh=_surface->meshes[i];
-            const auto built=buildCarSurfaceInto(static_cast<CarId>(i),mesh.panels.data(),
+            const auto built=buildCarSurfaceInto(id,mesh.panels.data(),
                                                  mesh.panels.size(),surfaceDetail);
+            if(built.overflowed) {_surface.reset();return;}
             mesh.count=built.count;
+            _surface->cars[i]=id;
         }
+        // Inactive slots may retain another quality tier from an earlier race.
+        // Invalidate them before a later solo -> four-car roster expansion.
+        for(std::size_t i=race.snapshot().carCount;i<kMaximumRaceCars;++i)
+            _surface->cars[i]=CarId::Count;
         _surface->detail=surfaceDetail;
     }
     if (flow.screen() == GameScreen::Results) {
@@ -330,7 +331,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         if (depth[order[slot]] < kTrackNearPlane || !car.active ||
             (car.finished && !car.player)) continue;
         drawRaceCar(canvas, camera, race.track(), car,
-                    _surface->meshes[static_cast<std::size_t>(car.car)], _surface->raster, _surface->occlusion, detail);
+                    _surface->meshes[order[slot]], _surface->raster, _surface->occlusion, detail);
     }
     if (flow.screen() == GameScreen::Racing)
         drawSpeedLines(canvas, player, screenElapsedMs, detail);

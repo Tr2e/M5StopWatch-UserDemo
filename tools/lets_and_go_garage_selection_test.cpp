@@ -23,10 +23,10 @@ bool validatePlayerWrapAndActivation()
     selection.reset();
     bool valid = check(enterCarSelect(flow), "failed to enter car select");
     selection.movePlayer(-1);
-    valid &= check(selection.playerCursor() == CarId::BrockenGigant,
+    valid &= check(selection.playerCursor() == CarId::Diospada,
                    "player cursor did not wrap backward");
     valid &= check(selection.activatePlayer(flow) &&
-                       flow.setup().playerCar == CarId::BrockenGigant &&
+                       flow.setup().playerCar == CarId::Diospada &&
                        flow.screen() == GameScreen::CarShowcase,
                    "player activation failed");
     return valid;
@@ -61,7 +61,7 @@ bool validateRivalSkipToggleAndDone()
     selection.syncPlayer(CarId::HurricaneSonic);
     valid &= check(selection.activateRival(flow) && flow.setup().rivalCount() == 1,
                    "rival could not be selected after re-entering selection");
-    for (int step = 0; step < 5 && !selection.rivalCursorIsDone(); ++step) {
+    for (std::size_t step = 0; step <= kCarCount && !selection.rivalCursorIsDone(); ++step) {
         selection.moveRival(1, flow.setup().playerCar);
     }
     valid &= check(selection.rivalCursorIsDone(), "rival cursor never reached done");
@@ -80,7 +80,7 @@ bool validateSoloDoneReachable()
                            flow.selectPlayerCar(CarId::CycloneMagnum) &&
                            flow.confirmPlayerCar() && flow.completeCarShowcase(),
                        "failed to prepare solo selection");
-    for (int step = 0; step < 5 && !selection.rivalCursorIsDone(); ++step) {
+    for (std::size_t step = 0; step <= kCarCount && !selection.rivalCursorIsDone(); ++step) {
         selection.moveRival(-1, flow.setup().playerCar);
     }
     valid &= check(selection.rivalCursorIsDone() && selection.activateRival(flow) &&
@@ -88,12 +88,39 @@ bool validateSoloDoneReachable()
                    "solo done path failed");
     return valid;
 }
+
+bool validateExpandedRoster()
+{
+    bool valid=true;
+    for(std::size_t player=0;player<kCarCount;++player) {
+        const auto id=static_cast<CarId>(player);
+        GameFlow flow;GarageSelection selection;selection.reset(id);
+        enterCarSelect(flow);selection.activatePlayer(flow);flow.completeCarShowcase();selection.syncPlayer(id);
+        unsigned visited=0;bool ready=false;
+        for(std::size_t i=0;i<kCarCount;++i) {
+            if(selection.rivalCursorIsDone())ready=true;
+            else {
+                const auto candidate=selection.rivalCursorCar();visited|=carMask(candidate);
+                valid &= check(candidate!=id,"player offered as rival");
+            }
+            selection.moveRival(1,id);
+        }
+        valid &= check(ready && visited==(255u ^ carMask(id)),"cannot reach all seven rivals and READY");
+        unsigned added=0;
+        for(std::size_t rival=0;rival<kCarCount;++rival)if(rival!=player) {
+            const bool changed=flow.toggleRival(static_cast<CarId>(rival));
+            valid &= check(changed==(added<3),"three-rival limit not enforced");++added;
+        }
+        valid &= check(flow.setup().rivalCount()==3,"expanded roster changed grid capacity");
+    }
+    return valid;
+}
 }  // namespace
 
 int main()
 {
     return validatePlayerWrapAndActivation() && validateRivalSkipToggleAndDone() &&
-                   validateSoloDoneReachable()
+                   validateSoloDoneReachable() && validateExpandedRoster()
                ? 0
                : 1;
 }

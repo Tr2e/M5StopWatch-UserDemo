@@ -10,6 +10,10 @@ enum class CarId : uint8_t {
     HurricaneSonic,
     NeoTridaggerZmc,
     BrockenGigant,
+    SpinCobra,
+    BeakSpider,
+    RayStinger,
+    Diospada,
     Count,
 };
 

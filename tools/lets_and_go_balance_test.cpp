@@ -12,7 +12,8 @@ bool run(CarId car, uint32_t seed, int strategy, Sweep& sweep,TrackId track)
     RaceSetup setup;
     setup.playerCar = car;
     setup.track = track;
-    setup.rivalMask = 0x0fu & ~carMask(car);
+    for(std::size_t offset=1;offset<=kMaximumRivals;++offset)
+        setup.rivalMask |= carMask(static_cast<CarId>((std::size_t(car)+offset)%kCarCount));
     RaceController race;
     race.prepare(setup, seed);
     if (race.snapshot().player().position != 4u) return false;
