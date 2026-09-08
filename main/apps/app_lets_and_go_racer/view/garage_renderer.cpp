@@ -1,4 +1,5 @@
 #include "garage_renderer.h"
+#include "track_projection.h"
 
 #include <hal/hal.h>
 
@@ -13,6 +14,8 @@ constexpr uint16_t kPaper = 0xef3au;
 constexpr uint16_t kPencil = 0x4269u;
 constexpr uint16_t kPencilFaint = 0x9cd3u;
 constexpr uint16_t kPencilLight = 0xc638u;
+constexpr uint16_t kCourseEdge = 0x31e8u;
+constexpr uint16_t kCourseFaint = 0x8490u;
 
 CarPoint animateWheelPoint(CarPoint point, const CarSpec& spec, WireStroke stroke,
                            float wheelCosine, float wheelSine)
@@ -103,6 +106,81 @@ void drawHeader(LGFX_Device& canvas, const char* title)
     canvas.drawString(title, canvas.width() / 2, 68);
 }
 
+bool drawWorldLine(LGFX_Device& canvas, const TrackCamera& camera,
+                   TrackVec3 fromWorld, TrackVec3 toWorld, uint16_t color)
+{
+    TrackCameraPoint from = trackToCamera(camera, fromWorld);
+    TrackCameraPoint to = trackToCamera(camera, toWorld);
+    if (!clipTrackSegmentToNear(from, to)) return false;
+    TrackScreenPoint a{};
+    TrackScreenPoint b{};
+    if (!projectTrackPoint(camera, from, a) || !projectTrackPoint(camera, to, b)) {
+        return false;
+    }
+    constexpr float kGuard = 24.0f;
+    if (!clipTrackSegmentToViewport(a, b, static_cast<float>(canvas.width()),
+                                    static_cast<float>(canvas.height()), kGuard)) return false;
+    canvas.drawLine(static_cast<int>(std::lround(a.x)), static_cast<int>(std::lround(a.y)),
+                    static_cast<int>(std::lround(b.x)), static_cast<int>(std::lround(b.y)),
+                    color);
+    return true;
+}
+
+void drawMountains(LGFX_Device& canvas)
+{
+    constexpr int kHorizonY = 151;
+    canvas.drawLine(36, kHorizonY, 430, kHorizonY, kPencilLight);
+    for (int x = 38; x < 430; x += 34) {
+        const int peak = kHorizonY - 10 - ((x * 17) % 27);
+        canvas.drawLine(x - 34, kHorizonY, x, peak, kPencilLight);
+        canvas.drawLine(x, peak, x + 35, kHorizonY, kPencilLight);
+    }
+}
+
+void drawTrackLayer(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
+                    const TrackCamera& camera, TrackLayer requestedLayer)
+{
+    for (std::size_t index = 0; index < TrackPreviewGeometry::kSegments; ++index) {
+        if (preview.layer[index] != requestedLayer) continue;
+        const TrackVec3 left = preview.left[index];
+        const TrackVec3 right = preview.right[index];
+        const TrackVec3 nextLeft = preview.left[index + 1u];
+        const TrackVec3 nextRight = preview.right[index + 1u];
+        drawWorldLine(canvas, camera, left, nextLeft, kCourseEdge);
+        drawWorldLine(canvas, camera, right, nextRight, kCourseEdge);
+        if ((index & 1u) == 0u) {
+            drawWorldLine(canvas, camera, left, right, kCourseFaint);
+        }
+        const TrackVec3 railLift{0.0f, 0.48f, 0.0f};
+        drawWorldLine(canvas, camera, trackAdd(left, railLift),
+                      trackAdd(nextLeft, railLift), kCourseEdge);
+        drawWorldLine(canvas, camera, trackAdd(right, railLift),
+                      trackAdd(nextRight, railLift), kCourseEdge);
+        if ((index % 4u) == 0u) {
+            drawWorldLine(canvas, camera, left, trackAdd(left, railLift), kCourseFaint);
+            drawWorldLine(canvas, camera, right, trackAdd(right, railLift), kCourseFaint);
+        }
+    }
+}
+
+void drawTrackPreview(LGFX_Device& canvas, const TrackPreviewGeometry& preview,
+                      uint32_t screenElapsedMs)
+{
+    const float orbit = static_cast<float>(screenElapsedMs) * 0.00016f;
+    const TrackVec3 cameraPosition{std::sin(orbit) * 21.0f, 13.0f,
+                                   -std::cos(orbit) * 21.0f};
+    const TrackCamera camera = makeTrackLookAtCamera(cameraPosition,
+                                                     {0.0f, 1.4f, 0.0f},
+                                                     canvas.width(), canvas.height(), 0.69f);
+    drawMountains(canvas);
+    drawTrackLayer(canvas, preview, camera, TrackLayer::Lower);
+    drawTrackLayer(canvas, preview, camera, TrackLayer::Transition);
+
+    // The upper deck is deliberately last at the crossing: there is no center
+    // divider, only the two external guard rails.
+    drawTrackLayer(canvas, preview, camera, TrackLayer::Upper);
+}
+
 }  // namespace
 
 void GarageRenderer::open(int width, int height)
@@ -110,6 +188,16 @@ void GarageRenderer::open(int width, int height)
     _width = width;
     _height = height;
     _meshCached = false;
+    const float step = _track.length() /
+                       static_cast<float>(TrackPreviewGeometry::kSegments);
+    for (std::size_t index = 0; index <= TrackPreviewGeometry::kSegments; ++index) {
+        const float distance = step * static_cast<float>(index);
+        _trackPreview.left[index] = _track.edge(distance, -1.0f);
+        _trackPreview.right[index] = _track.edge(distance, 1.0f);
+        if (index < TrackPreviewGeometry::kSegments) {
+            _trackPreview.layer[index] = _track.layer(distance + step * 0.5f);
+        }
+    }
 }
 
 void GarageRenderer::close()
@@ -211,6 +299,19 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         canvas.setTextSize(1);
         canvas.setTextColor(kPencil, kPaper);
         canvas.drawString(count, _width / 2, 420);
+        return;
+    }
+
+    if (screen == GameScreen::TrackSelect) {
+        drawHeader(canvas, "SELECT COURSE");
+        drawTrackPreview(canvas, _trackPreview, screenElapsedMs);
+        canvas.setTextSize(2);
+        canvas.setTextColor(kCourseEdge, kPaper);
+        canvas.drawString(overpassTrackName(), _width / 2, 377);
+        canvas.setTextSize(1);
+        canvas.setTextColor(kPencilFaint, kPaper);
+        canvas.drawString("3 LAPS  /  OPEN LANE", _width / 2, 405);
+        canvas.drawString("B: START", _width / 2, 430);
         return;
     }
 
