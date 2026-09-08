@@ -18,6 +18,20 @@ High／Medium／Low：1,239／999／759 面，缓存不变。完整 ASan／UBSan
 
 ![Cobra 多视角及比赛生产输出](assets/lets-and-go-r24-cobra.png)
 
+## B. Beak Spider / 19408 原版
+
+参考：[官方产品页](https://www.tamiya.com/japan/products/19408/index.html)、[实拍](https://d7z22c0gz59ng.cloudfront.net/japan_contents/img/usr/item/1/19408/19408_1.jpg)。按原版的前轮后包围、金色硬边窗、三层后翼、红色盘轮、蓝色前导轮和青色侧导轮核对，不混入其他底盘版本。
+
+结构卡：R23 风挡过圆、前肩偏窄、外护翼末端不完整；蓝白纹样重复为放射星形，后导轮位置为通用配置。拓宽前肩与风挡前端，补黑色窗框、前横桥、护翼两端连接和侧导轮支架；保留三层翼之间的真空隙。
+
+第一轮：三档轮胎净空、护翼回包、宽风挡／前肩和导轮位置检查通过。网纹改为沿车壳弯折的蓝白网格，补车鼻 BS 色标和肩部通风格；尾翼文字分到中央脊两侧。
+
+第二轮：全视角检查发现导轮移到侧面后仍残留通用后保险杠尖角，删除空支架并补防回退断言。检查选车、三档、侧／后方和比赛；旧四车及未处理新车相对 R23 基线不变。
+
+High／Medium／Low：1,171／955／739 面，比 R23 更少而不是靠堆面数。完整 ASan／UBSan、生产渲染回归及 ESP-IDF 编译通过后阶段提交。
+
+![Spider 多视角及比赛生产输出](assets/lets-and-go-r24-spider.png)
+
 ## 后续阶段
 
-Beak Spider、Ray Stinger、Diospada 按相同流程逐台记录，完成后更新本节。
+Ray Stinger、Diospada 按相同流程逐台记录，完成后更新本节。

@@ -16,7 +16,7 @@ enum class CarPaint : uint8_t {
     NeoCanopy, NeoWingLeft, BrockenCabin, BrockenLamp, BrockenArmor, BrockenCabinSide,
     CobraFlame, CobraHood, CobraLamp, SpiderWeb, SpiderCowl, SpiderWing,
     StingerHood, StingerCowl, StingerLamp, DiospadaHood, DiospadaWing, DiospadaSide,
-    CobraBridge, DiospadaLouver,
+    CobraBridge, DiospadaLouver, SpiderHood, SpiderCanopy,
     Count
 };
 

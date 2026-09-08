@@ -428,6 +428,19 @@ bool validateRebuiltStructure(CarId car)
                            surfaceHeight(mesh,.30f,-.79f,CarPart::RearWing)>.50f &&
                            surfaceHeight(mesh,.30f,-.66f,CarPart::RearWing)>.45f,
                            "Spider three separate rear wing planes missing");
+            valid &= check(surfaceHeight(mesh,.12f,.10f,CarPart::Canopy)>.28f &&
+                           surfaceHeight(mesh,.29f,.43f,CarPart::Nose)>.21f,
+                           "Spider flat wide windscreen or nose shoulders regressed");
+            for(float s:{-1.f,1.f})
+                valid &= check(surfaceHeight(mesh,s*.58f,.27f,CarPart::SideGuard)>.18f,
+                               "Spider wraparound front-wheel guard missing");
+            for(std::size_t i=0;i<mesh.count;++i)if(mesh.panels[i].part==CarPart::Roller)
+                for(const auto p:mesh.panels[i].point)
+                    valid &= check(p.z>-.18f,"Spider side rollers moved back to rear bumper");
+            for(std::size_t i=0;i<mesh.count;++i)if(mesh.panels[i].part==CarPart::Chassis)
+                for(const auto p:mesh.panels[i].point)
+                    valid &= check(!(std::abs(p.x)>.45f && p.z<-.75f),
+                                   "Spider retained empty generic rear roller stays");
         }
         if(car==CarId::RayStinger) {
             valid &= check(parts[unsigned(CarPart::RearWing)]==0 && parts[unsigned(CarPart::TailFin)]==2 &&

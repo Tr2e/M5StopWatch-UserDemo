@@ -59,18 +59,31 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         if(ellipse>.46f)return 0xbdf7;
         return (int(u*14)+int(v*11))%3==0 ? white : 0x7bef;
     }
+    case CarPaint::SpiderHood:
     case CarPaint::SpiderWeb: {
-        const float x=u-.5f,y=v-.35f;
-        const float ring=std::fmod((std::abs(x)+std::abs(y)*.70f)*4.f,1.f);
-        const float spoke=std::min({std::abs(x),std::abs(y),std::abs(x-y*.7f),std::abs(x+y*.7f)});
-        if(ring<.035f || spoke<.008f)return white;
-        if(ring<.075f || spoke<.018f)return 0x44bf;
+        if(paint==CarPaint::SpiderHood) {
+            if(v>.53f && v<.68f && center<.21f)
+                return carLetter("BS",u,v,.32f,.55f,.36f,.105f) ? gold : 0x1082;
+            if(v>.62f && v<.79f && center>.29f && center<.43f)
+                return std::fmod(v*20.f,1.f)<.15f ? 0x7bef : 0x1082;
+        }
+        // Swept rectangular cells follow the shell; no starburst at every panel.
+        const float across=std::fmod((u+(.5f-u)*v*.25f)*4.f+.10f,1.f);
+        const float along=std::fmod(v*4.5f+center*.45f,1.f);
+        const float line=std::min({across,1-across,along,1-along});
+        if(line<.022f)return white;
+        if(line<.065f)return 0x44bf;
         return 0x1082;
     }
+    case CarPaint::SpiderCanopy:
+        if(u<.08f || u>.92f || v<.07f || v>.91f)return 0x1082;
+        if((u<.19f || u>.81f) && v>.72f)return 0x1082;
+        return carTint(0xacce,.96f+.14f*(1-v));
     case CarPaint::SpiderCowl:
         return u>.48f-v*.30f && u<.80f-v*.16f ? red : 0x1082;
     case CarPaint::SpiderWing:
-        return carLetter("BEAK SPIDER",u,v,.06f,.22f,.88f,.56f) ? white : 0x1082;
+        return carLetter("BEAK",u,v,.04f,.22f,.38f,.56f) ||
+               carLetter("SPIDER",u,v,.57f,.22f,.39f,.56f) ? white : 0x1082;
     case CarPaint::StingerHood:
         if(v>.40f && v<.82f && center<.27f &&
            std::fmod(v*12.f+center*7.f,1.f)<.27f)return 0x1082;

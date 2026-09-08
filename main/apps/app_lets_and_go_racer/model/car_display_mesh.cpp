@@ -471,12 +471,12 @@ void cobra(Builder& b) {
 void spider(Builder& b) {
     b.part=CarPart::Nose;
     b.chine({{-.70f,.12f,.21f,.30f,.34f},{-.42f,.15f,.20f,.30f,.34f},
-        {-.12f,.19f,.16f,.285f,.31f},{.18f,.255f,.12f,.24f,.29f},
-        {.43f,.27f,.10f,.20f,.24f},{.70f,.31f,.09f,.17f,.19f},
-        {.85f,.44f,.085f,.13f,.15f}},graphite,CarPaint::SpiderWeb);
+        {-.12f,.17f,.16f,.285f,.31f},{.18f,.27f,.12f,.25f,.30f},
+        {.43f,.30f,.10f,.22f,.255f},{.70f,.35f,.09f,.17f,.19f},
+        {.85f,.44f,.085f,.13f,.15f}},graphite,CarPaint::SpiderHood);
     b.part=CarPart::Canopy;
-    b.chine({{-.46f,.10f,.31f,.46f,.48f},{-.30f,.155f,.285f,.425f,.46f},
-        {-.08f,.165f,.265f,.35f,.39f},{.13f,.09f,.26f,.275f,.29f}},glass,CarPaint::BronzeGlass);
+    b.chine({{-.46f,.115f,.31f,.435f,.465f},{-.30f,.15f,.285f,.415f,.445f},
+        {-.08f,.16f,.265f,.35f,.382f},{.13f,.13f,.26f,.275f,.302f}},glass,CarPaint::SpiderCanopy,CarPaint::SpiderCanopy);
     for(float s:{-1.f,1.f}) {
         b.part=CarPart::FrontCowl;
         b.cowl(s,{{.26f,.26f,.43f,.30f,.335f},{.40f,.29f,.54f,.355f,.39f},
@@ -490,8 +490,15 @@ void spider(Builder& b) {
         b.part=CarPart::SideGuard;
         b.quad({s*.595f,.13f,.78f},{s*.595f,.13f,.25f},
             {s*.58f,.24f,.26f},{s*.58f,.18f,.78f},graphite,CarPaint::SpiderWeb);
+        b.quad({s*.47f,.14f,.87f},{s*.595f,.13f,.78f},
+            {s*.58f,.18f,.78f},{s*.48f,.17f,.85f},graphite,CarPaint::SpiderWeb);
+        b.quad({s*.595f,.13f,.25f},{s*.58f,.24f,.26f},
+            {s*.55f,.21f,.22f},{s*.55f,.13f,.22f},graphite);
         b.part=CarPart::SideWeb;
         b.box(std::min(s*.15f,s*.29f),std::max(s*.15f,s*.29f),.19f,.225f,-.28f,-.22f,graphite);
+        b.part=CarPart::Chassis;
+        b.box(std::min(s*.23f,s*.57f),std::max(s*.23f,s*.57f),.10f,.135f,-.17f,-.12f,blue);
+        b.box(std::min(s*.17f,s*.27f),std::max(s*.17f,s*.27f),.25f,.29f,-.68f,-.47f,0x2495);
         b.part=CarPart::RearWing;
         b.quad({s*.48f,.31f,-.75f},{s*.48f,.60f,-.96f},
             {s*.48f,.59f,-.64f},{s*.48f,.36f,-.60f},graphite);
@@ -505,6 +512,8 @@ void spider(Builder& b) {
     b.part=CarPart::TailFin;
     b.chine({{-.96f,.027f,.54f,.60f,.608f},{-.66f,.04f,.43f,.53f,.54f},
         {-.45f,.075f,.30f,.37f,.39f}},graphite,CarPaint::SpiderWeb);
+    b.part=CarPart::FrontBridge;
+    b.chine({{.87f,.53f,.085f,.115f,.12f},{.935f,.54f,.075f,.09f,.095f}},graphite,CarPaint::Solid);
 }
 
 void stinger(Builder& b) {
@@ -597,7 +606,8 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
     for(float s : {-1.f,1.f}) {
         b.part=CarPart::Chassis;
         b.quad({0,.10f,.80f},{s*.48f,.10f,.83f},{s*.58f,.10f,.94f},{0,.10f,.91f},chassis);
-        b.quad({0,.10f,-.74f},{s*.49f,.10f,-.77f},{s*.57f,.10f,-.86f},{0,.10f,-.83f},chassis);
+        if(car!=CarId::BeakSpider)
+            b.quad({0,.10f,-.74f},{s*.49f,.10f,-.77f},{s*.57f,.10f,-.86f},{0,.10f,-.83f},chassis);
         b.part=CarPart::Wheel;
         const bool broad=car==CarId::CycloneMagnum || car==CarId::HurricaneSonic;
         const int spokes=car==CarId::BrockenGigant ? 6 : car==CarId::SpinCobra ? 3 : 5;
@@ -607,8 +617,10 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
         b.part=CarPart::Roller;
         const auto roller=car>=CarId::SpinCobra ? (car==CarId::BeakSpider ? blue : silver) :
             car==CarId::CycloneMagnum || car==CarId::NeoTridaggerZmc ? blue : red;
-        b.roller(s*.55f,.90f,roller);
-        if(car==CarId::NeoTridaggerZmc)b.roller(s*.55f,-.105f,0x246d,1,.195f);
+        if(car==CarId::BeakSpider)b.roller(s*.55f,.90f,roller,1,.18f,.024f);
+        else b.roller(s*.55f,.90f,roller);
+        if(car==CarId::BeakSpider)b.roller(s*.55f,-.105f,0x2495,1,.195f,.024f);
+        else if(car==CarId::NeoTridaggerZmc)b.roller(s*.55f,-.105f,0x246d,1,.195f);
         else if(car==CarId::BrockenGigant)b.roller(s*.55f,-.84f,red,1,.20f,.09f);
         else b.roller(s*.55f,-.84f,car>=CarId::SpinCobra ? roller : car==CarId::CycloneMagnum ? blue : red);
     }
