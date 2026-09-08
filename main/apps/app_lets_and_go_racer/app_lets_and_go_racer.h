@@ -6,6 +6,7 @@
 #include "input/hardware_racer_input_provider.h"
 #include "input/racer_input_logic.h"
 #include "view/garage_renderer.h"
+#include "view/race_renderer.h"
 
 #include <apps/common/key_manager/key_manager.h>
 #include <memory>
@@ -31,6 +32,7 @@ private:
     lets_and_go::GarageSelection _selection;
     lets_and_go::RaceController _race;
     lets_and_go::GarageRenderer _renderer;
+    lets_and_go::RaceRenderer _raceRenderer;
     uint32_t _lastFrameMs = 0;
     uint32_t _screenStartedMs = 0;
     uint32_t _lastUpdateMs = 0;

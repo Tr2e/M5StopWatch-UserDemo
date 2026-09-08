@@ -12,6 +12,14 @@ constexpr uint32_t kShowcaseDurationMs = 1500u;
 constexpr uint32_t kGridIntroDurationMs = 1300u;
 constexpr uint32_t kCountdownDurationMs = 3000u;
 constexpr uint32_t kFinishDurationMs = 1200u;
+
+bool usesRaceRenderer(lets_and_go::GameScreen screen)
+{
+    using lets_and_go::GameScreen;
+    return screen == GameScreen::GridIntro || screen == GameScreen::Countdown ||
+           screen == GameScreen::Racing || screen == GameScreen::Paused ||
+           screen == GameScreen::Finish;
+}
 }
 
 AppLetsAndGoRacer::AppLetsAndGoRacer()
@@ -43,6 +51,7 @@ void AppLetsAndGoRacer::onOpen()
     GetHAL().stopLvglUpdate();
     const auto& display = GetHAL().getDisplay();
     _renderer.open(display.width(), display.height());
+    _raceRenderer.open(display.width(), display.height());
     _renderer.render(_flow, _selection, 0u);
 }
 
@@ -115,7 +124,12 @@ void AppLetsAndGoRacer::onRunning()
     }
     if (_lastFrameMs == 0u || nowMs - _lastFrameMs >= kGarageFrameIntervalMs) {
         _lastFrameMs = nowMs;
-        _renderer.render(_flow, _selection, nowMs - _screenStartedMs);
+        if (usesRaceRenderer(_flow.screen())) {
+            _raceRenderer.render(_flow, _race, nowMs - _screenStartedMs,
+                                 _pausedForInputLoss);
+        } else {
+            _renderer.render(_flow, _selection, nowMs - _screenStartedMs);
+        }
     }
 }
 
@@ -206,6 +220,7 @@ void AppLetsAndGoRacer::onClose()
     _racerInput.reset();
     _menuAxis.reset();
     _renderer.close();
+    _raceRenderer.close();
     _flow.reset();
     _selection.reset();
     _lastFrameMs = 0;
