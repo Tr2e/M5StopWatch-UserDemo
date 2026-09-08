@@ -72,31 +72,21 @@ void drawHeader(LGFX_Sprite& canvas, const char* title)
     canvas.drawString(title, canvas.width() / 2, 68);
 }
 
-void drawMountains(LGFX_Sprite& canvas)
-{
-    constexpr int kHorizonY = 151;
-    canvas.drawLine(36, kHorizonY, 430, kHorizonY, kPencilLight);
-    for (int x = 38; x < 430; x += 34) {
-        const int peak = kHorizonY - 10 - ((x * 17) % 27);
-        canvas.drawLine(x - 34, kHorizonY, x, peak, kPencilLight);
-        canvas.drawLine(x, peak, x + 35, kHorizonY, kPencilLight);
-    }
-}
-
 void drawTrackPreview(LGFX_Sprite& canvas, const PencilTrack& preview,
-                      uint32_t screenElapsedMs, PencilDetail detail)
+                      uint32_t screenElapsedMs, PencilDetail detail,PencilOcclusion& surfaces)
 {
     // A bounded three-quarter orbit keeps the bridge readable and the whole
     // course inside the round display, even when the selection page is idle.
     const float orbit = .55f + std::sin(static_cast<float>(screenElapsedMs)*.00016f)*.24f;
     const TrackVec3 cameraPosition{std::sin(orbit) * 29.0f, 22.0f,
                                    -std::cos(orbit) * 29.0f};
-    const TrackCamera camera = makeTrackLookAtCamera(cameraPosition,
+    TrackCamera camera = makeTrackLookAtCamera(cameraPosition,
                                                      {0.0f, 1.4f, 0.0f},
-                                                     canvas.width(), canvas.height(), 0.72f);
-    drawMountains(canvas);
+                                                     canvas.width(), canvas.height(), 0.81f);
+    camera.principalY-=18;
+    track_paint::backdrop(canvas,detail);
     drawPencilTrackGround(canvas, camera, preview, detail);
-    drawPencilTrack(canvas, camera, preview, detail);
+    drawPencilTrack(canvas, camera, preview, detail,&surfaces);
 }
 
 }  // namespace
@@ -223,13 +213,21 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     }
 
     if (screen == GameScreen::TrackSelect) {
-        drawHeader(canvas, "SELECT COURSE");
-        drawTrackPreview(canvas, _trackPreview, screenElapsedMs, detail);
+        drawTrackPreview(canvas, _trackPreview, screenElapsedMs, detail,_surface->trackSurfaces);
+        canvas.setTextDatum(textdatum_t::middle_center);
+        canvas.setTextSize(1);
+        canvas.setTextColor(track_paint::chalk,track_paint::night);
+        canvas.drawString("LET'S & GO!!",_width/2,45);
+        canvas.setTextColor(0x9d36u,track_paint::night);
+        canvas.drawString("SELECT COURSE",_width/2,68);
+        for(int index=0;index<3;++index)
+            canvas.fillRect(215+index*13,87,10,3,index==0 ? track_paint::coral :
+                            index==1 ? track_paint::chalk : track_paint::blue);
         canvas.setTextSize(2);
-        canvas.setTextColor(kCourseEdge, kPaper);
+        canvas.setTextColor(track_paint::chalk,track_paint::floor);
         canvas.drawString(overpassTrackName(), _width / 2, 377);
         canvas.setTextSize(1);
-        canvas.setTextColor(kPencilFaint, kPaper);
+        canvas.setTextColor(0x9d36u,track_paint::floor);
         canvas.drawString("3 LAPS  /  OPEN LANE", _width / 2, 405);
         canvas.drawString("BLUE: START", _width / 2, 430);
         return;

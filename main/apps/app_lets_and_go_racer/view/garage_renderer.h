@@ -19,8 +19,9 @@ namespace lets_and_go {
 struct GarageSurfaceCache {
     CarDisplayMesh mesh{};
     CarSurfaceRaster<352,288> raster{};
+    PencilOcclusion trackSurfaces{};
 };
-static_assert(sizeof(GarageSurfaceCache)<=530000u,"garage surface working-set budget");
+static_assert(sizeof(GarageSurfaceCache)<=592000u,"garage surface working-set budget");
 
 class GarageRenderer {
 public:

@@ -18,6 +18,13 @@ constexpr uint16_t kPencil = 0x4269u;
 constexpr uint16_t kFaint = 0x9cd3u;
 constexpr uint16_t kWarning = 0xd945u;
 
+void panel(LGFX_Sprite& canvas,int x,int y,int width,int height,int radius,uint16_t color)
+{
+    canvas.fillRect(x+radius,y,width-2*radius,height,color);
+    canvas.fillRect(x,y+radius,width,height-2*radius,color);
+    for(int cx : {x+radius,x+width-radius-1})
+        for(int cy : {y+radius,y+height-radius-1})canvas.fillCircle(cx,cy,radius,color);
+}
 
 struct CarPose {
     TrackVec3 base;
@@ -140,21 +147,15 @@ void drawPaperAndMountains(LGFX_Sprite& canvas, PencilDetail detail)
 
 void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
              const OverpassTrack& track,
-             const std::array<int16_t, 32u>& mapX,
-             const std::array<int16_t, 32u>& mapY)
+             const TrackMiniMap& miniMap)
 {
     // Paper instrument cards keep labels readable below the dark bridge and
     // on the newly coloured road, without text-sized cream cut-outs.
     const auto card=[&](int x,int y,int width,int height,int radius) {
-        canvas.fillRect(x+radius,y,width-2*radius,height,kPaper);
-        canvas.fillRect(x,y+radius,width,height-2*radius,kPaper);
-        for(int cx : {x+radius,x+width-radius-1})
-            for(int cy : {y+radius,y+height-radius-1})
-                canvas.fillCircle(cx,cy,radius,kPaper);
+        panel(canvas,x,y,width,height,radius,kPaper);
     };
     card(106,35,253,39,12);
     card(116,383,241,44,11);
-    canvas.fillCircle(365,104,33,kPaper);
     canvas.drawLine(232,46,232,64,kFaint);
     canvas.drawLine(241,394,241,416,kFaint);
     const RaceCarSnapshot& player = race.player();
@@ -177,20 +178,24 @@ void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
                     6, carSpec(player.car).accentColor);
     canvas.drawString("BOOST", 306, 394);
 
-    for (std::size_t index = 1; index < mapX.size(); ++index) {
-        canvas.drawLine(mapX[index - 1u], mapY[index - 1u], mapX[index], mapY[index], kFaint);
-    }
-    canvas.drawLine(mapX.back(), mapY.back(), mapX.front(), mapY.front(), kFaint);
-    for (std::size_t index = 0; index < race.carCount; ++index) {
+    miniMap.draw(canvas);
+    // Rivals first, player last: even four cars at the same pixel cannot hide
+    // the player's contrasting locator. Projection is shared with the road.
+    for(int pass=0;pass<2;++pass) for (std::size_t index = 0; index < race.carCount; ++index) {
         const RaceCarSnapshot& car = race.cars[index];
+        if(!car.active || car.player!=(pass==1))continue;
         const TrackFrame marker = track.sample(car.motion.distance);
-        const int x = static_cast<int>(365.0f + marker.center.x * 2.2f);
-        const int y = static_cast<int>(104.0f + marker.center.z * 1.45f);
+        const auto point=TrackMiniMap::project(marker.center);
+        const int x=point.x,y=point.y;
         const uint16_t color = carSpec(car.car).accentColor;
         if (car.player) {
+            canvas.fillCircle(x,y,4,track_paint::night);
             canvas.fillCircle(x, y, 3, color);
+            canvas.drawCircle(x,y,3,track_paint::chalk);
+            canvas.fillRect(x,y,1,1,track_paint::chalk);
         } else {
-            canvas.drawCircle(x, y, 2, color);
+            canvas.fillCircle(x,y,2,track_paint::night);
+            canvas.fillCircle(x,y,1,color);
         }
     }
 }
@@ -263,12 +268,7 @@ void RaceRenderer::open(int width, int height)
     }
     OverpassTrack track;
     _trackGeometry.open(track);
-    for (std::size_t index = 0; index < _mapX.size(); ++index) {
-        const TrackFrame frame = track.sample(
-            track.length() * static_cast<float>(index) / static_cast<float>(_mapX.size()));
-        _mapX[index] = static_cast<int16_t>(365 + frame.center.x * 2.2f);
-        _mapY[index] = static_cast<int16_t>(104 + frame.center.z * 1.45f);
-    }
+    _miniMap.open(_trackGeometry);
 }
 
 void RaceRenderer::close()
@@ -307,13 +307,12 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         drawResults(canvas, race.snapshot(), results);
         return;
     }
-    canvas.fillScreen(kPaper);
-    drawPaperAndMountains(canvas, detail);
+    track_paint::backdrop(canvas,detail);
     const RaceSnapshot& snapshot = race.snapshot();
     const RaceCarSnapshot& player = snapshot.player();
     const TrackFrame playerFrame = race.track().sample(player.motion.distance);
     const TrackCamera camera=makeRacerChaseCamera(playerFrame,player.motion.lateralOffset,_width,_height);
-    drawPencilTrack(canvas, camera, _trackGeometry, detail, &_occlusion);
+    drawPencilTrack(canvas, camera, _trackGeometry, detail, &_surface->occlusion);
 
     std::array<std::size_t, kMaximumRaceCars> order{};
     std::array<float, kMaximumRaceCars> depth{};
@@ -328,7 +327,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         if (depth[order[slot]] < kTrackNearPlane || !car.active ||
             (car.finished && !car.player)) continue;
         drawRaceCar(canvas, camera, race.track(), car,
-                    _surface->meshes[static_cast<std::size_t>(car.car)], _surface->raster, _occlusion, detail);
+                    _surface->meshes[static_cast<std::size_t>(car.car)], _surface->raster, _surface->occlusion, detail);
     }
     if (flow.screen() == GameScreen::Racing)
         drawSpeedLines(canvas, player, screenElapsedMs, detail);
@@ -338,27 +337,32 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         canvas.drawCircle(_width / 2, _height / 2, 194, kWarning);
         canvas.drawCircle(_width / 2 + 2, _height / 2 - 1, 188, kWarning);
     }
-    drawHud(canvas, snapshot, race.track(), _mapX, _mapY);
+    drawHud(canvas, snapshot, race.track(), _miniMap);
     const GameScreen screen = flow.screen();
     if (screen == GameScreen::GridIntro) {
-        canvas.setTextColor(kPencil, kPaper);
+        panel(canvas,91,192,284,52,12,track_paint::night);
+        canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(3);
         canvas.drawString(snapshot.carCount == 1u ? "SOLO RUN" : "CHASE THE PACK", _width / 2, 218);
     } else if (screen == GameScreen::Countdown) {
         const int count = std::max(1, 3 - static_cast<int>(screenElapsedMs / 1000u));
         char number[4] = {};
         std::snprintf(number, sizeof(number), "%d", count);
-        canvas.setTextColor(kWarning, kPaper);
+        canvas.fillCircle(_width/2,222,43,track_paint::night);
+        canvas.drawCircle(_width/2,222,43,track_paint::ridge);
+        canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(7);
         canvas.drawString(number, _width / 2, 222);
     } else if (screen == GameScreen::Paused) {
-        canvas.setTextColor(kWarning, kPaper);
+        panel(canvas,100,185,266,81,12,track_paint::night);
+        canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(3);
         canvas.drawString(pausedForInputLoss ? "INPUT LOST" : "PAUSED", _width / 2, 213);
         canvas.setTextSize(1);
         canvas.drawString("HOLD RED TO CONTINUE", _width / 2, 246);
     } else if (screen == GameScreen::Finish) {
-        canvas.setTextColor(kWarning, kPaper);
+        panel(canvas,98,183,270,74,12,track_paint::night);
+        canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(5);
         canvas.drawString("FINISH!", _width / 2, 220);
     }

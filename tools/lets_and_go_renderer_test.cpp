@@ -73,6 +73,41 @@ bool validateTrackPaint()
     PencilOcclusion occlusion;
     auto& canvas=GetHAL().getCanvas();
     bool valid=true;
+    // Continuous surfaces must be independent of painter order. These planes
+    // intersect on screen, reproducing a raised wall crossing adjacent decks.
+    auto testCamera=makeTrackLookAtCamera({0,0,0},{0,0,1},466,466);
+    testCamera.principalX=testCamera.principalY=200;testCamera.focalLength=80;
+    auto far=projectPencilSurface(testCamera,{-1,1,3},{1,1,3},{0,-1,3},466,466);
+    auto near=projectPencilSurface(testCamera,{-.6f,.6f,1},{.6f,.6f,1},{0,-.6f,1},466,466);
+    far.color=track_paint::blue;near.color=track_paint::coral;
+    canvas.fillScreen(track_paint::night);
+    occlusion.append(far);occlusion.append(near);occlusion.paint(canvas);
+    const auto ordered=canvas.frame();
+    occlusion.count=0;occlusion.append(near);occlusion.append(far);
+    canvas.fillScreen(track_paint::night);occlusion.paint(canvas);
+    if(canvas.frame()!=ordered || canvas.frame()[200*466+200]!=track_paint::coral ||
+       canvas.frame()[25*466+25]!=track_paint::night) {
+        std::cerr << "Track scanline depth order failed\n";valid=false;
+    }
+    // The projection/color cache is shared with map markers and remains inside
+    // the circular instrument, including the four-pixel player locator.
+    TrackMiniMap map;map.open(geometry);
+    canvas.fillScreen(track_paint::night);map.draw(canvas);
+    for(const auto& section:map.section)for(auto p:{section.left,section.right}) {
+        const int x=p.x-TrackMiniMap::centerX,y=p.y-TrackMiniMap::centerY;
+        if(x*x+y*y>(TrackMiniMap::radius-4)*(TrackMiniMap::radius-4)) {
+            std::cerr << "Map point outside locator-safe radius: " << x << ',' << y << '\n';valid=false;
+        }
+    }
+    for(auto color:{track_paint::road,track_paint::coral,track_paint::blue})
+        if(std::count(canvas.frame().begin(),canvas.frame().end(),color)<8) {
+            std::cerr << "Map deck color missing: " << color << '\n';valid=false;
+        }
+    for(auto detail:{PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) {
+        track_paint::backdrop(canvas,detail);
+        if(canvas.frame()[50*466+233]!=track_paint::night ||
+           canvas.frame()[400*466+233]!=track_paint::floor)valid=false;
+    }
     std::size_t maxSurfaces=0;
     for(auto detail : {PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) {
         for(int sample=0;sample<48;++sample) {
@@ -82,12 +117,13 @@ bool validateTrackPaint()
             drawPencilTrack(canvas,camera,geometry,detail,&occlusion);
             maxSurfaces=std::max(maxSurfaces,occlusion.count);
             if(occlusion.overflowed || occlusion.count==0 ||
-               occlusion.count>4*PencilTrack::kSegments) valid=false;
+               occlusion.count>PencilOcclusion::kCapacity) valid=false;
             for(std::size_t i=0;i<occlusion.count;++i)
                 if(occlusion.surfaces[i].count<3) valid=false;
             const auto& pixels=canvas.frame();
-            if(std::count(pixels.begin(),pixels.end(),track_paint::coral)<8 ||
-               std::count(pixels.begin(),pixels.end(),track_paint::chalk)<8)
+            if(std::count_if(pixels.begin(),pixels.end(),[](uint16_t c) {
+                   return c==track_paint::road || c==track_paint::blue || c==track_paint::coral;
+               })<100)
                 valid=false;
         }
     }
@@ -129,7 +165,7 @@ bool validateTrackPaint()
     occlusion.count=occlusion.surfaces.size();
     occlusion.append(face);
     if(!occlusion.overflowed || occlusion.count!=occlusion.surfaces.size()) valid=false;
-    std::cout << "Track paint: 144 full-course/detail poses, max occluders="
+    std::cout << "Track paint: order-independent depth, dark backdrop, 96-section map, 144 poses, max occluders="
               << maxSurfaces << '\n';
     if(!valid) std::cerr << "Track paint geometry, palette or bridge occlusion regressed\n";
     return valid;
@@ -284,9 +320,11 @@ int main(int argc, char** argv)
         checkText();
         const auto& pixels=canvas.frame();
         for(int y=0;y<466;++y) for(int x=0;x<466;++x) {
+            if(y>=87 && y<=89 && x>=215 && x<251)continue; // Header tricolor mark.
             const auto color=pixels[y*466+x];
             if(color!=track_paint::road && color!=track_paint::roadLight &&
-               color!=track_paint::coral && color!=track_paint::fascia) continue;
+               color!=track_paint::coral && color!=track_paint::blue &&
+               color!=track_paint::fascia) continue;
             const int dx=x-233,dy=y-233;
             if(y<110 || y>356 || dx*dx+dy*dy>220*220) {
                 std::cerr << "Track overview entered text/screen margin at " << x << "," << y << '\n';
@@ -342,6 +380,9 @@ int main(int argc, char** argv)
         checkText();
         if (sample == 48) save("bridge-lower");
         if (sample == 0) save("bridge-upper");
+        if (sample == 24) save("curve-red");
+        if (sample == 72) save("curve-blue");
+        if (sample == 44) save("bridge-under");
     }
     std::cout << "Renderer cache bytes: garage=" << sizeof(GarageRenderer)
               << " race=" << sizeof(RaceRenderer) << '\n';

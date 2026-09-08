@@ -83,7 +83,7 @@ public:
         cameraTriangle(camera,v[0],v[2],v[3],face.color,face.paint,face.light);
     }
     void blit(LGFX_Sprite& canvas,const PencilOcclusion* occlusion=nullptr) const {
-        std::array<uint16_t,PencilTrack::kSegments*4> candidates{};
+        std::array<uint16_t,PencilOcclusion::kCapacity> candidates{};
         std::size_t count=0;
         if(occlusion) for(std::size_t i=0;i<occlusion->count;++i) {
             const auto& s=occlusion->surfaces[i];

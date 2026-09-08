@@ -15,6 +15,7 @@ struct PencilSurface {
     TrackVec3 inverseDepth{}; // 1/z = ax + by + c
     float minX = 0, minY = 0, maxX = 0, maxY = 0;
     uint8_t count = 0;
+    uint16_t color = 0;
 };
 
 inline PencilSurface projectPencilSurface(const TrackCamera& camera,
@@ -138,8 +139,12 @@ struct PencilTrack {
 };
 
 struct PencilOcclusion {
-    // Two deck triangles plus at most one camera-facing fascia (two triangles).
-    std::array<PencilSurface, PencilTrack::kSegments * 4u> surfaces{};
+    // Two deck triangles and two solid outer walls. No central dividers.
+    static constexpr std::size_t kCapacity=PencilTrack::kSegments*6u+48u;
+    std::array<PencilSurface, kCapacity> surfaces{};
+    // One scanline, not a full-screen depth buffer. Kept off the task stack.
+    std::array<float,466> rowDepth{};
+    std::array<uint16_t,466> rowColor{};
     std::size_t count = 0u;
     bool overflowed = false;
 
@@ -147,6 +152,41 @@ struct PencilOcclusion {
         if(surface.count==0u) return;
         if(count==surfaces.size()) { overflowed=true; return; }
         surfaces[count++]=surface;
+    }
+
+    void paint(LGFX_Sprite& canvas) {
+        for(int offset=0;offset<canvas.width();offset+=int(rowDepth.size())) {
+            const int width=std::min(int(rowDepth.size()),int(canvas.width())-offset);
+            for(int y=0;y<canvas.height();++y) {
+                rowDepth.fill(0);
+                const float scanY=y+.5f;
+                for(std::size_t face=0;face<count;++face) {
+                    const auto& s=surfaces[face];
+                    if(scanY<s.minY || scanY>=s.maxY || s.maxX<offset || s.minX>=offset+width)continue;
+                    float left=float(canvas.width()),right=-1;
+                    for(unsigned i=0;i<s.count;++i) {
+                        const auto a=s.points[i],b=s.points[(i+1)%s.count];
+                        if((a.y<=scanY && b.y>scanY) || (b.y<=scanY && a.y>scanY)) {
+                            const float x=a.x+(b.x-a.x)*(scanY-a.y)/(b.y-a.y);
+                            left=std::min(left,x);right=std::max(right,x);
+                        }
+                    }
+                    const int x0=std::max(offset,int(std::ceil(left-.5f)));
+                    const int x1=std::min(offset+width-1,int(std::floor(right-.5f)));
+                    const auto& d=s.inverseDepth;
+                    float z=d.x*(x0+.5f)+d.y*scanY+d.z;
+                    for(int x=x0;x<=x1;++x,z+=d.x) if(z>rowDepth[x-offset]) {
+                        rowDepth[x-offset]=z;rowColor[x-offset]=s.color;
+                    }
+                }
+                for(int x=0;x<width;) {
+                    if(rowDepth[x]<=0) {++x;continue;}
+                    const int start=x;const auto color=rowColor[x++];
+                    while(x<width && rowDepth[x]>0 && rowColor[x]==color)++x;
+                    canvas.fillRect(offset+start,y,x-start,1,color);
+                }
+            }
+        }
     }
 
     void drawLine(LGFX_Sprite& canvas, const TrackCamera& camera,
@@ -188,9 +228,37 @@ struct PencilOcclusion {
 };
 
 namespace track_paint {
-inline constexpr uint16_t road=0xce99u, roadLight=0xd6dau;
-inline constexpr uint16_t chalk=0xef7du, coral=0xbac9u, teal=0x4bafu;
-inline constexpr uint16_t edge=0x4269u, fascia=0x8c91u, underside=0x6390u;
+inline constexpr uint16_t road=0xe73cu, roadLight=0xef7du;
+inline constexpr uint16_t chalk=0xf79eu, coral=0xc9c8u, blue=0x2b95u;
+inline constexpr uint16_t edge=0x4269u, fascia=0xa575u, underside=0x526du;
+inline constexpr uint16_t night=0x10e4u, floor=0x1926u, ridge=0x29a8u;
+inline constexpr float wallHeight=.26f, deckThickness=.22f;
+
+struct ModulePaint { uint16_t deck, wall, rim, seam; };
+inline ModulePaint module(std::size_t segment)
+{
+    // JCJC 94892: white straights/bridge, one red bend and one blue bend.
+    // The product's three lanes become one open driving surface in this game.
+    if(segment>=12 && segment<36) return {coral,0x9986u,0xeb4eu,0xa987u};
+    if(segment>=60 && segment<84) return {blue,0x19edu,0x651bu,0x2271u};
+    return {road,fascia,chalk,0xbdf8u};
+}
+
+inline void backdrop(LGFX_Sprite& canvas,PencilDetail detail)
+{
+    canvas.fillScreen(night);
+    constexpr int horizon=162;
+    canvas.fillRect(0,horizon,canvas.width(),canvas.height()-horizon,floor);
+    constexpr std::array<int,9> heights{{150,137,146,117,143,129,149,132,151}};
+    for(unsigned i=0;i+1<heights.size();++i) {
+        const int x=int(i)*canvas.width()/8,next=int(i+1)*canvas.width()/8;
+        canvas.fillTriangle(x,horizon,x,heights[i],next,heights[i+1],0x1925u);
+        canvas.fillTriangle(x,horizon,next,heights[i+1],next,horizon,0x1925u);
+        if(detail!=PencilDetail::Low)
+            canvas.drawLine(x,heights[i],next,heights[i+1],0x2147u);
+    }
+    canvas.drawLine(0,horizon,canvas.width()-1,horizon,ridge);
+}
 
 inline TrackVec3 mix(TrackVec3 a,TrackVec3 b,float t) {
     return trackAdd(a,trackScale(trackSubtract(b,a),t));
@@ -224,86 +292,52 @@ inline void drawPencilTrackGround(LGFX_Sprite& canvas,const TrackCamera& camera,
     const auto ground=[](TrackVec3 p) { return TrackVec3{p.x+.45f,.03f,p.z+.35f}; };
     for(std::size_t i=0;i<PencilTrack::kSegments;++i)
         quad(canvas,camera,ground(track.left[i]),ground(track.right[i]),
-             ground(track.right[i+1]),ground(track.left[i+1]),0xded6u);
+             ground(track.right[i+1]),ground(track.left[i+1]),0x10c3u);
     if(detail==PencilDetail::Low) return;
     for(std::size_t i=0;i<PencilTrack::kSegments;i+=12) {
         const auto center=mix(track.left[i],track.right[i],.5f);
         if(center.y<1.8f || center.x*center.x+center.z*center.z<20.f) continue;
         for(const auto p : {track.left[i],track.right[i]}) {
             const TrackVec3 top{p.x,p.y-.22f,p.z},foot{p.x,.05f,p.z};
-            const TrackVec3 width=trackScale(trackNormalize(trackSubtract(track.right[i],track.left[i])),.10f);
+            const TrackVec3 width=trackScale(trackNormalize(trackSubtract(track.right[i],track.left[i])),.16f);
             quad(canvas,camera,trackSubtract(foot,width),trackSubtract(top,width),
-                 trackAdd(top,width),trackAdd(foot,width),0xb594u);
-            line(canvas,camera,foot,top,0x8490u);
+                 trackAdd(top,width),trackAdd(foot,width),0x738fu);
+            line(canvas,camera,trackAdd(top,width),trackAdd(foot,width),0xbdf7u);
+            const TrackVec3 base{.28f,0,.18f};
+            quad(canvas,camera,trackSubtract(foot,base),{foot.x+.28f,foot.y,foot.z-.18f},
+                 trackAdd(foot,base),{foot.x-.28f,foot.y,foot.z+.18f},0x4a4bu);
         }
     }
 }
 
 inline void drawPencilTrack(LGFX_Sprite& canvas, const TrackCamera& camera,
-    const PencilTrack& track, PencilDetail detail, PencilOcclusion* occlusion = nullptr)
+    const PencilTrack& track, PencilDetail detail, PencilOcclusion* occlusion)
 {
     using namespace track_paint;
-    std::array<uint8_t,PencilTrack::kSegments> order{};
-    std::array<float,PencilTrack::kSegments> depths{};
-    if(occlusion) { occlusion->count=0; occlusion->overflowed=false; }
-    for(std::size_t i=0;i<order.size();++i) {
-        order[i]=static_cast<uint8_t>(i);
-        depths[i]=trackToCamera(camera,mix(track.left[i],track.right[i+1],.5f)).z;
-    }
-    std::sort(order.begin(),order.end(),[&](uint8_t a,uint8_t b){return depths[a]>depths[b];});
-    for(const auto i : order) {
+    if(!occlusion)return;
+    occlusion->count=0;occlusion->overflowed=false;
+    const auto surface=[&](TrackVec3 a,TrackVec3 b,TrackVec3 c,TrackVec3 d,uint16_t color) {
+        for(auto face : {projectPencilSurface(camera,a,b,c,canvas.width(),canvas.height()),
+                        projectPencilSurface(camera,a,c,d,canvas.width(),canvas.height())}) {
+            face.color=color;occlusion->append(face);
+        }
+    };
+    // Resolve ALL solid surfaces by inverse depth. Sorting whole segments was
+    // insufficient: a neighbouring deck could erase the top of a raised wall.
+    for(std::size_t i=0;i<PencilTrack::kSegments;++i) {
         const auto a=track.left[i],b=track.right[i],c=track.right[i+1],d=track.left[i+1];
-        if(std::max({trackToCamera(camera,a).z,trackToCamera(camera,b).z,
-                     trackToCamera(camera,c).z,trackToCamera(camera,d).z})<kTrackNearPlane) continue;
-        const TrackVec3 drop{0,-.22f,0},lift{0,.30f,0};
+        const TrackVec3 drop{0,-deckThickness,0},lift{0,wallHeight,0};
+        const auto paint=module(i);
         const auto across=trackSubtract(b,a);
         const auto normal=trackCross(trackSubtract(d,a),across);
         const bool above=trackDot(normal,trackSubtract(camera.position,a))>=0;
-        // Only the outward-facing side can be visible. At most four occluder
-        // triangles per segment, including underside views below the bridge.
-        if(trackDot(across,trackSubtract(camera.position,b))>0)
-            quad(canvas,camera,b,c,trackAdd(c,drop),trackAdd(b,drop),fascia,occlusion);
-        else if(trackDot(across,trackSubtract(camera.position,a))<0)
-            quad(canvas,camera,d,a,trackAdd(a,drop),trackAdd(d,drop),fascia,occlusion);
-        if(!above) {
-            quad(canvas,camera,trackAdd(a,drop),trackAdd(b,drop),trackAdd(c,drop),
-                 trackAdd(d,drop),underside,occlusion);
-            line(canvas,camera,trackAdd(a,drop),trackAdd(d,drop),edge);
-            line(canvas,camera,trackAdd(b,drop),trackAdd(c,drop),edge);
-            if(detail!=PencilDetail::Low && i%4==0)
-                line(canvas,camera,trackAdd(a,drop),trackAdd(b,drop),fascia);
-            continue;
-        }
-        quad(canvas,camera,a,b,c,d,(i/8)%2==0 ? road : roadLight,occlusion);
-        // Painted shoulders remain inside the original physical edges. There is
-        // deliberately no central rail, lane separator, or narrowed road model.
-        const uint16_t curb=(i%2)==0 ? coral : chalk;
-        quad(canvas,camera,a,mix(a,b,.065f),mix(d,c,.065f),d,curb);
-        quad(canvas,camera,mix(a,b,.935f),b,c,mix(d,c,.935f),curb);
-        line(canvas,camera,a,d,edge); line(canvas,camera,b,c,edge);
-        line(canvas,camera,trackAdd(a,lift),trackAdd(d,lift),teal);
-        line(canvas,camera,trackAdd(b,lift),trackAdd(c,lift),teal);
-        const unsigned postStep=detail==PencilDetail::High ? 2 : 4;
-        if(detail!=PencilDetail::Low && i%postStep==0) {
-            line(canvas,camera,a,trackAdd(a,lift),teal);
-            line(canvas,camera,b,trackAdd(b,lift),teal);
-        }
-        // Short edge-side direction chevrons, never a centre line. Anchored in
-        // world space so they cannot shimmer or slide as the camera moves.
-        if(detail!=PencilDetail::Low && i%6==3) {
-            for(float side : {.13f,.87f}) {
-                const auto rear=mix(a,b,side),front=mix(d,c,side);
-                const auto tip=mix(rear,front,.8f),tail=mix(rear,front,.3f);
-                const auto wing=trackScale(across,.022f);
-                line(canvas,camera,trackAdd(tail,wing),tip,chalk);
-                line(canvas,camera,trackSubtract(tail,wing),tip,chalk);
-            }
-        }
-        if(detail==PencilDetail::High && i%4==2) {
-            // Sparse concrete pencil strokes run with the road, not across it.
-            line(canvas,camera,mix(a,b,.22f),mix(mix(a,b,.22f),mix(d,c,.22f),.30f),0xb5d6u);
-        }
-        if(i==0) {
+        const auto wall=[&](TrackVec3 p,TrackVec3 q) {
+            surface(trackAdd(p,drop),trackAdd(q,drop),trackAdd(q,lift),trackAdd(p,lift),paint.wall);
+        };
+        wall(a,d);wall(b,c);
+        if(above)surface(a,b,c,d,paint.deck);
+        else surface(trackAdd(a,drop),trackAdd(b,drop),trackAdd(c,drop),trackAdd(d,drop),underside);
+        if(above && i==0) {
             // A two-row chequered band with real area (the old marker was one
             // pixel-thin line). Its rear edge is exactly the common finish line.
             for(int row=0;row<2;++row) for(int cell=0;cell<12;++cell) {
@@ -311,8 +345,41 @@ inline void drawPencilTrack(LGFX_Sprite& canvas, const TrackCamera& camera,
                 const auto left0=mix(a,d,t0),right0=mix(b,c,t0);
                 const auto left1=mix(a,d,t1),right1=mix(b,c,t1);
                 const float u0=.065f+.87f*cell/12,u1=.065f+.87f*(cell+1)/12;
-                quad(canvas,camera,mix(left0,right0,u0),mix(left0,right0,u1),
-                     mix(left1,right1,u1),mix(left1,right1,u0),(row+cell)%2 ? chalk : edge);
+                // Small physical lift prevents coplanar depth ties. It doesn't
+                // move the timing line, whose rear edge remains at distance 0.
+                const TrackVec3 decal{0,.001f,0};
+                surface(trackAdd(mix(left0,right0,u0),decal),trackAdd(mix(left0,right0,u1),decal),
+                        trackAdd(mix(left1,right1,u1),decal),trackAdd(mix(left1,right1,u0),decal),
+                        (row+cell)%2 ? chalk : edge);
+            }
+        }
+    }
+    occlusion->paint(canvas);
+    // Details also use the scene visibility test; bridge joints and far rims
+    // must not leak through the near carriageway or through the bridge bottom.
+    const auto stroke=[&](TrackVec3 a,TrackVec3 b,uint16_t color) {
+        occlusion->drawLine(canvas,camera,a,b,color);
+    };
+    for(std::size_t i=0;i<PencilTrack::kSegments;++i) {
+        const auto a=track.left[i],b=track.right[i],c=track.right[i+1],d=track.left[i+1];
+        const auto paint=module(i);
+        const TrackVec3 lift{0,wallHeight,0};
+        stroke(trackAdd(a,lift),trackAdd(d,lift),paint.rim);
+        stroke(trackAdd(b,lift),trackAdd(c,lift),paint.rim);
+        if(detail==PencilDetail::Low)continue;
+        if(i%4==0) {
+            stroke(a,b,paint.seam);
+            stroke(a,trackAdd(a,lift),paint.seam);
+            stroke(b,trackAdd(b,lift),paint.seam);
+        }
+        if(detail==PencilDetail::High) {
+            stroke(mix(a,b,.045f),mix(d,c,.045f),paint.rim);
+            if(i%6==3) for(float side : {.13f,.87f}) {
+                const auto tail=mix(mix(a,b,side),mix(d,c,side),.3f);
+                const auto tip=mix(mix(a,b,side),mix(d,c,side),.8f);
+                const auto wing=trackScale(trackSubtract(b,a),.022f);
+                stroke(trackAdd(tail,wing),tip,paint.rim);
+                stroke(trackSubtract(tail,wing),tip,paint.rim);
             }
         }
     }

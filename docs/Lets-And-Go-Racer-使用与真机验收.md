@@ -64,7 +64,7 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 
 第一辆车以 [R17 Magnum 腰线与结构复核](Lets-And-Go-Racer-R17-Magnum腰线与结构复核.md) 为准。剩余三车以 [R18 其余三车结构复核](Lets-And-Go-Racer-R18-其余三车结构复核.md) 为准，最新对比为 `docs/assets/lets-and-go-r18-before.png` 与 `lets-and-go-r18-after.png`，俯视/侧视为 `lets-and-go-r18-structures.png`。R16 图片仅保留为历史。
 
-实体渲染实现背景见 [R16 实体赛车与比赛细化](Lets-And-Go-Racer-R16-实体赛车与比赛细化.md)，车型已由 R17–R18 更新。跑道沿用 [R15 跑道视觉优化](Lets-And-Go-Racer-R15-跑道视觉优化.md)，桥底与侧面继续参与遮挡。优先测实体车库、桥下四车、近距离放大车辆的帧耗时和内存。
+实体渲染实现背景见 [R16 实体赛车与比赛细化](Lets-And-Go-Racer-R16-实体赛车与比赛细化.md)，车型已由 R17–R18 更新。当前跑道见 [R19 田宫赛道与深色远景](Lets-And-Go-Racer-R19-田宫赛道与深色远景.md)：红蓝白塑料模块、实体外墙、深色远景及同源缩略图；路面、双侧墙和桥底共同参与深度绘制和车辆遮挡。优先测桥下四车、红蓝弯道贴墙、三档画质、暗部可见度，以及退出后的缓存释放；新扫描行绘制的设备 FPS 尚未验证。
 
 ```sh
 tools/test_lets_and_go.sh
@@ -73,6 +73,6 @@ bash tools/render_lets_and_go.sh /tmp/lets-go-review
 python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-review /tmp/lets-go-review/contact.png
 ```
 
-四款车均为参照实物的手工近似模型，不是官方 CAD 或扫描资产。28 套回归覆盖生产渲染与 384 场策略比赛，包含实体深度、近裁剪、透视 UV 分块一致性、缓存生命周期，以及 R17–R18 的结构/附件间隙和包围盒检查。桌面量得车库/比赛实例合计 42,352 bytes，打开期曲面缓存合计 947,272 bytes；不代表真机空闲内存或达标 FPS。
+四款车均为参照实物的手工近似模型，不是官方 CAD 或扫描资产。28 套回归覆盖生产渲染与 384 场策略比赛，包含实体深度、近裁剪、透视 UV 分块一致性、缓存生命周期，以及 R17–R18 的结构/附件间隙和包围盒检查。R19 增加赛道深度绘制顺序、小地图边界与深色背景回归。桌面量得车库/比赛实例合计 6,216 bytes，打开期缓存合计 1,072,712 bytes；不代表真机空闲内存或达标 FPS。
 
 基准生成器是 `tools/lets_and_go_reference_generator.cpp`；固定种子 `0x12345678` 的 JSON 已更新为 v2，包含共同终点的插值冲线时间。静态 SVG 是 R10 历史设计稿，不代表当前生产渲染器。
