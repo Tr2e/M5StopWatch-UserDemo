@@ -13,7 +13,7 @@ enum class CarPaint : uint8_t {
     Flame, TridaggerWing, Tiger, BrockenHood, Glass, BronzeGlass, BlueGlass, Eye,
     BrockenShell, FrontWing, NeoHood, MagnumCanopy, MagnumCowlSide,
     MagnumNoseSide, MagnumVent, SonicCanopy, SonicSide, SonicFront,
-    NeoCanopy, NeoWingLeft
+    NeoCanopy, NeoWingLeft, BrockenCabin, BrockenLamp, BrockenArmor, BrockenCabinSide
 };
 
 // Authored curved-body panels shared by the garage and race solid renderers.

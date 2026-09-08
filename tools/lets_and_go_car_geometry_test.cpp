@@ -133,7 +133,7 @@ bool validateDisplayMeshes()
             const auto& face=mesh.panels[i];
             valid &= check(face.wheel<=4 && face.part<=CarPart::TailFin, "invalid panel metadata");
             valid &= check(face.u0<=face.u1 && face.v0<=face.v1 &&
-                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::NeoWingLeft),
+                           static_cast<unsigned>(face.paint)<=static_cast<unsigned>(CarPaint::BrockenCabinSide),
                            "invalid solid surface UV/material");
             valid &= check(face.parent==0xffffu || (face.parent<i &&
                            mesh.panels[face.parent].parent==0xffffu),
@@ -141,9 +141,9 @@ bool validateDisplayMeshes()
             if(face.wheel) ++spokes;
             for (const auto p : face.point) {
                 maxY=std::max(maxY,p.y);
-                valid &= check(finitePoint(p) && std::abs(p.x)<.7f &&
-                               std::abs(p.z)<1.01f && p.y>=0 && p.y<.71f,
-                               "display vertex outside normalized envelope");
+                valid &= check(finitePoint(p) && std::abs(p.x)<.64f &&
+                               std::abs(p.z)<1.f && p.y>=0 && p.y<.64f,
+                               "display vertex escaped race renderer tile bounds");
                 const float axle=face.wheel<=2 ? kModelFrontAxle : kModelRearAxle;
                 const auto q=animateCarPanelPoint(p,face.wheel,0,1);
                 if(face.wheel) {
@@ -156,7 +156,7 @@ bool validateDisplayMeshes()
                 }
             }
         }
-        valid &= check(spokes==(spec.id==CarId::NeoTridaggerZmc ? 0u : 20u),
+        valid &= check(spokes==(spec.id==CarId::NeoTridaggerZmc ? 0u : spec.id==CarId::BrockenGigant ? 48u : 20u),
                        "reviewed spoke count or Tridagger cap/dish wheels regressed");
         if(spec.id==CarId::BrockenGigant)
             valid &= check(maxY<.50f && spec.bodyColor==0xc9a7 && spec.wheelColor==0xe5ca,
@@ -303,8 +303,9 @@ bool validateRebuiltStructure(CarId car)
         for(std::size_t i=0;i<mesh.count;++i) {
             const auto& p=mesh.panels[i];
             ++parts[static_cast<unsigned>(p.part)];
-            if(p.part!=CarPart::FrontCowl && p.part!=CarPart::RearCowl && p.part!=CarPart::Nose)continue;
-            if(p.paint!=CarPaint::Solid && p.part!=CarPart::Nose && p.point[0].x>0) {
+            if(p.part==CarPart::Wheel || p.part==CarPart::Roller || p.part==CarPart::Chassis ||
+               p.part==CarPart::Unspecified)continue;
+            if(p.paint!=CarPaint::Solid && (p.part==CarPart::FrontCowl || p.part==CarPart::RearCowl) && p.point[0].x>0) {
                 bool mirrored=false;
                 for(std::size_t j=0;j<mesh.count && !mirrored;++j) {
                     const auto& q=mesh.panels[j];
@@ -369,6 +370,20 @@ bool validateRebuiltStructure(CarId car)
                 for(const auto p : mesh.panels[i].point)
                     valid &= check(p.z>-.18f,"Neo side roller incorrectly placed at rear bumper");
         }
+        if(car==CarId::BrockenGigant) {
+            valid &= check(parts[static_cast<unsigned>(CarPart::RearWing)]==0 &&
+                           parts[static_cast<unsigned>(CarPart::TailFin)]>0 &&
+                           parts[static_cast<unsigned>(CarPart::MotorBlock)]>0 &&
+                           parts[static_cast<unsigned>(CarPart::SideGuard)]>0,
+                           "Brocken lost motor/pipe guards or gained a tall spoiler");
+            valid &= check(surfaceHeight(mesh,0,.30f,CarPart::Canopy)<0 &&
+                           surfaceHeight(mesh,0,.30f,CarPart::MotorBlock)>.34f &&
+                           surfaceHeight(mesh,0,.60f,CarPart::Nose)>.20f,
+                           "Brocken three separate assemblies merged into continuous hull");
+            for(float s : {-1.f,1.f})
+                valid &= check(surfaceHeight(mesh,s*.60f,.45f,CarPart::SideGuard)>.17f,
+                               "Brocken outer pipe guard missing at wheel");
+        }
     }
     std::cout<<carSpec(car).shortName<<" structure: tire clearance, mirrored UV and authored components across 3 LODs\n";
     return valid;
@@ -379,5 +394,6 @@ int main()
 {
     return validateCatalog() && validateWireframes() && validateDisplayMeshes() && validateMagnumStructure() &&
            validateRebuiltStructure(CarId::HurricaneSonic) &&
-           validateRebuiltStructure(CarId::NeoTridaggerZmc) ? 0 : 1;
+           validateRebuiltStructure(CarId::NeoTridaggerZmc) &&
+           validateRebuiltStructure(CarId::BrockenGigant) ? 0 : 1;
 }

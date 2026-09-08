@@ -48,6 +48,7 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 - [ ] 四辆车在 466×466 圆屏上的辨识度，文字和 HUD 无边缘裁切。
 - [ ] R16 四款实体车的轮罩、座舱、尾翼与轮毂清晰，比赛转弯/上下坡无角度跳变，近距离车辆无方形裁断。
 - [ ] R17 Magnum 宽肩收腰、座舱侧通道、独立轮罩在三档均保留，前轮罩不穿胎；选车和比赛材质方向一致（从车后观察文字允许自然倒向）。
+- [ ] R18 Sonic 前后连接翼、Neo 中央尖脊/铜色分窗/侧导轮、Brocken 马达区/管架/六辐轮毂在三档均可辨识，转动时附件无裁断或穿胎。
 - [ ] 车库 High LOD、四车立交交叉的平均 FPS 不低于 30，压力时不低于 20。
 - [ ] 触发细节降级后 HUD、玩家车、双侧护栏仍清晰；负载恢复后画质不抖动。
 - [ ] 输入失联自动暂停，恢复后需要玩家主动继续且不会复用旧转向。
@@ -61,9 +62,9 @@ Launcher 中的应用名称为 `Let's & Go!!`，图标是红蓝双星。车型�
 
 ## 桌面复验
 
-第一辆车以 [R17 Magnum 腰线与结构复核](Lets-And-Go-Racer-R17-Magnum腰线与结构复核.md) 为准。最新对比是 `docs/assets/lets-and-go-r17-before.png` 与 `lets-and-go-r17-after.png`；俯视/侧视等结构检查图为 `lets-and-go-r17-structure.png`。其他三车模型仍为 R16。
+第一辆车以 [R17 Magnum 腰线与结构复核](Lets-And-Go-Racer-R17-Magnum腰线与结构复核.md) 为准。剩余三车以 [R18 其余三车结构复核](Lets-And-Go-Racer-R18-其余三车结构复核.md) 为准，最新对比为 `docs/assets/lets-and-go-r18-before.png` 与 `lets-and-go-r18-after.png`，俯视/侧视为 `lets-and-go-r18-structures.png`。R16 图片仅保留为历史。
 
-当前车辆视觉见 [R16 实体赛车与比赛细化](Lets-And-Go-Racer-R16-实体赛车与比赛细化.md) 和 `docs/assets/lets-and-go-r16-after.png`，四车比赛截图见 `docs/assets/lets-and-go-r16-race.png`。跑道沿用 [R15 跑道视觉优化](Lets-And-Go-Racer-R15-跑道视觉优化.md)，桥底与侧面继续参与遮挡。优先测实体车库、桥下四车、近距离放大车辆的帧耗时和内存。
+实体渲染实现背景见 [R16 实体赛车与比赛细化](Lets-And-Go-Racer-R16-实体赛车与比赛细化.md)，车型已由 R17–R18 更新。跑道沿用 [R15 跑道视觉优化](Lets-And-Go-Racer-R15-跑道视觉优化.md)，桥底与侧面继续参与遮挡。优先测实体车库、桥下四车、近距离放大车辆的帧耗时和内存。
 
 ```sh
 tools/test_lets_and_go.sh
@@ -72,6 +73,6 @@ bash tools/render_lets_and_go.sh /tmp/lets-go-review
 python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-review /tmp/lets-go-review/contact.png
 ```
 
-R16 重新参照四款田宫实物照片手工建模，不是官方 CAD 或扫描资产。28 套回归继续覆盖生产渲染与 384 场策略比赛，增加实体深度、近裁剪、透视 UV 分块一致性和缓存生命周期测试。当前对比图为 `docs/assets/lets-and-go-r16-before.png` 与 `lets-and-go-r16-after.png`。桌面量得车库/比赛实例合计 42,352 bytes，打开期曲面缓存合计 947,272 bytes；不代表真机空闲内存或达标 FPS。
+四款车均为参照实物的手工近似模型，不是官方 CAD 或扫描资产。28 套回归覆盖生产渲染与 384 场策略比赛，包含实体深度、近裁剪、透视 UV 分块一致性、缓存生命周期，以及 R17–R18 的结构/附件间隙和包围盒检查。桌面量得车库/比赛实例合计 42,352 bytes，打开期曲面缓存合计 947,272 bytes；不代表真机空闲内存或达标 FPS。
 
 基准生成器是 `tools/lets_and_go_reference_generator.cpp`；固定种子 `0x12345678` 的 JSON 已更新为 v2，包含共同终点的插值冲线时间。静态 SVG 是 R10 历史设计稿，不代表当前生产渲染器。

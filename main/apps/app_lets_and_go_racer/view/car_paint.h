@@ -139,19 +139,40 @@ inline uint16_t carPaintColor(CarPaint paint,uint16_t base,float u,float v) {
         return base;
     }
     case CarPaint::Tiger: {
-        const float stripe=v*4.3f+u*.9f;
-        const float f=stripe-std::floor(stripe);
-        return f<.18f && (center>.14f || v<.35f) ? dark : red;
+        const float jag=v<.35f ? v*.35f : v<.65f ? .12f-(v-.35f)*.6f : -.06f+(v-.65f)*.3f;
+        const float stripe=u+jag;
+        return (std::abs(stripe-.25f)<.055f+.035f*(1-v) ||
+                std::abs(stripe-.71f)<.035f+.055f*v) ? dark : red;
     }
     case CarPaint::BrockenHood:
         if(carLetter("BROCKEN",u,v,.08f,.62f,.84f,.21f))return white;
         if(u>.25f && u<.75f && v>.1f && v<.51f)
-            return (u<.34f || v<.20f || v>.40f || (u>.59f && v>.26f)) ? gold : dark;
+            return carLetter("G",u,v,.27f,.11f,.46f,.40f) ? gold : dark;
         return red;
     case CarPaint::BrockenShell:
         if(v>.30f && v<.64f && center<.34f-.12f*(v-.30f))
             return carPaintColor(CarPaint::BlueGlass,blue,(u-.14f)/.72f,(v-.30f)/.34f);
         return carPaintColor(CarPaint::Tiger,red,u,v);
+    case CarPaint::BrockenCabin:
+        if(v>.49f && v<.97f && center<.47f)
+            return carPaintColor(CarPaint::BlueGlass,blue,u,(v-.49f)/.48f);
+        if(v>.23f && v<.47f && center>.24f)
+            return int(v*36)%3==0 ? dark : red;
+        return red;
+    case CarPaint::BrockenCabinSide:
+        if(v>.49f && v<.97f && u>.45f && u<.94f)
+            return carPaintColor(CarPaint::BlueGlass,blue,.70f,(v-.49f)/.48f);
+        return red;
+    case CarPaint::BrockenLamp:
+        if(u<.03f || u>.97f || v<.12f || v>.88f)return dark;
+        for(float eye : {.27f,.73f}) {
+            const float oval=(u-eye)*(u-eye)+(v-.47f)*(v-.47f)*.16f;
+            if(std::abs(oval-.020f)<.007f)return dark;
+        }
+        return gold;
+    case CarPaint::BrockenArmor:
+        if(u<.07f || u>.93f || v<.05f || v>.95f)return dark;
+        return (std::abs(u-.5f)<.13f && std::abs(v-.45f)<.12f) ? dark : 0x94b2;
     case CarPaint::FrontWing:
         if(carLetter("SONIC",u,v,.28f,.55f,.44f,.22f))return 0x18c3;
         return carTint(0x7bef,.78f+.20f*(1-v));
