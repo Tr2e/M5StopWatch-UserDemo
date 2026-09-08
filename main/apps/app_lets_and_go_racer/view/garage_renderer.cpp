@@ -1,5 +1,6 @@
 #include "garage_renderer.h"
 #include "track_projection.h"
+#include "garage_car_transform.h"
 
 #include <hal/hal.h>
 
@@ -34,20 +35,13 @@ void drawPaperTexture(LGFX_Sprite& canvas, PencilDetail detail)
 
 void drawCar(LGFX_Sprite& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
              CarSurfaceRaster<352,288>& raster,
-             int centerX,int centerY,float scale,float yaw,float wheelPhase,PencilDetail)
+             int centerX,int centerY,float scale,float yaw,float wheelPhase,PencilDetail,
+             float pitch=.5713375f)
 {
     TrackCamera camera{};
     camera.principalX=centerX;camera.principalY=centerY;camera.focalLength=scale*5.8f;
     raster.begin(centerX-176,centerY-162);
-    const float cosine=std::cos(yaw),sine=std::sin(yaw);
-    const float wheelCosine=std::cos(wheelPhase),wheelSine=std::sin(wheelPhase);
-    const float widthScale=(float(spec.dimensions.width)/spec.dimensions.length)/(97.f/155.f);
-    const auto transform=[&](CarPoint p,uint8_t wheel) {
-        p=animateCarPanelPoint(p,wheel,wheelCosine,wheelSine);
-        p.x*=widthScale;
-        const float x=p.x*cosine+p.z*sine,z=p.z*cosine-p.x*sine;
-        return TrackCameraPoint{x,p.y*.84f-z*.54f,5.8f-(z*.84f+p.y*.54f)};
-    };
+    const GarageCarTransform transform(spec,yaw,pitch,wheelPhase);
     for(int ring=0;ring<2;++ring) for(int i=0;i<24;++i) {
         const float a=i*6.2831853f/24,b=(i+1)*6.2831853f/24;
         const float radius=ring==0 ? 1.f : .82f;
@@ -123,7 +117,7 @@ const CarDisplayMesh& GarageRenderer::showcaseMesh(CarId car, PencilDetail detai
 
 void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selection,
                             uint32_t screenElapsedMs, PencilDetail detail,
-                            const RacerInputStatus& inputStatus)
+                            const RacerInputStatus& inputStatus,const GarageViewState& view)
 {
     if (_width <= 0 || _height <= 0) return;
     auto& canvas = GetHAL().getCanvas();
@@ -147,8 +141,11 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
 
     if (screen == GameScreen::CarSelect) {
         drawHeader(canvas, "SELECT MACHINE");
-        drawCar(canvas, spec, mesh, _surface->raster, _width / 2, 268, 146.0f,
-                -0.65f + std::sin(seconds * 0.7f) * 0.06f, seconds * 7.0f, detail);
+        canvas.setTextColor(kPencilFaint,kPaper);
+        canvas.drawString(garageViewLabel(view.preset),_width/2,97);
+        drawCar(canvas, spec, mesh, _surface->raster, _width / 2+std::lround(view.carSlide),
+                std::lround(view.centerY),view.scale*view.carZoom,
+                view.yaw,view.wheelPhase,detail,view.pitch);
         canvas.setTextColor(kPencil, kPaper);
         canvas.setTextSize(2);
         canvas.drawString(spec.officialName, _width / 2, 365);
@@ -160,14 +157,15 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         canvas.setTextSize(1);
         canvas.setTextColor(kPencilFaint, kPaper);
         canvas.drawString(stats, _width / 2, 398);
-        canvas.drawString("STICK: CHANGE  BLUE: SELECT", _width / 2, 425);
+        canvas.drawString("L/R: CAR   U/D: VIEW", _width / 2, 418);
+        canvas.drawString("BLUE: SELECT", _width / 2, 438);
         return;
     }
 
     if (screen == GameScreen::CarShowcase) {
         drawHeader(canvas, "MACHINE READY");
         const float entrance = std::min(1.0f, static_cast<float>(screenElapsedMs) / 480.0f);
-        const float scale = 146.0f + 9.0f * entrance;
+        const float scale = view.scale*(1.f+.06f*entrance);
         const float vibration = screenElapsedMs > 450u
                                     ? std::sin(seconds * 80.0f) * 1.4f
                                     : 0.0f;
@@ -178,8 +176,8 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
                 canvas.drawLine(34 + travel, y, 82 + travel, y - 3, kPencilFaint);
             }
         }
-        drawCar(canvas, spec, mesh, _surface->raster, _width / 2 + static_cast<int>(vibration), 282,
-                scale, -0.82f + entrance * 0.20f, seconds * 13.0f, detail);
+        drawCar(canvas, spec, mesh, _surface->raster, _width / 2 + static_cast<int>(vibration),
+                std::lround(view.centerY+12.f*entrance),scale,view.yaw,view.wheelPhase,detail,view.pitch);
         canvas.setTextSize(2);
         canvas.setTextColor(spec.accentColor, kPaper);
         canvas.drawString(spec.officialName, _width / 2, 397);
@@ -194,7 +192,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
             canvas.drawString("RACE READY", _width / 2, 230);
         } else {
             drawCar(canvas, spec, mesh, _surface->raster, _width / 2, 270, 137.0f, -0.65f,
-                    seconds * 5.0f, detail);
+                    0.f, detail);
             canvas.setTextColor(spec.accentColor, kPaper);
             canvas.setTextSize(2);
             canvas.drawString(spec.shortName, _width / 2, 355);

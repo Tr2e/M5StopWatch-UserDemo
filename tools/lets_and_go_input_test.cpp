@@ -17,6 +17,7 @@ bool validateMapping()
 {
     RawRacerInput raw;
     raw.steer = 2.0f;
+    raw.viewAxis = 1.0f;
     raw.axesValid = true;
     raw.actionsValid = true;
     raw.redClicked = true;
@@ -30,11 +31,11 @@ bool validateMapping()
                            !mapped.confirmPressed && !mapped.cancelPressed &&
                            !mapped.brakeHeld && !mapped.boostHeld &&
                            !mapped.pausePressed && mapped.exitPressed &&
-                           mapped.sequence == 7u,
+                           mapped.sequence == 7u && mapped.menuBlocked && mapped.viewAxis==0.f,
                        "valid input mapping failed");
     raw.axesValid = false;
     const RacerInput stale = mapRacerInput(raw, 8u);
-    valid &= check(!stale.valid && stale.steer == 0.0f && !stale.brakeHeld &&
+    valid &= check(!stale.valid && stale.steer == 0.0f && stale.viewAxis==0.f && !stale.brakeHeld &&
                        !stale.boostHeld && stale.exitPressed,
                    "invalid input did not fail neutral");
     raw.actionsValid = false;
@@ -46,9 +47,14 @@ bool validateMapping()
     raw.redHoldStarted = false;
     raw.redClicked = false;
     raw.chordStarted = false;
+    raw.viewAxis=-2.f;
     valid &= check(mapRacerInput(raw, 8u).confirmPressed &&
                        mapRacerInput(raw, 8u).boostHeld,
                    "single blue button mapping failed");
+    valid &= check(mapRacerInput(raw,8u).viewAxis==-1.f,"Y axis not mapped/clamped");
+    raw.viewAxis=std::numeric_limits<float>::quiet_NaN();
+    valid &= check(mapRacerInput(raw,8u).viewAxis==0.f && mapRacerInput(raw,8u).valid,
+                   "bad preview Y must not invalidate racing steering");
     raw.steer = std::numeric_limits<float>::quiet_NaN();
     valid &= check(!mapRacerInput(raw, 9u).valid, "NaN steering was accepted");
     return valid;

@@ -44,6 +44,8 @@ void AppLetsAndGoRacer::onOpen()
     _selection.reset(_progress.lastCar);
     _lastFrameMs = 0;
     _lastUpdateMs = GetHAL().millis();
+    _garageNavigation.reset();
+    _garageView.reset(_progress.lastCar,_lastUpdateMs);
     _raceSeed = 0;
     _inputInvalidSinceMs = 0;
     _pausedForInputLoss = false;
@@ -148,6 +150,8 @@ void AppLetsAndGoRacer::onRunning()
         _selection.syncPlayer(_flow.setup().playerCar);
         _screenStartedMs = nowMs;
     }
+    if(_flow.screen()==lets_and_go::GameScreen::CarSelect)
+        _garageView.selectCar(_selection.playerCursor(),nowMs);
     updateFeedback(racerInput, nowMs);
     if (_lastFrameMs == 0u ||
         nowMs - _lastFrameMs >= lets_and_go::tuning::kFrameIntervalMs) {
@@ -160,7 +164,7 @@ void AppLetsAndGoRacer::onRunning()
                                  _pausedForInputLoss, _raceBudget.detail());
         } else {
             _renderer.render(_flow, _selection, nowMs - _screenStartedMs,
-                             _garageBudget.detail(), racerStatus);
+                             _garageBudget.detail(), racerStatus,_garageView.state(nowMs));
         }
         GetHAL().updateCanvas();
         const uint32_t renderMs = GetHAL().millis() - renderStartedMs;
@@ -198,8 +202,21 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
                                    before == GameScreen::RivalSelect ||
                                    before == GameScreen::Results;
     if (!acceptsNavigation) _menuAxis.reset();
-    const int navigation = acceptsNavigation
-        ? _menuAxis.update(input.valid ? input.steer : 0.0f, nowMs) : 0;
+    int navigation=0;
+    if(before==GameScreen::CarSelect) {
+        _menuAxis.reset();
+        const bool navigate=input.valid && !input.menuBlocked;
+        const auto step=_garageNavigation.update(navigate ? input.steer : 0.f,
+                                                 navigate ? -input.viewAxis : 0.f,nowMs);
+        navigation=step.car;
+        if(step.view) {
+            _garageView.changeView(step.view,nowMs);
+            playSound(lets_and_go::SoundCue::Navigate);
+        }
+    } else {
+        _garageNavigation.reset();
+        navigation=acceptsNavigation ? _menuAxis.update(input.valid && !input.menuBlocked ? input.steer : 0.f,nowMs) : 0;
+    }
     if (navigation != 0) {
         playSound(lets_and_go::SoundCue::Navigate);
         if (before == GameScreen::CarSelect) {
@@ -436,6 +453,7 @@ void AppLetsAndGoRacer::onClose()
     _racerInput.reset();
     _menuAxis.reset();
     _renderer.close();
+    _garageNavigation.reset();
     _raceRenderer.close();
     _flow.reset();
     _selection.reset();

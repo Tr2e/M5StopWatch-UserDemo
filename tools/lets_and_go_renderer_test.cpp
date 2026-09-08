@@ -1,5 +1,6 @@
 #include "../main/apps/app_lets_and_go_racer/view/garage_renderer.h"
 #include "../main/apps/app_lets_and_go_racer/view/race_renderer.h"
+#include "../main/apps/app_lets_and_go_racer/view/garage_car_transform.h"
 #include <hal/hal.h>
 #include <filesystem>
 #include <iostream>
@@ -287,6 +288,63 @@ int main(int argc, char** argv)
         }
         save("car-" + std::to_string(i));
     }
+    // Actual production cameras, not just the separate model-inspection views.
+    // Check every panel through all presets/transitions and all quality tiers.
+    auto framingMesh=std::make_unique<CarDisplayMesh>();
+    for(unsigned car=0;car<kCarCount;++car) for(auto quality:
+        {PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) {
+        const auto id=static_cast<CarId>(car);selection.reset(id);
+        buildCarDisplayMesh(id,*framingMesh,quality==PencilDetail::High ? CarSurfaceDetail::High :
+                            quality==PencilDetail::Medium ? CarSurfaceDetail::Medium : CarSurfaceDetail::Low);
+        GarageViewController motion;motion.reset(id,0);
+        for(unsigned transition=0;transition<9;++transition) {
+            const uint32_t start=transition*1000;
+            if(transition)motion.changeView(transition<=4 ? 1 : -1,start);
+            const unsigned preset=unsigned(motion.state(start).preset);
+            for(uint32_t elapsed:{0u,50u,100u,175u,250u,350u}) {
+                const auto pose=motion.state(start+elapsed);
+                garage.render(flow,selection,elapsed,quality,{},pose);checkText();
+                TrackCamera camera{};camera.principalX=233+std::lround(pose.carSlide);
+                camera.principalY=std::lround(pose.centerY);camera.focalLength=pose.scale*pose.carZoom*5.8f;
+                const GarageCarTransform transform(carSpec(id),pose.yaw,pose.pitch,pose.wheelPhase);
+                bool framed=true;
+                for(std::size_t panel=0;panel<framingMesh->count;++panel) {
+                    const auto& face=framingMesh->panels[panel];
+                    for(auto p:face.point) {
+                        TrackScreenPoint screen{};
+                        if(!projectTrackPoint(camera,transform(p,face.wheel),screen) ||
+                           screen.x<camera.principalX-176 || screen.x>camera.principalX+175 ||
+                           screen.y<camera.principalY-162 || screen.y>camera.principalY+125 ||
+                           screen.y<109 || screen.y>354 ||
+                           std::hypot(screen.x-233,screen.y-233)>220) {
+                            if(framed && car==0 && quality==PencilDetail::Low)
+                                std::cerr << "Bad vertex " << screen.x << ',' << screen.y << " centerY=" << camera.principalY << '\n';
+                            framed=false;
+                        }
+                    }
+                }
+                if(!framed) {
+                    std::cerr << "Garage framing failed: car=" << car << " preset=" << preset << " t=" << elapsed << '\n';
+                    valid=false;
+                }
+                if(car==0 && transition==1 && quality==PencilDetail::High)
+                    save("turn-"+std::to_string(elapsed));
+            }
+            garage.render(flow,selection,500,quality,{},motion.state(start+500));
+            const auto first=canvas.frame();
+            if(quality==PencilDetail::High && transition<4)save("view-"+std::to_string(car)+"-"+std::to_string(preset));
+            garage.render(flow,selection,680,quality,{},motion.state(start+680));
+            const bool moves=first!=canvas.frame();
+            // Neo's official smooth caps/dishes have no spokes; their perfectly
+            // rotationally symmetric surface has no visible phase difference.
+            const bool hasSpokes=id!=CarId::NeoTridaggerZmc;
+            if(moves!=(preset==0 || (preset==1 && hasSpokes)) ||
+               (preset!=1 && motion.state(start+500).wheelPhase!=motion.state(start+680).wheelPhase)) {
+                std::cerr << "Garage wheels must move ONLY in side view\n";valid=false;
+            }
+        }
+    }
+    std::cout << "Garage cameras: 4 cars x 9 forward/reverse states x 3 LODs x 6 poses; side-only wheel pixel checks\n";
     // The exact same production cache is exercised across every selection,
     // entrance scale, wheel phase and quality tier (not just a single hero shot).
     for(std::size_t i=0;i<kCarCount;++i) {

@@ -51,6 +51,9 @@ compile_run track \
 compile_run input \
     "$repo_dir/tools/lets_and_go_input_test.cpp"
 
+compile_run garage_view \
+    "$repo_dir/tools/lets_and_go_garage_view_test.cpp"
+
 compile_run racer_model \
     "$repo_dir/tools/lets_and_go_racer_model_test.cpp" \
     "$base/model/racer_model.cpp" \
@@ -141,4 +144,4 @@ compile_run vector_explicit_integration \
 echo "[host-test] production_renderers"
 bash "$repo_dir/tools/render_lets_and_go.sh" "$out_dir/frames"
 
-echo "[host-test] all 14 game suites, 15 Vector Run suites, and Launcher regression passed"
+echo "[host-test] all 15 game suites, 15 Vector Run suites, and Launcher regression passed"

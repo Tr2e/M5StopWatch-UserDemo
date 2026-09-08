@@ -9,6 +9,7 @@ namespace lets_and_go {
 
 struct RawRacerInput {
     float steer = 0.0f;
+    float viewAxis = 0.0f;
     bool axesValid = false;
     bool actionsValid = false;
     bool redClicked = false;
@@ -26,10 +27,12 @@ inline RacerInput mapRacerInput(const RawRacerInput& raw, uint32_t sequence)
     // Exit remains available when the joystick is disconnected; button validity
     // is independent. A chord must not also pause, confirm or consume boost.
     result.exitPressed = raw.actionsValid && raw.chordStarted;
+    result.menuBlocked = raw.actionsValid && raw.redHeld && raw.blueHeld;
     result.valid = raw.axesValid && raw.actionsValid && std::isfinite(raw.steer);
     if (!result.valid) return result;  // Fail neutral: never replay steer/buttons.
     result.steer = std::clamp(raw.steer, -1.0f, 1.0f);
     if (raw.redHeld && raw.blueHeld) return result;
+    result.viewAxis = std::isfinite(raw.viewAxis) ? std::clamp(raw.viewAxis,-1.0f,1.0f) : 0.0f;
     result.confirmPressed = raw.blueClicked;
     result.cancelPressed = raw.redClicked;
     result.brakeHeld = raw.redHeld;
@@ -75,6 +78,26 @@ public:
 private:
     int _activeDirection = 0;
     uint32_t _nextRepeatMs = 0;
+};
+
+// Lock the dominant axis until the stick returns to centre. Diagonal holds
+// cannot move both the car cursor and the view preset, even with sensor noise.
+class GarageMenuNavigation {
+public:
+    struct Step { int car=0,view=0; };
+    Step update(float x,float y,uint32_t nowMs) {
+        if(!std::isfinite(x) || !std::isfinite(y)) {reset();return {};}
+        if(std::abs(x)<=.30f && std::abs(y)<=.30f) {reset();return {};}
+        if(_axis==0 && std::max(std::abs(x),std::abs(y))>=.58f)
+            _axis=std::abs(x)>=std::abs(y) ? 1 : 2;
+        if(_axis==1)return {_repeat.update(x,nowMs),0};
+        if(_axis==2)return {0,_repeat.update(y,nowMs)};
+        return {};
+    }
+    void reset() {_axis=0;_repeat.reset();}
+private:
+    int _axis=0;
+    MenuAxisRepeater _repeat;
 };
 
 class LongChordDetector {

@@ -13,6 +13,7 @@ enum class RacerInputReadiness : uint8_t {
 
 struct RacerInput {
     float steer = 0.0f;
+    float viewAxis = 0.0f; // Joystick Y, garage only; never affects driving.
     bool confirmPressed = false;
     bool cancelPressed = false;
     bool brakeHeld = false;
@@ -20,6 +21,7 @@ struct RacerInput {
     bool pausePressed = false;
     bool exitPressed = false;
     bool valid = false;
+    bool menuBlocked = false;
     uint32_t sequence = 0;
 };
 

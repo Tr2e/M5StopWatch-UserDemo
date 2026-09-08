@@ -27,6 +27,7 @@ RacerInput HardwareRacerInputProvider::sample(uint32_t nowMs)
     const FlightActionSample actions = _actions.sampleActions(nowMs);
     RawRacerInput raw;
     raw.steer = axes.steer;
+    raw.viewAxis = axes.pitch;
     raw.axesValid = axes.valid;
     raw.actionsValid = actions.valid;
     raw.redClicked = actions.actions.wasPressed(FlightAction::ThrottleDown);

@@ -2,6 +2,7 @@
 
 #include "../controller/game_flow.h"
 #include "../controller/garage_selection.h"
+#include "../controller/garage_view_controller.h"
 #include "../model/car_catalog.h"
 #include "../model/car_display_mesh.h"
 #include "../model/overpass_track.h"
@@ -29,7 +30,7 @@ public:
     void close();
     void render(const GameFlow& flow, const GarageSelection& selection,
                 uint32_t screenElapsedMs, PencilDetail detail,
-                const RacerInputStatus& inputStatus = {});
+                const RacerInputStatus& inputStatus = {},const GarageViewState& view = {});
 
 private:
     const CarDisplayMesh& showcaseMesh(CarId car, PencilDetail detail);
