@@ -1,0 +1,12 @@
+{
+  "version": "r27-external-compatibility",
+  "bytes": 4932096,
+  "sha256": "7e29928d1bbd914d7aa41b27a0dd540b45990d4b78abb1ac3f9fb8c0a1dab743",
+  "scope": "Racer external presentation/release gate; discard stale calibration-frame actions; retain global exit across pages; external rival hint",
+  "build": "ESP32-S3 passed",
+  "host": "Full ASan/UBSan suites passed; final renderer fixture recheck recorded separately",
+  "app_flash": "Hash of data verified; RTS reset; Done",
+  "serial_log": "/tmp/racer-device-r27-external.log",
+  "physical_joystick_dualbutton": "Pending: not connected during this session",
+  "physical_touch_alignment": "Pending NEXT and START RACE centre-tap verification"
+}

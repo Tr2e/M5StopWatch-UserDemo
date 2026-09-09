@@ -1,0 +1,40 @@
+{
+  "baseline": "r27-home-static",
+  "changed": [
+    "device-rivals.ppm",
+    "device-track.ppm",
+    "rivals.ppm",
+    "showcase-0.ppm",
+    "showcase-1.ppm",
+    "showcase-2.ppm",
+    "showcase-3.ppm",
+    "showcase-4.ppm",
+    "showcase-5.ppm",
+    "showcase-6.ppm",
+    "showcase-7.ppm",
+    "showcase.ppm",
+    "track-0.ppm",
+    "track-1.ppm",
+    "track.ppm"
+  ],
+  "unchanged_count": 229,
+  "new": [
+    "setup-confirm-native.ppm",
+    "setup-course-native-0.ppm",
+    "setup-course-native-1.ppm",
+    "setup-rival-machine-0.ppm",
+    "setup-rival-machine-1.ppm",
+    "setup-rival-machine-2.ppm",
+    "setup-rival-machine-3.ppm",
+    "setup-rival-machine-4.ppm",
+    "setup-rival-machine-5.ppm",
+    "setup-rival-machine-6.ppm",
+    "setup-rival-machine-7.ppm",
+    "setup-rivals-empty-native.ppm",
+    "setup-rivals-full-selected-native.ppm",
+    "setup-rivals-full-unselected-native.ppm",
+    "setup-rivals-one-native.ppm",
+    "setup-rivals-ready-native.ppm",
+    "setup-rivals-solo-native.ppm"
+  ]
+}

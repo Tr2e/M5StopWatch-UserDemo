@@ -1,0 +1,11 @@
+{
+  "version": "r27-touch-targets",
+  "bytes": 4931872,
+  "sha256": "1781566ae5d421b1c776f56c323bf994f203d2d6500f6aab26006751cd09b150",
+  "scope": "Remove side decoration; explicit enlarged touch targets; release activation; presentation gate; touch read validity and diagnostics",
+  "build": "ESP32 final passed",
+  "host": "Full ASan/UBSan suites passed, then final input and renderer rechecks passed",
+  "hardware_coordinate_mapping": "unchanged; empirical alignment pending",
+  "app_flash": "Hash of data verified; RTS reset; Done",
+  "serial_log": "/tmp/racer-device-r27-touch.log"
+}

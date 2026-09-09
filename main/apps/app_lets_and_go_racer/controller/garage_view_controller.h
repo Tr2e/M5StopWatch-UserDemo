@@ -52,10 +52,6 @@ public:
         // Start only after arriving at SIDE. Leaving SIDE freezes the current
         // phase rather than snapping the spokes back to their authored pose.
         const auto elapsed=uint32_t(nowMs-_viewStarted);
-        // Keep the original gentle idle sway only in the hero view; inspection
-        // presets stay exact. Start at zero after arrival so there is no snap.
-        if(_view==GarageView::Front && elapsed>kTransitionMs)
-            value.yaw+=std::sin(float(elapsed-kTransitionMs)*.0007f)*.06f;
         if(_view==GarageView::Side && elapsed>kTransitionMs)
             value.wheelPhase=float(std::fmod(double(_restWheelPhase)+
                                    double(elapsed-kTransitionMs)*.007,6.283185307));
@@ -68,7 +64,7 @@ public:
         return value;
     }
     bool animating(uint32_t nowMs) const {
-        return _view == GarageView::Front || _view == GarageView::Side ||
+        return _view == GarageView::Side ||
                (_viewMoving && nowMs - _viewStarted < kTransitionMs) ||
                (_carMoving && nowMs - _carStarted < kTransitionMs);
     }

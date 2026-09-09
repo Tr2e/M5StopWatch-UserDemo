@@ -25,7 +25,8 @@ public:
 
 private:
     void handleRacerInput(const lets_and_go::RacerInput& input, uint32_t nowMs,
-                          int deviceNavigation = 0, int deviceView = 0);
+                          int deviceNavigation = 0, int deviceView = 0, bool deviceAdvance = false,
+                          int deviceResult = -1);
     void prepareRace(uint32_t nowMs);
     void persistSelectedCar();
     void updateFeedback(const lets_and_go::RacerInput& input, uint32_t nowMs);

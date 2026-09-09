@@ -248,7 +248,8 @@ Hal::TouchPoint Hal::getTouchPoint()
 {
     Hal::TouchPoint point;
     if (_cst820 && _cst820->read()) {
-        point.num = _cst820->getFingerNum();
+        point.valid = true;
+        point.num = _cst820->isPressed() ? _cst820->getFingerNum() : 0;
         if (point.num > 0) {
             point.x = _cst820->getX();
             point.y = _cst820->getY();

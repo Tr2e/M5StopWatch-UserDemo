@@ -1,0 +1,20 @@
+{
+  "total_ppm": 288,
+  "unchanged_count": 278,
+  "changed": [
+    "rivals.ppm"
+  ],
+  "new": [
+    "external-course-native.ppm",
+    "external-grid-native.ppm",
+    "external-machine-native.ppm",
+    "external-paused-native.ppm",
+    "external-ready-native.ppm",
+    "external-results-native-0.ppm",
+    "external-results-native-1.ppm",
+    "external-results-native-2.ppm",
+    "external-rival-native.ppm"
+  ],
+  "baseline": "/tmp/racer-r27-touch-final",
+  "scope": "Existing external rival footer updated; external mode UI captures added"
+}

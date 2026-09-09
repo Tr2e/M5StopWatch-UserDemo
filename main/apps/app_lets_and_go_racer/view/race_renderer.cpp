@@ -1,6 +1,8 @@
 #include "race_renderer.h"
 
 #include "track_projection.h"
+#include "home_theme.h"
+#include "../controller/race_ui_layout.h"
 
 #include <hal/hal.h>
 
@@ -17,16 +19,13 @@
 namespace lets_and_go {
 namespace {
 
-constexpr uint16_t kPaper = 0xef3au;
-constexpr uint16_t kPencil = 0x4269u;
-constexpr uint16_t kFaint = 0x9cd3u;
 constexpr uint16_t kWarning = 0xd945u;
 // Panel_CO5300 exposes 468 x 466. Keep capacity independent of the older
 // square host captures, and share it between the guard and the copy buffer.
 constexpr int kUpscaleRowPixels = 480;
 constexpr uint16_t kMapTransparent=0xf81fu;
 
-void panel(LGFX_Sprite& canvas,int x,int y,int width,int height,int radius,uint16_t color)
+void drawPanel(LGFX_Sprite& canvas,int x,int y,int width,int height,int radius,uint16_t color)
 {
     canvas.fillRect(x+radius,y,width-2*radius,height,color);
     canvas.fillRect(x,y+radius,width,height-2*radius,color);
@@ -177,62 +176,33 @@ void drawRaceCar(LGFX_Sprite& canvas,const TrackCamera& camera,
 #endif
 }
 
-void drawPaperAndMountains(LGFX_Sprite& canvas, PencilDetail detail)
-{
-    uint32_t hash = 0xa341316cu;
-    const int textureCount = detail == PencilDetail::High ? 26
-                             : detail == PencilDetail::Medium ? 16 : 8;
-    for (int index = 0; index < textureCount; ++index) {
-        hash = hash * 1664525u + 1013904223u;
-        const int x = 40 + static_cast<int>((hash >> 8u) % 386u);
-        hash = hash * 1664525u + 1013904223u;
-        const int y = 38 + static_cast<int>((hash >> 8u) % 388u);
-        canvas.drawLine(x, y, x + 3, y, kFaint);
-    }
-    constexpr int kHorizon = 148;
-    const int mountainStep = detail == PencilDetail::Low ? 76 : 38;
-    for (int x = 38; x < 430; x += mountainStep) {
-        const int peak = kHorizon - 9 - ((x * 13) % 24);
-        canvas.drawLine(x - 38, kHorizon, x, peak, kFaint);
-        canvas.drawLine(x, peak, x + 39, kHorizon, kFaint);
-    }
-}
-
 void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
              const OverpassTrack& track,
-             const TrackMiniMap& miniMap,LGFX_Sprite* mapImage)
+             const TrackMiniMap& miniMap,LGFX_Sprite* mapImage,bool deviceControls)
 {
 #ifdef ESP_PLATFORM
     const uint64_t hudStartedUs=esp_timer_get_time();
 #endif
-    // Paper instrument cards keep labels readable below the dark bridge and
-    // on the newly coloured road, without text-sized cream cut-outs.
-    const auto card=[&](int x,int y,int width,int height,int radius) {
-        panel(canvas,x,y,width,height,radius,kPaper);
-    };
-    card(106,35,253,39,12);
-    card(116,383,241,44,11);
-    canvas.drawLine(232,46,232,64,kFaint);
-    canvas.drawLine(241,394,241,416,kFaint);
+    using namespace home_theme;
+    drawPanel(canvas,106,35,253,39,12,background);
+    const auto instruments=race_ui_layout::instruments;
+    drawPanel(canvas,instruments.x,instruments.y,instruments.width,instruments.height,8,background);
     const RaceCarSnapshot& player = race.player();
-    canvas.setTextDatum(textdatum_t::middle_center);
-    canvas.setTextColor(kPencil, kPaper);
-    canvas.setTextSize(2);
     char value[32] = {};
-    std::snprintf(value, sizeof(value), "LAP %u/3", static_cast<unsigned>(
-        std::min<uint8_t>(kRaceLapCount, static_cast<uint8_t>(player.completedLaps + 1u))));
-    canvas.drawString(value, 157, 55);
-    std::snprintf(value, sizeof(value), "P%u/%u", static_cast<unsigned>(player.position),
-                  static_cast<unsigned>(race.carCount));
-    canvas.drawString(value, 312, 55);
-    canvas.setTextSize(1);
-    std::snprintf(value, sizeof(value), "%03d km/h",
-                  static_cast<int>(std::lround(player.motion.speed * 3.6f)));
-    canvas.drawString(value, 159, 411);
-    canvas.drawRect(263, 408, 86, 10, kPencil);
-    canvas.fillRect(265, 410, static_cast<int>(82.0f * player.motion.boostCharge),
-                    6, carSpec(player.car).accentColor);
-    canvas.drawString("BOOST", 306, 394);
+    std::snprintf(value,sizeof(value),"LAP %u/3",unsigned(std::min<unsigned>(kRaceLapCount,unsigned(player.completedLaps)+1)));
+    label(canvas,value,165,55,2);
+    std::snprintf(value,sizeof(value),"P%u/%u",unsigned(player.position),unsigned(race.carCount));
+    label(canvas,value,305,55,2);
+    if(deviceControls) {
+        canvas.fillRect(230,49,3,12,muted);canvas.fillRect(237,49,3,12,muted);
+    } else canvas.drawLine(235,45,235,65,line);
+    const float speed=std::isfinite(player.motion.speed) ? std::clamp(player.motion.speed*3.6f,0.f,999.f) : 0.f;
+    std::snprintf(value,sizeof(value),"%03d km/h",int(std::lround(speed)));
+    label(canvas,value,160,98,1);
+    label(canvas,"BOOST",250,88,1,muted);
+    canvas.fillRect(220,100,60,6,line);
+    const float charge=std::isfinite(player.motion.boostCharge) ? std::clamp(player.motion.boostCharge,0.f,1.f) : 0.f;
+    canvas.fillRect(220,100,int(60*charge),6,blue);
 
 #ifdef ESP_PLATFORM
     const uint64_t mapStartedUs=esp_timer_get_time();
@@ -291,43 +261,75 @@ void formatRaceTime(float seconds, char* output, std::size_t capacity)
 }
 
 void drawResults(LGFX_Sprite& canvas, const RaceSnapshot& race,
-                 const ResultsSelection& selection)
+                 const ResultsSelection& selection,bool deviceControls)
 {
-    canvas.fillScreen(kPaper);
-    drawPaperAndMountains(canvas, PencilDetail::High);
-    const RaceCarSnapshot& player = race.player();
-    canvas.setTextDatum(textdatum_t::middle_center);
-    canvas.setTextColor(carSpec(player.car).accentColor, kPaper);
-    canvas.setTextSize(4);
-    char position[20] = {};
-    std::snprintf(position, sizeof(position), "PLACE %u/%u",
-                  static_cast<unsigned>(player.position),
-                  static_cast<unsigned>(race.carCount));
-    canvas.drawString(position, canvas.width() / 2, 92);
-    char time[20] = {};
-    formatRaceTime(player.finished ? player.finishSeconds : race.elapsedSeconds, time, sizeof(time));
-    canvas.setTextSize(2);
-    canvas.setTextColor(kPencil, kPaper);
-    canvas.drawString(time, canvas.width() / 2, 145);
-    char best[32] = "BEST --:--.---";
-    if (player.bestLapSeconds > 0.0f) {
-        char lap[20] = {};
-        formatRaceTime(player.bestLapSeconds, lap, sizeof(lap));
-        std::snprintf(best, sizeof(best), "BEST %s", lap);
+    using namespace home_theme;
+    backdrop(canvas);const int cx=canvas.width()/2;
+    const auto& player=race.player();
+    label(canvas,"RACE COMPLETE",cx,46,1,muted);
+    char value[32];
+    std::snprintf(value,sizeof(value),"%u / %u",unsigned(player.position),unsigned(race.carCount));
+    label(canvas,value,cx,100,4);
+    label(canvas,race.carCount==1 ? "SOLO FINISH" : "FINISH POSITION",cx,137,1,muted);
+    label(canvas,carSpec(player.car).shortName,cx,163,2);
+    canvas.fillRect(106,187,254,46,home_theme::panel);
+    label(canvas,"RACE TIME",cx,196,1,muted,home_theme::panel);
+    formatRaceTime(player.finished ? player.finishSeconds : race.elapsedSeconds,value,sizeof(value));
+    label(canvas,value,cx,216,2,white,home_theme::panel);
+    canvas.fillRect(106,241,254,42,home_theme::panel);
+    label(canvas,"BEST LAP",cx,250,1,muted,home_theme::panel);
+    if(player.bestLapSeconds>0)formatRaceTime(player.bestLapSeconds,value,sizeof(value));
+    else std::snprintf(value,sizeof(value),"--:--.---");
+    label(canvas,value,cx,269,2,white,home_theme::panel);
+    for(int index=0;index<int(ResultAction::Count);++index) {
+        const auto actionId=static_cast<ResultAction>(index);
+        action(canvas,race_ui_layout::resultRow(index),resultActionLabel(actionId),nullptr,
+               actionId==selection.cursor() ? red : home_theme::panel);
     }
-    canvas.setTextSize(1);
-    canvas.setTextColor(kFaint, kPaper);
-    canvas.drawString(best, canvas.width() / 2, 177);
-    for (int index = 0; index < static_cast<int>(ResultAction::Count); ++index) {
-        const ResultAction action = static_cast<ResultAction>(index);
-        const bool selected = action == selection.cursor();
-        const int y = 245 + index * 50;
-        if (selected) canvas.drawRoundRect(116, y - 17, 234, 36, 8,
-                                           carSpec(player.car).accentColor);
-        canvas.setTextSize(selected ? 2 : 1);
-        canvas.setTextColor(selected ? kPencil : kFaint, kPaper);
-        canvas.drawString(resultActionLabel(action), canvas.width() / 2, y);
+    label(canvas,deviceControls ? "A NEXT / B SELECT" : "L/R / BLUE SELECT",cx,445,1,muted);
+}
+
+// Fixed stroke geometry avoids font side bearings/baselines: the visible digit
+// bounds are centred on the physical display, including the narrow digit 1.
+void drawCountdown(LGFX_Sprite& canvas,uint32_t elapsed)
+{
+    using namespace home_theme;
+    const int cx=canvas.width()/2,cy=canvas.height()/2;
+    const unsigned count=3-std::min<uint32_t>(2u,elapsed/1000u);
+    canvas.fillCircle(cx,cy,62,background);
+    canvas.drawCircle(cx,cy,64,line);
+    canvas.drawCircle(cx,cy,63,line);
+    for(int i=0;i<3;++i) {
+        canvas.fillCircle(cx+(i-1)*26,cy-87,7,i<int(4-count) ? red : background);
+        canvas.drawCircle(cx+(i-1)*26,cy-87,8,line);
     }
+    const auto horizontal=[&](int y) {
+        canvas.fillRect(cx-20,y-4,41,9,white);
+        canvas.fillCircle(cx-20,y,4,white);canvas.fillCircle(cx+20,y,4,white);
+    };
+    const auto vertical=[&](int x,int y) {
+        canvas.fillRect(x-4,y-12,9,25,white);
+        canvas.fillCircle(x,y-12,4,white);canvas.fillCircle(x,y+12,4,white);
+    };
+    if(count==1) {
+        canvas.fillRect(cx-4,cy-32,9,65,white);
+        canvas.fillCircle(cx,cy-32,4,white);canvas.fillCircle(cx,cy+32,4,white);
+    } else {
+        horizontal(cy-32);horizontal(cy);horizontal(cy+32);
+        vertical(cx+20,cy-16);
+        vertical(count==2 ? cx-20 : cx+20,cy+16);
+    }
+    drawPanel(canvas,cx-72,cy+73,144,30,8,background);
+    label(canvas,"GET READY",cx,cy+88,2);
+}
+
+void controlHelp(LGFX_Sprite& canvas,bool deviceControls,int y)
+{
+    using namespace home_theme;
+    drawPanel(canvas,103,y-17,260,38,8,background);
+    label(canvas,deviceControls ? "A BRAKE / B BOOST" : "RED BRAKE / BLUE BOOST",canvas.width()/2,y-5,1);
+    label(canvas,deviceControls ? "DRAG TO STEER / TOP TO PAUSE" : "JOYSTICK STEER / HOLD RED PAUSE",
+          canvas.width()/2,y+10,1,muted);
 }
 
 }  // namespace
@@ -397,9 +399,9 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
     if (_width <= 0 || _height <= 0 || !race.prepared()) return;
     auto& canvas = GetHAL().getCanvas();
     if(!_surface) {
-        canvas.fillScreen(kPaper);
+        home_theme::backdrop(canvas);
         canvas.setTextDatum(textdatum_t::middle_center);
-        canvas.setTextSize(1);canvas.setTextColor(kWarning,kPaper);
+        canvas.setTextSize(1);canvas.setTextColor(kWarning,home_theme::background);
         canvas.drawString("RENDER MEMORY LOW",_width/2,220);
         canvas.drawString("HOLD BOTH BUTTONS TO EXIT",_width/2,244);
         return;
@@ -450,11 +452,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
     }
     _surface->raster.setPaintAtlas(_paintAtlas.get());
     if (flow.screen() == GameScreen::Results) {
-        drawResults(canvas, race.snapshot(), results);
-        if (deviceControls) {
-            canvas.setTextSize(1); canvas.setTextColor(kPencil,kPaper);
-            canvas.drawString("A: NEXT   B: SELECT",_width/2,421);
-        }
+        drawResults(canvas,race.snapshot(),results,deviceControls);
         return;
     }
     if (_cachedTrack != race.track().id()) {
@@ -566,42 +564,32 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         canvas.drawCircle(_width / 2, _height / 2, 194, kWarning);
         canvas.drawCircle(_width / 2 + 2, _height / 2 - 1, 188, kWarning);
     }
-    drawHud(canvas, snapshot, race.track(), _miniMap,_miniMapImage.get());
+    drawHud(canvas,snapshot,race.track(),_miniMap,_miniMapImage.get(),deviceControls);
     const GameScreen screen = flow.screen();
     if (screen == GameScreen::GridIntro) {
-        panel(canvas,91,192,284,52,12,track_paint::night);
+        drawPanel(canvas,91,192,284,52,12,track_paint::night);
         canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(3);
         canvas.drawString(snapshot.carCount == 1u ? "SOLO RUN" : "CHASE THE PACK", _width / 2, 218);
+        controlHelp(canvas,deviceControls,382);
     } else if (screen == GameScreen::Countdown) {
-        const int count = std::max(1, 3 - static_cast<int>(screenElapsedMs / 1000u));
-        char number[4] = {};
-        std::snprintf(number, sizeof(number), "%d", count);
-        canvas.fillCircle(_width/2,222,43,track_paint::night);
-        canvas.drawCircle(_width/2,222,43,track_paint::ridge);
-        canvas.setTextColor(track_paint::chalk,track_paint::night);
-        canvas.setTextSize(7);
-        canvas.drawString(number, _width / 2, 222);
+        drawCountdown(canvas,screenElapsedMs);
+        controlHelp(canvas,deviceControls,382);
     } else if (screen == GameScreen::Paused) {
-        panel(canvas,100,185,266,81,12,track_paint::night);
+        drawPanel(canvas,100,185,266,81,12,track_paint::night);
         canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(3);
         canvas.drawString(pausedForInputLoss ? "INPUT LOST" : "PAUSED", _width / 2, 213);
         canvas.setTextSize(1);
         canvas.drawString(deviceControls ? "B / TAP: CONTINUE" : "HOLD RED WHEN INPUT READY", _width / 2, 246);
+        controlHelp(canvas,deviceControls,382);
     } else if (screen == GameScreen::Finish) {
-        panel(canvas,98,183,270,74,12,track_paint::night);
+        drawPanel(canvas,98,183,270,74,12,track_paint::night);
         canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(5);
         canvas.drawString("FINISH!", _width / 2, 220);
     }
-    if (deviceControls && screen == GameScreen::Racing) {
-        canvas.setTextSize(1);
-        canvas.setTextColor(track_paint::chalk, track_paint::night);
-        panel(canvas,94,84,162,39,8,track_paint::night);
-        canvas.drawString("A BRAKE / B BOOST",175,96);
-        canvas.drawString("DRAG STEER / TOP PAUSE",175,113);
-    }
+
 }
 
 }  // namespace lets_and_go

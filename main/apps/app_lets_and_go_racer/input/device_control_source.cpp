@@ -47,8 +47,10 @@ void DeviceControlSource::touchTask() {
         const uint32_t now = timeMs();
         {
             std::lock_guard<std::mutex> lock(_mutex);
-            _logic.touch(point.num > 0 && point.x >= 0 && point.y >= 0, point.x, point.y);
-            _touchTime = now;
+            if(point.valid) {
+                _logic.touch(point.num > 0 && point.x >= 0 && point.y >= 0, point.x, point.y);
+                _touchTime = now;
+            } else _logic.invalidateTouch();
         }
         vTaskDelay(pdMS_TO_TICKS(20));
     }
@@ -56,14 +58,27 @@ void DeviceControlSource::touchTask() {
     vTaskDelete(nullptr);
 }
 DeviceControlFrame DeviceControlSource::sample(uint32_t) {
-    std::lock_guard<std::mutex> lock(_mutex);
-    const uint32_t now = timeMs();
-    return _logic.consume(_running.load() && _buttonTime != 0 && _touchTime != 0 &&
-                          now - _buttonTime <= 100 && now - _touchTime <= 150);
+    DeviceControlFrame result;
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        const uint32_t now = timeMs();
+        result=_logic.consume(_running.load() && _buttonTime != 0 && _touchTime != 0 &&
+                             now - _buttonTime <= 100 && now - _touchTime <= 150);
+    }
+    if(result.touchTrace.ready) {
+        const auto& t=result.touchTrace;
+        mclog::tagInfo("RacerTouch","screen={} down={},{} up={},{} target={} accepted={}",
+            gameScreenLabel(t.screen),t.startX,t.startY,t.endX,t.endY,touchActionLabel(t.target),t.accepted);
+    }
+    return result;
 }
 void DeviceControlSource::setScreen(GameScreen screen) {
     std::lock_guard<std::mutex> lock(_mutex);
     _logic.setScreen(screen);
+}
+void DeviceControlSource::presentScreen(GameScreen screen) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _logic.presentScreen(screen);
 }
 void DeviceControlSource::close() {
     _running.store(false);

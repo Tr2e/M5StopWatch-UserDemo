@@ -21,8 +21,7 @@ void HardwareRacerInputProvider::open()
     _sequence = 0;
     _lastDiagnosticMs = 0;
     _exitChord.reset();
-    _mailbox.reset();
-    _menuEvents = {};
+    _screenInput.reset();
     _navigationMode = RacerNavigationMode::None;
     _opened = true;
     _sampling.store(true, std::memory_order_release);
@@ -43,7 +42,7 @@ RacerInput HardwareRacerInputProvider::sample(uint32_t nowMs)
     if (!_opened) return {};
     std::lock_guard<std::mutex> lock(_mutex);
     if (!_sampling.load(std::memory_order_acquire)) poll(nowMs);
-    return _mailbox.consume();
+    return _screenInput.consume();
 }
 
 void HardwareRacerInputProvider::samplingTask()
@@ -76,11 +75,7 @@ void HardwareRacerInputProvider::poll(uint32_t nowMs)
     raw.blueHeld = actions.actions.isHeld(FlightAction::ThrottleUp);
     raw.redHoldStarted = actions.actions.wasPressed(FlightAction::ToggleImmersive);
     raw.chordStarted = _exitChord.update(raw.redHeld, raw.blueHeld, nowMs);
-    auto input = mapRacerInput(raw, ++_sequence);
-    const auto step = _menuEvents.update(input, nowMs);
-    input.navigationStep = step.car;
-    input.viewStep = step.view;
-    _mailbox.publish(input);
+    _screenInput.publish(raw, ++_sequence, nowMs);
     if (_lastDiagnosticMs == 0u || nowMs - _lastDiagnosticMs >= 5000u) {
         _lastDiagnosticMs = nowMs;
         const auto status = _axes.axisStatus(nowMs);
@@ -121,8 +116,7 @@ RacerInputStatus HardwareRacerInputProvider::status(uint32_t nowMs) const
 void HardwareRacerInputProvider::requestCalibration(uint32_t nowMs)
 {
     std::lock_guard<std::mutex> lock(_mutex);
-    _mailbox.reset();
-    _menuEvents.resetGesture();
+    _screenInput.changeScreen(_navigationMode);
     _axes.requestAxisCalibration(nowMs);
 }
 
@@ -130,9 +124,13 @@ void HardwareRacerInputProvider::setNavigationMode(RacerNavigationMode mode)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _navigationMode = mode;
-    _menuEvents.setMode(mode);
-    _menuEvents.resetGesture();
-    _mailbox.reset();
+    _screenInput.changeScreen(mode);
+}
+
+void HardwareRacerInputProvider::presentScreen()
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    _screenInput.presentScreen();
 }
 
 void HardwareRacerInputProvider::close()
@@ -145,7 +143,7 @@ void HardwareRacerInputProvider::close()
     _actions.close();
     _axes.close();
     _exitChord.reset();
-    _mailbox.reset();
+    _screenInput.reset();
     _opened = false;
 }
 

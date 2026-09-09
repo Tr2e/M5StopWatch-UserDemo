@@ -17,6 +17,7 @@ public:
     RacerInputStatus status(uint32_t nowMs) const override;
     void requestCalibration(uint32_t nowMs) override;
     void setNavigationMode(RacerNavigationMode mode) override;
+    void presentScreen() override;
     void close() override;
 
 private:
@@ -28,8 +29,7 @@ private:
     uint32_t _lastDiagnosticMs = 0;
     LongChordDetector _exitChord;
     mutable std::mutex _mutex;
-    RacerInputMailbox _mailbox;
-    RacerMenuEvents _menuEvents;
+    RacerScreenInput _screenInput;
     RacerNavigationMode _navigationMode = RacerNavigationMode::None;
     std::atomic<bool> _sampling{false};
     std::atomic<bool> _samplingExited{true};

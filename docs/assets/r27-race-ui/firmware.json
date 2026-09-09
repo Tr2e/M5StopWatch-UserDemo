@@ -1,0 +1,11 @@
+{
+  "version": "r27-race-ui",
+  "bytes": 4930112,
+  "sha256": "04293cc4c4cb87689902ba5141b810d768bd6da06d5a0e77a48b54d5dcde44c6",
+  "scope": "Compact top HUD; centred vector countdown; dark results and direct result touch actions",
+  "build": "ESP32 final build passed",
+  "host": "ASan/UBSan non-render suites passed; final renderer passed after host text metadata isolation fix",
+  "device_validation": "User completed one Magnum/SkyLoop three-car race; COUNTDOWN/RACING/RESULTS observed; race music and SFX stream active. No panic/abort/watchdog found. Visual acceptance and results action taps not yet confirmed.",
+  "app_flash": "Hash of data verified; RTS reset; Done",
+  "serial_log": "/tmp/racer-device-r27-hud.log"
+}

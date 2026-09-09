@@ -11,6 +11,7 @@ public:
     void close();
     DeviceControlFrame sample(uint32_t nowMs);
     void setScreen(GameScreen screen);
+    void presentScreen(GameScreen screen);
 private:
     void buttonsTask();
     void touchTask();

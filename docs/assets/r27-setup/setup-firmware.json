@@ -1,0 +1,11 @@
+{
+  "version": "r27-setup-ui",
+  "bytes": 4928624,
+  "sha256": "a64ca1d7dc08d2dbb013f71ff079a8f4341e355996e41f4977a36b80885ba18f",
+  "scope": "Restore Race/FinalLap music; dark CarShowcase/RivalSelect UI and course controls; explicit setup touch actions",
+  "host_validation": "Non-render suites passed; first renderer found long course footer; corrected final renderer passed ASan/UBSan",
+  "build": "ESP32 build passed",
+  "device_validation": "pending user operation",
+  "app_flash": "Hash of data verified; RTS reset; Done",
+  "serial_log": "/tmp/racer-device-r27-setup.log"
+}

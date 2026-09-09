@@ -112,6 +112,8 @@ bool validateSlowFrameInput()
     TwoButtonFlightActionMapper actions;
     LongChordDetector chord;
     RacerInputMailbox mailbox;
+    RacerScreenInput context;
+    context.presentScreen();
     const auto poll = [&](bool redDown, bool blueDown, uint32_t now) {
         const auto r = red.update(redDown, now);
         const auto b = blue.update(blueDown, now);
@@ -128,6 +130,7 @@ bool validateSlowFrameInput()
         raw.redHoldStarted = a.wasPressed(FlightAction::ToggleImmersive);
         raw.chordStarted = chord.update(raw.redHeld, raw.blueHeld, now);
         mailbox.publish(mapRacerInput(raw, now));
+        context.publish(raw, now, now);
     };
     // One 100 ms click is entirely inside a 400 ms render stall.
     for (uint32_t t = 0; t <= 400; t += 10)
@@ -138,10 +141,14 @@ bool validateSlowFrameInput()
                        "slow render lost short blue click or latest axes");
     valid &= check(!mailbox.consume().confirmPressed,
                    "buffered click replayed on a second frame");
+    valid &= check(context.consume().confirmPressed && !context.consume().confirmPressed,
+                   "production screen context lost/replayed debounced blue click");
     for (uint32_t t = 410; t <= 800; t += 10)
         poll(t >= 450 && t < 550, false, t);
     valid &= check(mailbox.consume().cancelPressed,
                    "slow render lost short red click");
+    valid &= check(context.consume().cancelPressed,
+                   "production screen context lost debounced red click");
     // Hold both through an entire long frame and release before consumption.
     for (uint32_t t = 810; t <= 2100; t += 10)
         poll(t >= 850 && t < 1850, t >= 850 && t < 1850, t);
@@ -150,6 +157,9 @@ bool validateSlowFrameInput()
                        !input.cancelPressed && !input.pausePressed,
                    "buffered exit chord leaked pause or release clicks");
     valid &= check(!mailbox.consume().exitPressed, "exit chord replayed");
+    input = context.consume();
+    valid &= check(input.exitPressed && !input.confirmPressed && !input.pausePressed && !input.cancelPressed,
+                   "production screen context lost debounced chord exclusivity");
     RacerInput stale;
     stale.confirmPressed = true;
     mailbox.publish(stale);
@@ -185,10 +195,96 @@ bool validateMenuEventBuffer()
     valid &= check(events.update(held,430).car==-1,"menu did not rearm after centre");
     return valid;
 }
+
+bool validateScreenInput()
+{
+    RacerScreenInput context;
+    RawRacerInput raw;
+    raw.axesValid = raw.actionsValid = true;
+    uint32_t now = 0;
+    const auto poll = [&] { context.publish(raw, now / 10, now); now += 10; };
+    context.changeScreen(RacerNavigationMode::Garage);
+    poll(); // Released and centred before the first presentation must not arm.
+    raw.blueClicked = true; raw.steer = .9f; poll();
+    auto input = context.consume();
+    bool valid = check(!input.confirmPressed && !input.navigationStep,
+                       "input reached an unseen page");
+    raw.blueClicked = false; raw.blueHeld = true;
+    context.presentScreen(); poll();
+    raw.blueHeld = false; raw.blueClicked = true; poll();
+    input = context.consume();
+    valid &= check(!input.confirmPressed && !input.navigationStep,
+                   "held blue release/stick leaked into newly shown garage");
+    raw.blueClicked = false; raw.steer = 0; poll();
+    raw.steer = .9f; raw.blueClicked = true; poll();
+    raw.steer = 0; raw.blueClicked = false;
+    for (int i=0; i<40; ++i) poll(); // Short operation inside a 400 ms frame.
+    input = context.consume();
+    valid &= check(input.confirmPressed && input.navigationStep == 1 && input.steer == 0,
+                   "presentation protection lost a new short gesture in a slow frame");
+    input = context.consume();
+    valid &= check(!input.confirmPressed && !input.navigationStep, "new gesture replayed");
+
+    for (int page=0; page<3; ++page) { // Rivals -> course -> rivals, same mode.
+        raw.blueClicked = true; poll(); // Queued action belongs to the old page.
+        context.changeScreen(RacerNavigationMode::Horizontal);
+        raw.blueClicked = false; raw.steer = .9f; poll();
+        context.presentScreen(); poll();
+        input = context.consume();
+        valid &= check(!input.confirmPressed && !input.navigationStep,
+                       "same-mode page change kept old confirm or held navigation");
+        raw.steer = 0; poll(); raw.steer = -.9f; poll();
+        valid &= check(context.consume().navigationStep == -1,
+                       "same-mode page did not rearm after centre");
+    }
+
+    // Auto-finish can occur while boost is held; releasing must not retry.
+    raw.steer = 0; raw.blueHeld = true;
+    context.changeScreen(RacerNavigationMode::Horizontal); context.presentScreen(); poll();
+    raw.blueHeld = false; raw.blueClicked = true; poll();
+    valid &= check(!context.consume().confirmPressed, "boost release retried from results");
+    raw.blueClicked = false; poll(); raw.blueClicked = true; poll();
+    valid &= check(context.consume().confirmPressed, "fresh results confirmation lost");
+
+    // Axis failure must not disable independent cancel/exit. The App separately
+    // requires input.valid to resume a paused race.
+    raw = {}; raw.actionsValid = true;
+    context.changeScreen(RacerNavigationMode::None); context.presentScreen(); poll();
+    raw.redClicked = true; poll(); input = context.consume();
+    valid &= check(!input.valid && input.cancelPressed, "axis failure swallowed cancel");
+    raw.redClicked = false; raw.redHeld = true; raw.redHoldStarted = true; poll();
+    input = context.consume();
+    valid &= check(!input.valid && input.pausePressed, "axis failure swallowed red hold");
+    context.changeScreen(RacerNavigationMode::None); context.presentScreen(); poll();
+    valid &= check(!context.consume().pausePressed, "held red crossed pause context");
+    raw.redHeld = raw.redHoldStarted = false; poll();
+    raw.axesValid = true; raw.redHeld = raw.redHoldStarted = true; poll();
+    input = context.consume();
+    valid &= check(input.valid && input.pausePressed && input.brakeHeld,
+                   "fresh healthy red hold no longer supports resume/brake");
+
+    // Exit remains available before first presentation and across transitions.
+    context.changeScreen(RacerNavigationMode::None);
+    raw.blueHeld = raw.chordStarted = true; poll();
+    context.changeScreen(RacerNavigationMode::Garage);
+    input = context.consume();
+    valid &= check(input.exitPressed && !input.pausePressed && !input.confirmPressed,
+                   "screen change discarded emergency exit or leaked another action");
+    valid &= check(!context.consume().exitPressed, "emergency exit replayed");
+    poll(); context.reset();
+    valid &= check(!context.consume().exitPressed, "close/open kept exit");
+
+    raw = {}; raw.axesValid = raw.actionsValid = true;
+    raw.steer = -.75f; raw.blueHeld = true; poll(); input = context.consume();
+    valid &= check(input.valid && input.steer == -.75f && input.boostHeld,
+                   "screen gate blocked continuous driving");
+    if (valid) std::cout << "External screen input: presentation, release, same-mode transitions, slow frames, results, axis loss, pause and exit passed\n";
+    return valid;
+}
 }  // namespace
 
 int main()
 {
     return validateMapping() && validateMenuRepeater() && validateLongChord() &&
-           validateSlowFrameInput() && validateMenuEventBuffer() ? 0 : 1;
+           validateSlowFrameInput() && validateMenuEventBuffer() && validateScreenInput() ? 0 : 1;
 }

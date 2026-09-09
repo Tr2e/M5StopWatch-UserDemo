@@ -45,6 +45,13 @@ bool validateResultActions()
                    "exit action failed");
     selection.move(1);
     valid &= check(selection.cursor() == ResultAction::Retry, "result menu did not wrap");
+    selection.select(ResultAction::Exit);
+    selection.select(ResultAction::Count);
+    valid &= check(selection.cursor()==ResultAction::Exit,"invalid direct selection changed action");
+    selection.select(ResultAction::Garage);
+    GameFlow tapped=resultsFlow();
+    valid &= check(selection.activate(tapped)&&tapped.screen()==GameScreen::CarSelect,
+                   "direct row selection executed the previous cursor");
     return valid;
 }
 

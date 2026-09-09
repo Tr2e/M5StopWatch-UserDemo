@@ -1,0 +1,30 @@
+{
+  "baseline": "/tmp/racer-r27-home-final",
+  "current": "/tmp/racer-r27-static",
+  "changed": [
+    "showcase-0.ppm",
+    "showcase-1.ppm",
+    "showcase-2.ppm",
+    "showcase-3.ppm",
+    "showcase-4.ppm",
+    "showcase-5.ppm",
+    "showcase-6.ppm",
+    "showcase-7.ppm",
+    "showcase.ppm",
+    "turn-0.ppm",
+    "turn-100.ppm",
+    "turn-175.ppm",
+    "turn-250.ppm",
+    "turn-50.ppm",
+    "view-0-0.ppm",
+    "view-1-0.ppm",
+    "view-2-0.ppm",
+    "view-3-0.ppm",
+    "view-4-0.ppm",
+    "view-5-0.ppm",
+    "view-6-0.ppm",
+    "view-7-0.ppm"
+  ],
+  "unchanged_count": 222,
+  "new": []
+}

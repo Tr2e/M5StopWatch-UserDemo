@@ -52,6 +52,7 @@ public:
     virtual RacerInputStatus status(uint32_t nowMs) const = 0;
     virtual void requestCalibration(uint32_t nowMs) = 0;
     virtual void setNavigationMode(RacerNavigationMode) {}
+    virtual void presentScreen() {}
     virtual void close() = 0;
 };
 

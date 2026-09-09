@@ -17,6 +17,7 @@ class ResultsSelection {
 public:
     void reset() { _cursor = ResultAction::Retry; }
     void move(int direction);
+    void select(ResultAction action) { if(action<ResultAction::Count)_cursor=action; }
     ResultAction cursor() const { return _cursor; }
     bool activate(GameFlow& flow) const;
 

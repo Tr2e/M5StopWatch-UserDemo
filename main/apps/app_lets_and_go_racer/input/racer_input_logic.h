@@ -168,6 +168,45 @@ private:
     bool _armed = false;
 };
 
+// Production hardware input context. Screen changes discard ordinary queued
+// actions but retain exit. A new gesture starts only after presentation and
+// release/centre; continuous driving and independent emergency exit stay live.
+class RacerScreenInput {
+public:
+    void changeScreen(RacerNavigationMode mode) {
+        const bool exit = _mailbox.consume().exitPressed;
+        _mailbox.reset();
+        RacerInput pending;
+        pending.exitPressed = exit;
+        _mailbox.publish(pending);
+        _menu.setMode(mode);
+        _menu.resetGesture(); // Rival and course pages share Horizontal mode.
+        _presented = _buttonsArmed = false;
+    }
+    void presentScreen() { _presented = true; }
+    void publish(const RawRacerInput& raw, uint32_t sequence, uint32_t nowMs) {
+        auto input = mapRacerInput(raw, sequence);
+        if (!_presented || !_buttonsArmed || !raw.actionsValid) {
+            input.confirmPressed = input.cancelPressed = input.pausePressed = false;
+            // Discard the release edge which arms the next gesture.
+            _buttonsArmed = _presented && raw.actionsValid && !raw.redHeld && !raw.blueHeld;
+        }
+        if (_presented) {
+            const auto step = _menu.update(input, nowMs);
+            input.navigationStep = step.car;
+            input.viewStep = step.view;
+        }
+        _mailbox.publish(input);
+    }
+    RacerInput consume() { return _mailbox.consume(); }
+    void reset() { *this = {}; }
+private:
+    RacerInputMailbox _mailbox;
+    RacerMenuEvents _menu;
+    bool _presented = false;
+    bool _buttonsArmed = false;
+};
+
 class LongChordDetector {
 public:
     bool update(bool firstHeld, bool secondHeld, uint32_t nowMs,

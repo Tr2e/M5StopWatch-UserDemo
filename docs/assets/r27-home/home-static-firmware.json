@@ -1,0 +1,10 @@
+{
+  "version": "r27-home-static",
+  "bytes": 4926384,
+  "sha256": "3ece3efe2b72f821ecfb4141c49d214df2314aa53cbd8604d148525e202a249c",
+  "scope": "Remove CarSelect idle yaw sway and CarShowcase vibration/wind lines; settle final transition frame before stopping idle redraw",
+  "baseline_commit": "c26e02b",
+  "app_flash": "Hash of data verified; RTS reset; Done",
+  "device": "/dev/cu.usbmodem83401",
+  "device_visual_acceptance": "pending user feedback"
+}

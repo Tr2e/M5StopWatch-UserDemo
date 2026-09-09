@@ -1,0 +1,8 @@
+{
+  "version": "r27-home-1",
+  "bytes": 4926560,
+  "sha256": "1047930abe55aaf1060719afec5a0da1014b2294d01317ddd334dc74ac576492",
+  "scope": "InputCheck/InputCalibration/CarSelect UI and matching home touch targets",
+  "baseline_commit": "c26e02b",
+  "app_flash": "Hash of data verified; RTS reset; Done"
+}

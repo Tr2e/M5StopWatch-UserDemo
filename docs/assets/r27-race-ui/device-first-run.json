@@ -1,0 +1,279 @@
+{
+  "method": "All RACING summaries; first window may include countdown. Independent stage samples are bounded by first/last RACING timestamps. No causal before/after FPS comparison: different player and unsynchronized race positions.",
+  "configuration": {
+    "cars": [
+      3
+    ],
+    "player_car": [
+      0
+    ],
+    "track_id": [
+      0
+    ],
+    "scene_width": [
+      234
+    ],
+    "player_native": [
+      "true"
+    ]
+  },
+  "audio": {
+    "race_music": true,
+    "sfx_enabled": true,
+    "stream_open": true
+  },
+  "perf": {
+    "fps_x10": {
+      "n": 14,
+      "min": 54,
+      "median": 64.0,
+      "max": 71
+    },
+    "draw_us": {
+      "n": 14,
+      "min": 104666,
+      "median": 120578.5,
+      "max": 151304
+    },
+    "present_us": {
+      "n": 14,
+      "min": 32096,
+      "median": 32150.0,
+      "max": 32193
+    },
+    "peak_us": {
+      "n": 14,
+      "min": 145281,
+      "median": 163269.5,
+      "max": 208969
+    }
+  },
+  "hud": {
+    "map_us": {
+      "n": 13,
+      "min": 1383,
+      "median": 1443,
+      "max": 1787
+    },
+    "total_us": {
+      "n": 13,
+      "min": 3352,
+      "median": 3546,
+      "max": 3812
+    }
+  },
+  "stages": {
+    "cars_us": {
+      "n": 13,
+      "min": 57969,
+      "median": 71129,
+      "max": 110910
+    },
+    "player_us": {
+      "n": 13,
+      "min": 33964,
+      "median": 34880,
+      "max": 41821
+    },
+    "opponents_us": {
+      "n": 13,
+      "min": 21140,
+      "median": 36479,
+      "max": 68634
+    }
+  },
+  "submitted": {
+    "3": 11,
+    "2": 2
+  },
+  "results_reached": true,
+  "errors": [],
+  "visual_acceptance": "User reports run complete; no explicit feedback yet on text clearance/countdown centering/results buttons",
+  "windows": [
+    {
+      "time_ms": 1788940989262,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 13,
+      "fps_x10": 60,
+      "draw_us": 130340,
+      "present_us": 32173,
+      "peak_us": 175339,
+      "input_total_us": 1254,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788940991372,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 14,
+      "fps_x10": 66,
+      "draw_us": 116361,
+      "present_us": 32160,
+      "peak_us": 157319,
+      "input_total_us": 1382,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788940993501,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 14,
+      "fps_x10": 66,
+      "draw_us": 117767,
+      "present_us": 32118,
+      "peak_us": 160289,
+      "input_total_us": 1399,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788940995510,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 13,
+      "fps_x10": 64,
+      "draw_us": 120161,
+      "present_us": 32140,
+      "peak_us": 159579,
+      "input_total_us": 1270,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788940997552,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 13,
+      "fps_x10": 63,
+      "draw_us": 122628,
+      "present_us": 32122,
+      "peak_us": 164271,
+      "input_total_us": 1255,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788940999571,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 12,
+      "fps_x10": 59,
+      "draw_us": 133731,
+      "present_us": 32108,
+      "peak_us": 177384,
+      "input_total_us": 1262,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941001703,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 14,
+      "fps_x10": 65,
+      "draw_us": 117867,
+      "present_us": 32163,
+      "peak_us": 162268,
+      "input_total_us": 1394,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941003789,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 13,
+      "fps_x10": 62,
+      "draw_us": 126024,
+      "present_us": 32110,
+      "peak_us": 175469,
+      "input_total_us": 1315,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941005809,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 13,
+      "fps_x10": 64,
+      "draw_us": 120996,
+      "present_us": 32096,
+      "peak_us": 164411,
+      "input_total_us": 1280,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941008039,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 12,
+      "fps_x10": 54,
+      "draw_us": 151304,
+      "present_us": 32193,
+      "peak_us": 208969,
+      "input_total_us": 1207,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941010089,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 13,
+      "fps_x10": 63,
+      "draw_us": 122982,
+      "present_us": 32172,
+      "peak_us": 206956,
+      "input_total_us": 1342,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941012110,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 14,
+      "fps_x10": 67,
+      "draw_us": 110039,
+      "present_us": 32140,
+      "peak_us": 154160,
+      "input_total_us": 1413,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941014198,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 15,
+      "fps_x10": 71,
+      "draw_us": 104666,
+      "present_us": 32174,
+      "peak_us": 145281,
+      "input_total_us": 1483,
+      "detail": "low"
+    },
+    {
+      "time_ms": 1788941016244,
+      "kind": "RacerPerf",
+      "screen": "RACING",
+      "source": "device",
+      "frames": 14,
+      "fps_x10": 68,
+      "draw_us": 111708,
+      "present_us": 32171,
+      "peak_us": 158616,
+      "input_total_us": 1460,
+      "detail": "low"
+    }
+  ],
+  "audio_log_lines": [
+    "] [1788940954367] [info] [RacerAudio] race_music=true sfx_enabled=true stream_open=true"
+  ]
+}

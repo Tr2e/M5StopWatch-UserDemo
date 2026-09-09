@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <cstring>
+#include <limits>
 
 using namespace lets_and_go;
 
@@ -446,7 +447,7 @@ int main(int argc, char** argv)
             // Neo's official smooth caps/dishes have no spokes; their perfectly
             // rotationally symmetric surface has no visible phase difference.
             const bool hasSpokes=id!=CarId::NeoTridaggerZmc && id!=CarId::BeakSpider;
-            if(moves!=(preset==0 || (preset==1 && hasSpokes)) ||
+            if(moves!=(preset==1 && hasSpokes) ||
                (preset!=1 && motion.state(start+500).wheelPhase!=motion.state(start+680).wheelPhase)) {
                 std::cerr << "Garage wheels must move ONLY in side view\n";valid=false;
             }
@@ -467,6 +468,11 @@ int main(int argc, char** argv)
                 garage.render(previewFlow,selection,time,quality);
                 checkText();
             }
+        }
+        const auto settledShowcase=canvas.frame();
+        garage.render(previewFlow,selection,777u,PencilDetail::High);
+        if(settledShowcase!=canvas.frame()) {
+            std::cerr<<"Settled showcase must have no vibration or wind lines\n";valid=false;
         }
         uint64_t hash=1469598103934665603ULL;
         for(auto pixel:canvas.frame())hash=(hash^pixel)*1099511628211ULL;
@@ -665,7 +671,7 @@ int main(int argc, char** argv)
                 if(a.value!=b.value || a.x!=b.x || a.y!=b.y || a.size!=b.size)valid=false;
             }
             // Interior strips avoid rounded transparent corners of HUD cards.
-            for(auto rect:{std::array<int,4>{119,36,346,73},{128,384,345,426},{103,85,247,122}})
+            for(auto rect:{std::array<int,4>{119,36,346,73},{128,82,284,113}})
                 for(int y=rect[1];y<rect[3];++y)for(int x=rect[0];x<rect[2];++x)
                     if(native[y*466+x]!=canvas.frame()[y*466+x])valid=false;
             if(sample%6==0)save("half-"+std::to_string(int(track))+"-"+std::to_string(sample));
@@ -728,7 +734,161 @@ int main(int argc, char** argv)
     // Race materials/cache variant: all eight identities as player and near
     // opponent, both courses, solo/roster/detail changes, and close/re-entry.
     canvas.createSprite(468,466);
+    // Home UI evidence at the actual device width, including input faults and
+    // invalid calibration progress; all existing race captures remain below.
+    {
+        GameFlow hudFlow;hudFlow.useDeviceControls();hudFlow.confirmPlayerCar();hudFlow.completeCarShowcase();
+        hudFlow.toggleRival(CarId::HurricaneSonic);hudFlow.confirmRivals();hudFlow.confirmTrack();
+        RaceController hudRace;hudRace.prepare(hudFlow.setup(),42);
+        RaceRenderer hud;hud.open(468,466,true,true,true);
+        ResultsSelection actions;
+        hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);save("ui-grid-native");
+        hudFlow.completeGridIntro();
+        for(uint32_t elapsed:{0u,1000u,2000u}) {
+            hud.render(hudFlow,hudRace,actions,elapsed,false,PencilDetail::Low,true);
+            save("ui-countdown-"+std::to_string(3-elapsed/1000));
+            int left=468,right=-1,top=466,bottom=-1;
+            for(int y=193;y<=273;++y)for(int x=202;x<=266;++x)
+                if(canvas.frame()[y*468+x]==0xf7be) {
+                    left=std::min(left,x);right=std::max(right,x);
+                    top=std::min(top,y);bottom=std::max(bottom,y);
+                }
+            if(right<left || left+right!=468 || top+bottom!=466) {
+                std::cerr<<"Countdown visible digit is not centred on the device\n";valid=false;
+            }
+        }
+        hudFlow.completeCountdown();
+        for(unsigned car=0;car<kCarCount;++car) {
+            auto setup=hudFlow.setup();setup.playerCar=CarId(car);setup.rivalMask=0;
+            hudRace.prepare(setup,42);
+            auto& state=const_cast<RaceSnapshot&>(hudRace.snapshot());
+            state.cars[state.playerIndex].motion.distance=12;
+            // Half-scene blits replace pixels without clearing host text metadata.
+            canvas.texts.clear();
+            hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);
+            for(const auto& t:canvas.texts)if(t.y+4*t.size>115) {
+                std::cerr<<"Persistent race text entered the driving area\n";valid=false;
+            }
+            save("ui-racing-native-"+std::to_string(car));
+        }
+        hudFlow.togglePause();
+        hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);save("ui-paused-native");
+        hudFlow.togglePause();hudFlow.finishRace();
+        hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);save("ui-finish-native");
+        hudFlow.showResults();
+        hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);save("ui-results-solo-native");
+        auto completed=hudFlow.setup();completed.playerCar=CarId::HurricaneSonic;
+        completed.rivalMask=carMask(CarId::CycloneMagnum)|carMask(CarId::NeoTridaggerZmc);
+        hudRace.prepare(completed,42);
+        auto& finished=const_cast<RaceSnapshot&>(hudRace.snapshot());
+        auto& finisher=finished.cars[finished.playerIndex];
+        finisher.finished=true;finisher.finishSeconds=27.532f;finisher.bestLapSeconds=8.301f;
+        finisher.position=2;finisher.completedLaps=3;finished.playerFinished=true;
+        for(int action=0;action<3;++action) {
+            actions.select(ResultAction(action));
+            hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);
+            save("ui-results-native-"+std::to_string(action));
+        }
+        hud.close();
+    }
+    {
+        GarageRenderer home;home.open(468,466);
+        GameFlow entry;GarageSelection chosen;RacerInputStatus input;
+        input.actionsConfigured=true;
+        home.render(entry,chosen,0,PencilDetail::High,input);
+        save("home-waiting-native");
+        input.readiness=RacerInputReadiness::Fault;
+        home.render(entry,chosen,0,PencilDetail::Low,input);
+        save("home-fault-native");
+        entry.confirmInputAvailable();input.axesConnected=true;
+        input.readiness=RacerInputReadiness::Calibrating;
+        input.calibrationProgress=.6f;
+        home.render(entry,chosen,0,PencilDetail::High,input);
+        save("home-calibration-native");
+        input.calibrationProgress=std::numeric_limits<float>::quiet_NaN();
+        home.render(entry,chosen,0,PencilDetail::Low,input);
+        save("home-calibration-invalid-native");
+        entry.useDeviceControls();
+        for(unsigned car=0;car<kCarCount;++car) {
+            chosen.reset(CarId(car));
+            home.render(entry,chosen,0,PencilDetail::High,{}, {},true);
+            save("home-machine-native-"+std::to_string(car));
+        }
+        GameFlow setup;GarageSelection rivals;
+        setup.useDeviceControls();setup.selectPlayerCar(CarId::HurricaneSonic);
+        setup.confirmPlayerCar();rivals.reset(CarId::HurricaneSonic);
+        home.render(setup,rivals,900,PencilDetail::High,{}, {},true);save("setup-confirm-native");
+        setup.completeCarShowcase();
+        home.render(setup,rivals,0,PencilDetail::High,{}, {},true);save("setup-rivals-empty-native");
+        setup.toggleRival(CarId::CycloneMagnum);
+        home.render(setup,rivals,0,PencilDetail::High,{}, {},true);save("setup-rivals-one-native");
+        setup.toggleRival(CarId::NeoTridaggerZmc);
+        home.render(setup,rivals,0,PencilDetail::High,{}, {},true);save("setup-rivals-full-selected-native");
+        rivals.moveRival(1,setup.setup().playerCar);rivals.moveRival(1,setup.setup().playerCar);
+        home.render(setup,rivals,0,PencilDetail::High,{}, {},true);save("setup-rivals-full-unselected-native");
+        while(!rivals.rivalCursorIsDone())rivals.moveRival(1,setup.setup().playerCar);
+        home.render(setup,rivals,0,PencilDetail::High,{}, {},true);save("setup-rivals-ready-native");
+        setup.toggleRival(CarId::CycloneMagnum);setup.toggleRival(CarId::NeoTridaggerZmc);
+        home.render(setup,rivals,0,PencilDetail::High,{}, {},true);save("setup-rivals-solo-native");
+        setup.confirmRivals();
+        for(auto track:{TrackId::SkyLoop,TrackId::TriCross}) {
+            setup.selectTrack(track);
+            home.render(setup,rivals,0,PencilDetail::High,{}, {},true);
+            save("setup-course-native-"+std::to_string(int(track)));
+        }
+        for(unsigned car=0;car<kCarCount;++car) {
+            GameFlow roster;GarageSelection cursor;
+            const auto player=CarId((car+1)%kCarCount);
+            roster.useDeviceControls();roster.selectPlayerCar(player);roster.confirmPlayerCar();
+            roster.completeCarShowcase();cursor.reset(player);
+            while(cursor.rivalCursorCar()!=CarId(car) || cursor.rivalCursorIsDone())cursor.moveRival(1,player);
+            home.render(roster,cursor,0,PencilDetail::High,{}, {},true);
+            save("setup-rival-machine-"+std::to_string(car));
+        }
+        home.close();
+    }
     RaceRenderer cached,original,hero,wire;
+    // The new touch UI must still expose a complete external-only path.
+    {
+        GarageRenderer menu; menu.open(468,466);
+        RaceRenderer racing; racing.open(468,466,true,true,true);
+        GameFlow external; GarageSelection cursor; ResultsSelection result;
+        cursor.reset(); // Match App::onOpen; the player is not a rival candidate.
+        const auto requireText = [&](const char* expected) {
+            for (const auto& text : canvas.texts) if (text.value == expected) return;
+            std::cerr << "Missing external control hint: " << expected << '\n'; valid=false;
+        };
+        external.confirmInputAvailable(); external.completeCalibration(true);
+        menu.render(external,cursor,0,PencilDetail::High,{}, {},false);
+        requireText("BLUE: SELECT"); save("external-machine-native");
+        cursor.activatePlayer(external); external.completeCarShowcase();
+        menu.render(external,cursor,0,PencilDetail::High,{}, {},false);
+        requireText("L/R / BLUE SELECT"); requireText("READY >");
+        save("external-rival-native");
+        for(std::size_t i=0;i<kCarCount && !cursor.rivalCursorIsDone();++i)
+            cursor.moveRival(1,external.setup().playerCar);
+        menu.render(external,cursor,0,PencilDetail::High,{}, {},false);
+        requireText("SOLO RUN"); requireText("BLUE: NEXT"); save("external-ready-native");
+        cursor.activateRival(external);
+        menu.render(external,cursor,0,PencilDetail::High,{}, {},false);
+        requireText("START RACE"); requireText("L/R COURSE / BLUE GO"); save("external-course-native");
+        external.confirmTrack();
+        RaceController run; run.prepare(external.setup(),42);
+        canvas.texts.clear(); racing.render(external,run,result,0,false,PencilDetail::Low,false);
+        requireText("RED BRAKE / BLUE BOOST"); requireText("JOYSTICK STEER / HOLD RED PAUSE");
+        save("external-grid-native");
+        external.completeGridIntro(); external.completeCountdown(); external.togglePause();
+        canvas.texts.clear(); racing.render(external,run,result,0,true,PencilDetail::Low,false);
+        requireText("HOLD RED WHEN INPUT READY"); save("external-paused-native");
+        external.togglePause(); external.finishRace(); external.showResults();
+        for(int action=0;action<int(ResultAction::Count);++action) {
+            result.select(ResultAction(action));
+            canvas.texts.clear(); racing.render(external,run,result,0,false,PencilDetail::Low,false);
+            requireText("L/R / BLUE SELECT"); requireText("RETRY"); requireText("GARAGE"); requireText("EXIT");
+            save("external-results-native-"+std::to_string(action));
+        }
+        menu.close(); racing.close();
+    }
     cached.open(468,466,true,true);original.open(468,466,true);
     hero.open(468,466,true,true,true);
     wire.open(468,466,true,true,true,true);

@@ -11,6 +11,8 @@ int main()
     GarageViewController motion;motion.reset(CarId::CycloneMagnum,0);
     assert(near(motion.state(1000).wheelPhase,0));
     const float idleYaw=motion.state(1000).yaw;
+    assert(near(idleYaw,motion.state(9000).yaw));
+    assert(!motion.animating(1000));
     motion.changeView(1,1000);
     assert(motion.state(1000).preset==GarageView::Side && near(motion.state(1000).yaw,idleYaw));
     assert(near(motion.state(1349).wheelPhase,0));
@@ -26,6 +28,11 @@ int main()
     assert(near(motion.state(2350).wheelPhase,frozen) && near(motion.state(9000).wheelPhase,frozen));
     motion.changeView(1,2400);motion.changeView(1,2800);
     assert(motion.state(3150).preset==GarageView::Front);
+    assert(motion.animating(3149) && !motion.animating(3150));
+    assert(near(motion.state(3150).yaw,motion.state(9000).yaw));
+    motion.selectCar(CarId::CycloneMagnum,3200);
+    assert(motion.animating(3200));
+    assert(!motion.animating(3550));
     // Rapid direction changes preserve the actual intermediate pose.
     motion.changeView(-1,3300);
     const auto middle=motion.state(3475);

@@ -1,0 +1,16 @@
+{
+  "version": "r27-no-race-music",
+  "bytes": 4926720,
+  "sha256": "3b2ad181c94523e28966e72d5826db8518fc684e0ec5b5f4e46dffe84f75d233",
+  "scope": "MusicScene::Off while Racing; SFX and menu/results music retained; HAL stream unchanged",
+  "baseline": "R26 v15 Sonic/SkyLoop: three cars median 6.6 FPS; two cars median 7.4 FPS",
+  "comparison_limits": [
+    "Manual driving and AI positions are not synchronized",
+    "Baseline has race music enabled in code and sfx=true in device settings"
+  ],
+  "device_test": "One completed Sonic/SkyLoop three-car race; race_music=false, sfx_enabled=true, stream_open=true confirmed. FPS median 7.35 vs baseline 6.6; opponent submission counts differ substantially, so no isolated music benefit established.",
+  "app_flash": "Hash of data verified; RTS reset; Done",
+  "serial_log": "/tmp/racer-device-no-race-music.log",
+  "archived_log": "no-race-music-device.log",
+  "comparison": "no-race-music-observed-comparison.json"
+}

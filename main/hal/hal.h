@@ -182,6 +182,7 @@ public:
         int num = 0;
         int x   = -1;
         int y   = -1;
+        bool valid = false; // A failed read is not a confirmed finger release.
     };
     TouchPoint getTouchPoint();
 
