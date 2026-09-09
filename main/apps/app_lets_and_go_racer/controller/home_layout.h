@@ -12,7 +12,11 @@ struct Rect {
 };
 // Shared by the native 466/468-wide home rendering and the touch input worker.
 inline constexpr Rect deviceAction{91,218,284,60};
-inline constexpr Rect viewAction{138,84,192,24};
+inline constexpr Rect viewAction{94,88,168,24};
+inline constexpr Rect inspectAction{270,88,104,24};
+inline constexpr Rect inspectReset{141,394,184,40};
+inline constexpr Rect inspectOrbit{64,110,340,260};
+inline constexpr Rect carOrbit{64,120,340,220};
 inline constexpr Rect carSelect{155,407,156,30};
 inline constexpr Rect setupBack{95,54,42,32};
 inline constexpr Rect rivalToggle{155,348,156,32};

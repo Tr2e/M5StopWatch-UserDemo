@@ -23,6 +23,8 @@ int main() {
             }
     };
     visibleTarget(GameScreen::CarSelect,home_layout::viewAction,TouchAction::View);
+    visibleTarget(GameScreen::CarSelect,home_layout::inspectAction,TouchAction::Inspect);
+    visibleTarget(GameScreen::CarInspect,home_layout::inspectReset,TouchAction::Confirm);
     visibleTarget(GameScreen::CarSelect,home_layout::carSelect,TouchAction::Confirm);
     visibleTarget(GameScreen::RivalSelect,home_layout::rivalToggle,TouchAction::Confirm);
     visibleTarget(GameScreen::RivalSelect,home_layout::setupNext,TouchAction::Advance);
@@ -97,6 +99,30 @@ int main() {
     input=controls.consume(true).input;
     check(input.exitPressed&&!input.confirmPressed&&!input.pausePressed&&!input.boostHeld,"exit chord leaked action");
     check(!controls.consume(true).input.exitPressed,"exit replayed");
+    controls.reset();show(GameScreen::CarSelect);
+    check(tap(320,96).inspect,"inspection entry missing");
+    check(!controls.consume(true).inspect,"inspection entry replayed");
+    show(GameScreen::CarInspect);
+    controls.touch(true,233,350);controls.touch(true,250,350);controls.touch(false,0,0);
+    check(controls.consume(true).preview.changed,"inspection touch orbit missing");
+    check(tap(233,414).input.confirmPressed,"inspection reset missing");
+    check(tap(116,70).input.cancelPressed,"inspection back missing");
+    show(GameScreen::CarSelect);
+    check(!tap(233,240).preview.changed,"stationary tap started orbit");
+    controls.touch(true,233,240);controls.touch(true,263,210);
+    auto drag=controls.consume(true);
+    check(drag.preview.active && drag.preview.changed && drag.preview.dx==30 && drag.preview.dy==-30,"orbit delta missing");
+    controls.touch(true,233,416);controls.touch(false,0,0);
+    drag=controls.consume(true);
+    check(!drag.preview.active && drag.preview.changed && !drag.input.confirmPressed,"orbit release activated button");
+    controls.touch(true,233,240);controls.touch(true,250,240);controls.consume(true);
+    controls.invalidateTouch();drag=controls.consume(true);
+    check(!drag.preview.active && drag.preview.changed,"invalid touch left orbit held");
+    controls.touch(false,0,0);
+    controls.reset();
+    controls.setScreen(GameScreen::CarSelect);
+    controls.touch(true,233,240);controls.touch(true,280,240);
+    check(!controls.consume(true).preview.active,"orbit bypassed presentation gate");
     controls.reset();show(GameScreen::Results);
     for(int i=0;i<3;++i) {
         const auto row=race_ui_layout::resultRow(i);

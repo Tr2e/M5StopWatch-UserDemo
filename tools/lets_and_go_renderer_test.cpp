@@ -443,6 +443,67 @@ int main(int argc, char** argv)
         buildCarDisplayMesh(id,*framingMesh,quality==PencilDetail::High ? CarSurfaceDetail::High :
                             quality==PencilDetail::Medium ? CarSurfaceDetail::Medium : CarSurfaceDetail::Low);
         GarageViewController motion;motion.reset(id,0);
+        if(quality==PencilDetail::High) {
+            if(!flow.inspectCar())return 1;
+            for(int azimuth=0;azimuth<16;++azimuth)for(int elevation=0;elevation<5;++elevation) {
+                GarageViewState pose{};
+                pose.yaw=azimuth*6.2831853f/16;pose.pitch=.12f+elevation*1.4507963f/4;
+                pose.scale=inspectionScale(carSpec(id),*framingMesh,pose.yaw,pose.pitch);
+                TrackCamera camera{};camera.principalX=234;camera.principalY=245;camera.focalLength=pose.scale*5.8f;
+                const GarageCarTransform transform(carSpec(id),pose.yaw,pose.pitch,0);
+                for(std::size_t panel=0;panel<framingMesh->count;++panel)for(auto vertex:framingMesh->panels[panel].point) {
+                    TrackScreenPoint point{};
+                    if(!projectTrackPoint(camera,transform(vertex,framingMesh->panels[panel].wheel),point) ||
+                        point.x<69 || point.x>399 || point.y<110 || point.y>360) {
+                        std::cerr<<"Inspection fit failed car="<<car<<'\n';return 1;
+                    }
+                }
+                if(azimuth==2 && elevation==2) {
+                    garage.render(flow,selection,1000,PencilDetail::Low,{},pose);
+                    const auto lowRequest=canvas.frame();
+                    garage.render(flow,selection,1000,PencilDetail::High,{},pose);
+                    if(lowRequest!=canvas.frame()) {std::cerr<<"Inspection detail downgraded\n";return 1;}
+                    save("inspection-"+std::to_string(car));
+                }
+            }
+            if(!flow.back() || flow.screen()!=GameScreen::CarSelect)return 1;
+        }
+        // Exercise arbitrary touch poses and the entire return path against
+        // production mesh vertices, not a separate bounding-box approximation.
+        for(int preset=0;preset<4;++preset) for(int azimuth=0;azimuth<16;++azimuth)
+        for(int elevation=0;elevation<5;++elevation) {
+            motion.reset(id,0);
+            for(int p=0;p<preset;++p)motion.changeView(1,p*500);
+            const auto home=motion.state(2000);
+            const int dx=std::lround((azimuth*6.2831853f/16-home.yaw)/.012f);
+            const int dy=std::lround((home.pitch-(.12f+elevation*1.4507963f/4))/.008f);
+            motion.drag({1,dx,dy,true,true},2000);
+            if(car==0 && quality==PencilDetail::High && preset==0 && elevation==2 && azimuth%4==0) {
+                garage.render(flow,selection,2000,quality,{},motion.state(2000));
+                save("drag-"+std::to_string(azimuth));
+            }
+            motion.endDrag(2000);
+            for(uint32_t elapsed:{0u,50u,100u,175u,250u,350u}) {
+                const auto pose=motion.state(2000+elapsed);
+                TrackCamera camera{};camera.principalX=233;
+                camera.principalY=std::lround(pose.centerY);camera.focalLength=pose.scale*5.8f;
+                const GarageCarTransform transform(carSpec(id),pose.yaw,pose.pitch,pose.wheelPhase);
+                for(std::size_t panel=0;panel<framingMesh->count;++panel) {
+                    const auto& face=framingMesh->panels[panel];
+                    for(auto point:face.point) {
+                        TrackScreenPoint screen{};
+                        if(!projectTrackPoint(camera,transform(point,face.wheel),screen) ||
+                           screen.x<57 || screen.x>408 ||
+                           screen.y<camera.principalY-162 || screen.y>camera.principalY+125 ||
+                           screen.y<109 || screen.y>354 || std::hypot(screen.x-233,screen.y-233)>220) {
+                            std::cerr<<"Drag framing failed car="<<car<<" preset="<<preset<<" azimuth="<<azimuth<<" elevation="<<elevation<<" elapsed="<<elapsed<<'\n';
+                            return 1;
+                        }
+                    }
+                }
+            }
+        }
+        motion.reset(id,0);
         for(unsigned transition=0;transition<9;++transition) {
             const uint32_t start=transition*1000;
             if(transition)motion.changeView(transition<=4 ? 1 : -1,start);

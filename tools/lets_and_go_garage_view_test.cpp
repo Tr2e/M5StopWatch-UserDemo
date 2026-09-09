@@ -1,4 +1,5 @@
 #include "../main/apps/app_lets_and_go_racer/controller/garage_view_controller.h"
+#include "../main/apps/app_lets_and_go_racer/controller/car_inspection_controller.h"
 #include "../main/apps/app_lets_and_go_racer/input/racer_input_logic.h"
 #include <cassert>
 #include <iostream>
@@ -65,7 +66,44 @@ int main()
         }
     }
 
+    for(int preset=0;preset<4;++preset) {
+        motion.reset(CarId::CycloneMagnum,0);
+        for(int i=0;i<preset;++i)motion.changeView(1,i*500);
+        const auto home=motion.state(2000);
+        motion.drag({1,200,1000,true,true},2000);
+        assert(motion.dragging() && near(motion.state(2000).pitch,.12f));
+        motion.drag({1,400,-1000,true,true},2100);
+        const auto held=motion.state(2100);
+        assert(near(held.pitch,1.5707963f));
+        assert(near(held.wheelPhase,motion.state(2500).wheelPhase));
+        motion.drag({1,400,-1000,false,true},2600);
+        const auto released=motion.state(2600);
+        assert(!motion.dragging() && near(held.yaw,released.yaw));
+        assert(near(held.scale,released.scale));
+        const auto restored=motion.state(2950);
+        assert(near(std::remainder(restored.yaw-home.yaw,6.2831853f),0));
+        assert(near(restored.pitch,home.pitch) && near(restored.scale,home.scale));
+        motion.drag({2,-100,10,true,true},3000);
+        motion.changeView(1,3100);
+        motion.drag({2,200,10,true,true},3200);
+        assert(!motion.dragging());
+    }
+
     GarageMenuNavigation nav;
+    CarInspectionController inspection;
+    inspection.reset();
+    const auto initial=inspection.state();
+    inspection.drag({1,40,-200,true,true});
+    assert(!inspection.turn(1,1));
+    inspection.drag({1,40,-200,false,true});
+    const auto held=inspection.state();
+    assert(near(held.pitch,1.5707963f) && !near(held.yaw,initial.yaw));
+    assert(inspection.turn(1,1) && inspection.state().pitch<held.pitch);
+    for(int i=0;i<100;++i)inspection.turn(1,1);
+    assert(near(inspection.state().pitch,.12f) && std::abs(inspection.state().yaw)<=3.141593f);
+    inspection.reset();assert(near(inspection.state().yaw,initial.yaw));
+    inspection.drag({1,60,0,true,true}); // Reset cancels the still-held gesture.
+    assert(near(inspection.state().yaw,initial.yaw));
     auto step=nav.update(.9f,.8f,100);assert(step.car==1 && step.view==0);
     step=nav.update(.7f,1.f,460);assert(step.car==1 && step.view==0);
     step=nav.update(0,1.f,500);assert(step.car==0 && step.view==0);

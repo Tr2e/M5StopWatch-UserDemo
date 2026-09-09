@@ -3,7 +3,7 @@
 #include "../controller/race_ui_layout.h"
 
 namespace lets_and_go {
-enum class TouchAction { None,Confirm,Back,Previous,Next,View,Advance,Retry,Garage,Exit,Resume };
+enum class TouchAction { None,Confirm,Back,Previous,Next,View,Advance,Retry,Garage,Exit,Resume,Inspect };
 inline const char* touchActionLabel(TouchAction action) {
     switch(action) {
         case TouchAction::Confirm:return "confirm";
@@ -16,6 +16,7 @@ inline const char* touchActionLabel(TouchAction action) {
         case TouchAction::Garage:return "garage";
         case TouchAction::Exit:return "exit";
         case TouchAction::Resume:return "resume";
+        case TouchAction::Inspect:return "inspect";
         default:return "none";
     }
 }
@@ -33,10 +34,16 @@ inline TouchAction menuTouchTargetPass(GameScreen screen,int x,int y,bool expand
     }
     if(screen==GameScreen::Paused)
         return hit(Rect{100,185,266,81}) ? TouchAction::Resume : TouchAction::None;
+    if(screen==GameScreen::CarInspect) {
+        if(hit(setupBack))return TouchAction::Back;
+        if(hit(inspectReset))return TouchAction::Confirm;
+        return TouchAction::None;
+    }
     if(screen!=GameScreen::CarSelect && screen!=GameScreen::RivalSelect && screen!=GameScreen::TrackSelect)
         return TouchAction::None;
     if(hit(setupBack))return TouchAction::Back;
     if(screen==GameScreen::CarSelect) {
+        if(hit(inspectAction))return TouchAction::Inspect;
         if(hit(viewAction))return TouchAction::View;
         if(hit(carSelect))return TouchAction::Confirm;
     } else {

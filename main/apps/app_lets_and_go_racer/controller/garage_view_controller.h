@@ -8,6 +8,11 @@
 namespace lets_and_go {
 
 enum class GarageView : uint8_t { Front, Side, Rear, Top, Count };
+struct PreviewDrag {
+    uint32_t gesture=0;
+    int dx=0,dy=0;
+    bool active=false,changed=false;
+};
 struct GarageViewState {
     float yaw=-.65f,pitch=.5713375f,scale=140.f,centerY=252.f;
     float carSlide=0.f,carZoom=1.f;
@@ -33,6 +38,7 @@ public:
         _viewStarted=nowMs;_carStarted=nowMs;_viewMoving=false;_carMoving=false;
         _restWheelPhase=0;
         _wheelPresentedMs=nowMs;
+        _dragging=false;_dragId=0;
     }
     GarageViewState state(uint32_t nowMs) const {
         auto value=_to;
@@ -49,21 +55,47 @@ public:
             value.centerY=_from.centerY+(_to.centerY-_from.centerY)*ease;
         }
         value.preset=_view;
+        if (_dragging) {
+            value=_from;
+            value.preset=_view;
+            // Reserve room for every azimuth, including long diagonal bodies.
+            value.scale=std::min(value.scale,90.f);value.centerY=230.f;
+            value.carSlide=0;value.carZoom=1;
+        }
         value.wheelPhase=_restWheelPhase;
         // Start only after arriving at SIDE. Leaving SIDE freezes the current
         // phase rather than snapping the spokes back to their authored pose.
         const auto elapsed=uint32_t(nowMs-_viewStarted);
-        if(_view==GarageView::Side && elapsed>kTransitionMs)
+        if(!_dragging && _view==GarageView::Side && elapsed>kTransitionMs)
             value.wheelPhase=float(std::fmod(double(_restWheelPhase)+
                 std::min(.25, double(std::min(nowMs-_wheelPresentedMs,
                                              elapsed-kTransitionMs))*.0015),6.283185307));
-        if(_carMoving) {
+        if(_carMoving && !_dragging) {
             const float t=std::min(1.f,float(nowMs-_carStarted)/kTransitionMs);
             const float tail=(1.f-t)*(1.f-t)*(1.f-t);
             value.carSlide=24.f*_carDirection*tail;
             value.carZoom=1.f-.10f*tail;
         }
         return value;
+    }
+    bool dragging() const { return _dragging; }
+    void endDrag(uint32_t nowMs) {
+        if (!_dragging) return;
+        _from=state(nowMs);_dragging=false;
+        _to.yaw=_from.yaw+std::remainder(_to.yaw-_from.yaw,6.2831853f);
+        _viewStarted=_wheelPresentedMs=nowMs;_viewMoving=true;_carMoving=false;
+    }
+    void drag(const PreviewDrag& drag,uint32_t nowMs) {
+        if (!drag.changed) return;
+        if (drag.gesture!=_dragId) {
+            _from=state(nowMs);_restWheelPhase=_from.wheelPhase;
+            _dragYaw=_from.yaw;_dragPitch=_from.pitch;_dragId=drag.gesture;
+            _dragging=true;_viewMoving=false;
+        }
+        if (!_dragging) return;
+        _from.yaw=_dragYaw+float(drag.dx)*.012f;
+        _from.pitch=std::clamp(_dragPitch-float(drag.dy)*.008f,.12f,1.5707963f);
+        if (!drag.active) endDrag(nowMs);
     }
     // Commit once per displayed preview, not once per input/update tick.
     // Positive phase rolls toward model +z. At 7 rad/s slow frames alias
@@ -74,13 +106,14 @@ public:
         _wheelPresentedMs=nowMs;
     }
     bool animating(uint32_t nowMs) const {
-        return _view == GarageView::Side ||
+        return _dragging || _view == GarageView::Side ||
                (_viewMoving && nowMs - _viewStarted < kTransitionMs) ||
                (_carMoving && nowMs - _carStarted < kTransitionMs);
     }
     void changeView(int direction,uint32_t nowMs) {
         if(!direction)return;
         _from=state(nowMs);
+        _dragging=false;
         _restWheelPhase=_from.wheelPhase;
         _wheelPresentedMs=nowMs;
         _from.yaw=std::remainder(_from.yaw,6.2831853f);
@@ -96,6 +129,7 @@ public:
     }
     void selectCar(CarId car,uint32_t nowMs) {
         if(car==_car)return;
+        endDrag(nowMs);
         _carDirection=(int(car)-int(_car)+int(kCarCount))%int(kCarCount)==1 ? 1 : -1;
         _car=car;_carStarted=nowMs;_carMoving=true;
     }
@@ -108,7 +142,10 @@ private:
     int _carDirection=1;
     float _restWheelPhase=0;
     bool _viewMoving=false,_carMoving=false;
+    uint32_t _dragId=0;
+    float _dragYaw=0,_dragPitch=0;
+    bool _dragging=false;
 };
-static_assert(sizeof(GarageViewController)<=96,"garage motion fixed state budget");
+static_assert(sizeof(GarageViewController)<=112,"garage motion fixed state budget");
 
 } // namespace lets_and_go

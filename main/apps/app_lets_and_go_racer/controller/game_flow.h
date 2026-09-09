@@ -20,6 +20,7 @@ enum class GameScreen : uint8_t {
     Finish,
     Results,
     ExitRequested,
+    CarInspect,
 };
 
 struct RaceSetup {
@@ -48,6 +49,7 @@ public:
     bool completeCalibration(bool succeeded);
     bool selectPlayerCar(CarId car);
     bool confirmPlayerCar();
+    bool inspectCar();
     bool completeCarShowcase();
     bool toggleRival(CarId car);
     bool confirmRivals();

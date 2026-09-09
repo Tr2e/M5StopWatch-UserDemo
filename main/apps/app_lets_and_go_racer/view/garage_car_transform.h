@@ -18,4 +18,22 @@ struct GarageCarTransform {
     }
 };
 
+// Largest native-pixel view fitting the existing raster, with room for UI.
+// Projection scales linearly with focal length; fit all authored vertices,
+// including wheels, rather than guessing a car-specific bounding box.
+inline float inspectionScale(const CarSpec& spec,const CarDisplayMesh& mesh,
+                             float yaw,float pitch) {
+    TrackCamera camera{};camera.principalX=0;camera.principalY=0;camera.focalLength=5.8f;
+    const GarageCarTransform transform(spec,yaw,pitch,0);
+    float scale=150.f;
+    for(std::size_t i=0;i<mesh.count;++i)for(auto p:mesh.panels[i].point) {
+        TrackScreenPoint point{};
+        if(!projectTrackPoint(camera,transform(p,mesh.panels[i].wheel),point))return 90.f;
+        if(std::abs(point.x)>.0001f)scale=std::min(scale,165.f/std::abs(point.x));
+        if(point.y<-.0001f)scale=std::min(scale,-135.f/point.y);
+        if(point.y>.0001f)scale=std::min(scale,115.f/point.y);
+    }
+    return scale*.98f;
+}
+
 } // namespace lets_and_go

@@ -2,6 +2,7 @@
 
 #include "controller/game_flow.h"
 #include "controller/garage_selection.h"
+#include "controller/car_inspection_controller.h"
 #include "controller/race_controller.h"
 #include "controller/results_selection.h"
 #include "input/hardware_racer_input_provider.h"
@@ -44,6 +45,7 @@ private:
     lets_and_go::MenuAxisRepeater _menuAxis;
     lets_and_go::GarageMenuNavigation _garageNavigation;
     lets_and_go::GarageViewController _garageView;
+    lets_and_go::CarInspectionController _inspection;
     lets_and_go::GameFlow _flow;
     lets_and_go::GarageSelection _selection;
     lets_and_go::RaceController _race;

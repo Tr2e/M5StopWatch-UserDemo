@@ -2,6 +2,7 @@
 
 #include "racer_input_logic.h"
 #include "device_touch_layout.h"
+#include "../controller/garage_view_controller.h"
 #include "../controller/game_flow.h"
 #include "../controller/home_layout.h"
 #include "../controller/race_ui_layout.h"
@@ -23,6 +24,8 @@ struct DeviceControlFrame {
     bool advance = false;
     int resultAction = -1;
     TouchTrace touchTrace{};
+    PreviewDrag preview{};
+    bool inspect=false;
     // Result buttons are a shared menu action in either control mode. Keep
     // touch steering/mode switching separate from the external driving input.
     int resultActionFor(GameScreen screen) const {
@@ -46,10 +49,13 @@ public:
         _presented = false;
         _touchDown = false;
         _candidate = TouchAction::None;
+        _orbitGesture=false;
     }
     void presentScreen(GameScreen screen) { if(screen==_screen)_presented=true; }
     void invalidateTouch() {
         _gestureCanceled=true;_touchArmed=false;_frame.input.steer=0;
+        if (_frame.preview.active) {_frame.preview.active=false;_frame.preview.changed=true;}
+        _orbitGesture=false;
     }
     void buttons(bool aDown, bool bDown, uint32_t now) {
         const auto a = _a.update(aDown, now);
@@ -79,6 +85,12 @@ public:
     }
     void touch(bool down, int x, int y) {
         if (!down) {
+            if (_orbitGesture) {
+                if (_frame.preview.active) {
+                    _frame.preview.active=false;_frame.preview.changed=true;
+                }
+                _orbitGesture=false;
+            }
             if(_touchDown && _screen!=GameScreen::Racing) {
                 const bool accepted=_presented && _touchArmed && !_gestureCanceled &&
                     _candidate!=TouchAction::None && menuTouchTarget(_screen,_lastX,_lastY)==_candidate;
@@ -94,6 +106,20 @@ public:
             _startX=x;_startY=y;
             _candidate=menuTouchTarget(_screen,x,y);
             _gestureCanceled=!_touchArmed || !_presented;
+            _orbitGesture=(_screen==GameScreen::CarSelect || _screen==GameScreen::CarInspect) && !_gestureCanceled &&
+                (_screen==GameScreen::CarInspect ? home_layout::inspectOrbit : home_layout::carOrbit).contains(x,y) &&
+                _candidate==TouchAction::None;
+            if (_orbitGesture) {
+                ++_orbitId;
+                _frame.preview={_orbitId,0,0,false,false};
+            }
+        }
+        if (_orbitGesture) {
+            const int dx=x-_startX,dy=y-_startY;
+            if (_frame.preview.active || std::abs(dx)>=6 || std::abs(dy)>=6)
+                _frame.preview={_orbitId,dx,dy,true,true};
+            // Gesture ownership stays with the model even over a button.
+            _touchDown=true;return;
         }
         if(_touchArmed && _presented) {
             if(_screen==GameScreen::Racing) {
@@ -115,6 +141,7 @@ public:
     DeviceControlFrame consume(bool healthy) {
         auto result = _frame;
         result.input.valid = healthy;
+        if (!healthy || result.input.exitPressed) result.preview.active=false;
         if (!healthy) result.input.steer = 0;
         if (result.input.exitPressed) {
             result.input.confirmPressed = result.input.cancelPressed = false;
@@ -129,6 +156,8 @@ public:
         _frame.advance = false;
         _frame.resultAction = -1;
         _frame.touchTrace.ready=false;
+        _frame.preview.changed=false;
+        _frame.inspect=false;
         return result;
     }
 private:
@@ -139,6 +168,7 @@ private:
             case TouchAction::Previous:_frame.navigation=-1;break;
             case TouchAction::Next:_frame.navigation=1;break;
             case TouchAction::View:_frame.view=1;break;
+            case TouchAction::Inspect:_frame.inspect=true;break;
             case TouchAction::Advance:_frame.advance=true;break;
             case TouchAction::Retry:case TouchAction::Garage:case TouchAction::Exit:
                 _frame.resultAction=int(action)-int(TouchAction::Retry);break;
@@ -155,5 +185,7 @@ private:
     GameScreen _screen = GameScreen::InputCheck;
     bool _buttonsArmed = false, _touchArmed = false, _touchDown = false;
     bool _steeringGesture = false;
+    bool _orbitGesture=false;
+    uint32_t _orbitId=0;
 };
 } // namespace lets_and_go

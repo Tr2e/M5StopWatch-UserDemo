@@ -225,9 +225,9 @@ bool validateScreenInput()
     input = context.consume();
     valid &= check(!input.confirmPressed && !input.navigationStep, "new gesture replayed");
 
-    for (int page=0; page<3; ++page) { // Rivals -> course -> rivals, same mode.
+    for (int page=0; page<6; ++page) { // Same-mode course pages and garage <-> inspection.
         raw.blueClicked = true; poll(); // Queued action belongs to the old page.
-        context.changeScreen(RacerNavigationMode::Horizontal);
+        context.changeScreen(page<3 ? RacerNavigationMode::Horizontal : RacerNavigationMode::Garage);
         raw.blueClicked = false; raw.steer = .9f; poll();
         context.presentScreen(); poll();
         input = context.consume();

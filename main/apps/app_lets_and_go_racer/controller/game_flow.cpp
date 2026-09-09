@@ -74,6 +74,11 @@ bool GameFlow::completeCarShowcase()
     return transition(GameScreen::CarShowcase, GameScreen::RivalSelect);
 }
 
+bool GameFlow::inspectCar()
+{
+    return transition(GameScreen::CarSelect, GameScreen::CarInspect);
+}
+
 bool GameFlow::toggleRival(CarId car)
 {
     if (_screen != GameScreen::RivalSelect || !isValidCar(car) ||
@@ -172,6 +177,9 @@ bool GameFlow::backToGarage()
 bool GameFlow::back()
 {
     switch (_screen) {
+        case GameScreen::CarInspect:
+            _screen = GameScreen::CarSelect;
+            return true;
         case GameScreen::InputCalibration:
             _screen = GameScreen::InputCheck;
             return true;
@@ -209,6 +217,7 @@ const char* gameScreenLabel(GameScreen screen)
         case GameScreen::InputCheck: return "INPUT CHECK";
         case GameScreen::InputCalibration: return "CALIBRATION";
         case GameScreen::CarSelect: return "SELECT MACHINE";
+        case GameScreen::CarInspect: return "VIEW MACHINE";
         case GameScreen::CarShowcase: return "MACHINE READY";
         case GameScreen::RivalSelect: return "SELECT RIVALS";
         case GameScreen::TrackSelect: return "SELECT COURSE";

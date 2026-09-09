@@ -129,6 +129,12 @@ bool validateRivalToggleAndPlayerChange()
 
 int main()
 {
+    GameFlow inspection;
+    if(!check(!inspection.inspectCar() && inspection.useDeviceControls() && inspection.inspectCar() &&
+              inspection.screen()==GameScreen::CarInspect && !inspection.confirmPlayerCar() &&
+              !inspection.completeCarShowcase() && inspection.back() &&
+              inspection.screen()==GameScreen::CarSelect && !inspection.setup().playerConfirmed,
+              "inspection changed selection or auto-advanced"))return 1;
     return validateFullRaceAndRetry() && validateSoloAndGarageReset() &&
                    validateInvalidTransitionsAndBackPaths() &&
                    validateRivalToggleAndPlayerChange()

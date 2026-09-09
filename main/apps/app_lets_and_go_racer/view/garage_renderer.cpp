@@ -119,6 +119,8 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     if (_width <= 0 || _height <= 0) return;
     auto& canvas = GetHAL().getCanvas();
     const GameScreen screen = flow.screen();
+    // Inspection is quality-first: no adaptive LOD or low-resolution paint atlas.
+    if(screen==GameScreen::CarInspect)detail=PencilDetail::High;
     if(screen==GameScreen::InputCheck || screen==GameScreen::InputCalibration) {
         home_theme::entry(canvas,screen==GameScreen::InputCalibration,inputStatus);
         return;
@@ -131,12 +133,26 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     }
 
     CarId visibleCar = flow.setup().playerCar;
-    if (screen == GameScreen::CarSelect) visibleCar = selection.playerCursor();
+    if (screen == GameScreen::CarSelect || screen == GameScreen::CarInspect) visibleCar = selection.playerCursor();
     if (screen == GameScreen::RivalSelect && !selection.rivalCursorIsDone()) {
         visibleCar = selection.rivalCursorCar();
     }
     const CarSpec& spec = carSpec(visibleCar);
     const auto mesh = [&]() -> const CarDisplayMesh& { return showcaseMesh(visibleCar,detail); };
+
+    if (screen == GameScreen::CarInspect) {
+        using namespace home_theme;
+        setupHeader(canvas,"VIEW MACHINE");
+        label(canvas,"HIGH DETAIL / DRAG OR STICK",_width/2,96,1,muted);
+        const auto& carMesh=mesh();
+        const float scale=inspectionScale(spec,carMesh,view.yaw,view.pitch);
+        drawCar(canvas,spec,carMesh,_surface->raster,_width/2,245,scale,
+                view.yaw,0,detail,view.pitch,true);
+        label(canvas,spec.shortName,_width/2,376,2);
+        action(canvas,home_layout::inspectReset,"RESET VIEW");
+        label(canvas,deviceControls ? "A ROTATE / B RESET" : "RED BACK / BLUE RESET",_width/2,444,1,muted);
+        return;
+    }
 
     if (screen == GameScreen::CarSelect) {
         using namespace home_theme;
@@ -150,7 +166,10 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
                       garageViewLabel(view.preset));
         const auto viewButton=home_layout::viewAction;
         canvas.fillRect(viewButton.x,viewButton.y,viewButton.width,viewButton.height,panel);
-        label(canvas,viewHint,_width/2,96,1,muted,panel);
+        label(canvas,viewHint,viewButton.x+viewButton.width/2,viewButton.y+viewButton.height/2,1,muted,panel);
+        const auto inspectButton=home_layout::inspectAction;
+        canvas.fillRect(inspectButton.x,inspectButton.y,inspectButton.width,inspectButton.height,panel);
+        label(canvas,"VIEW CAR",inspectButton.x+inspectButton.width/2,inspectButton.y+inspectButton.height/2,1,white,panel);
         drawCar(canvas, spec, mesh(), _surface->raster, _width / 2+std::lround(view.carSlide),
                 std::lround(view.centerY),view.scale*view.carZoom,
                 view.yaw,view.wheelPhase,detail,view.pitch,true);
