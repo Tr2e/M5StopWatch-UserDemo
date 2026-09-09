@@ -27,7 +27,7 @@ inline TouchAction menuTouchTargetPass(GameScreen screen,int x,int y,bool expand
     if(screen==GameScreen::InputCheck || screen==GameScreen::InputCalibration)
         return hit(deviceAction) ? TouchAction::Confirm : TouchAction::None;
     if(screen==GameScreen::Results) {
-        for(int i=0;i<3;++i)if(hit(race_ui_layout::resultRow(i),3))
+        for(int i=0;i<3;++i)if(hit(race_ui_layout::resultRow(i),5))
             return static_cast<TouchAction>(int(TouchAction::Retry)+i);
         return TouchAction::None;
     }

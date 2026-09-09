@@ -285,6 +285,20 @@ bool validateScreenInput()
 
 int main()
 {
+    // Vertical result rows accept both axes, preserve slow-frame intent, and
+    // require neutral after Finish; diagonal motion advances only one row.
+    RacerScreenInput results;
+    RawRacerInput raw{};raw.axesValid=raw.actionsValid=true;
+    results.changeScreen(RacerNavigationMode::Results);results.presentScreen();
+    uint32_t tick=100;
+    for(auto axis : {std::pair<float,float>{0,-.9f},{0,.9f},{.9f,0},{-.9f,0},{.9f,-.9f}}) {
+        raw.steer=raw.viewAxis=0;++tick;results.publish(raw,tick,tick);results.consume();
+        raw.steer=axis.first;raw.viewAxis=axis.second;
+        tick+=100;results.publish(raw,tick,tick);
+        raw.steer=raw.viewAxis=0;tick+=100;results.publish(raw,tick,tick);
+        const int expected=axis.first!=0 ? (axis.first>0 ? 1 : -1) : (axis.second<0 ? 1 : -1);
+        if(results.consume().navigationStep!=expected || results.consume().navigationStep!=0)return 1;
+    }
     return validateMapping() && validateMenuRepeater() && validateLongChord() &&
            validateSlowFrameInput() && validateMenuEventBuffer() && validateScreenInput() ? 0 : 1;
 }

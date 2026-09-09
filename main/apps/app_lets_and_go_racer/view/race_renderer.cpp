@@ -286,7 +286,7 @@ void drawResults(LGFX_Sprite& canvas, const RaceSnapshot& race,
         action(canvas,race_ui_layout::resultRow(index),resultActionLabel(actionId),nullptr,
                actionId==selection.cursor() ? red : home_theme::panel);
     }
-    label(canvas,deviceControls ? "A NEXT / B SELECT" : "L/R / BLUE SELECT",cx,445,1,muted);
+    label(canvas,deviceControls ? "A/B OR TAP" : "U/D BLUE OR TAP",cx,445,1,muted);
 }
 
 // Fixed stroke geometry avoids font side bearings/baselines: the visible digit

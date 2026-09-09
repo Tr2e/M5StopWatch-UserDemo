@@ -99,6 +99,16 @@ int main() {
     check(!controls.consume(true).input.exitPressed,"exit replayed");
     controls.reset();show(GameScreen::Results);
     for(int i=0;i<3;++i) {
+        const auto row=race_ui_layout::resultRow(i);
+        for(auto point : {std::pair<int,int>{row.x,row.y},
+                         {row.x+row.width-1,row.y+row.height-1},
+                         {row.x-4,row.y+row.height/2}}) {
+            const auto frame=tap(point.first,point.second);
+            check(frame.resultActionFor(GameScreen::Results)==i,"result touch routing/edge failed");
+            check(frame.resultActionFor(GameScreen::Racing)==-1,"result touch leaked into race");
+        }
+    }
+    for(int i=0;i<3;++i) {
         const auto rect=race_ui_layout::resultRow(i);
         auto result=tap(rect.x+rect.width/2,rect.y+rect.height/2);
         check(result.resultAction==i&&!result.input.confirmPressed,"result row selected wrong action");

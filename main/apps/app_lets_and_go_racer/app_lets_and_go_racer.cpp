@@ -140,7 +140,7 @@ void AppLetsAndGoRacer::onRunning()
     }
     handleRacerInput(racerInput, nowMs, _deviceControls ? device.navigation : 0,
                      _deviceControls ? device.view : 0, _deviceControls && device.advance,
-                     _deviceControls ? device.resultAction : -1);
+                     device.resultActionFor(screenBefore));
     if (device.input.exitPressed) _flow.requestExit();
     _perfInputUs += esp_timer_get_time() - inputStartedUs;
     if (_flow.screen() == lets_and_go::GameScreen::ExitRequested) {
@@ -201,7 +201,8 @@ void AppLetsAndGoRacer::onRunning()
             using lets_and_go::RacerNavigationMode;
             const auto next = _flow.screen();
             _racerInput->setNavigationMode(next == GameScreen::CarSelect ? RacerNavigationMode::Garage :
-                (next == GameScreen::RivalSelect || next == GameScreen::TrackSelect || next == GameScreen::Results)
+                next == GameScreen::Results ? RacerNavigationMode::Results :
+                (next == GameScreen::RivalSelect || next == GameScreen::TrackSelect)
                     ? RacerNavigationMode::Horizontal : RacerNavigationMode::None);
         }
     }
@@ -230,6 +231,7 @@ void AppLetsAndGoRacer::onRunning()
         }
         const uint64_t drawFinishedUs = esp_timer_get_time();
         GetHAL().updateCanvas();
+        if (!raceView) _garageView.presented(nowMs);
         _deviceInput.presentScreen(_flow.screen());
         if (_racerInput) _racerInput->presentScreen();
         const uint64_t presentFinishedUs = esp_timer_get_time();

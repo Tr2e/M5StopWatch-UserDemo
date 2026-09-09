@@ -157,10 +157,18 @@ public:
         if (_mode == RacerNavigationMode::None || !input.valid || input.menuBlocked) {
             resetGesture(); return {};
         }
-        const float y = _mode == RacerNavigationMode::Garage ? -input.viewAxis : 0.f;
+        const float y = (_mode == RacerNavigationMode::Garage || _mode == RacerNavigationMode::Results)
+                            ? -input.viewAxis : 0.f;
         if (std::abs(input.steer) <= .30f && std::abs(y) <= .30f) _armed = true;
         if (!_armed) return {};
-        return _navigation.update(input.steer, y, nowMs);
+        auto step = _navigation.update(input.steer, y, nowMs);
+        // Results are vertical. Retain horizontal navigation, with the same
+        // dominant-axis lock so a diagonal gesture never skips two rows.
+        if (_mode == RacerNavigationMode::Results) {
+            step.car = step.car ? step.car : step.view;
+            step.view = 0;
+        }
+        return step;
     }
 private:
     GarageMenuNavigation _navigation;

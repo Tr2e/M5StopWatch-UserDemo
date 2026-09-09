@@ -11,6 +11,18 @@ using namespace lets_and_go;
 
 bool validateCarRaster()
 {
+    // Physical rolling contract shared by garage and race: the top of each
+    // wheel moves toward the nose (+z), the contact point toward the rear.
+    for(uint8_t wheel=1;wheel<=4;++wheel) {
+        const float axle=wheel<=2 ? kModelFrontAxle : kModelRearAxle;
+        const auto top=animateCarPanelPoint({0,2*kModelWheelRadius,axle},wheel,
+                                            std::cos(.1f),std::sin(.1f));
+        const auto bottom=animateCarPanelPoint({0,0,axle},wheel,
+                                               std::cos(.1f),std::sin(.1f));
+        if(top.z<=axle || bottom.z>=axle) {
+            std::cerr<<"Wheel physical rolling direction reversed\n";return false;
+        }
+    }
     auto atlas=std::make_unique<RacePaintAtlas>();
     for(unsigned paint=1;paint<unsigned(CarPaint::Count);++paint)
         for(auto base:{uint16_t(0xc9a7),uint16_t(0x3275)})for(auto light:{uint8_t(223),uint8_t(255)}) {
@@ -177,6 +189,31 @@ bool validateTrackPaint(TrackId id = TrackId::SkyLoop)
     // The projection/color cache is shared with map markers and remains inside
     // the circular instrument, including the four-pixel player locator.
     TrackMiniMap map;map.open(geometry);
+    // Compare against an actual elevated camera basis, not a second copy of
+    // the map formula. East is right, forward (+z) is up, height is up.
+    const auto topCamera=makeTrackLookAtCamera({0,100,-25},{0,0,0},466,466);
+    const auto origin=map.project({0,0,0});
+    for(auto axis : {TrackVec3{4,0,0},TrackVec3{0,0,4},TrackVec3{0,4,0}}) {
+        const auto projected=map.project(axis);
+        const auto delta=trackSubtract(axis,TrackVec3{});
+        if((projected.x-origin.x)*trackDot(delta,topCamera.right)<0 ||
+           ((projected.y-origin.y)*(-trackDot(delta,topCamera.up))<=0 && axis.x==0)) {
+            std::cerr<<"Minimap camera basis is reflected\n";valid=false;
+        }
+    }
+    // The locator and ribbon must advance together around either course,
+    // including the finish-line wrap, with the same tangent as the 3D world.
+    for(int i=0;i<720;++i) {
+        const float s=course.length()*i/720;
+        const auto frame=course.sample(s);
+        const auto a=map.project(frame.center);
+        const auto b=map.project(course.sample(s+.8f).center);
+        const float dx=trackDot(frame.tangent,topCamera.right);
+        const float dy=-trackDot(frame.tangent,topCamera.up);
+        if((b.x-a.x)*dx+(b.y-a.y)*dy<-.05f) {
+            std::cerr<<"Minimap travel opposes track tangent\n";valid=false;
+        }
+    }
     canvas.fillScreen(track_paint::night);map.draw(canvas);
     for(const auto& section:map.section)for(auto p:{section.left,section.right}) {
         const int x=p.x-TrackMiniMap::centerX,y=p.y-TrackMiniMap::centerY;
@@ -884,7 +921,7 @@ int main(int argc, char** argv)
         for(int action=0;action<int(ResultAction::Count);++action) {
             result.select(ResultAction(action));
             canvas.texts.clear(); racing.render(external,run,result,0,false,PencilDetail::Low,false);
-            requireText("L/R / BLUE SELECT"); requireText("RETRY"); requireText("GARAGE"); requireText("EXIT");
+            requireText("U/D BLUE OR TAP"); requireText("RETRY"); requireText("GARAGE"); requireText("EXIT");
             save("external-results-native-"+std::to_string(action));
         }
         menu.close(); racing.close();

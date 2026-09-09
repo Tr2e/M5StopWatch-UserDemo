@@ -15,20 +15,23 @@ struct TrackMiniMap {
     static constexpr int centerX=354,centerY=122,radius=43;
 
     float originX=0,originY=0,scale=2.6f;
+    // View from above: +x is screen-right, +z is screen-up. Elevation
+    // also moves up. Using +z down reflects the road's turn handedness.
+    static float mapY(TrackVec3 p) { return -p.z-p.y*.25f; }
     Point project(TrackVec3 p) const {
         return {int16_t(std::lround(centerX+(p.x-originX)*scale)),
-                int16_t(std::lround(centerY+(p.z-p.y*.25f-originY)*scale))};
+                int16_t(std::lround(centerY+(mapY(p)-originY)*scale))};
     }
     void open(const PencilTrack& track) {
         float minX=1e6f,maxX=-1e6f,minY=1e6f,maxY=-1e6f;
         for(std::size_t i=0;i<section.size();++i) for(auto p:{track.left[i],track.right[i]}) {
             minX=std::min(minX,p.x);maxX=std::max(maxX,p.x);
-            minY=std::min(minY,p.z-p.y*.25f);maxY=std::max(maxY,p.z-p.y*.25f);
+            minY=std::min(minY,mapY(p));maxY=std::max(maxY,mapY(p));
         }
         originX=(minX+maxX)*.5f;originY=(minY+maxY)*.5f;
         float extent=1.f;
         for(std::size_t i=0;i<section.size();++i) for(auto p:{track.left[i],track.right[i]})
-            extent=std::max(extent,std::hypot(p.x-originX,p.z-p.y*.25f-originY));
+            extent=std::max(extent,std::hypot(p.x-originX,mapY(p)-originY));
         scale=(radius-6.f)/extent; // Include shadows and four-pixel markers.
         for(std::size_t i=0;i<section.size();++i)
             section[i]={project(track.left[i]),project(track.right[i])};

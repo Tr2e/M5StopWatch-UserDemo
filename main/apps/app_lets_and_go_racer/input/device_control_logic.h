@@ -23,6 +23,11 @@ struct DeviceControlFrame {
     bool advance = false;
     int resultAction = -1;
     TouchTrace touchTrace{};
+    // Result buttons are a shared menu action in either control mode. Keep
+    // touch steering/mode switching separate from the external driving input.
+    int resultActionFor(GameScreen screen) const {
+        return input.valid && screen==GameScreen::Results ? resultAction : -1;
+    }
 };
 
 // Caller serializes GPIO/touch publication and consumption. A screen change

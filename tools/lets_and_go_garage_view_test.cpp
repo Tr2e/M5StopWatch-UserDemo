@@ -45,6 +45,26 @@ int main()
     assert(near(motion.state(149).yaw,-1.5707963f));
     assert(near(motion.state(149).wheelPhase,0) && motion.state(249).wheelPhase>0);
 
+    // At 3-30 FPS, including stalls, repeated spokes must never resolve to a
+    // backwards step. Repeated reads within one frame must be side-effect free.
+    for(uint32_t interval : {33u,100u,167u,200u,333u,400u,2000u}) {
+        motion.reset(CarId::CycloneMagnum,0);motion.changeView(1,0);
+        uint32_t time=350;
+        motion.presented(time);
+        for(int frame=0;frame<100;++frame) {
+            const float previous=motion.state(time).wheelPhase;
+            time+=interval;
+            const float next=motion.state(time).wheelPhase;
+            assert(near(next,motion.state(time).wheelPhase));
+            for(int spokes : {3,5,6}) {
+                const float perceived=std::remainder(next-previous,6.283185307f/spokes);
+                assert(perceived>0 && perceived<=.25001f);
+            }
+            motion.presented(time);
+            assert(near(next,motion.state(time).wheelPhase));
+        }
+    }
+
     GarageMenuNavigation nav;
     auto step=nav.update(.9f,.8f,100);assert(step.car==1 && step.view==0);
     step=nav.update(.7f,1.f,460);assert(step.car==1 && step.view==0);

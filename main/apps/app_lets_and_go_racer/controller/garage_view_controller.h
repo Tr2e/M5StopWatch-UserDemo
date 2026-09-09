@@ -32,6 +32,7 @@ public:
         _from=_to={};_view=GarageView::Front;_car=car;
         _viewStarted=nowMs;_carStarted=nowMs;_viewMoving=false;_carMoving=false;
         _restWheelPhase=0;
+        _wheelPresentedMs=nowMs;
     }
     GarageViewState state(uint32_t nowMs) const {
         auto value=_to;
@@ -54,7 +55,8 @@ public:
         const auto elapsed=uint32_t(nowMs-_viewStarted);
         if(_view==GarageView::Side && elapsed>kTransitionMs)
             value.wheelPhase=float(std::fmod(double(_restWheelPhase)+
-                                   double(elapsed-kTransitionMs)*.007,6.283185307));
+                std::min(.25, double(std::min(nowMs-_wheelPresentedMs,
+                                             elapsed-kTransitionMs))*.0015),6.283185307));
         if(_carMoving) {
             const float t=std::min(1.f,float(nowMs-_carStarted)/kTransitionMs);
             const float tail=(1.f-t)*(1.f-t)*(1.f-t);
@@ -62,6 +64,14 @@ public:
             value.carZoom=1.f-.10f*tail;
         }
         return value;
+    }
+    // Commit once per displayed preview, not once per input/update tick.
+    // Positive phase rolls toward model +z. At 7 rad/s slow frames alias
+    // repeated spokes into reverse motion; keep each step below half of the
+    // smallest spoke spacing (six spokes: pi/6), even after a long stall.
+    void presented(uint32_t nowMs) {
+        _restWheelPhase=state(nowMs).wheelPhase;
+        _wheelPresentedMs=nowMs;
     }
     bool animating(uint32_t nowMs) const {
         return _view == GarageView::Side ||
@@ -72,6 +82,7 @@ public:
         if(!direction)return;
         _from=state(nowMs);
         _restWheelPhase=_from.wheelPhase;
+        _wheelPresentedMs=nowMs;
         _from.yaw=std::remainder(_from.yaw,6.2831853f);
         const int next=(int(_view)+(direction>0 ? 1 : 3))%4;
         _view=static_cast<GarageView>(next);
@@ -93,6 +104,7 @@ private:
     CarId _car=CarId::CycloneMagnum;
     GarageView _view=GarageView::Front;
     uint32_t _viewStarted=0,_carStarted=0;
+    uint32_t _wheelPresentedMs=0;
     int _carDirection=1;
     float _restWheelPhase=0;
     bool _viewMoving=false,_carMoving=false;

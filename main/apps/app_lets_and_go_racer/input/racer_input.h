@@ -4,7 +4,7 @@
 
 namespace lets_and_go {
 
-enum class RacerNavigationMode : uint8_t { None, Horizontal, Garage };
+enum class RacerNavigationMode : uint8_t { None, Horizontal, Garage, Results };
 
 enum class RacerInputReadiness : uint8_t {
     Disconnected,
