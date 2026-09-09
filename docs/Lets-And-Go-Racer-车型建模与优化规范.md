@@ -1,13 +1,14 @@
 # 车型建模与优化规范
 
-本规范适用于新增车型和现有车型重做。由 R17 的 Magnum 腰线修正、R18 的逐车结构复核及 R23 的八车扩容经验整理；不是面数越多越好的美术指南。完成标准是“参考版本明确、结构可解释、所有视角成立、比赛保留辨识度、回归和设备预算可控”。
+本规范是本项目的新增／优化车型验收入口，与 [模型制作资产库](模型制作资产库.md) 配合使用。通用方法、结构／材质卡、证据工具和生产部件索引已由 R25 提取；本页保留 StopWatch 特有约束。完成标准是“参考版本明确、结构可解释、所有视角成立、比赛保留辨识度、回归和设备预算可控”，不是面数越多越好。
 
 ## 1. 开始前：锁定参考和基线
 
 1. 阅读本规范及 [R17](Lets-And-Go-Racer-R17-Magnum腰线与结构复核.md)、[R18](Lets-And-Go-Racer-R18-其余三车结构复核.md)。检查工作区，保留无关改动。
+   同时从 [工作流技能](../skills/reference-model-workshop/SKILL.md) 读取本次相关参考，并复制 [结构／材质卡](../skills/reference-model-workshop/assets/model-card.md)；后四车型参考 [R24](Lets-And-Go-Racer-R24-新增四车逐台结构优化.md)。
 2. 明确官方型号、商品编号、原版／Premium／特殊版和底盘。以官方成品实拍为颜色与附件基准；寻找同版本裸壳、侧面、俯视和背面辅助资料。不能混用玩具压铸车、改装车或其他版本来填补未知结构。
 3. 必须真正打开图片查看，搜索摘要和名称不算视觉参考。记录参考 URL、可见结构和不确定项。未公布的尺寸标记未知；照片推断的模型坐标不能写成实测毫米尺寸。
-4. 保存修改前的生产渲染输出。每次只重做一台，其他车应逐字节保持相同；若改共享硬件或材质，列出受影响车型并复验。
+4. 保存修改前的生产渲染输出。每次只重做一台，其他车的生产原帧解码像素应保持相同（原始 PPM 可逐字节比较）；若改共享硬件或材质，列出受影响车型并复验。
 
 ## 2. 每台车先写结构卡
 
@@ -27,11 +28,12 @@
 
 ## 3. 实现约束
 
-- 在 `model/car_display_mesh.cpp` 中为每车维护独立结构函数；可共享轮胎、导轮、管体等硬件构建器，不共享一个壳体换色充数。`car_catalog.cpp` 的旧 wireframe 不是当前实体外形来源。
+- 在 `model/car_display_mesh.cpp` 中为每车维护独立结构函数；共用部件已提取到 `model/car_mesh_builder.h`，调用前遵守资产库中的缓冲区、截面和坐标契约，不共享一个壳体换色充数。`car_catalog.cpp` 的旧 wireframe 不是当前实体外形来源。
 - 用 `CarPart` 标记全部车壳和附件，真实镂空不得用覆盖面填平。隐藏的底盘应与上壳区分；壁厚必须避开轮胎包络。
 - High／Medium／Low 同源。降低档位可减少圆周细分，不能删除辨识性尾翼、腰部通道、灯位和进气口，不能在比赛里回退为通用小车。
 - 纹样在 `view/car_paint.h` 中用表面 UV 表达；玻璃须有边界，不应整圈包成气泡。文字只放在参考支持的位置；不知道字样时宁可保留色块。避免逐像素高成本三角函数和无意义高频花纹。
 - 不改变操控、碰撞尺寸、性能参数、车型 ID、音频或跑道来适应视觉修改。新增 ID 追加，检查掩码容量、存档、选车循环及 0–3 名对手。
+  目前八车型已用满 `uint8_t` 对手掩码；新增第九台必须先设计并验证容量和存档迁移，不能只追加模型。
 - 车库只缓存所选车、比赛只缓存实际最多四名参赛车；不得随候选数量无限扩容。复查单人／四车、车型和画质切换的缓存失效。
 
 ## 4. 每台必须完成两轮自审
@@ -57,11 +59,14 @@
 SANITIZE=1 bash tools/test_lets_and_go.sh
 SANITIZE=1 bash tools/render_lets_and_go.sh /tmp/lets-go-model-review
 python3 tools/lets_and_go_contact_sheet.py /tmp/lets-go-model-review /tmp/lets-go-model-review/cobra.png --names cobra-top cobra-side cobra-front cobra-rear cobra-opposite cobra-medium cobra-low car-4 showcase-4 race-car-4 race-close-car-4
+python3 skills/reference-model-workshop/scripts/check_evidence.py --manifest skills/reference-model-workshop/assets/stopwatch-evidence.json --frames /tmp/lets-go-model-review --output /tmp/lets-go-model-evidence
 source ../esp-idf/export.sh
 idf.py build
 ```
 
 将例子的车型前缀和 ID 换成目标车型。所有预览必须来自生产 C++ 网格、材质及栅格器，不以 AI 效果图或图片修饰代替游戏效果。
+
+证据输出目录须选未存在的新路径。基线比较、必需视角、身份重复检查的配置见 [审查与证据](../skills/reference-model-workshop/references/review.md)；新增车同步扩展八车清单。自动报告不替代人工查看参考和生产图。
 
 注意测试自身的有效性：展示阶段的车型来自已确认的 `GameFlow` 设置，不只是 `GarageSelection` 光标。必须先选择目标车型再确认，查看图中的车型名，并防止不同文件名实际输出同一台车。近距离对手图应使用合法的不同车型组合并避免目标主体完全藏在 HUD 下；保留原有极近裁剪压力测试，不能用“好看的取景”替代它。
 

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "identity_view": "showcase",
+  "models": [
+    {
+      "id": "replace-with-model-id",
+      "required_views": ["top", "side", "front", "rear", "opposite", "medium", "low", "select", "showcase", "in_use"],
+      "frames": [
+        {"view": "top", "file": "model-top.png"},
+        {"view": "side", "file": "model-side.png"},
+        {"view": "front", "file": "model-front.png"},
+        {"view": "rear", "file": "model-rear.png"},
+        {"view": "opposite", "file": "model-opposite.png"},
+        {"view": "medium", "file": "model-medium.png"},
+        {"view": "low", "file": "model-low.png"},
+        {"view": "select", "file": "model-select.png"},
+        {"view": "showcase", "file": "model-showcase.png"},
+        {"view": "in_use", "file": "model-in-use.png"}
+      ]
+    }
+  ]
+}

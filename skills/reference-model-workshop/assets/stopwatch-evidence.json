@@ -1,0 +1,502 @@
+{
+  "schema": 1,
+  "identity_view": "showcase",
+  "models": [
+    {
+      "id": "magnum",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "magnum-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "magnum-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "magnum-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "magnum-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "magnum-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "magnum-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "magnum-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-0.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-0.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-0.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-0.ppm"
+        }
+      ]
+    },
+    {
+      "id": "sonic",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "sonic-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "sonic-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "sonic-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "sonic-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "sonic-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "sonic-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "sonic-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-1.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-1.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-1.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-1.ppm"
+        }
+      ]
+    },
+    {
+      "id": "neo",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "neo-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "neo-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "neo-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "neo-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "neo-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "neo-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "neo-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-2.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-2.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-2.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-2.ppm"
+        }
+      ]
+    },
+    {
+      "id": "brocken",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "brocken-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "brocken-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "brocken-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "brocken-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "brocken-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "brocken-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "brocken-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-3.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-3.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-3.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-3.ppm"
+        }
+      ]
+    },
+    {
+      "id": "cobra",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "cobra-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "cobra-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "cobra-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "cobra-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "cobra-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "cobra-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "cobra-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-4.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-4.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-4.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-4.ppm"
+        }
+      ]
+    },
+    {
+      "id": "spider",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "spider-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "spider-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "spider-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "spider-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "spider-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "spider-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "spider-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-5.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-5.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-5.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-5.ppm"
+        }
+      ]
+    },
+    {
+      "id": "stinger",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "stinger-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "stinger-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "stinger-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "stinger-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "stinger-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "stinger-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "stinger-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-6.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-6.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-6.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-6.ppm"
+        }
+      ]
+    },
+    {
+      "id": "diospada",
+      "required_views": [
+        "top",
+        "side",
+        "front",
+        "rear",
+        "opposite",
+        "medium",
+        "low",
+        "select",
+        "showcase",
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "top",
+          "file": "diospada-top.ppm"
+        },
+        {
+          "view": "side",
+          "file": "diospada-side.ppm"
+        },
+        {
+          "view": "front",
+          "file": "diospada-front.ppm"
+        },
+        {
+          "view": "rear",
+          "file": "diospada-rear.ppm"
+        },
+        {
+          "view": "opposite",
+          "file": "diospada-opposite.ppm"
+        },
+        {
+          "view": "medium",
+          "file": "diospada-medium.ppm"
+        },
+        {
+          "view": "low",
+          "file": "diospada-low.ppm"
+        },
+        {
+          "view": "select",
+          "file": "car-7.ppm"
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-7.ppm"
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-7.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-7.ppm"
+        }
+      ]
+    }
+  ]
+}

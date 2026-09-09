@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reference Model Workshop"
+  short_description: "参考驱动的机械模型制作：结构、贴图、逐台优化、两轮审查与生产证据"
+  default_prompt: "使用 $reference-model-workshop 按参考制作或优化这个模型，填写结构与材质卡，完成两轮审查并交付生产渲染证据。"

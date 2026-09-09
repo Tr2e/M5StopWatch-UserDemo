@@ -1,0 +1,1026 @@
+{
+  "schema": 1,
+  "review": "R25 reusable model asset extraction",
+  "date": "2026-09-09",
+  "render_baseline": "Captured before model module extraction; model history at 8c47448, final host tests include 4d2d477 input/audio fix",
+  "production_command": "SANITIZE=1 bash tools/test_lets_and_go.sh",
+  "baseline_render_command": "SANITIZE=1 bash tools/render_lets_and_go.sh /tmp/lets-go-r25-before",
+  "all_production_ppm_byte_matches": 162,
+  "selected_evidence_frames": 88,
+  "evidence_checks_passed": true,
+  "errors": [],
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "magnum",
+      "frames": [
+        {
+          "view": "top",
+          "file": "magnum-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "87109db75b8f9b46bdc6dfdded3514e234a8852ba2783e9f3ad78f8c717e1750",
+          "baseline_file": "magnum-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "magnum-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "ffc6be7503a9a227db05c4f0c5d09c9197691f98c215cc343475bbc345939920",
+          "baseline_file": "magnum-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "magnum-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "95c47cf299401efe813f7f103e966f5d5557e078b3845e3205831b588f130856",
+          "baseline_file": "magnum-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "magnum-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "fb67a8d4d53f1cb97229780f16724df1dfcc336b0514553c096da2e93a4176bd",
+          "baseline_file": "magnum-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "magnum-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "8632c4ae24f3d40f27dd7a3282a100430a466759a09c8780f74fc75f4975ab1f",
+          "baseline_file": "magnum-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "magnum-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "857f9c54768eb5769149af65526ca3c7a01adbc9015f2afb62e062190f8d0e9c",
+          "baseline_file": "magnum-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "magnum-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "dda586d37ebe1f42eb1a9ce2831d4edfcc4531c78d7412d3be2a096e8aa49475",
+          "baseline_file": "magnum-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-0.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "7ea7b37885fbec149b93c653a525ab8a396ea2b1181174c4fa18c3313e6f4835",
+          "baseline_file": "car-0.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-0.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "9e2b67845909d013b326b1469ce796fc17b79e68cb4d9d96aec6d9dbfe51fe7e",
+          "baseline_file": "showcase-0.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-0.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "393bcc1173559937027ab3c2fa2236282316c14fcd50180a1a323fd0787b620b",
+          "baseline_file": "race-car-0.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-0.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "c1f22e192893f2d39233aeb03d0f5bcea3df23ac273896464340c4a177b356c8",
+          "baseline_file": "race-close-car-0.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "sonic",
+      "frames": [
+        {
+          "view": "top",
+          "file": "sonic-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "eaedeb04c6f4d87748218438ef9e109d0524511ef1b78880dfe4548bfb1b359d",
+          "baseline_file": "sonic-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "sonic-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "1f631cc26a21cb2479bede69ec4c0614cbb4bf28783abd8daef397b128f6af11",
+          "baseline_file": "sonic-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "sonic-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "722563bc06306cbac42cf2fbbfa0386f22e9d40bd191f62d14d08e47e889bfc7",
+          "baseline_file": "sonic-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "sonic-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "a853bac69c5d1b3878987cede3d016215d65563d867c6b8581ab9b10e3cb5fbb",
+          "baseline_file": "sonic-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "sonic-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "29fb6a046906ac1b3d2feb526a0e0901111ed8d61b7627c9411ff155db19bc13",
+          "baseline_file": "sonic-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "sonic-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "4a7695c999de1f71937a02177918e2884abed85a5959c47582cacf5e8ecde7e5",
+          "baseline_file": "sonic-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "sonic-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "d98c7641ab7c625bd0f6166db92b3b8a8c6ebfdd498e1474b784e852bbd52c55",
+          "baseline_file": "sonic-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-1.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "7f7a11c137849eb4b1d114b16b101cde6e3db123ef3a642d9417460c2d0955d1",
+          "baseline_file": "car-1.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-1.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "98bbbe8bd83828b26967985faf8c4a49d2f1459f08ef639089cb13807fa4cec0",
+          "baseline_file": "showcase-1.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-1.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "1d4918849c8dd001939e0572d8b1e5de1bb64376f8812101eb51422d30ee4421",
+          "baseline_file": "race-car-1.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-1.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "1b3f851a74e0e2822c4ef5c814e3e4db7d09aa861c3e12233d088522bba660f2",
+          "baseline_file": "race-close-car-1.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "neo",
+      "frames": [
+        {
+          "view": "top",
+          "file": "neo-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "0925d2a26c6203ae3662184d24680a4376ef88e296c80bb1a5e6394a9ad88ec6",
+          "baseline_file": "neo-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "neo-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "f74f15ed46fb7a8e8e66f6c4ae85203315b106b5b4dba77d5e045a9163b6f478",
+          "baseline_file": "neo-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "neo-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "5a7341ea631cf5e947d45de37c51ee4833d54e1e6a3bbd80604217c761b9c512",
+          "baseline_file": "neo-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "neo-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "3ddd5fd2670f992c9ffa9470ec2ad220995d38a95eb151653c296733b183f649",
+          "baseline_file": "neo-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "neo-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "d7cc3cd940009073e0fdcc836fbb3c86d1e5ece1e862c3d2944c9078279e9086",
+          "baseline_file": "neo-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "neo-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "a0767687c9633a28bf5f4812bf54ff5e5329f5dc51430f289eff9891ee9c1d0f",
+          "baseline_file": "neo-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "neo-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "5e1106daed64628a81f4e2153f552cc0586d473bc5ac6e8be51dbcff9837fdac",
+          "baseline_file": "neo-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-2.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "f31c1e37ea7d959ae39031413528627322f530e287c9c2c519069587487c5024",
+          "baseline_file": "car-2.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-2.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "0c243d393d58fc585a437ea02fb8a449b7ca2f9e6dc736ad035d3afa71f2e09d",
+          "baseline_file": "showcase-2.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-2.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "17ea0fe3f60448fd1e448c1396c398ab88e98679e9044b036fd1ffb27b5f658a",
+          "baseline_file": "race-car-2.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-2.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "7e7c6fc4a4adab175134733cd85c39f1767e2d64ab9ee215638116ed6178f20f",
+          "baseline_file": "race-close-car-2.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "brocken",
+      "frames": [
+        {
+          "view": "top",
+          "file": "brocken-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "6c473efb767c6e59c4db1da19d4a504352bb9fdf2cc09b9d38a146eef5fffd52",
+          "baseline_file": "brocken-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "brocken-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "925a0f682ca8e799fc7d88a19e72b98b9258778c68de312acde1de1844a54f95",
+          "baseline_file": "brocken-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "brocken-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "0f07e6ae5b3f9a2c95a2f24cdda6dbbbd5e5015de7be43755f9edf9ebe428401",
+          "baseline_file": "brocken-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "brocken-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "2f0da298eb57fe10740ddfaa19e085c4418f3d7944fda84e605a1c53cd045bd3",
+          "baseline_file": "brocken-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "brocken-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "20c60b3f0c622151c9f87c2610b7d8aa364d730308bdffe5c36b030d732084f1",
+          "baseline_file": "brocken-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "brocken-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "a0c458ea15aa74417ed83353f4fb8cc4530a590eb81119280617a1de960a1ade",
+          "baseline_file": "brocken-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "brocken-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "5d1497268ebcdd31921d55a72bca170c2d3b14763ca61a8e55437a97fda6a51f",
+          "baseline_file": "brocken-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-3.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "bb09d6a2993767c3f0c0ffa181437080e3ae61f9353e6cfe1b6171ce41af806f",
+          "baseline_file": "car-3.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-3.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "95c035dd29b74318a877a06cb286dfcd7646783b88d81e72d8c4ff826a376ac3",
+          "baseline_file": "showcase-3.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-3.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "beb59577a0fe66042f232332e3bf76661490501aef1981fca8a475b0856126d2",
+          "baseline_file": "race-car-3.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-3.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "d77ec9d685037b691c0aafa29948b7f7f3d5e9ecbbc54accd0d9e509cf6692f1",
+          "baseline_file": "race-close-car-3.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "cobra",
+      "frames": [
+        {
+          "view": "top",
+          "file": "cobra-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "8e7a3ec4afb1d39181cd7912220a53f7c5928f25183fda4ad4fb119b1a8087f7",
+          "baseline_file": "cobra-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "cobra-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "d9da9d4528d295f8add5012affe6b32cb18656847188142bdf9d2a25d0e9c6fb",
+          "baseline_file": "cobra-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "cobra-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "3a297a4133f4a182185909701b3bc53cf9f0ef4a6df7ca7f4a67f107a33cf894",
+          "baseline_file": "cobra-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "cobra-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "9f5c3478d0f3b44a9409dbfe53b7420ebe4b4052db7758af5ba7c27429d66345",
+          "baseline_file": "cobra-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "cobra-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "863b2a21149551522b7a37d1304248c2855a4559915811f6e4225ee96ea01ed9",
+          "baseline_file": "cobra-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "cobra-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "a4b9b6ac32a136d7f7c6630e6529a633d4924df51396f65eddbd678dd8e99e79",
+          "baseline_file": "cobra-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "cobra-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "66ca9ebc93a95dfa47228cc3097e8dfbdeb4082b761e6ff23702084f48c6849e",
+          "baseline_file": "cobra-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-4.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "321986a90bfa9cf980acca02fcca06da13d6d2c717ed44ad60e605beb039f7e1",
+          "baseline_file": "car-4.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-4.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "19617c3a9a6588b9a7590485eefc64501e95fd2a46264d7db8dd06ca1a1245d0",
+          "baseline_file": "showcase-4.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-4.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "c21c36c45089586539e61f491c52f52d81c18ba380d28415fb85c6f71567e9fd",
+          "baseline_file": "race-car-4.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-4.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "709573c1d23ecf9620b76343ee36c7dc87b1660bb541d81bb03715a86b53ccf5",
+          "baseline_file": "race-close-car-4.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "spider",
+      "frames": [
+        {
+          "view": "top",
+          "file": "spider-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "06f7f8ca7c56f1aae3162a9f0cbfb70ee3588770def0e87564b5fd766040e3e9",
+          "baseline_file": "spider-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "spider-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "c049e0e715998aaaa079acd736e5897a34fbda8948aaeba71319aa553029a654",
+          "baseline_file": "spider-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "spider-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "6cca5e7ccb59f7681f9cb232106c8b6c175c9cbdac30776d83a212dc7856f8e4",
+          "baseline_file": "spider-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "spider-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "74aece161d7b2d71931f656b5d63f34418445dbb30b16ed5bae038c9df562c6a",
+          "baseline_file": "spider-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "spider-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "347f84dd42cf09827c4133eaa19560314c624d8c11f68af6bfe20c56a79c7570",
+          "baseline_file": "spider-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "spider-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "6700188a9bec5364b6ead4a1c521bf15c2c2a20cc90f75faa86feedbb8b9839d",
+          "baseline_file": "spider-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "spider-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "0c3c4566c857ae378b7982676fa191e7486c62ea805d1c66a80325692192b8d6",
+          "baseline_file": "spider-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-5.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "0a0df1dcb36219406f1fefa977b6a9d06655e176b958e018b0c15d83b9e833f3",
+          "baseline_file": "car-5.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-5.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "116eaa38a792c3d1d92d3c4ecbf58d1d3456efb8baba87d202bd7b64812c6705",
+          "baseline_file": "showcase-5.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-5.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "a5dc79a5c1c04ef0df47d8284f0554dfd2b18f3a588122c468bac913dbccab76",
+          "baseline_file": "race-car-5.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-5.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "aa9ce6a25458fc2f035dbe9565b4cd8e91419af954c8d6d332f037d243f9e8e1",
+          "baseline_file": "race-close-car-5.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "stinger",
+      "frames": [
+        {
+          "view": "top",
+          "file": "stinger-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "9f7cb3f0a793103a657a4236292448851be73604b9d4bcf16c667155a3c634a0",
+          "baseline_file": "stinger-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "stinger-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "13814ab9f4111bf0e0cbb743d5c75ef65c865a673b4103414d3d616d72c0b595",
+          "baseline_file": "stinger-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "stinger-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "81b53a8b3979d88f43cc3bfea37d1512a593577e97dc3a9d195017951d30fbf5",
+          "baseline_file": "stinger-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "stinger-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "e63c1732588d11c83cd8c776a4028763eb8699f6603a282b31b01e0fda660d19",
+          "baseline_file": "stinger-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "stinger-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "c325b9eaf030287dd27a209f5095e67a540d1e55b35991b075b8fa61cabc1790",
+          "baseline_file": "stinger-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "stinger-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "ed79731839fee896953ddb9bc6efa445fb0530648bb7b3f79b9ce50eb64e68a6",
+          "baseline_file": "stinger-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "stinger-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "f8253429c17ebf0f02051455ec841a98b9102d09981eab8687102efcdbd49ddc",
+          "baseline_file": "stinger-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-6.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "cc3555f57e82acd00a145b195b1c5a1010ccbcaa9a22d350a411de20766a9cc3",
+          "baseline_file": "car-6.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-6.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "bb1e7f4e5aa96a6582145d59f216712f9fbfb60bb9bcbe4d27e900e2673c5db7",
+          "baseline_file": "showcase-6.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-6.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "701be7ca5a13ce5c27fc5e8ffe7c53ea65a1c3e331c5fd2316d5bbc020a88052",
+          "baseline_file": "race-car-6.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-6.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "502a43cb71a669982aa5132c85949b4e09b0f349cf673e478c83f4f5d4a64398",
+          "baseline_file": "race-close-car-6.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "diospada",
+      "frames": [
+        {
+          "view": "top",
+          "file": "diospada-top.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "670b63115caca28c8e3e641747bc6ca121cef78aa7b0d7d512c0bf05eac65fb1",
+          "baseline_file": "diospada-top.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "diospada-side.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "ee06b41186ad7d217a5662a3cca387ab70df93ca23b27ec90cc888ae112db3d7",
+          "baseline_file": "diospada-side.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "front",
+          "file": "diospada-front.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "580ba686f5e984c7986c8da40ef5c9ad1d1bbc2121872ba2e8dc63c726f35eba",
+          "baseline_file": "diospada-front.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "rear",
+          "file": "diospada-rear.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "c320b56c93eee40dd59b62fcdf45245d26fac2bbec60f3250c3b5670d18426cc",
+          "baseline_file": "diospada-rear.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "opposite",
+          "file": "diospada-opposite.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "5908a71d0dd0e6d2e065c27dd27f860f2de0b70f2b169c67917607d0fea52b56",
+          "baseline_file": "diospada-opposite.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "medium",
+          "file": "diospada-medium.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "924bdd3f776b919ccefe66d827c027b6acfcf0d472dd4e1c658c083e059f98ab",
+          "baseline_file": "diospada-medium.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "low",
+          "file": "diospada-low.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "e92cd9a6922c6f35ab32fd2a2ea472edb34a7d3bca504937f3b00abc5cb72538",
+          "baseline_file": "diospada-low.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "select",
+          "file": "car-7.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "0b3447e859d9be9b83dfc0204b8b3a91c473b56928d73d8601c14fbacf1ad1de",
+          "baseline_file": "car-7.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "showcase",
+          "file": "showcase-7.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "3f96e3c23a3ad342ff9129c67be48f5a666e2a8b0a1fb1784c5eaa27cc239ad3",
+          "baseline_file": "showcase-7.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_player",
+          "file": "race-car-7.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "e555a67062e2b00ebc3311c1198a490cef878e661e1b48013f9f617cf07de665",
+          "baseline_file": "race-car-7.ppm",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "race_opponent",
+          "file": "race-close-car-7.ppm",
+          "size": [
+            466,
+            466
+          ],
+          "pixel_sha256": "122a49126b68f63a5861f5410d23eabbe301accfe0449fff0d8004431ae7a66e",
+          "baseline_file": "race-close-car-7.ppm",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    }
+  ]
+}

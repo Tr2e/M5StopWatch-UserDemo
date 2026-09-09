@@ -37,6 +37,9 @@ compile_run car_geometry \
     "$repo_dir/tools/lets_and_go_car_geometry_test.cpp" \
     "$base/model/car_catalog.cpp" "$base/model/car_display_mesh.cpp"
 
+compile_run mesh_builder \
+    "$repo_dir/tools/lets_and_go_mesh_builder_test.cpp"
+
 compile_run garage_selection \
     "$repo_dir/tools/lets_and_go_garage_selection_test.cpp" \
     "$base/controller/garage_selection.cpp" \
@@ -144,4 +147,4 @@ compile_run vector_explicit_integration \
 echo "[host-test] production_renderers"
 bash "$repo_dir/tools/render_lets_and_go.sh" "$out_dir/frames"
 
-echo "[host-test] all 15 game suites, 15 Vector Run suites, and Launcher regression passed"
+echo "[host-test] all 16 game suites, 15 Vector Run suites, and Launcher regression passed"
