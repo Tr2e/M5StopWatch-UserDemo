@@ -1,0 +1,13 @@
+[1788921131406] [info] [RaceStage] track_us=97607 cars_us=188506 surfaces=110 cars=4
+[1788921131795] [info] [RacerPerf] screen=RACING source=device frames=6 fps_x10=27 draw_us=325339 present_us=32305 peak_us=372755 input_total_us=513 detail=low
+[1788921133517] [info] [RaceStage] track_us=87397 cars_us=211111 surfaces=41 cars=4
+[1788921133925] [info] [RacerPerf] screen=RACING source=device frames=6 fps_x10=28 draw_us=319957 present_us=32243 peak_us=363737 input_total_us=503 detail=low
+[1788921135684] [info] [RaceStage] track_us=97319 cars_us=191263 surfaces=102 cars=4
+[1788921136079] [info] [RacerPerf] screen=RACING source=device frames=6 fps_x10=27 draw_us=323679 present_us=32321 peak_us=361830 input_total_us=513 detail=low
+[1788921137852] [info] [RaceStage] track_us=88787 cars_us=212733 surfaces=37 cars=4
+[1788921138284] [info] [RacerPerf] screen=RACING source=device frames=6 fps_x10=27 draw_us=332381 present_us=32241 peak_us=387685 input_total_us=515 detail=low
+[1788921139942] [info] [RaceStage] track_us=146322 cars_us=198709 surfaces=378 cars=4
+[1788921140389] [info] [RacerPerf] screen=RACING source=device frames=5 fps_x10=23 draw_us=385388 present_us=32336 peak_us=428023 input_total_us=411 detail=low
+[1788921142118] [info] [RaceStage] track_us=110628 cars_us=58793 surfaces=184 cars=4
+[1788921142396] [info] [RacerPerf] screen=FINISH source=device frames=7 fps_x10=32 draw_us=252013 present_us=32298 peak_us=402978 input_total_us=596 detail=low
+[1788921144161] [info] [RacerPerf] screen=RESULTS source=device frames=4 fps_x10=20 draw_us=154615 present_us=32271 peak_us=233693 input_total_us=12639 detail=low

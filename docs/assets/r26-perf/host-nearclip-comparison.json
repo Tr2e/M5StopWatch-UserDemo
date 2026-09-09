@@ -1,0 +1,35 @@
+{
+  "method": "same working-tree sources and -O2; uncached copy replaces only drawRaceCar with e12cb44 implementation; 24 measured frames after one warmup; sequential paired runs",
+  "runs": [
+    {
+      "run": 1,
+      "version": "uncached",
+      "output": "garage_high mean_ms=1.733 median_ms=1.719 p95_ms=1.887\ngarage_low mean_ms=1.505 median_ms=1.504 p95_ms=1.561\nrace_high mean_ms=1.183 median_ms=1.198 p95_ms=1.325\nrace_low mean_ms=1.043 median_ms=1.038 p95_ms=1.218\nrace_close_high mean_ms=1.302 median_ms=1.201 p95_ms=1.815\nrace_close_low mean_ms=1.192 median_ms=1.111 p95_ms=1.535\nrace_nearclip_low mean_ms=1.465 median_ms=1.017 p95_ms=2.996\n"
+    },
+    {
+      "run": 1,
+      "version": "prepared",
+      "output": "garage_high mean_ms=1.611 median_ms=1.603 p95_ms=1.685\ngarage_low mean_ms=1.486 median_ms=1.483 p95_ms=1.511\nrace_high mean_ms=1.115 median_ms=1.129 p95_ms=1.276\nrace_low mean_ms=1.006 median_ms=1.019 p95_ms=1.124\nrace_close_high mean_ms=1.262 median_ms=1.171 p95_ms=1.699\nrace_close_low mean_ms=1.163 median_ms=1.124 p95_ms=1.509\nrace_nearclip_low mean_ms=0.932 median_ms=0.847 p95_ms=1.279\n"
+    },
+    {
+      "run": 2,
+      "version": "uncached",
+      "output": "garage_high mean_ms=1.614 median_ms=1.615 p95_ms=1.649\ngarage_low mean_ms=1.485 median_ms=1.476 p95_ms=1.552\nrace_high mean_ms=1.138 median_ms=1.158 p95_ms=1.291\nrace_low mean_ms=1.041 median_ms=1.052 p95_ms=1.160\nrace_close_high mean_ms=1.303 median_ms=1.224 p95_ms=1.757\nrace_close_low mean_ms=1.189 median_ms=1.105 p95_ms=1.575\nrace_nearclip_low mean_ms=1.477 median_ms=1.014 p95_ms=2.868\n"
+    },
+    {
+      "run": 2,
+      "version": "prepared",
+      "output": "garage_high mean_ms=1.611 median_ms=1.605 p95_ms=1.667\ngarage_low mean_ms=1.487 median_ms=1.480 p95_ms=1.540\nrace_high mean_ms=1.179 median_ms=1.197 p95_ms=1.302\nrace_low mean_ms=1.064 median_ms=1.027 p95_ms=1.304\nrace_close_high mean_ms=1.326 median_ms=1.220 p95_ms=1.845\nrace_close_low mean_ms=1.166 median_ms=1.103 p95_ms=1.540\nrace_nearclip_low mean_ms=0.950 median_ms=0.853 p95_ms=1.217\n"
+    },
+    {
+      "run": 3,
+      "version": "uncached",
+      "output": "garage_high mean_ms=1.624 median_ms=1.624 p95_ms=1.667\ngarage_low mean_ms=1.505 median_ms=1.502 p95_ms=1.572\nrace_high mean_ms=1.153 median_ms=1.206 p95_ms=1.308\nrace_low mean_ms=1.041 median_ms=1.039 p95_ms=1.178\nrace_close_high mean_ms=1.303 median_ms=1.223 p95_ms=1.739\nrace_close_low mean_ms=1.189 median_ms=1.118 p95_ms=1.541\nrace_nearclip_low mean_ms=1.466 median_ms=1.028 p95_ms=2.892\n"
+    },
+    {
+      "run": 3,
+      "version": "prepared",
+      "output": "garage_high mean_ms=1.619 median_ms=1.609 p95_ms=1.694\ngarage_low mean_ms=1.516 median_ms=1.500 p95_ms=1.668\nrace_high mean_ms=1.108 median_ms=1.117 p95_ms=1.280\nrace_low mean_ms=1.006 median_ms=1.030 p95_ms=1.131\nrace_close_high mean_ms=1.273 median_ms=1.184 p95_ms=1.730\nrace_close_low mean_ms=1.168 median_ms=1.089 p95_ms=1.530\nrace_nearclip_low mean_ms=0.924 median_ms=0.830 p95_ms=1.205\n"
+    }
+  ]
+}

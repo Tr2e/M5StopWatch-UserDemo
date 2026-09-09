@@ -18,8 +18,7 @@ RaceSetup fullGrid()
     RaceSetup setup;
     setup.playerCar = CarId::CycloneMagnum;
     setup.rivalMask = carMask(CarId::HurricaneSonic) |
-                      carMask(CarId::NeoTridaggerZmc) |
-                      carMask(CarId::BrockenGigant);
+                      carMask(CarId::NeoTridaggerZmc);
     return setup;
 }
 
@@ -27,9 +26,9 @@ bool runDeterministicRace(uint32_t seed, RaceSnapshot& result)
 {
     RaceController race;
     race.prepare(fullGrid(), seed);
-    bool valid = check(race.snapshot().carCount == 4u &&
-                           race.snapshot().playerIndex == 3u &&
-                           race.snapshot().player().position == 4u &&
+    bool valid = check(race.snapshot().carCount == kMaximumRaceCars &&
+                           race.snapshot().playerIndex == kMaximumRivals &&
+                           race.snapshot().player().position == kMaximumRaceCars &&
                            race.snapshot().player().motion.speed <
                                race.snapshot().cars[0].motion.speed,
                        "player was not placed last on full grid");
@@ -69,7 +68,7 @@ bool runDeterministicRace(uint32_t seed, RaceSnapshot& result)
     valid &= check(result.playerFinished && result.player().completedLaps == 3u,
                    "player did not finish three laps within bound");
     valid &= check(result.player().bestLapSeconds > 1.0f &&
-                       result.player().position >= 1u && result.player().position <= 4u,
+                       result.player().position >= 1u && result.player().position <= kMaximumRaceCars,
                    "lap timing or final position invalid");
     return valid;
 }
@@ -113,7 +112,7 @@ bool validateDeterminismAndModes()
     setup.playerCar = static_cast<CarId>(255u);
     setup.rivalMask = 255u;
     solo.prepare(setup, 5u);
-    valid &= check(solo.snapshot().carCount == 4u &&
+    valid &= check(solo.snapshot().carCount == kMaximumRaceCars &&
                        solo.snapshot().player().car == CarId::CycloneMagnum,
                    "malformed setup was not sanitized");
     for (std::size_t i = 0; i < solo.snapshot().carCount; ++i) {
@@ -131,10 +130,10 @@ bool validateDeterminismAndModes()
 
 int main()
 {
-    // Every legal roster, including bit 7, still fits the four-car race arrays.
+    // Every legal roster, including bit 7, still fits the bounded race arrays.
     for(std::size_t player=0;player<kCarCount;++player)for(unsigned mask=0;mask<256;++mask) {
         RaceSetup setup;setup.playerCar=static_cast<CarId>(player);setup.rivalMask=uint8_t(mask);
-        if(setup.hasRival(setup.playerCar) || setup.rivalCount()>3)continue;
+        if(setup.hasRival(setup.playerCar) || setup.rivalCount()>kMaximumRivals)continue;
         RaceController race;race.prepare(setup,123);
         if(race.snapshot().carCount!=setup.rivalCount()+1 || race.snapshot().player().car!=setup.playerCar)return 1;
         RacerInput input;input.valid=true;race.stepFixed(input);

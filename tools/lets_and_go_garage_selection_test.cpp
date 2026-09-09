@@ -109,9 +109,9 @@ bool validateExpandedRoster()
         unsigned added=0;
         for(std::size_t rival=0;rival<kCarCount;++rival)if(rival!=player) {
             const bool changed=flow.toggleRival(static_cast<CarId>(rival));
-            valid &= check(changed==(added<3),"three-rival limit not enforced");++added;
+            valid &= check(changed==(added<kMaximumRivals),"rival limit not enforced");++added;
         }
-        valid &= check(flow.setup().rivalCount()==3,"expanded roster changed grid capacity");
+        valid &= check(flow.setup().rivalCount()==kMaximumRivals,"expanded roster changed grid capacity");
     }
     return valid;
 }

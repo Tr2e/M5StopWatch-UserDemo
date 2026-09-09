@@ -58,6 +58,7 @@ private:
     float _filteredPitch = 0.0f;
     uint32_t _lastRgbUpdateMs = 0;
     uint32_t _lastRgbColor = UINT32_MAX;
+    std::atomic<uint32_t> _requestedRgb{0};
     DebouncedActiveLowButton _stickButton;
     bool _calibrated = false;
     bool _opened = false;

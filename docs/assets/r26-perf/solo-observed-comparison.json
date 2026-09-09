@@ -1,0 +1,51 @@
+{
+  "note": "Manual races, not synchronized A/B; both cars=1, sampled car=1; track identity not logged.",
+  "statistics": {
+    "v8-solo-native-fallback": {
+      "windows": 21,
+      "fps_x10": {
+        "min": 59,
+        "median": 63,
+        "max": 68
+      },
+      "draw_us": {
+        "min": 111109,
+        "median": 120286,
+        "max": 133491
+      },
+      "present_us": {
+        "min": 32297,
+        "median": 32339,
+        "max": 32747
+      },
+      "peak_us": {
+        "min": 154131,
+        "median": 169631,
+        "max": 185991
+      }
+    },
+    "v9-solo-half": {
+      "windows": 10,
+      "fps_x10": {
+        "min": 78,
+        "median": 82.5,
+        "max": 88
+      },
+      "draw_us": {
+        "min": 78599,
+        "median": 86067.5,
+        "max": 93872
+      },
+      "present_us": {
+        "min": 32303,
+        "median": 32374.5,
+        "max": 32659
+      },
+      "peak_us": {
+        "min": 115984,
+        "median": 143509.5,
+        "max": 151938
+      }
+    }
+  }
+}

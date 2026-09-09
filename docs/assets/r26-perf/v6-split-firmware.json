@@ -1,0 +1,8 @@
+{
+  "sha256": "905efe41c0449ed15ee8295b7aed1e7981a98fe076a2af772c52e658b01f5635",
+  "bytes": 4907376,
+  "changes": [
+    "separate 25088-byte internal allocations for car depth and color, each with fallback"
+  ],
+  "validation": "renderer ASan/UBSan passed"
+}

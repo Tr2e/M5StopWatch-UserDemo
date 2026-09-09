@@ -1,0 +1,20 @@
+{
+  "version": "v14-track-colors-visibility",
+  "sha256": "37b681e92432ca18163fccd3c85c5fb15a45d67e84ef57fae58d2e8d3b8da382",
+  "bytes": 4924304,
+  "track_palette": "original track_paint::module white/red/blue, depth brightness only",
+  "scene": [
+    234,
+    233
+  ],
+  "car_rendering": "unchanged v12 player quality / Minimal rivals",
+  "optimization": [
+    "near-clipped section candidate bounds",
+    "reject occluders fully behind section",
+    "cache projected polygon winding in existing padding"
+  ],
+  "heap_buffers_added": 0,
+  "surface_cache_bytes_host": 904824,
+  "diagnostics": "WirePeak every ~2 seconds: maximum track time, camera, projected faces, sections, near-plane sections, strokes, conservative candidate budget",
+  "app_flash": "Hash of data verified; RTS reset; Done"
+}

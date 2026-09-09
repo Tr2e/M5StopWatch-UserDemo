@@ -3,7 +3,7 @@
 
 namespace lets_and_go {
 
-enum class CarSurfaceDetail : uint8_t { Low, Medium, High };
+enum class CarSurfaceDetail : uint8_t { Low, Medium, High, Minimal };
 enum class CarPart : uint8_t {
     Unspecified, Chassis, Wheel, Roller, Nose, Canopy, RearCowl, FrontCowl,
     SideWeb, Intake, RearWing, FrontBridge, SideGuard, MotorBlock, TailFin

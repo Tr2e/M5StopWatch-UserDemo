@@ -1,0 +1,8 @@
+{
+  "base": "e12cb44",
+  "sha256": "8eb022c6cd36ee7a3a01e33ad83ecc5e12cf360cc8173f9663cfe7ee03a9f26c",
+  "bytes": 4903392,
+  "device": "StopWatch ESP32-S3",
+  "input": "device buttons + touch",
+  "note": "app-flash only; joystick/button external validation pending"
+}

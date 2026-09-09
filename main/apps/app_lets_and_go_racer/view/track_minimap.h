@@ -39,15 +39,16 @@ struct TrackMiniMap {
             return ay==by ? a<b : ay<by;
         });
     }
-    void draw(LGFX_Sprite& canvas) const {
-        canvas.fillCircle(centerX,centerY,radius,track_paint::night);
-        canvas.drawCircle(centerX,centerY,radius,track_paint::ridge);
+    void draw(LGFX_Sprite& canvas,int originX=0,int originY=0) const {
+        canvas.fillCircle(centerX-originX,centerY-originY,radius,track_paint::night);
+        canvas.drawCircle(centerX-originX,centerY-originY,radius,track_paint::ridge);
         const auto line=[&](Point a,Point b,uint16_t color) {
-            canvas.drawLine(a.x,a.y,b.x,b.y,color);
+            canvas.drawLine(a.x-originX,a.y-originY,b.x-originX,b.y-originY,color);
         };
         for(int pass=0;pass<2;++pass) for(auto i:order) {
-            const auto a=section[i].left,b=section[i].right;
-            const auto c=section[i+1].right,d=section[i+1].left;
+            const auto local=[&](Point p){return Point{int16_t(p.x-originX),int16_t(p.y-originY)};};
+            const auto a=local(section[i].left),b=local(section[i].right);
+            const auto c=local(section[i+1].right),d=local(section[i+1].left);
             const auto paint=track_paint::module(i);
             // All contact shadows precede the ribbon. A per-segment shadow
             // would cut stripes into the neighbouring module at this size.
@@ -58,8 +59,9 @@ struct TrackMiniMap {
             }
             canvas.fillTriangle(a.x,a.y,b.x,b.y,c.x,c.y,paint.deck);
             canvas.fillTriangle(a.x,a.y,c.x,c.y,d.x,d.y,paint.deck);
-            line(a,d,paint.wall);line(b,c,paint.wall);
-            if(i==0)line(a,b,track_paint::edge);
+            line(section[i].left,section[i+1].left,paint.wall);
+            line(section[i].right,section[i+1].right,paint.wall);
+            if(i==0)line(section[i].left,section[i].right,track_paint::edge);
         }
     }
 };

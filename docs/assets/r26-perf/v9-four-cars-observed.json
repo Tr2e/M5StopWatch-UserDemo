@@ -1,0 +1,23 @@
+{
+  "windows": 17,
+  "fps_x10": {
+    "min": 42,
+    "median": 54,
+    "max": 59
+  },
+  "draw_us": {
+    "min": 131924,
+    "median": 147155,
+    "max": 196506
+  },
+  "present_us": {
+    "min": 32266,
+    "median": 32354,
+    "max": 32476
+  },
+  "peak_us": {
+    "min": 176749,
+    "median": 195563,
+    "max": 250935
+  }
+}

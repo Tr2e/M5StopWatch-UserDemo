@@ -174,6 +174,10 @@ bool validateDisplayMeshes()
         valid &= check(!mesh.overflowed && mesh.count<mediumCount && mediumCount<highCount,
                        "adaptive surface quality does not reduce geometry");
         valid &= check(mesh.count<=1024, "race solid mesh exceeds compact storage");
+        const auto lowCount=mesh.count;
+        buildCarDisplayMesh(spec.id,mesh,CarSurfaceDetail::Minimal);
+        std::cout<<spec.shortName<<" minimal opponent panels: "<<mesh.count<<'\n';
+        valid &= check(!mesh.overflowed && mesh.count<lowCount,"minimal opponent geometry did not shrink");
         for(std::size_t i=0;i<mesh.count;++i)
             valid &= check(mesh.panels[i].parent==0xffffu || mesh.panels[i].parent<i,
                            "low detail invalidated attached decal index");
@@ -242,7 +246,7 @@ bool validateMagnumStructure()
     const auto trackPoint=carPointInTrackBasis({.3f,.4f,.5f});
     valid &= check(trackPoint.x==-.3f && trackPoint.y==.4f && trackPoint.z==.5f,
                    "garage-front and track-right handedness no longer agree");
-    for(auto detail : {CarSurfaceDetail::Low,CarSurfaceDetail::Medium,CarSurfaceDetail::High}) {
+    for(auto detail : {CarSurfaceDetail::Minimal,CarSurfaceDetail::Low,CarSurfaceDetail::Medium,CarSurfaceDetail::High}) {
         CarDisplayMesh mesh;
         buildCarDisplayMesh(CarId::CycloneMagnum,mesh,detail);
         std::array<unsigned,11> parts{};
@@ -315,7 +319,7 @@ bool validateMagnumStructure()
 bool validateRebuiltStructure(CarId car)
 {
     bool valid=true;
-    for(auto detail : {CarSurfaceDetail::Low,CarSurfaceDetail::Medium,CarSurfaceDetail::High}) {
+    for(auto detail : {CarSurfaceDetail::Minimal,CarSurfaceDetail::Low,CarSurfaceDetail::Medium,CarSurfaceDetail::High}) {
         CarDisplayMesh mesh;
         buildCarDisplayMesh(car,mesh,detail);
         std::array<unsigned,static_cast<unsigned>(CarPart::TailFin)+1> parts{};

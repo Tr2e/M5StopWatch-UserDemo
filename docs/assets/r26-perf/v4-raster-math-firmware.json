@@ -1,0 +1,12 @@
+{
+  "base": "e12cb44",
+  "sha256": "1fbf18533bce7bead571a9a1c5106294a01aac5cc3ec77fc71d90e4b1c947df9",
+  "bytes": 4905168,
+  "changes": [
+    "bounded floor/ceil in raster loops",
+    "four projections per fully visible garage panel",
+    "race scenery disabled",
+    "track/car substage counters"
+  ],
+  "validation": "renderer ASan/UBSan passed; 100000 float bit patterns; 169 captures changed only in scenery area"
+}

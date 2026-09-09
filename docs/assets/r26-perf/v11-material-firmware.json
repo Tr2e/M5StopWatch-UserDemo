@@ -1,0 +1,21 @@
+{
+  "version": "v11-material",
+  "sha256": "5b681256152d59c3afb2ebb6bec81baa2a55c82afde0f369f4d9e7fe5bafc2f8",
+  "bytes": 4915536,
+  "scene": [
+    234,
+    233
+  ],
+  "hud": [
+    468,
+    466
+  ],
+  "texture_side": 32,
+  "texture_capacity": 64,
+  "texture_cache_bytes": 131460,
+  "minimap_image": [
+    87,
+    87
+  ],
+  "minimap_pixel_bytes": 15138
+}

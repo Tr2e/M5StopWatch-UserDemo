@@ -1,0 +1,16 @@
+{
+  "baseline_frames": 222,
+  "baseline_unchanged": 222,
+  "wireframe_captures": 10,
+  "candidate_filter_pixel_differences": [],
+  "ASan_UBSan": "passed",
+  "occlusion_equivalence": "288 poses across 2 tracks and 3 detail levels",
+  "canvas": [
+    468,
+    466
+  ],
+  "scene": [
+    234,
+    233
+  ]
+}

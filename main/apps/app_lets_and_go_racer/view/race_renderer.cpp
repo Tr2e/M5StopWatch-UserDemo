@@ -9,6 +9,10 @@
 #include <cmath>
 #include <cstdio>
 #include <new>
+#ifdef ESP_PLATFORM
+#include <esp_timer.h>
+#include <mooncake_log.h>
+#endif
 
 namespace lets_and_go {
 namespace {
@@ -17,6 +21,10 @@ constexpr uint16_t kPaper = 0xef3au;
 constexpr uint16_t kPencil = 0x4269u;
 constexpr uint16_t kFaint = 0x9cd3u;
 constexpr uint16_t kWarning = 0xd945u;
+// Panel_CO5300 exposes 468 x 466. Keep capacity independent of the older
+// square host captures, and share it between the guard and the copy buffer.
+constexpr int kUpscaleRowPixels = 480;
+constexpr uint16_t kMapTransparent=0xf81fu;
 
 void panel(LGFX_Sprite& canvas,int x,int y,int width,int height,int radius,uint16_t color)
 {
@@ -65,63 +73,108 @@ TrackVec3 carPointToWorld(CarPoint point, const CarPose& pose)
 void drawRaceCar(LGFX_Sprite& canvas,const TrackCamera& camera,
                  const OverpassTrack& track,const RaceCarSnapshot& car,
                  const RaceSurfaceMesh& mesh,CarSurfaceRaster<112,112>& raster,
-                 const PencilOcclusion& occlusion,PencilDetail)
+                 const PencilOcclusion& occlusion,
+                 std::array<PreparedCarPanel,RaceSurfaceMesh::kMaximumPanels+12u>& prepared,
+                 std::array<RaceProjectedVertex,RaceSurfaceMesh::kMaximumVertices>& vertices,PencilDetail,
+                 float occlusionScale=1.f)
 {
+#ifdef ESP_PLATFORM
+    const uint64_t startUs=esp_timer_get_time();
+    uint64_t rasterUs=0,blitUs=0;
+    unsigned tiles=0;
+#endif
     const auto frame=track.sample(car.motion.distance);
     const auto pose=makeCarPose(frame,car);
-    // Derive screen bounds from the complete rotated car, not from its centre.
-    // Very close/lapped cars may span several tiles; they must not get square-cut.
-    float left=float(canvas.width()),right=0,top=float(canvas.height()),bottom=0;
-    bool inFront=false,nearClipped=false;
-    for(float x : {-.64f,.64f}) for(float y : {0.f,.64f}) for(float z : {-1.f,1.f}) {
-        const auto point=trackToCamera(camera,carPointToWorld({x,y,z},pose));
-        if(point.z<kTrackNearPlane) {nearClipped=true;continue;}
-        TrackScreenPoint p{};
-        if(!projectTrackPoint(camera,point,p))continue;
-        inFront=true;left=std::min(left,p.x);right=std::max(right,p.x);
-        top=std::min(top,p.y);bottom=std::max(bottom,p.y);
-    }
-    if(!inFront)return;
-    if(nearClipped) {left=0;top=0;right=canvas.width()-1;bottom=canvas.height()-1;}
-    if(right<0 || bottom<0 || left>=canvas.width() || top>=canvas.height())return;
-    const int x0=int(std::max(0.f,std::floor(left))),y0=int(std::max(0.f,std::floor(top)));
-    const int x1=int(std::min(float(canvas.width()-1),std::ceil(right)));
-    const int y1=int(std::min(float(canvas.height()-1),std::ceil(bottom)));
     const float phase=car.motion.distance/(.34f*kModelWheelRadius);
     const float cosine=std::cos(phase),sine=std::sin(phase);
     const auto transform=[&](CarPoint p,uint8_t wheel) {
         return trackToCamera(camera,carPointToWorld(animateCarPanelPoint(p,wheel,cosine,sine),pose));
     };
-    for(int y=y0;y<=y1;y+=112) for(int x=x0;x<=x1;x+=112) {
-        raster.begin(x,y);
-        for(int i=0;i<12;++i) {
-            const float a=i*6.2831853f/12,b=(i+1)*6.2831853f/12;
-            CarPanel shadow;
-            shadow.point={{{0,.001f,0},{.52f*std::cos(a),.001f,.82f*std::sin(a)},
-                           {.52f*std::cos(b),.001f,.82f*std::sin(b)},{0,.001f,0}}};
-            shadow.color=0x9cd3;
-            raster.panel(camera,shadow,transform);
+    // Adjacent panels share geometry, even where their paint/UVs differ.
+    for(std::size_t i=0;i<mesh.vertexCount;++i) {
+        const auto key=mesh.vertexCorner[i];const auto& face=mesh.panels[key/4];
+        auto& vertex=vertices[i];
+        vertex.camera=transform(face.point[key%4],face.wheel);
+        vertex.inverse=vertex.camera.z>=kTrackNearPlane ? 1.f/vertex.camera.z : 0;
+        if(vertex.inverse>0) {
+            vertex.screen={camera.principalX+camera.focalLength*vertex.camera.x*vertex.inverse,
+                           camera.principalY-camera.focalLength*vertex.camera.y*vertex.inverse};
         }
-        for(std::size_t i=0;i<mesh.count;++i)raster.panel(camera,mesh.panels[i],transform);
-        raster.blit(canvas,&occlusion);
     }
-}
-
-void drawSpeedLines(LGFX_Sprite& canvas, const RaceCarSnapshot& player,
-                    uint32_t elapsedMs, PencilDetail detail)
-{
-    if (player.motion.speed < 8.0f) return;
-    int count = player.motion.speed > 18.0f ? 10 : player.motion.speed > 12.0f ? 6 : 2;
-    if (detail == PencilDetail::Medium) count = std::max(2, count - 2);
-    if (detail == PencilDetail::Low) count = std::max(1, count / 2);
-    for (int index = 0; index < count; ++index) {
-        const float travel = std::fmod(elapsedMs * 0.00065f + index * 0.173f, 1.0f);
-        const int side = (index & 1) == 0 ? -1 : 1;
-        const int x = 233 + side * static_cast<int>(80 + 140 * travel);
-        const int y = 175 + static_cast<int>(200 * travel);
-        const int length = 10 + static_cast<int>(player.motion.speed * 0.7f);
-        canvas.drawLine(x, y, x + side * length, y + 8 + static_cast<int>(10 * travel), kFaint);
+    std::size_t count=0;
+    float left=float(canvas.width()),right=0,top=float(canvas.height()),bottom=0;
+    const auto append=[&](const PreparedCarPanel& panel) {
+        if(!panel.visibility)return;
+        left=std::min(left,panel.left);right=std::max(right,panel.right);
+        top=std::min(top,panel.top);bottom=std::max(bottom,panel.bottom);
+        ++count;
+    };
+    for(int i=0;i<12;++i) {
+        const float a=i*6.2831853f/12,b=(i+1)*6.2831853f/12;
+        CarPanel shadow;
+        shadow.point={{{0,.001f,0},{.52f*std::cos(a),.001f,.82f*std::sin(a)},
+                       {.52f*std::cos(b),.001f,.82f*std::sin(b)},{0,.001f,0}}};
+        shadow.color=0x9cd3;
+        prepareCarPanel(prepared[count],camera,shadow,transform);
+        append(prepared[count]);
     }
+    for(std::size_t i=0;i<mesh.count;++i) {
+        auto& panel=prepared[count];const auto& face=mesh.panels[i];
+        unsigned front=0;
+        for(unsigned c=0;c<4;++c)if(vertices[mesh.cornerIndex[i*4+c]].inverse>0)++front;
+        if(front==0)continue;
+        if(front!=4) {
+            unsigned corner=0;
+            prepareCarPanel(panel,camera,face,[&](CarPoint,uint8_t) {
+                return vertices[mesh.cornerIndex[i*4+corner++]].camera;
+            });
+        } else {
+            panel.visibility=1;panel.color=face.color;panel.paint=face.paint;panel.light=face.light;
+            panel.left=panel.top=1e20f;panel.right=panel.bottom=-1e20f;
+            new(&panel.screen) decltype(panel.screen);
+            for(unsigned c=0;c<4;++c) {
+                const auto& v=vertices[mesh.cornerIndex[i*4+c]];
+                panel.screen[c]={v.screen.x,v.screen.y,v.inverse,
+                    ((c==0 || c==3 ? face.u0 : face.u1)/255.f)*v.inverse,
+                    ((c<2 ? face.v0 : face.v1)/255.f)*v.inverse};
+                panel.left=std::min(panel.left,v.screen.x);panel.right=std::max(panel.right,v.screen.x);
+                panel.top=std::min(panel.top,v.screen.y);panel.bottom=std::max(panel.bottom,v.screen.y);
+            }
+        }
+        append(panel);
+    }
+    if(!count || right<0 || bottom<0 || left>=canvas.width() || top>=canvas.height())return;
+    const int x0=int(std::max(0.f,std::floor(left))),y0=int(std::max(0.f,std::floor(top)));
+    const int x1=int(std::min(float(canvas.width()-1),std::ceil(right)));
+    const int y1=int(std::min(float(canvas.height()-1),std::ceil(bottom)));
+#ifdef ESP_PLATFORM
+    const uint64_t prepareUs=esp_timer_get_time();
+#endif
+    for(int y=y0;y<=y1;y+=112) for(int x=x0;x<=x1;x+=112) {
+#ifdef ESP_PLATFORM
+        const uint64_t tileStartUs=esp_timer_get_time();
+#endif
+        raster.begin(x,y);
+        for(std::size_t i=0;i<count;++i)raster.preparedPanel(camera,prepared[i]);
+#ifdef ESP_PLATFORM
+        const uint64_t tileDrawUs=esp_timer_get_time();
+        rasterUs+=tileDrawUs-tileStartUs;
+        ++tiles;
+#endif
+        raster.blit(canvas,&occlusion,occlusionScale);
+#ifdef ESP_PLATFORM
+        blitUs+=esp_timer_get_time()-tileDrawUs;
+#endif
+    }
+#ifdef ESP_PLATFORM
+    const uint64_t endUs=esp_timer_get_time();
+    static uint64_t lastLogUs=0;
+    if(endUs-lastLogUs>=2000000u) {
+        lastLogUs=endUs;
+        mclog::tagInfo("CarStage","car={} panels={} vertices={} tiles={} prepare_us={} raster_us={} blit_us={}",
+            int(car.car),count,mesh.vertexCount,tiles,uint32_t(prepareUs-startUs),uint32_t(rasterUs),uint32_t(blitUs));
+    }
+#endif
 }
 
 void drawPaperAndMountains(LGFX_Sprite& canvas, PencilDetail detail)
@@ -147,8 +200,11 @@ void drawPaperAndMountains(LGFX_Sprite& canvas, PencilDetail detail)
 
 void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
              const OverpassTrack& track,
-             const TrackMiniMap& miniMap)
+             const TrackMiniMap& miniMap,LGFX_Sprite* mapImage)
 {
+#ifdef ESP_PLATFORM
+    const uint64_t hudStartedUs=esp_timer_get_time();
+#endif
     // Paper instrument cards keep labels readable below the dark bridge and
     // on the newly coloured road, without text-sized cream cut-outs.
     const auto card=[&](int x,int y,int width,int height,int radius) {
@@ -178,8 +234,21 @@ void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
                     6, carSpec(player.car).accentColor);
     canvas.drawString("BOOST", 306, 394);
 
-    miniMap.draw(canvas);
-    // Rivals first, player last: even four cars at the same pixel cannot hide
+#ifdef ESP_PLATFORM
+    const uint64_t mapStartedUs=esp_timer_get_time();
+#endif
+    if(mapImage) {
+#ifdef ESP_PLATFORM
+        canvas.pushImage(TrackMiniMap::centerX-TrackMiniMap::radius,
+            TrackMiniMap::centerY-TrackMiniMap::radius,mapImage->width(),mapImage->height(),
+            static_cast<const lgfx::swap565_t*>(mapImage->getBuffer()),lgfx::rgb565_t(kMapTransparent));
+#else
+        canvas.pushImage(TrackMiniMap::centerX-TrackMiniMap::radius,
+            TrackMiniMap::centerY-TrackMiniMap::radius,mapImage->width(),mapImage->height(),
+            static_cast<const uint16_t*>(mapImage->getBuffer()),kMapTransparent);
+#endif
+    } else miniMap.draw(canvas);
+    // Rivals first, player last: even a full grid at the same pixel cannot hide
     // the player's contrasting locator. Projection is shared with the road.
     for(int pass=0;pass<2;++pass) for (std::size_t index = 0; index < race.carCount; ++index) {
         const RaceCarSnapshot& car = race.cars[index];
@@ -198,6 +267,15 @@ void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
             canvas.fillCircle(x,y,1,color);
         }
     }
+#ifdef ESP_PLATFORM
+    const uint64_t hudFinishedUs=esp_timer_get_time();
+    static uint64_t lastHudLogUs=0;
+    if(hudFinishedUs-lastHudLogUs>=2000000u) {
+        lastHudLogUs=hudFinishedUs;
+        mclog::tagInfo("HudStage","map_us={} total_us={} map_cached={}",
+            uint32_t(hudFinishedUs-mapStartedUs),uint32_t(hudFinishedUs-hudStartedUs),bool(mapImage));
+    }
+#endif
 }
 
 void formatRaceTime(float seconds, char* output, std::size_t capacity)
@@ -254,11 +332,51 @@ void drawResults(LGFX_Sprite& canvas, const RaceSnapshot& race,
 
 }  // namespace
 
-void RaceRenderer::open(int width, int height)
+void RaceRenderer::open(int width, int height, bool halfResolution, bool raceCaches,bool playerQuality,
+                        bool wireframeTrack)
 {
+    _playerQuality=playerQuality;
+    _wireframeTrack=wireframeTrack;
     _width = width;
     _height = height;
+    _scene.reset();
+    _paintAtlas.reset();_miniMapImage.reset();
+    if(raceCaches) {
+        _paintAtlas.reset(new(std::nothrow) RacePaintAtlas);
+        _miniMapImage.reset(new(std::nothrow) LGFX_Sprite);
+        if(_miniMapImage) {
+            _miniMapImage->setPsram(true);_miniMapImage->setColorDepth(16);
+            constexpr int side=TrackMiniMap::radius*2+1;
+            if(!_miniMapImage->createSprite(side,side))_miniMapImage.reset();
+        }
+    }
+    // The fixed row buffer supports the device's native width. On allocation
+    // failure keep the original renderer; HUD and controls always stay native.
+    if (halfResolution && width > 0 && width <= kUpscaleRowPixels && height > 0 &&
+        width % 2 == 0 && height % 2 == 0) {
+        _scene.reset(new(std::nothrow) LGFX_Sprite);
+        if (_scene) {
+            _scene->setPsram(true);
+            _scene->setColorDepth(16);
+            if (!_scene->createSprite(width / 2, height / 2)) _scene.reset();
+        }
+    }
+#ifdef ESP_PLATFORM
+    mclog::tagInfo("RacerMemory", "scene={}x{} requested_half={}",
+        _scene ? _scene->width() : width, _scene ? _scene->height() : height, halfResolution);
+#endif
     _surface.reset(new(std::nothrow) RaceSurfaceCache);
+    if(_surface) {
+        const bool rows=_surface->occlusion.preferInternalMemory();
+        const unsigned planes=_surface->raster.preferInternalMemory();
+#ifdef ESP_PLATFORM
+        mclog::tagInfo("RacerMemory","track_rows_internal={} car_planes_internal={} free_internal={} largest_internal={}",
+            rows,planes,heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT));
+#else
+        (void)rows;(void)planes;
+#endif
+    }
     _cachedTrack = TrackId::Count;
 }
 
@@ -267,12 +385,14 @@ void RaceRenderer::close()
     _width = 0;
     _height = 0;
     _surface.reset();
+    _scene.reset();
+    _paintAtlas.reset();_miniMapImage.reset();
 }
 
 void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
                           const ResultsSelection& results,
                           uint32_t screenElapsedMs, bool pausedForInputLoss,
-                          PencilDetail detail)
+                          PencilDetail detail, bool deviceControls)
 {
     if (_width <= 0 || _height <= 0 || !race.prepared()) return;
     auto& canvas = GetHAL().getCanvas();
@@ -285,38 +405,82 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         return;
     }
     const auto surfaceDetail=detail==PencilDetail::Low ? CarSurfaceDetail::Low : CarSurfaceDetail::Medium;
+    bool materialsChanged=false;
     {
         for(std::size_t i=0;i<race.snapshot().carCount;++i) {
             const auto id=race.snapshot().cars[i].car;
-            if(_surface->detail==surfaceDetail && _surface->cars[i]==id)continue;
             auto& mesh=_surface->meshes[i];
+            const auto meshDetail=_playerQuality ? (race.snapshot().cars[i].player ?
+                CarSurfaceDetail::Medium : CarSurfaceDetail::Minimal) : surfaceDetail;
+            if(mesh.detail==meshDetail && _surface->cars[i]==id)continue;
+            materialsChanged=true;
             const auto built=buildCarSurfaceInto(id,mesh.panels.data(),
-                                                 mesh.panels.size(),surfaceDetail);
+                                                 mesh.panels.size(),meshDetail);
             if(built.overflowed) {_surface.reset();return;}
             mesh.count=built.count;
+            mesh.detail=meshDetail;
+            mesh.indexVertices(_surface->vertexSlots);
             _surface->cars[i]=id;
         }
         // Inactive slots may retain another quality tier from an earlier race.
-        // Invalidate them before a later solo -> four-car roster expansion.
-        for(std::size_t i=race.snapshot().carCount;i<kMaximumRaceCars;++i)
+        // Invalidate them before a later solo -> full roster expansion.
+        for(std::size_t i=race.snapshot().carCount;i<kMaximumRaceCars;++i) {
+            materialsChanged|=_surface->cars[i]!=CarId::Count;
             _surface->cars[i]=CarId::Count;
+        }
         _surface->detail=surfaceDetail;
     }
+    if(_paintAtlas && materialsChanged) {
+        _paintAtlas->clear();
+        unsigned missed=0;
+        for(std::size_t i=0;i<race.snapshot().carCount;++i) {
+            if(_playerQuality && race.snapshot().cars[i].player)continue;
+            const auto& mesh=_surface->meshes[i];
+            for(std::size_t p=0;p<mesh.count;++p) {
+                const auto& face=mesh.panels[p];
+                if(!_paintAtlas->add(face.paint,face.color,face.light))++missed;
+            }
+        }
+#ifdef ESP_PLATFORM
+        mclog::tagInfo("RacerMaterial","texture_side={} entries={} fallback_panels={} map_cached={}",
+            RacePaintAtlas::kSide,_paintAtlas->count(),missed,bool(_miniMapImage));
+#else
+        (void)missed;
+#endif
+    }
+    _surface->raster.setPaintAtlas(_paintAtlas.get());
     if (flow.screen() == GameScreen::Results) {
         drawResults(canvas, race.snapshot(), results);
+        if (deviceControls) {
+            canvas.setTextSize(1); canvas.setTextColor(kPencil,kPaper);
+            canvas.drawString("A: NEXT   B: SELECT",_width/2,421);
+        }
         return;
     }
     if (_cachedTrack != race.track().id()) {
         _trackGeometry.open(race.track());
         _miniMap.open(_trackGeometry);
+        if(_miniMapImage) {
+            _miniMapImage->fillScreen(kMapTransparent);
+            _miniMap.draw(*_miniMapImage,TrackMiniMap::centerX-TrackMiniMap::radius,
+                TrackMiniMap::centerY-TrackMiniMap::radius);
+        }
         _cachedTrack = race.track().id();
     }
-    track_paint::backdrop(canvas,detail);
+    auto& scene = _scene ? *_scene : canvas;
+    track_paint::backdrop(scene,detail,false);
     const RaceSnapshot& snapshot = race.snapshot();
     const RaceCarSnapshot& player = snapshot.player();
     const TrackFrame playerFrame = race.track().sample(player.motion.distance);
-    const TrackCamera camera=makeRacerChaseCamera(playerFrame,player.motion.lateralOffset,_width,_height);
-    drawPencilTrack(canvas, camera, _trackGeometry, detail, &_surface->occlusion);
+    const TrackCamera camera=makeRacerChaseCamera(playerFrame,player.motion.lateralOffset,scene.width(),scene.height());
+#ifdef ESP_PLATFORM
+    const uint64_t trackStartedUs=esp_timer_get_time();
+#endif
+    drawPencilTrack(scene, camera, _trackGeometry, detail, &_surface->occlusion,!_playerQuality,
+                    _wireframeTrack);
+#ifdef ESP_PLATFORM
+    const uint64_t trackFinishedUs=esp_timer_get_time();
+#endif
 
     std::array<std::size_t, kMaximumRaceCars> order{};
     std::array<float, kMaximumRaceCars> depth{};
@@ -326,22 +490,83 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
     }
     std::sort(order.begin(), order.begin() + snapshot.carCount,
               [&](std::size_t a, std::size_t b) { return depth[a] > depth[b]; });
-    for (std::size_t slot = 0; slot < snapshot.carCount; ++slot) {
-        const RaceCarSnapshot& car = snapshot.cars[order[slot]];
-        if (depth[order[slot]] < kTrackNearPlane || !car.active ||
-            (car.finished && !car.player)) continue;
-        drawRaceCar(canvas, camera, race.track(), car,
-                    _surface->meshes[order[slot]], _surface->raster, _surface->occlusion, detail);
+    unsigned submitted=0;
+#ifdef ESP_PLATFORM
+    uint32_t playerUs=0,opponentsUs=0;
+#endif
+    const auto submit=[&](std::size_t index,LGFX_Sprite& target,const TrackCamera& view,float scale) {
+        const auto& car=snapshot.cars[index];
+        if(depth[index]<kTrackNearPlane || !car.active || (car.finished && !car.player))return;
+        _surface->raster.setPaintAtlas(_playerQuality && car.player ? nullptr : _paintAtlas.get());
+#ifdef ESP_PLATFORM
+        const uint64_t beginUs=esp_timer_get_time();
+#endif
+        drawRaceCar(target,view,race.track(),car,_surface->meshes[index],_surface->raster,
+            _surface->occlusion,_surface->preparedPanels,_surface->projectedVertices,detail,scale);
+        ++submitted;
+#ifdef ESP_PLATFORM
+        const uint32_t elapsed=esp_timer_get_time()-beginUs;
+        if(car.player)playerUs+=elapsed;else opponentsUs+=elapsed;
+#endif
+    };
+    // Preserve the existing far-to-near car ordering across both resolutions.
+    // Opponents behind the player in draw order stay in the small scene; after
+    // upscaling, the player and any closer opponents use the native canvas.
+    std::size_t nativeBegin=snapshot.carCount;
+    for(std::size_t slot=0;slot<snapshot.carCount;++slot) {
+        if(_playerQuality && _scene && snapshot.cars[order[slot]].player) {
+            nativeBegin=slot;break;
+        }
+        submit(order[slot],scene,camera,1.f);
     }
-    if (flow.screen() == GameScreen::Racing)
-        drawSpeedLines(canvas, player, screenElapsedMs, detail);
+#ifdef ESP_PLATFORM
+    const uint64_t carsFinishedUs=esp_timer_get_time();
+#endif
+    if (_scene) {
+        // Sprite storage is byte-swapped RGB565 on M5GFX. Preserve that type
+        // so pushImage can copy complete rows without per-pixel conversion.
+#ifdef ESP_PLATFORM
+        using ScenePixel = lgfx::swap565_t;
+#else
+        using ScenePixel = uint16_t;
+#endif
+        const auto* source = static_cast<const ScenePixel*>(scene.getBuffer());
+        std::array<ScenePixel,kUpscaleRowPixels> row;
+        for (int y = 0; y < scene.height(); ++y) {
+            for (int x = 0; x < scene.width(); ++x)
+                row[x*2] = row[x*2+1] = source[y*scene.width()+x];
+            canvas.pushImage(0,y*2,_width,1,row.data());
+            canvas.pushImage(0,y*2+1,_width,1,row.data());
+        }
+    }
+#ifdef ESP_PLATFORM
+    const uint64_t upscaleFinishedUs=esp_timer_get_time();
+#endif
+    if(nativeBegin<snapshot.carCount) {
+        const auto nativeCamera=makeRacerChaseCamera(playerFrame,player.motion.lateralOffset,_width,_height);
+        for(std::size_t slot=nativeBegin;slot<snapshot.carCount;++slot)
+            submit(order[slot],canvas,nativeCamera,float(scene.width())/_width);
+    }
+#ifdef ESP_PLATFORM
+    const uint64_t nativeFinishedUs=esp_timer_get_time();
+    static uint64_t lastLogUs=0;
+    if(carsFinishedUs-lastLogUs>=2000000u) {
+        lastLogUs=carsFinishedUs;
+        mclog::tagInfo("RaceStage","track_us={} cars_us={} upscale_us={} scene_width={} surfaces={} cars={} track_id={} player_car={} submitted={} player_us={} opponents_us={} player_native={}",
+            uint32_t(trackFinishedUs-trackStartedUs),uint32_t(carsFinishedUs-trackFinishedUs+nativeFinishedUs-upscaleFinishedUs),
+            uint32_t(upscaleFinishedUs-carsFinishedUs),scene.width(),
+            _surface->occlusion.count,snapshot.carCount,int(race.track().id()),int(snapshot.player().car),submitted,playerUs,opponentsUs,_playerQuality);
+    }
+#else
+    (void)submitted;
+#endif
 
     canvas.setTextDatum(textdatum_t::middle_center);
     if (player.motion.wallImpact > 0.05f) {
         canvas.drawCircle(_width / 2, _height / 2, 194, kWarning);
         canvas.drawCircle(_width / 2 + 2, _height / 2 - 1, 188, kWarning);
     }
-    drawHud(canvas, snapshot, race.track(), _miniMap);
+    drawHud(canvas, snapshot, race.track(), _miniMap,_miniMapImage.get());
     const GameScreen screen = flow.screen();
     if (screen == GameScreen::GridIntro) {
         panel(canvas,91,192,284,52,12,track_paint::night);
@@ -363,12 +588,19 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         canvas.setTextSize(3);
         canvas.drawString(pausedForInputLoss ? "INPUT LOST" : "PAUSED", _width / 2, 213);
         canvas.setTextSize(1);
-        canvas.drawString("HOLD RED TO CONTINUE", _width / 2, 246);
+        canvas.drawString(deviceControls ? "B / TAP: CONTINUE" : "HOLD RED WHEN INPUT READY", _width / 2, 246);
     } else if (screen == GameScreen::Finish) {
         panel(canvas,98,183,270,74,12,track_paint::night);
         canvas.setTextColor(track_paint::chalk,track_paint::night);
         canvas.setTextSize(5);
         canvas.drawString("FINISH!", _width / 2, 220);
+    }
+    if (deviceControls && screen == GameScreen::Racing) {
+        canvas.setTextSize(1);
+        canvas.setTextColor(track_paint::chalk, track_paint::night);
+        panel(canvas,94,84,162,39,8,track_paint::night);
+        canvas.drawString("A BRAKE / B BOOST",175,96);
+        canvas.drawString("DRAG STEER / TOP PAUSE",175,113);
     }
 }
 

@@ -4,17 +4,68 @@
 #include <hal/hal.h>
 #include <filesystem>
 #include <iostream>
+#include <cstring>
 
 using namespace lets_and_go;
 
 bool validateCarRaster()
 {
+    auto atlas=std::make_unique<RacePaintAtlas>();
+    for(unsigned paint=1;paint<unsigned(CarPaint::Count);++paint)
+        for(auto base:{uint16_t(0xc9a7),uint16_t(0x3275)})for(auto light:{uint8_t(223),uint8_t(255)}) {
+            atlas->clear();
+            if(!atlas->add(CarPaint(paint),base,light))return false;
+            const auto* texture=atlas->find(CarPaint(paint),base,light);
+            if(!texture)return false;
+            for(unsigned y=0;y<32;++y)for(unsigned x=0;x<32;++x) {
+                const float u=(x+.5f)/32,v=(y+.5f)/32;
+                auto expected=carPaintColor(CarPaint(paint),base,u,v);
+                if(light!=255)expected=carTint(expected,light/255.f);
+                if(RacePaintAtlas::sample(texture,u,v)!=expected)return false;
+            }
+            if(RacePaintAtlas::sample(texture,-1,-1)!=texture[0] ||
+               RacePaintAtlas::sample(texture,1,2)!=texture[1023])return false;
+        }
+    atlas->clear();
+    for(unsigned i=0;i<RacePaintAtlas::kCapacity;++i)
+        if(!atlas->add(CarPaint::NeoHood,uint16_t(i),255))return false;
+    if(atlas->add(CarPaint::NeoHood,65535,255) || atlas->find(CarPaint::NeoHood,65535,255))return false;
+    atlas->clear();if(atlas->count()!=0 || atlas->find(CarPaint::NeoHood,0,255))return false;
+    auto mesh=std::make_unique<RaceSurfaceMesh>();
+    std::array<uint16_t,8192> slots{};
+    for(std::size_t car=0;car<kCarCount;++car)for(auto detail:{CarSurfaceDetail::Minimal,CarSurfaceDetail::Low,CarSurfaceDetail::Medium}) {
+        const auto built=buildCarSurfaceInto(static_cast<CarId>(car),mesh->panels.data(),mesh->panels.size(),detail);
+        if(built.overflowed)return false;
+        mesh->count=built.count;mesh->indexVertices(slots);
+        for(std::size_t corner=0;corner<mesh->count*4;++corner) {
+            const auto index=mesh->cornerIndex[corner];
+            if(index>=mesh->vertexCount)return false;
+            const auto key=mesh->vertexCorner[index];
+            if(key>=mesh->count*4)return false;
+            const auto& a=mesh->panels[corner/4];const auto& b=mesh->panels[key/4];
+            const auto p=a.point[corner%4],q=b.point[key%4];
+            if(p.x!=q.x || p.y!=q.y || p.z!=q.z || a.wheel!=b.wheel)return false;
+        }
+        if(detail==CarSurfaceDetail::Low)std::cout << "Race vertex cache: car=" << car
+            << " corners=" << mesh->count*4 << " unique=" << mesh->vertexCount << '\n';
+    }
     auto& canvas=GetHAL().getCanvas();
     CarSurfaceRaster<32,32> raster;
     const CarScreenVertex a{180,180,.5f,0,0},b{212,180,.5f,.5f,0},c{180,212,.5f,0,.5f};
     auto farA=a,farB=b,farC=c;
     farA.depth=farB.depth=farC.depth=.25f;
     bool valid=true;
+    uint32_t bits=19;
+    for(int i=0;i<100000;++i) {
+        bits=bits*1664525u+1013904223u;
+        float value;std::memcpy(&value,&bits,sizeof(value));
+        if(std::isfinite(value) &&
+           (rasterFloor(value)!=std::floor(value) || rasterCeil(value)!=std::ceil(value)))valid=false;
+    }
+    for(float value:{-8388608.f,-1.5f,-1.f,-.5f,0.f,.5f,1.f,1.5f,8388608.f}) {
+        for(float v:{value,std::nextafter(value,-INFINITY),std::nextafter(value,INFINITY)})
+            if(rasterFloor(v)!=std::floor(v) || rasterCeil(v)!=std::ceil(v))valid=false;
+    }
     for(bool reverse : {false,true}) {
         raster.begin(180,180);
         if(reverse) raster.triangle(a,b,c,0xc9a7,CarPaint::Solid,255);
@@ -28,6 +79,18 @@ bool validateCarRaster()
     PencilOcclusion occlusion;
     occlusion.append(projectPencilSurface(camera,{-1,1,1},{1,1,1},{-1,-1,1},466,466));
     canvas.fillScreen(0xef3a);raster.blit(canvas,&occlusion);
+    const auto nativeOcclusion=canvas.frame();
+    auto smallOcclusion=std::make_unique<PencilOcclusion>();
+    smallOcclusion->count=occlusion.count;
+    for(std::size_t i=0;i<occlusion.count;++i) {
+        auto face=occlusion.surfaces[i];
+        for(auto& p:face.points){p.x*=.5f;p.y*=.5f;}
+        face.minX*=.5f;face.maxX*=.5f;face.minY*=.5f;face.maxY*=.5f;
+        face.inverseDepth.x*=2;face.inverseDepth.y*=2;
+        smallOcclusion->surfaces[i]=face;
+    }
+    canvas.fillScreen(0xef3a);raster.blit(canvas,smallOcclusion.get(),.5f);
+    if(nativeOcclusion!=canvas.frame())valid=false;
     if(canvas.frame()[185*466+185]!=0xef3a)valid=false;
     occlusion.count=0;
     occlusion.append(projectPencilSurface(camera,{-3,3,3},{3,3,3},{-3,-3,3},466,466));
@@ -61,7 +124,27 @@ bool validateCarRaster()
         const auto p=vertex(),q=vertex(),r=vertex();
         raster.cameraTriangle(camera,p,q,r,0xf7be,CarPaint::MagnumHood,255);
     }
-    std::cout << "Solid car raster: depth ordering, bridge visibility, near clipping, UV tiles and 1000 fuzz triangles\n";
+    PreparedCarPanel prepared;
+    for(int i=0;i<120;++i) {
+        CarPanel face{};face.color=0xf7be;face.paint=CarPaint::MagnumHood;
+        face.light=196;face.u1=face.v1=255;
+        // Reuse one cache slot across projected, clipped and fully hidden faces.
+        for(auto& p:face.point)p={value()*2-1,value()*2-1,
+            i%3==0 ? 1+value() : i%3==1 ? value()*.6f-.2f : -.1f};
+        const auto identity=[](CarPoint p,uint8_t) {return p;};
+        prepareCarPanel(prepared,camera,face,identity);
+        wide.begin(180,180);wide.panel(camera,face,identity);
+        canvas.fillScreen(0xef3a);wide.blit(canvas);
+        const auto expected=canvas.frame();
+        canvas.fillScreen(0xef3a);
+        for(int x:{180,212}) {
+            raster.begin(x,180);raster.preparedPanel(camera,prepared);raster.blit(canvas);
+            for(int y=0;y<32;++y)for(int dx=0;dx<32;++dx)
+                if(raster.depthAt(dx,y)!=wide.depthAt(x-180+dx,y))valid=false;
+        }
+        if(canvas.frame()!=expected)valid=false;
+    }
+    std::cout << "Solid car raster: depth ordering, bridge visibility, near clipping, UV tiles, 1000 fuzz triangles and 120 prepared-panel comparisons\n";
     if(!valid)std::cerr << "Solid car raster regression\n";
     return valid;
 }
@@ -132,6 +215,21 @@ bool validateTrackPaint(TrackId id = TrackId::SkyLoop)
                    return c==track_paint::road || c==track_paint::blue || c==track_paint::coral;
                })<100)
                 valid=false;
+            const auto solidSurfaces=occlusion.surfaces;
+            const auto solidCount=occlusion.count;
+            canvas.fillScreen(0xef3a);
+            drawPencilTrack(canvas,camera,geometry,detail,&occlusion,false,true);
+            if(occlusion.overflowed || solidCount!=occlusion.count)valid=false;
+            // Track style must preserve every visibility plane queried by the
+            // frozen car renderer, including bridge undersides and wall edges.
+            for(std::size_t f=0;f<solidCount;++f) {
+                const auto& x=solidSurfaces[f];const auto& y=occlusion.surfaces[f];
+                if(x.count!=y.count || x.inverseDepth.x!=y.inverseDepth.x ||
+                   x.inverseDepth.y!=y.inverseDepth.y || x.inverseDepth.z!=y.inverseDepth.z)
+                    valid=false;
+                for(std::size_t p=0;p<x.count;++p)
+                    if(x.points[p].x!=y.points[p].x || x.points[p].y!=y.points[p].y)valid=false;
+            }
         }
     }
     // Actual bridge underside (not an arbitrary triangle) must occlude a line
@@ -269,6 +367,8 @@ int main(int argc, char** argv)
     GarageSelection selection;
     garage.render(flow, selection, 0u, PencilDetail::High);
     save("input");
+    garage.render(flow, selection, 0, PencilDetail::High, {}, {}, true);
+    save("device-input");
     flow.confirmInputAvailable();
     RacerInputStatus status;
     status.axesConnected = status.actionsConfigured = true;
@@ -294,6 +394,8 @@ int main(int argc, char** argv)
         }
         save("car-" + std::to_string(i));
     }
+    garage.render(flow, selection, 500u, PencilDetail::High, {}, {}, true);
+    save("device-car");
     // Actual production cameras, not just the separate model-inspection views.
     // Check every panel through all presets/transitions and all quality tiers.
     auto framingMesh=std::make_unique<CarDisplayMesh>();
@@ -381,12 +483,15 @@ int main(int argc, char** argv)
     flow.completeCarShowcase();
     flow.toggleRival(CarId::HurricaneSonic);
     flow.toggleRival(CarId::NeoTridaggerZmc);
-    flow.toggleRival(CarId::BrockenGigant);
     garage.render(flow, selection, 500u, PencilDetail::High);
     save("rivals");
+    garage.render(flow, selection, 500u, PencilDetail::High, {}, {}, true);
+    save("device-rivals");
     flow.confirmRivals();
     garage.render(flow, selection, 0u, PencilDetail::High);
     save("track");
+    garage.render(flow, selection, 0u, PencilDetail::High, {}, {}, true);
+    save("device-track");
     for(auto track:{TrackId::SkyLoop,TrackId::TriCross,TrackId::SkyLoop}) {
     flow.selectTrack(track);
     for(auto detail:{PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) for (unsigned orbit = 0; orbit < 16u; ++orbit) {
@@ -430,6 +535,8 @@ int main(int argc, char** argv)
             save("race-" + std::to_string(frame / 45));
         }
     }
+    renderer.render(flow, race, results, 0u, false, PencilDetail::High, true);
+    save("device-race");
     flow.togglePause();
     renderer.render(flow, race, results, 200u, true, PencilDetail::High);
     save("paused");
@@ -438,11 +545,15 @@ int main(int argc, char** argv)
     if (pausedPixels != canvas.frame()) {
         std::cerr << "Paused image was not frozen\n"; valid = false;
     }
+    renderer.render(flow, race, results, 200u, true, PencilDetail::High, true);
+    save("device-paused");
     flow.togglePause();
     flow.finishRace();
     flow.showResults();
     renderer.render(flow, race, results, 0u, false, PencilDetail::High);
     save("results");
+    renderer.render(flow, race, results, 0u, false, PencilDetail::High, true);
+    save("device-results");
     // Exercise lower detail through a complete closed loop, including lapped
     // vehicles at the same physical location and both bridge approaches.
     flow.retrySameRace(); flow.completeGridIntro(); flow.completeCountdown();
@@ -520,7 +631,7 @@ int main(int argc, char** argv)
     // grids. Reused caches must match a clean renderer byte for byte.
     for(unsigned cycle=0;cycle<6;++cycle) {
         RaceSetup setup;setup.playerCar=cycle<3 ? CarId::Diospada : CarId::SpinCobra;
-        if(cycle%3!=1)setup.rivalMask=cycle<3 ? uint8_t(0x70) : uint8_t(0x89);
+        if(cycle%3!=1)setup.rivalMask=cycle<3 ? uint8_t(0x60) : uint8_t(0x81);
         RaceController run;run.prepare(setup,42);
         const auto detail=cycle%3==0 ? PencilDetail::High : PencilDetail::Low;
         renderer.render(flow,run,results,0,false,detail);
@@ -530,6 +641,81 @@ int main(int argc, char** argv)
         clean.close();
         if(cycle==0)save("race-new-roster");
     }
+    // Half-resolution scenes must retain native HUD/control text. Cover each
+    // course, bridge approaches, nearby opponents and renderer re-entry.
+    RaceRenderer half;
+    half.open(466,466,true);
+    if(!half.halfResolutionActive()) {std::cerr<<"Square scene fell back to native\n";valid=false;}
+    for(auto track:{TrackId::SkyLoop,TrackId::TriCross}) {
+        auto setup=flow.setup();setup.track=track;race.prepare(setup,42);
+        for(int sample=0;sample<24;++sample) {
+            auto& state=const_cast<RaceSnapshot&>(race.snapshot());
+            for(std::size_t i=0;i<state.carCount;++i)
+                state.cars[i].motion.distance=sample*race.track().length()/24+i*.5f;
+            renderer.render(flow,race,results,0,false,PencilDetail::Low,true);
+            const auto native=canvas.frame();
+            const auto nativeText=canvas.texts;
+            if(track==TrackId::TriCross && sample==0)save("resolution-native");
+            canvas.texts.clear();
+            half.render(flow,race,results,0,false,PencilDetail::Low,true);
+            checkText();
+            if(canvas.texts.size()!=nativeText.size())valid=false;
+            else for(std::size_t i=0;i<nativeText.size();++i) {
+                const auto& a=nativeText[i];const auto& b=canvas.texts[i];
+                if(a.value!=b.value || a.x!=b.x || a.y!=b.y || a.size!=b.size)valid=false;
+            }
+            // Interior strips avoid rounded transparent corners of HUD cards.
+            for(auto rect:{std::array<int,4>{119,36,346,73},{128,384,345,426},{103,85,247,122}})
+                for(int y=rect[1];y<rect[3];++y)for(int x=rect[0];x<rect[2];++x)
+                    if(native[y*466+x]!=canvas.frame()[y*466+x])valid=false;
+            if(sample%6==0)save("half-"+std::to_string(int(track))+"-"+std::to_string(sample));
+            if(track==TrackId::TriCross && sample==0)save("resolution-half");
+        }
+        const auto before=canvas.frame();
+        half.close();half.open(466,466,true);
+        half.render(flow,race,results,0,false,PencilDetail::Low,true);
+        if(before!=canvas.frame()){std::cerr<<"Half-resolution re-entry mismatch\n";valid=false;}
+    }
+    flow.togglePause();
+    half.render(flow,race,results,100,true,PencilDetail::Low,true);
+    const auto halfPaused=canvas.frame();
+    half.render(flow,race,results,6000,true,PencilDetail::Low,true);
+    if(halfPaused!=canvas.frame())valid=false;
+    save("half-paused");
+    flow.togglePause();flow.finishRace();flow.showResults();
+    renderer.render(flow,race,results,0,false,PencilDetail::Low,true);
+    const auto nativeResults=canvas.frame();
+    half.render(flow,race,results,0,false,PencilDetail::Low,true);
+    if(nativeResults!=canvas.frame())valid=false;
+    half.close();
+    // Device HAL is 468 x 466, not the historical 466-square capture size.
+    // Catch a silently disabled optimization and exercise the wider copy row.
+    canvas.createSprite(468,466);
+    renderer.close();renderer.open(468,466);
+    half.open(468,466,true);
+    if(!half.halfResolutionActive()) {std::cerr<<"Device scene fell back to native\n";valid=false;}
+    flow.retrySameRace();flow.completeGridIntro();flow.completeCountdown();
+    for(auto track:{TrackId::SkyLoop,TrackId::TriCross}) {
+        auto setup=flow.setup();setup.track=track;race.prepare(setup,42);
+        for(int sample=0;sample<12;++sample) {
+            auto& state=const_cast<RaceSnapshot&>(race.snapshot());
+            for(std::size_t i=0;i<state.carCount;++i)
+                state.cars[i].motion.distance=sample*race.track().length()/12+i*.5f;
+            renderer.render(flow,race,results,0,false,PencilDetail::Low,true);
+            const auto native=canvas.frame();
+            if(track==TrackId::TriCross && sample==0)save("device-resolution-native");
+            half.render(flow,race,results,0,false,PencilDetail::Low,true);
+            if(native==canvas.frame()) {std::cerr<<"Device scene remained native\n";valid=false;}
+            for(int y=36;y<73;++y)for(int x=119;x<346;++x)
+                if(native[y*468+x]!=canvas.frame()[y*468+x])valid=false;
+            if(track==TrackId::TriCross && sample==0)save("device-resolution-half");
+        }
+    }
+    const auto deviceBefore=canvas.frame();
+    half.close();half.open(468,466,true);
+    half.render(flow,race,results,0,false,PencilDetail::Low,true);
+    if(deviceBefore!=canvas.frame())valid=false;
+    half.close();canvas.createSprite(466,466);
     // Repeated entry releases large PSRAM-oriented storage instead of keeping
     // it resident in the Launcher for the lifetime of the installed App object.
     for(int cycle=0;cycle<3;++cycle) {
@@ -539,6 +725,77 @@ int main(int argc, char** argv)
         checkText();
     }
     garage.close();renderer.close();
+    // Race materials/cache variant: all eight identities as player and near
+    // opponent, both courses, solo/roster/detail changes, and close/re-entry.
+    canvas.createSprite(468,466);
+    RaceRenderer cached,original,hero,wire;
+    cached.open(468,466,true,true);original.open(468,466,true);
+    hero.open(468,466,true,true,true);
+    wire.open(468,466,true,true,true,true);
+    for(unsigned car=0;car<kCarCount;++car) {
+        GameFlow drive;drive.useDeviceControls();
+        drive.selectPlayerCar(CarId(car));drive.confirmPlayerCar();drive.completeCarShowcase();
+        for(unsigned rival=1;rival<=kMaximumRivals;++rival)drive.toggleRival(CarId((car+rival)%kCarCount));
+        drive.confirmRivals();drive.confirmTrack();drive.completeGridIntro();drive.completeCountdown();
+        auto setup=drive.setup();setup.track=car%2 ? TrackId::SkyLoop : TrackId::TriCross;
+        RaceController run;run.prepare(setup,42);
+        for(int sample=0;sample<4;++sample) {
+            auto& state=const_cast<RaceSnapshot&>(run.snapshot());
+            for(std::size_t i=0;i<state.carCount;++i)
+                state.cars[i].motion.distance=sample*run.track().length()/4+i*.35f;
+            const auto detail=sample%2 ? PencilDetail::Medium : PencilDetail::Low;
+            original.render(drive,run,results,0,false,detail,true);
+            const auto baseline=canvas.frame();
+            if(sample==0)save("material-original-"+std::to_string(car));
+            cached.render(drive,run,results,0,false,detail,true);
+            if(sample==0)save("material-race-"+std::to_string(car));
+            hero.render(drive,run,results,0,false,detail,true);
+            if(sample==0)save("player-quality-"+std::to_string(car));
+            for(int y=79;y<=165;++y)for(int x=311;x<=397;++x)
+                if((x-354)*(x-354)+(y-122)*(y-122)<42*42 &&
+                   baseline[y*468+x]!=canvas.frame()[y*468+x]) {
+                    std::cerr<<"Cached minimap pixel mismatch\n";valid=false;
+                }
+            const auto solidFrame=canvas.frame();
+            wire.render(drive,run,results,0,false,detail,true);
+            if(car<2)save("wireframe-"+std::to_string(car)+"-"+std::to_string(sample));
+            for(int y=79;y<=165;++y)for(int x=311;x<=397;++x)
+                if((x-354)*(x-354)+(y-122)*(y-122)<42*42 &&
+                   solidFrame[y*468+x]!=canvas.frame()[y*468+x]) {
+                    std::cerr<<"Wireframe minimap mismatch\n";valid=false;
+                }
+        }
+        // Keep this identity as a nearby opponent of another player.
+        auto& state=const_cast<RaceSnapshot&>(run.snapshot());
+        const auto target=state.playerIndex;
+        state.cars[target].player=false;state.playerIndex=(target+1)%state.carCount;
+        state.cars[state.playerIndex].player=true;
+        state.cars[target].motion.distance=state.player().motion.distance-.15f;
+        state.cars[target].motion.lateralOffset=.55f;
+        cached.render(drive,run,results,0,false,PencilDetail::Low,true);
+        save("material-opponent-"+std::to_string(car));
+        state.cars[state.playerIndex].motion.speed=25.f;
+        hero.render(drive,run,results,0,false,PencilDetail::Low,true);
+        save("player-quality-opponent-"+std::to_string(car));
+        const auto heroBefore=canvas.frame();
+        hero.close();hero.open(468,466,true,true,true);
+        hero.render(drive,run,results,9000,false,PencilDetail::Low,true);
+        if(heroBefore!=canvas.frame()) {std::cerr<<"Player quality re-entry / speed effect regression\n";valid=false;}
+        wire.render(drive,run,results,0,false,PencilDetail::Low,true);
+        if(car<2)save("wireframe-opponent-"+std::to_string(car));
+        const auto wireBefore=canvas.frame();
+        wire.close();wire.open(468,466,true,true,true,true);
+        wire.render(drive,run,results,9000,false,PencilDetail::Low,true);
+        if(wireBefore!=canvas.frame()) {std::cerr<<"Wireframe re-entry regression\n";valid=false;}
+        cached.render(drive,run,results,0,false,PencilDetail::Low,true);
+        const auto before=canvas.frame();
+        cached.close();cached.open(468,466,true,true);
+        cached.render(drive,run,results,0,false,PencilDetail::Low,true);
+        if(before!=canvas.frame()) {std::cerr<<"Race material re-entry mismatch\n";valid=false;}
+        setup.rivalMask=0;run.prepare(setup,42);
+        cached.render(drive,run,results,0,false,PencilDetail::High,true);
+    }
+    cached.close();original.close();hero.close();wire.close();canvas.createSprite(466,466);
     std::cout << "Production renderer frames: " << directory << '\n';
     return valid ? 0 : 1;
 }

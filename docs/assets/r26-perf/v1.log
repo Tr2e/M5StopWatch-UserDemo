@@ -1,0 +1,25 @@
+[1788918799170] [info] [RacerPerf] screen=INPUT CHECK source=external frames=8 fps_x10=40 draw_us=15975 present_us=32865 peak_us=49086 input_total_us=41902 detail=high
+[1788918801170] [info] [RacerPerf] screen=INPUT CHECK source=external frames=8 fps_x10=40 draw_us=15929 present_us=32894 peak_us=49233 input_total_us=46063 detail=medium
+[1788918802003] [info] [Let's & Go!!] controls: DEVICE (buttons + touch)
+[1788918803442] [info] [RacerPerf] screen=SELECT MACHINE source=device frames=10 fps_x10=48 draw_us=125222 present_us=32303 peak_us=216763 input_total_us=43806 detail=low
+[1788918805469] [info] [RacerPerf] screen=SELECT MACHINE source=device frames=10 fps_x10=49 draw_us=169169 present_us=32062 peak_us=201618 input_total_us=833 detail=low
+[1788918807546] [info] [RacerPerf] screen=MACHINE READY source=device frames=10 fps_x10=48 draw_us=174054 present_us=31866 peak_us=211054 input_total_us=2017 detail=low
+[1788918809335] [info] [RacerPerf] screen=SELECT RIVALS source=device frames=3 fps_x10=15 draw_us=172615 present_us=32032 peak_us=210310 input_total_us=14498 detail=low
+[1788918811387] [info] [RacerPerf] screen=SELECT RIVALS source=device frames=3 fps_x10=14 draw_us=172956 present_us=31969 peak_us=216870 input_total_us=18852 detail=low
+[1788918813386] [info] [RacerPerf] screen=SELECT RIVALS source=device frames=2 fps_x10=10 draw_us=187768 present_us=31956 peak_us=228022 input_total_us=20511 detail=low
+[1788918815387] [info] [RacerPerf] screen=SELECT RIVALS source=device frames=1 fps_x10=5 draw_us=187832 present_us=32063 peak_us=219895 input_total_us=21840 detail=low
+[1788918817387] [info] [RacerPerf] screen=SELECT RIVALS source=device frames=1 fps_x10=5 draw_us=176929 present_us=31947 peak_us=208876 input_total_us=23625 detail=low
+[1788918819477] [info] [RacerPerf] screen=SELECT RIVALS source=device frames=2 fps_x10=9 draw_us=193151 present_us=31907 peak_us=234864 input_total_us=25892 detail=low
+[1788918821941] [info] [RacerPerf] screen=SELECT COURSE source=device frames=5 fps_x10=22 draw_us=165155 present_us=31997 peak_us=243840 input_total_us=21595 detail=low
+[1788918824523] [info] [RacerPerf] screen=STARTING GRID source=device frames=9 fps_x10=37 draw_us=252971 present_us=32144 peak_us=453364 input_total_us=2777 detail=high
+[1788918826582] [info] [RacerPerf] screen=COUNTDOWN source=device frames=5 fps_x10=24 draw_us=377550 present_us=32196 peak_us=413716 input_total_us=415 detail=high
+[1788918828596] [info] [RacerPerf] screen=COUNTDOWN source=device frames=5 fps_x10=24 draw_us=368609 present_us=32246 peak_us=409212 input_total_us=430 detail=medium
+[1788918830913] [info] [RacerPerf] screen=RACING source=device frames=6 fps_x10=25 draw_us=350798 present_us=32504 peak_us=401532 input_total_us=519 detail=medium
+[1788918832908] [info] [RacerPerf] screen=RACING source=device frames=6 fps_x10=29 draw_us=297265 present_us=32334 peak_us=358982 input_total_us=507 detail=low
+[1788918835086] [info] [RacerPerf] screen=RACING source=device frames=7 fps_x10=32 draw_us=276099 present_us=32381 peak_us=315028 input_total_us=579 detail=low
+[1788918837270] [info] [RacerPerf] screen=RACING source=device frames=7 fps_x10=31 draw_us=276778 present_us=32400 peak_us=313350 input_total_us=571 detail=low
+[1788918839526] [info] [RacerPerf] screen=RACING source=device frames=7 fps_x10=31 draw_us=287270 present_us=32298 peak_us=364902 input_total_us=605 detail=low
+[1788918841586] [info] [RacerPerf] screen=RACING source=device frames=6 fps_x10=28 draw_us=307934 present_us=32310 peak_us=361028 input_total_us=569 detail=low
+[1788918843766] [info] [RacerPerf] screen=RACING source=device frames=7 fps_x10=31 draw_us=276530 present_us=32381 peak_us=312997 input_total_us=576 detail=low
+[1788918846022] [info] [RacerPerf] screen=RACING source=device frames=7 fps_x10=31 draw_us=287061 present_us=32436 peak_us=321917 input_total_us=577 detail=low
+[1788918848320] [info] [RacerPerf] screen=RACING source=device frames=7 fps_x10=30 draw_us=293126 present_us=32426 peak_us=350241 input_total_us=609 detail=low

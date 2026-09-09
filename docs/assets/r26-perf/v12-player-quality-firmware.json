@@ -1,0 +1,19 @@
+{
+  "version": "v12-player-quality",
+  "sha256": "79026bb5834f75315bdac87c28a39ed324d5f8e4d9fa9d25d090830f0791a0eb",
+  "bytes": 4914464,
+  "player_canvas": [
+    468,
+    466
+  ],
+  "player_material": "original procedural",
+  "player_geometry": "Medium",
+  "opponent_geometry": "Minimal (8 circular segments, ducts at least 6)",
+  "opponent_material": "32x32 baked",
+  "track_scene": [
+    234,
+    233
+  ],
+  "track_decorations": false,
+  "speed_lines": false
+}

@@ -21,9 +21,16 @@ class LGFX_Device {
 public:
     struct Text { std::string value; int x, y, size; };
     std::vector<Text> texts;
-    int width() const { return 466; }
-    int height() const { return 466; }
-    void fillScreen(uint16_t color) { pixels.fill(color); texts.clear(); }
+    int width() const { return _width; }
+    int height() const { return _height; }
+    void setPsram(bool) {}
+    void setColorDepth(int) {}
+    void* createSprite(int width, int height) {
+        _width=width; _height=height;
+        pixels.assign(width*height,0); return pixels.data();
+    }
+    void* getBuffer() { return pixels.data(); }
+    void fillScreen(uint16_t color) { std::fill(pixels.begin(),pixels.end(),color); texts.clear(); }
     void pixel(int x, int y, uint16_t color) {
         if (x >= 0 && y >= 0 && x < width() && y < height()) pixels[y * width() + x] = color;
     }
@@ -42,6 +49,14 @@ public:
     void fillRect(int x, int y, int w, int h, uint16_t color) {
         for (int py = std::max(0, y); py < std::min(height(), y + h); ++py)
             for (int px = std::max(0, x); px < std::min(width(), x + w); ++px) pixel(px, py, color);
+    }
+    void pushImage(int x,int y,int w,int h,const uint16_t* colors) {
+        for(int row=0;row<h;++row)for(int col=0;col<w;++col)
+            pixel(x+col,y+row,colors[row*w+col]);
+    }
+    void pushImage(int x,int y,int w,int h,const uint16_t* colors,uint16_t transparent) {
+        for(int row=0;row<h;++row)for(int col=0;col<w;++col)
+            if(colors[row*w+col]!=transparent)pixel(x+col,y+row,colors[row*w+col]);
     }
     void drawRect(int x, int y, int w, int h, uint16_t color) {
         drawLine(x, y, x + w - 1, y, color); drawLine(x, y, x, y + h - 1, color);
@@ -100,9 +115,10 @@ public:
     }
     void save(const std::string& path) const {
         std::ofstream out(path, std::ios::binary);
-        out << "P6\n466 466\n255\n";
+        out << "P6\n" << width() << ' ' << height() << "\n255\n";
+        const int radius=std::min(width(),height())/2;
         for (int y = 0; y < height(); ++y) for (int x = 0; x < width(); ++x) {
-            const uint16_t c = (x - 233) * (x - 233) + (y - 233) * (y - 233) < 233 * 233
+            const uint16_t c = (x-width()/2)*(x-width()/2)+(y-height()/2)*(y-height()/2)<radius*radius
                                    ? pixels[y * width() + x] : 0;
             const unsigned char rgb[] = {static_cast<unsigned char>(((c >> 11) & 31) * 255 / 31),
                 static_cast<unsigned char>(((c >> 5) & 63) * 255 / 63), static_cast<unsigned char>((c & 31) * 255 / 31)};
@@ -111,7 +127,8 @@ public:
     }
     const auto& frame() const { return pixels; }
 private:
-    std::array<uint16_t, 466u * 466u> pixels{};
+    int _width=466, _height=466;
+    std::vector<uint16_t> pixels=std::vector<uint16_t>(466u*466u);
     int textSize = 1;
     uint16_t foreground = 0, background = 0xffff;
 };

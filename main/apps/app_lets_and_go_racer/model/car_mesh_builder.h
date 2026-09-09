@@ -173,7 +173,7 @@ public:
     // A recessed duct, not a black disc over a closed cowl. +z is the mouth.
     // Keep the rear cap behind the lip so side views reveal the tunnel wall.
     void duct(float side,float x,float y,float z,float rx,float ry,float depth,uint16_t rim,uint16_t shell=0) {
-        const int n=segments/2;
+        const int n=std::max(6,segments/2); // Preserve the recessed mouth at minimal race LOD.
         const auto p=[&](float radius,float a,float dz) {
             return CarPoint{side*(x+rx*radius*std::cos(a)),y+ry*radius*std::sin(a),z+dz};
         };

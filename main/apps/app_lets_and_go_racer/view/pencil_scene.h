@@ -1,10 +1,18 @@
 #pragma once
+#include "color_span.h"
+#include "raster_math.h"
+#include "render_scratch.h"
 
 #include "track_projection.h"
 #include "render_budget.h"
 #include "../model/overpass_track.h"
 #include <hal/hal.h>
 #include <array>
+#include <cstring>
+#ifdef ESP_PLATFORM
+#include <esp_timer.h>
+#include <mooncake_log.h>
+#endif
 
 namespace lets_and_go {
 
@@ -15,6 +23,7 @@ struct PencilSurface {
     TrackVec3 inverseDepth{}; // 1/z = ax + by + c
     float minX = 0, minY = 0, maxX = 0, maxY = 0;
     uint8_t count = 0;
+    int8_t winding = 0; // Reuses padding; zero supports manually authored faces.
     uint16_t color = 0;
 };
 
@@ -79,6 +88,12 @@ inline PencilSurface projectPencilSurface(const TrackCamera& camera,
         result.minY = std::min(result.minY, result.points[i].y);
         result.maxY = std::max(result.maxY, result.points[i].y);
     }
+    float area=0;
+    for(std::size_t i=0;i<count;++i) {
+        const auto a=result.points[i],b=result.points[(i+1)%count];
+        area+=a.x*b.y-b.x*a.y;
+    }
+    result.winding=area>=0 ? 1 : -1;
     return result;
 }
 
@@ -111,12 +126,15 @@ inline bool pencilHiddenInterval(const PencilSurface& surface,
     const auto& d = surface.inverseDepth;
     if (!clip(d.x * a.x + d.y * a.y + d.z - inverseA - 0.0001f,
               d.x * b.x + d.y * b.y + d.z - inverseB - 0.0001f)) return false;
-    float area = 0.0f;
-    for (std::size_t i = 0; i < surface.count; ++i) {
-        const auto p = surface.points[i], q = surface.points[(i + 1u) % surface.count];
-        area += p.x * q.y - p.y * q.x;
+    float orientation=surface.winding;
+    if(orientation==0) {
+        float area = 0.0f;
+        for (std::size_t i = 0; i < surface.count; ++i) {
+            const auto p = surface.points[i], q = surface.points[(i + 1u) % surface.count];
+            area += p.x * q.y - p.y * q.x;
+        }
+        orientation=area>=0 ? 1.f : -1.f;
     }
-    const float orientation = area >= 0 ? 1.0f : -1.0f;
     for (std::size_t i = 0; i < surface.count; ++i) {
         const auto p = surface.points[i], q = surface.points[(i + 1u) % surface.count];
         const auto side = [&](TrackScreenPoint v) {
@@ -145,6 +163,9 @@ struct PencilOcclusion {
     // One scanline, not a full-screen depth buffer. Kept off the task stack.
     std::array<float,466> rowDepth{};
     std::array<uint16_t,466> rowColor{};
+    struct Rows {std::array<float,466> depth;std::array<uint16_t,466> color;};
+    RenderScratch<Rows> fastRows;
+    bool preferInternalMemory() {return fastRows.allocate();}
     std::size_t count = 0u;
     bool overflowed = false;
 
@@ -155,10 +176,30 @@ struct PencilOcclusion {
     }
 
     void paint(LGFX_Sprite& canvas) {
+        if(count==0)return;
+        auto& rowDepth=fastRows.get() ? fastRows.get()->depth : this->rowDepth;
+        auto& rowColor=fastRows.get() ? fastRows.get()->color : this->rowColor;
+        float minY=float(canvas.height()),maxY=0;
+        for(std::size_t face=0;face<count;++face) {
+            minY=std::min(minY,surfaces[face].minY);maxY=std::max(maxY,surfaces[face].maxY);
+        }
+        // Coverage is minY <= y+.5 < maxY. Empty screen rows need no clear/copy.
+        const int firstY=int(std::clamp(rasterCeil(minY-.5f),0.f,float(canvas.height())));
+        const int endY=int(std::clamp(rasterCeil(maxY-.5f),0.f,float(canvas.height())));
+#ifdef ESP_PLATFORM
+        uint64_t clearUs=0,fillUs=0,copyUs=0;
+#endif
         for(int offset=0;offset<canvas.width();offset+=int(rowDepth.size())) {
             const int width=std::min(int(rowDepth.size()),int(canvas.width())-offset);
-            for(int y=0;y<canvas.height();++y) {
-                rowDepth.fill(0);
+            for(int y=firstY;y<endY;++y) {
+#ifdef ESP_PLATFORM
+                const uint64_t startUs=esp_timer_get_time();
+#endif
+                std::memset(rowDepth.data(),0,rowDepth.size()*sizeof(float));
+#ifdef ESP_PLATFORM
+                const uint64_t clearedUs=esp_timer_get_time();
+                clearUs+=clearedUs-startUs;
+#endif
                 const float scanY=y+.5f;
                 for(std::size_t face=0;face<count;++face) {
                     const auto& s=surfaces[face];
@@ -171,37 +212,60 @@ struct PencilOcclusion {
                             left=std::min(left,x);right=std::max(right,x);
                         }
                     }
-                    const int x0=std::max(offset,int(std::ceil(left-.5f)));
-                    const int x1=std::min(offset+width-1,int(std::floor(right-.5f)));
+                    const int x0=std::max(offset,int(rasterCeil(left-.5f)));
+                    const int x1=std::min(offset+width-1,int(rasterFloor(right-.5f)));
                     const auto& d=s.inverseDepth;
                     float z=d.x*(x0+.5f)+d.y*scanY+d.z;
                     for(int x=x0;x<=x1;++x,z+=d.x) if(z>rowDepth[x-offset]) {
                         rowDepth[x-offset]=z;rowColor[x-offset]=s.color;
                     }
                 }
+#ifdef ESP_PLATFORM
+                const uint64_t filledUs=esp_timer_get_time();
+                fillUs+=filledUs-clearedUs;
+#endif
                 for(int x=0;x<width;) {
                     if(rowDepth[x]<=0) {++x;continue;}
-                    const int start=x;const auto color=rowColor[x++];
-                    while(x<width && rowDepth[x]>0 && rowColor[x]==color)++x;
-                    canvas.fillRect(offset+start,y,x-start,1,color);
+                    const int start=x++;
+                    while(x<width && rowDepth[x]>0)++x;
+                    drawColorSpan(canvas,offset+start,y,x-start,rowColor.data()+start);
                 }
+#ifdef ESP_PLATFORM
+                copyUs+=esp_timer_get_time()-filledUs;
+#endif
             }
         }
+#ifdef ESP_PLATFORM
+        static uint64_t lastLogUs=0;
+        const uint64_t nowUs=esp_timer_get_time();
+        if(nowUs-lastLogUs>=2000000u) {
+            lastLogUs=nowUs;
+            mclog::tagInfo("PaintStage","rows={} clear_us={} fill_us={} copy_us={}",
+                endY-firstY,uint32_t(clearUs),uint32_t(fillUs),uint32_t(copyUs));
+        }
+#endif
     }
 
     void drawLine(LGFX_Sprite& canvas, const TrackCamera& camera,
-                  TrackVec3 from, TrackVec3 to, uint16_t color) const {
+                  TrackVec3 from, TrackVec3 to, uint16_t color,
+                  const uint16_t* candidates=nullptr,std::size_t candidateCount=0) const {
         auto ca = trackToCamera(camera, from), cb = trackToCamera(camera, to);
         if (!clipTrackSegmentToNear(ca, cb)) return;
         TrackScreenPoint a{}, b{};
         if (!projectTrackPoint(camera, ca, a) || !projectTrackPoint(camera, cb, b)) return;
+        // Reject off-screen lines before the surface visibility walk. Keep the
+        // original endpoints for perspective-correct inverse-depth clipping.
+        if(std::max(a.x,b.x)<0 || std::min(a.x,b.x)>canvas.width()-1 ||
+           std::max(a.y,b.y)<0 || std::min(a.y,b.y)>canvas.height()-1)return;
         struct Interval { float from, to; };
         std::array<Interval, 16u> visible{};
         visible[0] = {0, 1};
         std::size_t pieces = 1u;
-        for (std::size_t i = 0; i < count && pieces != 0u; ++i) {
+        const auto faceCount=candidates ? candidateCount : count;
+        for (std::size_t i = 0; i < faceCount && pieces != 0u; ++i) {
             float enter, leave;
-            if (!pencilHiddenInterval(surfaces[i], a, b, 1 / ca.z, 1 / cb.z, enter, leave)) continue;
+            if (!pencilHiddenInterval(surfaces[candidates ? candidates[i] : i], a, b,
+                                     1 / ca.z, 1 / cb.z, enter, leave)) continue;
             for (std::size_t p = 0; p < pieces;) {
                 const auto interval = visible[p];
                 if (leave <= interval.from || enter >= interval.to) { ++p; continue; }
@@ -244,11 +308,20 @@ inline ModulePaint module(std::size_t segment)
     return {road,fascia,chalk,0xbdf8u};
 }
 
-inline void backdrop(LGFX_Sprite& canvas,PencilDetail detail)
+inline uint16_t wireShade(uint16_t color,unsigned brightness)
+{
+    // Integer RGB565 shading preserves each module's original hue.
+    return uint16_t(((((color>>11)&31)*brightness/256)<<11) |
+                    ((((color>>5)&63)*brightness/256)<<5) |
+                    ((color&31)*brightness/256));
+}
+
+inline void backdrop(LGFX_Sprite& canvas,PencilDetail detail,bool scenery=true)
 {
     canvas.fillScreen(night);
-    constexpr int horizon=162;
+    const int horizon=canvas.height()*162/466;
     canvas.fillRect(0,horizon,canvas.width(),canvas.height()-horizon,floor);
+    if(!scenery)return;
     constexpr std::array<int,9> heights{{150,137,146,117,143,129,149,132,151}};
     for(unsigned i=0;i+1<heights.size();++i) {
         const int x=int(i)*canvas.width()/8,next=int(i+1)*canvas.width()/8;
@@ -324,10 +397,14 @@ inline void drawPencilTrackGround(LGFX_Sprite& canvas,const TrackCamera& camera,
 }
 
 inline void drawPencilTrack(LGFX_Sprite& canvas, const TrackCamera& camera,
-    const PencilTrack& track, PencilDetail detail, PencilOcclusion* occlusion)
+    const PencilTrack& track, PencilDetail detail, PencilOcclusion* occlusion,bool decorations=true,
+    bool wireframe=false)
 {
     using namespace track_paint;
     if(!occlusion)return;
+#ifdef ESP_PLATFORM
+    const uint64_t startUs=esp_timer_get_time();
+#endif
     occlusion->count=0;occlusion->overflowed=false;
     const auto surface=[&](TrackVec3 a,TrackVec3 b,TrackVec3 c,TrackVec3 d,uint16_t color) {
         for(auto face : {projectPencilSurface(camera,a,b,c,canvas.width(),canvas.height()),
@@ -367,13 +444,120 @@ inline void drawPencilTrack(LGFX_Sprite& canvas, const TrackCamera& camera,
             }
         }
     }
-    occlusion->paint(canvas);
+#ifdef ESP_PLATFORM
+    const uint64_t projectUs=esp_timer_get_time();
+#endif
+    // Hidden-line wireframe keeps the exact solid visibility geometry for cars
+    // and bridges, but avoids the road's scanline depth/fill/copy pass.
+    if(!wireframe)occlusion->paint(canvas);
+#ifdef ESP_PLATFORM
+    const uint64_t paintUs=esp_timer_get_time();
+#endif
     // Details also use the scene visibility test; bridge joints and far rims
     // must not leak through the near carriageway or through the bridge bottom.
+    std::array<uint16_t,PencilOcclusion::kCapacity> lineCandidates;
+    const uint16_t* candidates=nullptr;
+    std::size_t candidateCount=0;
+#ifdef ESP_PLATFORM
+    uint32_t wireSections=0,nearSections=0,wireLines=0,wireCandidates=0;
+#endif
     const auto stroke=[&](TrackVec3 a,TrackVec3 b,uint16_t color) {
-        occlusion->drawLine(canvas,camera,a,b,color);
+#ifdef ESP_PLATFORM
+        if(wireframe) {++wireLines;wireCandidates+=candidates ? candidateCount : occlusion->count;}
+#endif
+        occlusion->drawLine(canvas,camera,a,b,color,candidates,candidateCount);
     };
-    for(std::size_t i=0;i<PencilTrack::kSegments;++i) {
+    if(wireframe) for(std::size_t i=0;i<PencilTrack::kSegments;++i) {
+        const auto a=track.left[i],b=track.right[i],c=track.right[i+1],d=track.left[i+1];
+        const TrackVec3 lift{0,wallHeight,0},drop{0,-deckThickness,0};
+        // Project the near-clipped convex hull of the section's eight corners.
+        // Intersect every front/back pair: even twisted track quads remain
+        // conservatively enclosed, without reverting to the whole screen.
+        std::array<TrackCameraPoint,8> corners;
+        unsigned cornerCount=0,frontCount=0;
+        float minX=INFINITY,maxX=-INFINITY,minY=INFINITY,maxY=-INFINITY,maxDepth=0;
+        const auto bound=[&](TrackCameraPoint p) {
+            TrackScreenPoint screen;
+            if(!projectTrackPoint(camera,p,screen))return;
+            minX=std::min(minX,screen.x);maxX=std::max(maxX,screen.x);
+            minY=std::min(minY,screen.y);maxY=std::max(maxY,screen.y);
+        };
+        for(auto p : {a,b,c,d})for(auto offset : {drop,lift}) {
+            const auto point=trackToCamera(camera,trackAdd(p,offset));
+            corners[cornerCount++]=point;
+            maxDepth=std::max(maxDepth,point.z);
+            if(point.z>=kTrackNearPlane) {++frontCount;bound(point);}
+        }
+        if(frontCount==0)continue;
+        if(frontCount<corners.size()) {
+#ifdef ESP_PLATFORM
+            ++nearSections;
+#endif
+            for(unsigned from=0;from<corners.size();++from)
+                for(unsigned to=from+1;to<corners.size();++to) {
+                    auto p=corners[from],q=corners[to];
+                    if((p.z>=kTrackNearPlane)==(q.z>=kTrackNearPlane))continue;
+                    if(clipTrackSegmentToNear(p,q)) {bound(p);bound(q);}
+                }
+        }
+        if(maxX<0 || minX>canvas.width()-1 || maxY<0 || minY>canvas.height()-1)continue;
+        // Subpixel slack makes the box conservative under float rounding.
+        minX=std::max(0.f,minX-.01f);maxX=std::min(float(canvas.width()-1),maxX+.01f);
+        minY=std::max(0.f,minY-.01f);maxY=std::min(float(canvas.height()-1),maxY+.01f);
+        candidateCount=0;
+        const float inverseFar=1.f/maxDepth;
+        for(std::size_t face=0;face<occlusion->count;++face) {
+            const auto& s=occlusion->surfaces[face];
+            const float left=std::max(minX,s.minX),right=std::min(maxX,s.maxX);
+            const float top=std::max(minY,s.minY),bottom=std::min(maxY,s.maxY);
+            if(left>right || top>bottom)continue;
+            const auto& z=s.inverseDepth;
+            // The largest inverse depth over this rectangle bounds the face.
+            // A face entirely behind the section cannot hide any of its lines.
+            const float nearest=z.x*(z.x>=0 ? right : left)+
+                                z.y*(z.y>=0 ? bottom : top)+z.z;
+            if(nearest<=inverseFar-.0001f)continue;
+            lineCandidates[candidateCount++]=uint16_t(face);
+        }
+        candidates=lineCandidates.data();
+#ifdef ESP_PLATFORM
+        ++wireSections;
+#endif
+        const float depth=trackToCamera(camera,mix(mix(a,b,.5f),mix(d,c,.5f),.5f)).z;
+        // Use the same white/red/blue modules as the solid road and minimap.
+        // Depth changes brightness only; grid spacing stays in world space.
+        const bool near=depth<10.f,mid=depth<22.f;
+        const auto paint=module(i);
+        const uint16_t rim=wireShade(paint.rim,near ? 256 : mid ? 208 : 160);
+        const uint16_t grid=wireShade(paint.deck,near ? 184 : mid ? 144 : 112);
+        stroke(trackAdd(a,lift),trackAdd(d,lift),rim);
+        stroke(trackAdd(b,lift),trackAdd(c,lift),rim);
+        stroke(a,d,grid);stroke(b,c,grid);
+        stroke(trackAdd(a,drop),trackAdd(d,drop),grid);
+        stroke(trackAdd(b,drop),trackAdd(c,drop),grid);
+        for(float u : {.25f,.5f,.75f}) {
+            if(!near && u!=.5f)continue;
+            stroke(mix(a,b,u),mix(d,c,u),grid);
+        }
+        const std::size_t spacing=near ? 1u : mid ? 2u : 4u;
+        if(i%spacing==0)stroke(a,b,grid);
+        if(i%(spacing*2)==0) {
+            stroke(trackAdd(a,drop),trackAdd(a,lift),grid);
+            stroke(trackAdd(b,drop),trackAdd(b,lift),grid);
+        }
+        // Finish marker remains at the physical timing line, with a second
+        // crossbar and short divisions instead of filled checkerboard cells.
+        if(i==0) {
+            const TrackVec3 decal{0,.002f,0};
+            const auto left=trackAdd(a,decal),right=trackAdd(b,decal);
+            const auto leftEnd=trackAdd(mix(a,d,.32f),decal);
+            const auto rightEnd=trackAdd(mix(b,c,.32f),decal);
+            stroke(left,right,chalk);stroke(leftEnd,rightEnd,chalk);
+            for(int cell=0;cell<=12;++cell)
+                stroke(mix(left,right,cell/12.f),mix(leftEnd,rightEnd,cell/12.f),chalk);
+        }
+    }
+    for(std::size_t i=0;i<PencilTrack::kSegments && decorations && !wireframe;++i) {
         const auto a=track.left[i],b=track.right[i],c=track.right[i+1],d=track.left[i+1];
         const auto paint=module(i);
         const TrackVec3 lift{0,wallHeight,0};
@@ -396,6 +580,29 @@ inline void drawPencilTrack(LGFX_Sprite& canvas, const TrackCamera& camera,
             }
         }
     }
+#ifdef ESP_PLATFORM
+    const uint64_t endUs=esp_timer_get_time();
+    struct WirePeak {
+        uint32_t us=0,sections=0,near=0,lines=0,candidates=0,surfaces=0;
+        TrackVec3 camera{};
+    };
+    static WirePeak peak;
+    if(wireframe && endUs-startUs>peak.us)
+        peak={uint32_t(endUs-startUs),wireSections,nearSections,wireLines,wireCandidates,
+              uint32_t(occlusion->count),camera.position};
+    static uint64_t lastLogUs=0;
+    if(endUs-lastLogUs>=2000000u) {
+        lastLogUs=endUs;
+        mclog::tagInfo("TrackStage","project_us={} paint_us={} lines_us={} wireframe={}",
+            uint32_t(projectUs-startUs),uint32_t(paintUs-projectUs),uint32_t(endUs-paintUs),wireframe);
+        if(wireframe) {
+            mclog::tagInfo("WirePeak","track_us={} sections={} near_sections={} strokes={} candidate_budget={} surfaces={} camera_x={} camera_y={} camera_z={}",
+                peak.us,peak.sections,peak.near,peak.lines,peak.candidates,peak.surfaces,
+                peak.camera.x,peak.camera.y,peak.camera.z);
+            peak={};
+        }
+    }
+#endif
 }
 
 } // namespace lets_and_go

@@ -1,0 +1,274 @@
+{
+  "method": "RacerPerf: all RACING windows, including first transition window. Stage samples: inclusive timestamps of first/last RACING summary, excluding COUNTDOWN/FINISH/RESULTS. Stages log independently, are not paired per frame. Mean/median of stage samples are not full-race per-frame aggregates.",
+  "comparison_limits": [
+    "Manual races without aligned positions or timing",
+    "Player changed from car=0 to car=1",
+    "Do not attribute whole-race FPS difference to wireframe alone"
+  ],
+  "runs": {
+    "v12": {
+      "racing_windows": 16,
+      "stage_interval_ms": [
+        1788931327569,
+        1788931359285
+      ],
+      "stages": {
+        "RacerPerf": {
+          "samples": 16,
+          "fps_x10": {
+            "min": 42,
+            "mean": 53.75,
+            "median": 56.0,
+            "max": 62
+          },
+          "draw_us": {
+            "min": 119828,
+            "mean": 151434.6875,
+            "median": 143544.0,
+            "max": 191801
+          },
+          "present_us": {
+            "min": 32141,
+            "mean": 32234.125,
+            "median": 32236.5,
+            "max": 32352
+          },
+          "peak_us": {
+            "min": 172905,
+            "mean": 204784.4375,
+            "median": 193224.5,
+            "max": 258302
+          }
+        },
+        "RaceStage": {
+          "samples": 15,
+          "track_us": {
+            "min": 11900,
+            "mean": 16549.533333333333,
+            "median": 14697,
+            "max": 25404
+          },
+          "cars_us": {
+            "min": 66931,
+            "mean": 107117.86666666667,
+            "median": 96074,
+            "max": 160625
+          },
+          "upscale_us": {
+            "min": 19276,
+            "mean": 19511.466666666667,
+            "median": 19508,
+            "max": 19812
+          },
+          "player_us": {
+            "min": 33158,
+            "mean": 36868.8,
+            "median": 35661,
+            "max": 42120
+          },
+          "opponents_us": {
+            "min": 28140,
+            "mean": 69770.2,
+            "median": 55669,
+            "max": 119687
+          },
+          "submitted": {
+            "min": 3,
+            "mean": 3.8666666666666667,
+            "median": 4,
+            "max": 4
+          }
+        },
+        "TrackStage": {
+          "samples": 15,
+          "project_us": {
+            "min": 2847,
+            "mean": 4640.6,
+            "median": 4206,
+            "max": 8065
+          },
+          "paint_us": {
+            "min": 8755,
+            "mean": 11767.8,
+            "median": 10678,
+            "max": 18775
+          },
+          "lines_us": {
+            "min": 4,
+            "mean": 4.6,
+            "median": 5,
+            "max": 6
+          }
+        },
+        "HudStage": {
+          "samples": 15,
+          "map_us": {
+            "min": 1445,
+            "mean": 1506.3333333333333,
+            "median": 1503,
+            "max": 1605
+          },
+          "total_us": {
+            "min": 3731,
+            "mean": 3857.6,
+            "median": 3871,
+            "max": 4016
+          }
+        }
+      },
+      "configuration": {
+        "track_id": [
+          "0"
+        ],
+        "player_car": [
+          "0"
+        ],
+        "cars": [
+          "4"
+        ],
+        "scene_width": [
+          "234"
+        ],
+        "player_native": [
+          "true"
+        ]
+      },
+      "wireframe_values": [
+        "not_logged"
+      ],
+      "reported_errors": []
+    },
+    "v13": {
+      "racing_windows": 15,
+      "stage_interval_ms": [
+        1788932187527,
+        1788932216782
+      ],
+      "stages": {
+        "RacerPerf": {
+          "samples": 15,
+          "fps_x10": {
+            "min": 54,
+            "mean": 59.13333333333333,
+            "median": 60,
+            "max": 62
+          },
+          "draw_us": {
+            "min": 123912,
+            "mean": 133171.8,
+            "median": 129748,
+            "max": 150636
+          },
+          "present_us": {
+            "min": 32134,
+            "mean": 32242.266666666666,
+            "median": 32214,
+            "max": 32457
+          },
+          "peak_us": {
+            "min": 165794,
+            "mean": 181968.53333333333,
+            "median": 177270,
+            "max": 218115
+          }
+        },
+        "RaceStage": {
+          "samples": 14,
+          "track_us": {
+            "min": 9305,
+            "mean": 16198.57142857143,
+            "median": 12882.5,
+            "max": 41515
+          },
+          "cars_us": {
+            "min": 79440,
+            "mean": 87261.85714285714,
+            "median": 85231.0,
+            "max": 102295
+          },
+          "upscale_us": {
+            "min": 19256,
+            "mean": 19525.85714285714,
+            "median": 19507.5,
+            "max": 20128
+          },
+          "player_us": {
+            "min": 33979,
+            "mean": 37276.642857142855,
+            "median": 35598.5,
+            "max": 46858
+          },
+          "opponents_us": {
+            "min": 43393,
+            "mean": 49489.142857142855,
+            "median": 49311.5,
+            "max": 57386
+          },
+          "submitted": {
+            "min": 4,
+            "mean": 4,
+            "median": 4.0,
+            "max": 4
+          }
+        },
+        "TrackStage": {
+          "samples": 14,
+          "project_us": {
+            "min": 3106,
+            "mean": 4861.142857142857,
+            "median": 4041.5,
+            "max": 7712
+          },
+          "paint_us": {
+            "min": 4,
+            "mean": 4.928571428571429,
+            "median": 5.0,
+            "max": 5
+          },
+          "lines_us": {
+            "min": 4612,
+            "mean": 10140.142857142857,
+            "median": 7907.5,
+            "max": 24338
+          }
+        },
+        "HudStage": {
+          "samples": 14,
+          "map_us": {
+            "min": 1424,
+            "mean": 1552.857142857143,
+            "median": 1477.5,
+            "max": 1876
+          },
+          "total_us": {
+            "min": 3716,
+            "mean": 3944.4285714285716,
+            "median": 3827.5,
+            "max": 4483
+          }
+        }
+      },
+      "configuration": {
+        "track_id": [
+          "0"
+        ],
+        "player_car": [
+          "1"
+        ],
+        "cars": [
+          "4"
+        ],
+        "scene_width": [
+          "234"
+        ],
+        "player_native": [
+          "true"
+        ]
+      },
+      "wireframe_values": [
+        "true"
+      ],
+      "reported_errors": []
+    }
+  }
+}

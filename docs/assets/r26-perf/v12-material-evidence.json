@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "identity_view": "race_player",
+  "models": [
+    {
+      "id": "magnum",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-0.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-0.ppm"
+        }
+      ]
+    },
+    {
+      "id": "sonic",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-1.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-1.ppm"
+        }
+      ]
+    },
+    {
+      "id": "neo",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-2.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-2.ppm"
+        }
+      ]
+    },
+    {
+      "id": "brocken",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-3.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-3.ppm"
+        }
+      ]
+    },
+    {
+      "id": "cobra",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-4.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-4.ppm"
+        }
+      ]
+    },
+    {
+      "id": "spider",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-5.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-5.ppm"
+        }
+      ]
+    },
+    {
+      "id": "stinger",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-6.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-6.ppm"
+        }
+      ]
+    },
+    {
+      "id": "diospada",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-7.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-7.ppm"
+        }
+      ]
+    }
+  ]
+}

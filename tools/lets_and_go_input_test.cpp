@@ -158,10 +158,37 @@ bool validateSlowFrameInput()
                    "close/recalibration kept a queued click");
     return valid;
 }
+bool validateMenuEventBuffer()
+{
+    RacerMenuEvents events;
+    RacerInputMailbox mailbox;
+    events.setMode(RacerNavigationMode::Garage);
+    for (uint32_t now=0; now<=400; now+=10) {
+        RacerInput input;
+        input.valid=true;
+        input.steer=now>=50 && now<150 ? .9f : 0.f;
+        const auto step=events.update(input,now);
+        input.navigationStep=step.car;
+        input.viewStep=step.view;
+        mailbox.publish(input);
+    }
+    const auto input=mailbox.consume();
+    bool valid=check(input.navigationStep==1 && input.steer==0.f,
+                     "slow frame lost returned-to-centre menu flick");
+    valid &= check(mailbox.consume().navigationStep==0,"menu flick replayed");
+    events.setMode(RacerNavigationMode::Horizontal);
+    RacerInput held;
+    held.valid=true;held.steer=.9f;
+    valid &= check(events.update(held,410).car==0,"held stick leaked across menu contexts");
+    held.steer=0;events.update(held,420);
+    held.steer=-.9f;
+    valid &= check(events.update(held,430).car==-1,"menu did not rearm after centre");
+    return valid;
+}
 }  // namespace
 
 int main()
 {
     return validateMapping() && validateMenuRepeater() && validateLongChord() &&
-           validateSlowFrameInput() ? 0 : 1;
+           validateSlowFrameInput() && validateMenuEventBuffer() ? 0 : 1;
 }

@@ -43,6 +43,7 @@ public:
     constexpr GameScreen screen() const { return _screen; }
     constexpr const RaceSetup& setup() const { return _setup; }
 
+    bool useDeviceControls();
     bool confirmInputAvailable();
     bool completeCalibration(bool succeeded);
     bool selectPlayerCar(CarId car);

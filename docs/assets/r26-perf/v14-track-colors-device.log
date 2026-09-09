@@ -1,0 +1,248 @@
+I (41087) WifiStation: No AP found, next scan in 40 seconds
+I (83503) WifiStation: No AP found, next scan in 80 seconds
+[1788933533265] [[32minfo[0m] [Launcher] handle open app, app id: 5
+[1788933533269] [[32minfo[0m] [Launcher] on close
+I (88932) i2c_bus: i2c1 bus deinited
+I (88933) M5PM1_PWR: Boost Disabled
+[1788933533280] [[32minfo[0m] [HAL-PMIC] Grove 5V disabled
+[1788933533304] [[32minfo[0m] [Let's & Go!!] on open
+I (89017) M5PM1_PWR: Boost Enabled
+[1788933533365] [[32minfo[0m] [HAL-PMIC] Grove 5V enabled
+E (89042) i2c.master: this port has not been initialized, please initialize it first
+I (89043) i2c_bus: i2c1 bus inited
+I (89043) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+[1788933533392] [[32minfo[0m] [1788933533392] [[32minfo[0m] [HAL-BTN] config loaded from settings: sfx=true, vibrate=true
+[RacerInput] seq=1 axis=false ready=0 errors=1 x=0 y=0 buttons=true red=false blue=false
+[1788933533442] [[32minfo[0m] [RacerMemory] scene=234x233 requested_half=true
+[1788933533480] [[32minfo[0m] [RacerMemory] track_rows_internal=true car_planes_internal=2 free_internal=70035 largest_internal=31744
+I (90600) i2c_bus: i2c1 bus deinited
+I (90601) M5PM1_PWR: Boost Disabled
+[1788933534948] [[32minfo[0m] [HAL-PMIC] Grove 5V disabled
+[1788933534949] [[32minfo[0m] [Let's & Go!!] controls: DEVICE (buttons + touch)
+[1788933535124] [[32minfo[0m] [GarageStage] panels=1225 shadow_us=4075 raster_us=126001 blit_us=10733
+[1788933535744] [[32minfo[0m] [RacerPerf] screen=SELECT MACHINE source=device frames=10 fps_x10=45 draw_us=75279 present_us=32547 peak_us=206104 input_total_us=57002 detail=medium
+[1788933536327] [[32minfo[0m] [Let's & Go!!] input: SELECT MACHINE -> MACHINE READY navigation=0
+[1788933537274] [[32minfo[0m] [GarageStage] panels=1009 shadow_us=4599 raster_us=131025 blit_us=11186
+[1788933537908] [[32minfo[0m] [RacerPerf] screen=MACHINE READY source=device frames=11 fps_x10=50 draw_us=163285 present_us=31900 peak_us=200156 input_total_us=2108 detail=low
+[1788933539640] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT RIVALS navigation=1
+[1788933539806] [[32minfo[0m] [GarageStage] panels=739 shadow_us=4417 raster_us=123300 blit_us=11094
+[1788933539841] [[32minfo[0m] [RacerPerf] screen=SELECT RIVALS source=device frames=3 fps_x10=14 draw_us=154777 present_us=32043 peak_us=199117 input_total_us=21541 detail=low
+[1788933540802] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT RIVALS navigation=1
+[1788933541841] [[32minfo[0m] [RacerPerf] screen=SELECT RIVALS source=device frames=3 fps_x10=15 draw_us=166769 present_us=32079 peak_us=205543 input_total_us=22127 detail=low
+[1788933542754] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT RIVALS navigation=1
+[1788933542912] [[32minfo[0m] [GarageStage] panels=759 shadow_us=4027 raster_us=116110 blit_us=10463
+[1788933543094] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT RIVALS navigation=1
+[1788933543414] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT RIVALS navigation=1
+[1788933543841] [[32minfo[0m] [RacerPerf] screen=SELECT RIVALS source=device frames=3 fps_x10=15 draw_us=167459 present_us=31923 peak_us=214817 input_total_us=23790 detail=low
+[1788933544098] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT RIVALS navigation=1
+[1788933544763] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT RIVALS navigation=1
+[1788933545494] [[32minfo[0m] [Let's & Go!!] input: SELECT RIVALS -> SELECT COURSE navigation=0
+[1788933545693] [[32minfo[0m] [PaintStage] rows=186 clear_us=1294 fill_us=132817 copy_us=7893
+[1788933545830] [[32minfo[0m] [TrackStage] project_us=10434 paint_us=144753 lines_us=136695 wireframe=false
+[1788933546232] [[32minfo[0m] [RacerPerf] screen=SELECT COURSE source=device frames=4 fps_x10=19 draw_us=210861 present_us=32056 peak_us=369973 input_total_us=24343 detail=low
+[1788933546977] [[32minfo[0m] [Let's & Go!!] input: SELECT COURSE -> STARTING GRID navigation=0
+[1788933547049] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=27 fallback_panels=0 map_cached=true
+[1788933547104] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6603 raster_us=6897 blit_us=2007
+[1788933547205] [[32minfo[0m] [RaceStage] track_us=24204 cars_us=97525 upscale_us=19577 scene_width=234 surfaces=329 cars=4 track_id=0 player_car=1 submitted=4 player_us=43760 opponents_us=53163 player_native=true
+[1788933547218] [[32minfo[0m] [HudStage] map_us=1452 total_us=3844 map_cached=true
+[1788933547838] [[32minfo[0m] [TrackStage] project_us=7374 paint_us=4 lines_us=16732 wireframe=true
+[1788933547839] [[32minfo[0m] [WirePeak] track_us=24470 sections=50 near_sections=6 strokes=488 candidate_budget=15553 surfaces=329 camera_x=-4.9723396 camera_y=5.501537 camera_z=-6.326306
+[1788933548190] [[32minfo[0m] [RacerPerf] screen=STARTING GRID source=device frames=8 fps_x10=37 draw_us=210807 present_us=32192 peak_us=368280 input_total_us=2737 detail=high
+I (104050) M5IOE1_PWM: PWM ch0 verified: duty=1556 pol=Norm en=On
+I (104097) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933549154] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6566 raster_us=6418 blit_us=2002
+[1788933549254] [[32minfo[0m] [RaceStage] track_us=23809 cars_us=96112 upscale_us=19460 scene_width=234 surfaces=329 cars=4 track_id=0 player_car=1 submitted=4 player_us=43057 opponents_us=52590 player_native=true
+[1788933549267] [[32minfo[0m] [HudStage] map_us=1551 total_us=4125 map_cached=true
+I (105155) M5IOE1_PWM: PWM ch0 verified: duty=1556 pol=Norm en=On
+I (105203) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933549881] [[32minfo[0m] [TrackStage] project_us=7434 paint_us=4 lines_us=15987 wireframe=true
+[1788933549882] [[32minfo[0m] [WirePeak] track_us=24889 sections=50 near_sections=6 strokes=488 candidate_budget=15553 surfaces=329 camera_x=-4.9723396 camera_y=5.501537 camera_z=-6.326306
+[1788933550228] [[32minfo[0m] [RacerPerf] screen=COUNTDOWN source=device frames=11 fps_x10=53 draw_us=151567 present_us=32174 peak_us=195283 input_total_us=1020 detail=medium
+I (106085) M5IOE1_PWM: PWM ch0 verified: duty=1556 pol=Norm en=On
+I (106132) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933551189] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6630 raster_us=6454 blit_us=1998
+[1788933551289] [[32minfo[0m] [RaceStage] track_us=23879 cars_us=96418 upscale_us=19386 scene_width=234 surfaces=329 cars=4 track_id=0 player_car=1 submitted=4 player_us=43423 opponents_us=52531 player_native=true
+[1788933551302] [[32minfo[0m] [HudStage] map_us=1949 total_us=4271 map_cached=true
+I (107193) M5IOE1_PWM: PWM ch0 verified: duty=2293 pol=Norm en=On
+I (107268) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933551921] [[32minfo[0m] [TrackStage] project_us=7073 paint_us=7 lines_us=15069 wireframe=true
+[1788933551922] [[32minfo[0m] [WirePeak] track_us=25236 sections=50 near_sections=6 strokes=488 candidate_budget=15553 surfaces=329 camera_x=-4.9723396 camera_y=5.501537 camera_z=-6.326306
+[1788933552261] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=11 fps_x10=53 draw_us=150732 present_us=32186 peak_us=194543 input_total_us=1123 detail=low
+[1788933553190] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8270 raster_us=9293 blit_us=1854
+[1788933553406] [[32minfo[0m] [RaceStage] track_us=12671 cars_us=84417 upscale_us=19619 scene_width=234 surfaces=109 cars=4 track_id=0 player_car=1 submitted=4 player_us=34443 opponents_us=49542 player_native=true
+[1788933553419] [[32minfo[0m] [HudStage] map_us=1602 total_us=3871 map_cached=true
+[1788933553951] [[32minfo[0m] [TrackStage] project_us=3638 paint_us=4 lines_us=5359 wireframe=true
+[1788933553952] [[32minfo[0m] [WirePeak] track_us=20670 sections=43 near_sections=5 strokes=427 candidate_budget=12368 surfaces=271 camera_x=-3.677415 camera_y=5.5771437 camera_z=-4.861127
+[1788933554268] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=132684 present_us=32163 peak_us=172604 input_total_us=1154 detail=low
+[1788933555215] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10440 raster_us=19327 blit_us=4766
+[1788933555538] [[32minfo[0m] [RaceStage] track_us=13125 cars_us=83545 upscale_us=19520 scene_width=234 surfaces=117 cars=4 track_id=0 player_car=1 submitted=4 player_us=34266 opponents_us=48796 player_native=true
+[1788933555550] [[32minfo[0m] [HudStage] map_us=1492 total_us=3761 map_cached=true
+[1788933556081] [[32minfo[0m] [TrackStage] project_us=4297 paint_us=3 lines_us=6159 wireframe=true
+[1788933556082] [[32minfo[0m] [WirePeak] track_us=14720 sections=23 near_sections=16 strokes=218 candidate_budget=7154 surfaces=122 camera_x=9.453598 camera_y=5.0028143 camera_z=8.840327
+[1788933556396] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=13 fps_x10=61 draw_us=128975 present_us=32232 peak_us=170881 input_total_us=1195 detail=low
+[1788933557277] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6418 raster_us=6587 blit_us=1580
+[1788933557540] [[32minfo[0m] [RaceStage] track_us=24654 cars_us=83524 upscale_us=19530 scene_width=234 surfaces=334 cars=4 track_id=0 player_car=1 submitted=4 player_us=35596 opponents_us=47463 player_native=true
+[1788933557552] [[32minfo[0m] [HudStage] map_us=1441 total_us=3854 map_cached=true
+[1788933558112] [[32minfo[0m] [TrackStage] project_us=5364 paint_us=4 lines_us=9647 wireframe=true
+[1788933558113] [[32minfo[0m] [WirePeak] track_us=28998 sections=67 near_sections=12 strokes=578 candidate_budget=15995 surfaces=392 camera_x=9.832434 camera_y=2.5559459 camera_z=-8.929076
+I (113940) M5IOE1_PWM: PWM ch0 verified: duty=1678 pol=Norm en=On
+I (113996) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933558433] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=134906 present_us=32324 peak_us=183120 input_total_us=1217 detail=low
+[1788933559288] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8498 raster_us=10105 blit_us=2121
+[1788933559685] [[32minfo[0m] [RaceStage] track_us=10829 cars_us=91667 upscale_us=19526 scene_width=234 surfaces=80 cars=4 track_id=0 player_car=1 submitted=4 player_us=40949 opponents_us=50238 player_native=true
+[1788933559698] [[32minfo[0m] [HudStage] map_us=1449 total_us=3720 map_cached=true
+[1788933560250] [[32minfo[0m] [TrackStage] project_us=4482 paint_us=6 lines_us=6857 wireframe=true
+[1788933560251] [[32minfo[0m] [WirePeak] track_us=15037 sections=26 near_sections=16 strokes=245 candidate_budget=5077 surfaces=144 camera_x=1.7127964 camera_y=1.8530917 camera_z=-2.328936
+[1788933560573] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=13 fps_x10=60 draw_us=130012 present_us=32208 peak_us=177091 input_total_us=1207 detail=low
+[1788933561296] [[32minfo[0m] [CarStage] car=2 panels=607 vertices=801 tiles=1 prepare_us=6167 raster_us=8594 blit_us=2288
+[1788933561787] [[32minfo[0m] [RaceStage] track_us=33309 cars_us=107487 upscale_us=19407 scene_width=234 surfaces=443 cars=4 track_id=0 player_car=1 submitted=4 player_us=46688 opponents_us=60261 player_native=true
+[1788933561800] [[32minfo[0m] [HudStage] map_us=1783 total_us=4250 map_cached=true
+[1788933562261] [[32minfo[0m] [TrackStage] project_us=7458 paint_us=4 lines_us=16840 wireframe=true
+[1788933562262] [[32minfo[0m] [WirePeak] track_us=33280 sections=68 near_sections=10 strokes=581 candidate_budget=25914 surfaces=443 camera_x=-8.839031 camera_y=5.1025877 camera_z=-8.928046
+[1788933562619] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=11 fps_x10=54 draw_us=151148 present_us=32178 peak_us=215162 input_total_us=1086 detail=low
+[1788933563350] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6629 raster_us=7204 blit_us=1978
+[1788933563933] [[32minfo[0m] [RaceStage] track_us=8454 cars_us=90984 upscale_us=19470 scene_width=234 surfaces=54 cars=4 track_id=0 player_car=1 submitted=4 player_us=36635 opponents_us=53882 player_native=true
+[1788933563945] [[32minfo[0m] [HudStage] map_us=1434 total_us=3792 map_cached=true
+[1788933564331] [[32minfo[0m] [TrackStage] project_us=4262 paint_us=4 lines_us=7043 wireframe=true
+[1788933564332] [[32minfo[0m] [WirePeak] track_us=21570 sections=46 near_sections=5 strokes=456 candidate_budget=13254 surfaces=290 camera_x=-4.11102 camera_y=5.5545864 camera_z=-5.3742433
+[1788933564662] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=58 draw_us=135609 present_us=32258 peak_us=179704 input_total_us=1187 detail=low
+[1788933565363] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=7186 raster_us=7233 blit_us=1935
+[1788933565949] [[32minfo[0m] [RaceStage] track_us=9716 cars_us=90988 upscale_us=19482 scene_width=234 surfaces=60 cars=4 track_id=0 player_car=1 submitted=4 player_us=35261 opponents_us=55233 player_native=true
+[1788933565962] [[32minfo[0m] [HudStage] map_us=1550 total_us=3830 map_cached=true
+[1788933566357] [[32minfo[0m] [TrackStage] project_us=5098 paint_us=3 lines_us=10399 wireframe=true
+[1788933566358] [[32minfo[0m] [WirePeak] track_us=15500 sections=30 near_sections=8 strokes=278 candidate_budget=7724 surfaces=154 camera_x=11.631027 camera_y=2.9863553 camera_z=-7.1699147
+[1788933566705] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=135487 present_us=32277 peak_us=186659 input_total_us=1092 detail=low
+[1788933567385] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10859 raster_us=19899 blit_us=4951
+[1788933568060] [[32minfo[0m] [RaceStage] track_us=12569 cars_us=87632 upscale_us=19498 scene_width=234 surfaces=138 cars=4 track_id=0 player_car=1 submitted=4 player_us=34834 opponents_us=52296 player_native=true
+[1788933568072] [[32minfo[0m] [HudStage] map_us=1470 total_us=3909 map_cached=true
+[1788933568457] [[32minfo[0m] [TrackStage] project_us=4019 paint_us=3 lines_us=6155 wireframe=true
+[1788933568458] [[32minfo[0m] [WirePeak] track_us=28031 sections=68 near_sections=11 strokes=585 candidate_budget=15478 surfaces=386 camera_x=8.887558 camera_y=2.4044757 camera_z=-8.936536
+[1788933568780] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=57 draw_us=138154 present_us=32205 peak_us=180195 input_total_us=1190 detail=low
+[1788933569413] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10512 raster_us=22847 blit_us=8704
+[1788933570090] [[32minfo[0m] [RaceStage] track_us=12138 cars_us=90823 upscale_us=19509 scene_width=234 surfaces=120 cars=4 track_id=0 player_car=1 submitted=4 player_us=38895 opponents_us=51396 player_native=true
+[1788933570103] [[32minfo[0m] [HudStage] map_us=1469 total_us=3800 map_cached=true
+[1788933570489] [[32minfo[0m] [TrackStage] project_us=3791 paint_us=4 lines_us=6772 wireframe=true
+[1788933570490] [[32minfo[0m] [WirePeak] track_us=13161 sections=22 near_sections=17 strokes=210 candidate_budget=5502 surfaces=120 camera_x=-10.493781 camera_y=2.7543128 camera_z=7.682834
+I (126323) M5IOE1_PWM: PWM ch0 verified: duty=1678 pol=Norm en=On
+I (126378) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933570821] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=135407 present_us=32263 peak_us=178370 input_total_us=1098 detail=low
+[1788933571472] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10487 raster_us=23374 blit_us=8862
+[1788933572278] [[32minfo[0m] [RaceStage] track_us=26867 cars_us=105103 upscale_us=19560 scene_width=234 surfaces=381 cars=4 track_id=0 player_car=1 submitted=4 player_us=46838 opponents_us=57752 player_native=true
+[1788933572291] [[32minfo[0m] [HudStage] map_us=1510 total_us=3798 map_cached=true
+[1788933572549] [[32minfo[0m] [TrackStage] project_us=7130 paint_us=4 lines_us=15605 wireframe=true
+[1788933572550] [[32minfo[0m] [WirePeak] track_us=33712 sections=68 near_sections=11 strokes=584 candidate_budget=27222 surfaces=441 camera_x=-9.321949 camera_y=5.0293484 camera_z=-8.976051
+[1788933572899] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=11 fps_x10=53 draw_us=154244 present_us=32206 peak_us=206296 input_total_us=1118 detail=low
+I (128929) M5IOE1_PWM: PWM ch0 verified: duty=2538 pol=Norm en=On
+I (129009) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933573484] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8609 raster_us=9419 blit_us=1981
+[1788933574377] [[32minfo[0m] [RaceStage] track_us=7603 cars_us=93171 upscale_us=19503 scene_width=234 surfaces=46 cars=4 track_id=0 player_car=1 submitted=4 player_us=37982 opponents_us=54727 player_native=true
+[1788933574389] [[32minfo[0m] [HudStage] map_us=1435 total_us=3715 map_cached=true
+[1788933574613] [[32minfo[0m] [TrackStage] project_us=4570 paint_us=3 lines_us=9130 wireframe=true
+[1788933574614] [[32minfo[0m] [WirePeak] track_us=19894 sections=43 near_sections=5 strokes=427 candidate_budget=12166 surfaces=267 camera_x=-3.6150002 camera_y=5.580169 camera_z=-4.78562
+[1788933574938] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=58 draw_us=135096 present_us=32202 peak_us=179018 input_total_us=1207 detail=low
+[1788933575486] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=7294 raster_us=6832 blit_us=2248
+[1788933576537] [[32minfo[0m] [RaceStage] track_us=9697 cars_us=91554 upscale_us=19678 scene_width=234 surfaces=68 cars=4 track_id=0 player_car=1 submitted=4 player_us=36802 opponents_us=54260 player_native=true
+[1788933576549] [[32minfo[0m] [HudStage] map_us=1464 total_us=3749 map_cached=true
+[1788933576615] [[32minfo[0m] [TrackStage] project_us=6257 paint_us=4 lines_us=15062 wireframe=true
+[1788933576616] [[32minfo[0m] [WirePeak] track_us=21323 sections=46 near_sections=19 strokes=411 candidate_budget=11197 surfaces=250 camera_x=11.178663 camera_y=2.8408723 camera_z=-8.063761
+[1788933576960] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=133904 present_us=32212 peak_us=189053 input_total_us=1116 detail=low
+[1788933577540] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8231 raster_us=8930 blit_us=1746
+I (134001) M5IOE1_PWM: PWM ch0 verified: duty=1678 pol=Norm en=On
+I (134056) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933578622] [[32minfo[0m] [RaceStage] track_us=10291 cars_us=89473 upscale_us=19688 scene_width=234 surfaces=91 cars=4 track_id=0 player_car=1 submitted=4 player_us=36969 opponents_us=51999 player_native=true
+[1788933578635] [[32minfo[0m] [HudStage] map_us=1522 total_us=4284 map_cached=true
+[1788933578687] [[32minfo[0m] [TrackStage] project_us=3509 paint_us=4 lines_us=5072 wireframe=true
+[1788933578688] [[32minfo[0m] [WirePeak] track_us=28706 sections=67 near_sections=12 strokes=578 candidate_budget=15904 surfaces=390 camera_x=9.645619 camera_y=2.5237017 camera_z=-8.959073
+[1788933579014] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=57 draw_us=136719 present_us=32127 peak_us=177646 input_total_us=1151 detail=low
+[1788933579567] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8915 raster_us=9072 blit_us=1705
+I (135884) M5IOE1_PWM: PWM ch0 verified: duty=1678 pol=Norm en=On
+I (135939) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933580683] [[32minfo[0m] [RaceStage] track_us=10579 cars_us=93615 upscale_us=19657 scene_width=234 surfaces=78 cars=4 track_id=0 player_car=1 submitted=4 player_us=38852 opponents_us=54207 player_native=true
+[1788933580696] [[32minfo[0m] [HudStage] map_us=1477 total_us=4066 map_cached=true
+[1788933580750] [[32minfo[0m] [TrackStage] project_us=4010 paint_us=4 lines_us=5540 wireframe=true
+[1788933580752] [[32minfo[0m] [WirePeak] track_us=13460 sections=22 near_sections=17 strokes=206 candidate_budget=5736 surfaces=126 camera_x=-10.225888 camera_y=2.6804852 camera_z=8.069911
+[1788933581086] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=12 fps_x10=58 draw_us=138022 present_us=32179 peak_us=182056 input_total_us=1095 detail=low
+I (136933) M5IOE1_PWM: PWM ch0 verified: duty=1678 pol=Norm en=On
+I (136989) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933581583] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10858 raster_us=23092 blit_us=8734
+[1788933582763] [[32minfo[0m] [RaceStage] track_us=23726 cars_us=98616 upscale_us=19284 scene_width=234 surfaces=322 cars=4 track_id=0 player_car=1 submitted=4 player_us=43680 opponents_us=54396 player_native=true
+[1788933582775] [[32minfo[0m] [HudStage] map_us=1467 total_us=3829 map_cached=true
+[1788933582840] [[32minfo[0m] [TrackStage] project_us=7159 paint_us=3 lines_us=13835 wireframe=true
+[1788933582841] [[32minfo[0m] [WirePeak] track_us=33845 sections=68 near_sections=11 strokes=584 candidate_budget=27306 surfaces=441 camera_x=-9.334527 camera_y=5.0273495 camera_z=-8.976169
+[1788933583145] [[32minfo[0m] [RacerPerf] screen=RACING source=device frames=11 fps_x10=53 draw_us=152110 present_us=32303 peak_us=204652 input_total_us=1078 detail=low
+I (138937) M5IOE1_PWM: PWM ch0 verified: duty=3931 pol=Norm en=On
+I (139035) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1788933583593] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10610 raster_us=19980 blit_us=9422
+[1788933584989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=12 fps_x10=60 draw_us=81072 present_us=32422 peak_us=122946 input_total_us=7985 detail=low
+[1788933586989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29971 detail=low
+[1788933588989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29571 detail=low
+[1788933590989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29656 detail=low
+[1788933592989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29844 detail=low
+[1788933594989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29819 detail=low
+[1788933596989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29681 detail=low
+[1788933598989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29420 detail=low
+[1788933600989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29505 detail=low
+[1788933602989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29822 detail=low
+[1788933604989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29704 detail=low
+[1788933606989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29861 detail=low
+[1788933608989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=31485 detail=low
+I (165918) WifiStation: No AP found, next scan in 160 seconds
+[1788933610989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=30988 detail=low
+[1788933612989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29944 detail=low
+[1788933614989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29948 detail=low
+[1788933616989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29427 detail=low
+[1788933618989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29407 detail=low
+[1788933620989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29754 detail=low
+[1788933622989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29701 detail=low
+[1788933624989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29684 detail=low
+[1788933626989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29940 detail=low
+[1788933628989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29730 detail=low
+[1788933630989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29692 detail=low
+[1788933632989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29588 detail=low
+[1788933634989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29753 detail=low
+[1788933636989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29784 detail=low
+[1788933638989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29710 detail=low
+[1788933640989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29653 detail=low
+[1788933642989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29690 detail=low
+[1788933644989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29764 detail=low
+[1788933646989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29806 detail=low
+[1788933648989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29862 detail=low
+[1788933650989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29638 detail=low
+[1788933652989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29883 detail=low
+[1788933654989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29469 detail=low
+[1788933656989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29836 detail=low
+[1788933658989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29829 detail=low
+[1788933660989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29608 detail=low
+[1788933662989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29817 detail=low
+[1788933664989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29509 detail=low
+[1788933666989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=30055 detail=low
+[1788933668989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29839 detail=low
+[1788933670989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29543 detail=low
+[1788933672989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29821 detail=low
+[1788933674989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=30114 detail=low
+[1788933676989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29750 detail=low
+[1788933678989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29873 detail=low
+[1788933680989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29489 detail=low
+[1788933682989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29594 detail=low
+[1788933684989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29212 detail=low
+[1788933686989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29886 detail=low
+[1788933688989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29841 detail=low
+[1788933690989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29795 detail=low
+[1788933692989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29960 detail=low
+[1788933694989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29723 detail=low
+[1788933696989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29516 detail=low
+[1788933698989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29717 detail=low
+[1788933700989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29552 detail=low
+[1788933702989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29424 detail=low
+[1788933704989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29737 detail=low
+[1788933706989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29772 detail=low
+[1788933708989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29819 detail=low
+[1788933710989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29947 detail=low
+[1788933712989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=30094 detail=low
+[1788933714989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29629 detail=low
+[1788933716989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29774 detail=low
+[1788933718989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=30018 detail=low
+[1788933720989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29512 detail=low
+[1788933722989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29771 detail=low
+[1788933724989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29954 detail=low
+[1788933726989] [[32minfo[0m] [RacerPerf] screen=RESULTS source=device frames=0 fps_x10=0 draw_us=0 present_us=0 peak_us=0 input_total_us=29640 detail=low

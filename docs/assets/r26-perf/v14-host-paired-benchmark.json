@@ -1,0 +1,62 @@
+[
+  {
+    "repeat": 0,
+    "version": "v13",
+    "results": [
+      "track_0_solid mean_ms=0.167 median_ms=0.144 p95_ms=0.259",
+      "track_0_wire mean_ms=0.123 median_ms=0.094 p95_ms=0.277",
+      "track_1_solid mean_ms=0.168 median_ms=0.172 p95_ms=0.215",
+      "track_1_wire mean_ms=0.095 median_ms=0.083 p95_ms=0.187"
+    ]
+  },
+  {
+    "repeat": 0,
+    "version": "v14",
+    "results": [
+      "track_0_solid mean_ms=0.165 median_ms=0.146 p95_ms=0.252",
+      "track_0_wire mean_ms=0.115 median_ms=0.085 p95_ms=0.277",
+      "track_1_solid mean_ms=0.173 median_ms=0.168 p95_ms=0.247",
+      "track_1_wire mean_ms=0.082 median_ms=0.077 p95_ms=0.136"
+    ]
+  },
+  {
+    "repeat": 1,
+    "version": "v13",
+    "results": [
+      "track_0_solid mean_ms=0.166 median_ms=0.145 p95_ms=0.257",
+      "track_0_wire mean_ms=0.120 median_ms=0.090 p95_ms=0.273",
+      "track_1_solid mean_ms=0.166 median_ms=0.166 p95_ms=0.215",
+      "track_1_wire mean_ms=0.092 median_ms=0.078 p95_ms=0.161"
+    ]
+  },
+  {
+    "repeat": 1,
+    "version": "v14",
+    "results": [
+      "track_0_solid mean_ms=0.198 median_ms=0.168 p95_ms=0.315",
+      "track_0_wire mean_ms=0.131 median_ms=0.093 p95_ms=0.277",
+      "track_1_solid mean_ms=0.174 median_ms=0.179 p95_ms=0.229",
+      "track_1_wire mean_ms=0.090 median_ms=0.078 p95_ms=0.165"
+    ]
+  },
+  {
+    "repeat": 2,
+    "version": "v13",
+    "results": [
+      "track_0_solid mean_ms=0.205 median_ms=0.165 p95_ms=0.311",
+      "track_0_wire mean_ms=0.128 median_ms=0.094 p95_ms=0.271",
+      "track_1_solid mean_ms=0.161 median_ms=0.164 p95_ms=0.215",
+      "track_1_wire mean_ms=0.098 median_ms=0.083 p95_ms=0.171"
+    ]
+  },
+  {
+    "repeat": 2,
+    "version": "v14",
+    "results": [
+      "track_0_solid mean_ms=0.168 median_ms=0.145 p95_ms=0.266",
+      "track_0_wire mean_ms=0.110 median_ms=0.084 p95_ms=0.257",
+      "track_1_solid mean_ms=0.177 median_ms=0.181 p95_ms=0.222",
+      "track_1_wire mean_ms=0.098 median_ms=0.093 p95_ms=0.237"
+    ]
+  }
+]

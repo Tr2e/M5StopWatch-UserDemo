@@ -1,0 +1,10 @@
+{
+  "windows": 16,
+  "fps": {
+    "min": 4.2,
+    "median": 5.6,
+    "max": 6.2
+  },
+  "draw_ms_median": 143.544,
+  "note": "Manual race, car=0 track=0; no synchronized A/B."
+}

@@ -1,0 +1,12 @@
+{
+  "version": "v9-half-width",
+  "sha256": "7a4f96f1a9dc5362cc7e602502c9c148d0c291b833f4db21a6fe2c68edc192f5",
+  "bytes": 4916576,
+  "scene_width": 234,
+  "scene_height": 233,
+  "hud_width": 468,
+  "hud_height": 466,
+  "extra_scene_bytes": 109044,
+  "upscale_row_capacity": 480,
+  "native_fallback": true
+}

@@ -1,0 +1,14 @@
+{
+  "base": "e12cb44",
+  "sha256": "d8152b906a6e46e9fbf0fc872eb5144c348f434a0fbf6ae25d10fcdde39f07c9",
+  "bytes": 4907280,
+  "changes": [
+    "optional internal-RAM car tile and track row buffers",
+    "skip rows outside track coverage",
+    "avoid clearing fully overwritten prepared vertices",
+    "paint clear/fill/copy counters"
+  ],
+  "validation": "renderer ASan/UBSan passed; 169 captures identical to v4",
+  "internal_ram_extra_bytes": 55768,
+  "internal_ram_reserve_bytes": 32768
+}

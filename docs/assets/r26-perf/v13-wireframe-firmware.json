@@ -1,0 +1,16 @@
+{
+  "version": "v13-wireframe-track",
+  "sha256": "812604e19cbc8f43541f63a9fcccafcc06f62d8014218bb056a74f50334e0392",
+  "bytes": 4920592,
+  "track_style": "hidden-line wireframe, section-level occluder candidates",
+  "scene": [
+    234,
+    233
+  ],
+  "player_and_opponents": "unchanged from v12",
+  "speed_lines": false,
+  "minimap": "unchanged cached base + live markers",
+  "extra_heap_bytes": 0,
+  "local_candidate_array_bytes": 1248,
+  "app_flash": "Hash of data verified; RTS reset; Done"
+}

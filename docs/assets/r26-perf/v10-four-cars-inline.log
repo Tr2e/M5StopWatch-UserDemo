@@ -1,0 +1,98 @@
+[1788928824955] [info] [RacerPerf] screen=RESULTS source=device frames=2 fps_x10=10 draw_us=15408 present_us=32366 peak_us=47787 input_total_us=24256 detail=low
+[1788928826954] [info] [PaintStage] rows=139 clear_us=483 fill_us=13162 copy_us=3860
+[1788928826974] [info] [TrackStage] project_us=7051 paint_us=18724 lines_us=19209
+[1788928826994] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=8685 raster_us=8173 blit_us=2124
+[1788928827082] [info] [RaceStage] track_us=45999 cars_us=87993 upscale_us=19502 scene_width=234 surfaces=329 cars=4 track_id=0 player_car=1
+[1788928827322] [info] [RacerPerf] screen=STARTING GRID source=device frames=3 fps_x10=13 draw_us=116195 present_us=32235 peak_us=202472 input_total_us=25289 detail=low
+[1788928828997] [info] [CarStage] car=4 panels=771 vertices=1029 tiles=1 prepare_us=9071 raster_us=8673 blit_us=2948
+[1788928829115] [info] [PaintStage] rows=139 clear_us=471 fill_us=12844 copy_us=3778
+[1788928829135] [info] [TrackStage] project_us=6768 paint_us=18317 lines_us=18688
+[1788928829240] [info] [RaceStage] track_us=44722 cars_us=84761 upscale_us=19343 scene_width=234 surfaces=329 cars=4 track_id=0 player_car=1
+[1788928829476] [info] [RacerPerf] screen=COUNTDOWN source=device frames=11 fps_x10=50 draw_us=162131 present_us=32228 peak_us=197051 input_total_us=874 detail=low
+[1788928831101] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9045 raster_us=7641 blit_us=2100
+[1788928831258] [info] [PaintStage] rows=139 clear_us=472 fill_us=12779 copy_us=3756
+[1788928831278] [info] [TrackStage] project_us=6986 paint_us=18236 lines_us=18390
+[1788928831383] [info] [RaceStage] track_us=44697 cars_us=84818 upscale_us=19512 scene_width=234 surfaces=329 cars=4 track_id=0 player_car=1
+[1788928831627] [info] [RacerPerf] screen=RACING source=device frames=11 fps_x10=51 draw_us=161928 present_us=32285 peak_us=199317 input_total_us=890 detail=low
+[1788928833147] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9216 raster_us=7759 blit_us=1768
+[1788928833291] [info] [PaintStage] rows=136 clear_us=469 fill_us=5911 copy_us=3818
+[1788928833297] [info] [TrackStage] project_us=4352 paint_us=11422 lines_us=5071
+[1788928833397] [info] [RaceStage] track_us=21670 cars_us=79544 upscale_us=19793 scene_width=234 surfaces=109 cars=4 track_id=0 player_car=1
+[1788928833605] [info] [RacerPerf] screen=RACING source=device frames=11 fps_x10=54 draw_us=145182 present_us=32388 peak_us=192222 input_total_us=913 detail=low
+[1788928835162] [info] [CarStage] car=2 panels=751 vertices=953 tiles=1 prepare_us=8727 raster_us=7726 blit_us=1867
+[1788928835457] [info] [PaintStage] rows=142 clear_us=494 fill_us=6032 copy_us=3843
+[1788928835465] [info] [TrackStage] project_us=4433 paint_us=11764 lines_us=6991
+[1788928835565] [info] [RaceStage] track_us=24126 cars_us=79105 upscale_us=19292 scene_width=234 surfaces=117 cars=4 track_id=0 player_car=1
+[1788928835776] [info] [RacerPerf] screen=RACING source=device frames=13 fps_x10=59 draw_us=132240 present_us=32380 peak_us=170766 input_total_us=1042 detail=low
+[1788928837189] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=8841 raster_us=8062 blit_us=1713
+[1788928837547] [info] [PaintStage] rows=220 clear_us=754 fill_us=13546 copy_us=5446
+[1788928837569] [info] [TrackStage] project_us=6914 paint_us=21027 lines_us=21309
+[1788928837669] [info] [RaceStage] track_us=50242 cars_us=78862 upscale_us=19594 scene_width=234 surfaces=334 cars=4 track_id=0 player_car=1
+[1788928837901] [info] [RacerPerf] screen=RACING source=device frames=12 fps_x10=57 draw_us=142417 present_us=32277 peak_us=203410 input_total_us=963 detail=low
+[1788928839195] [info] [CarStage] car=4 panels=771 vertices=1029 tiles=1 prepare_us=9392 raster_us=8271 blit_us=1585
+[1788928839617] [info] [PaintStage] rows=142 clear_us=505 fill_us=4613 copy_us=3868
+[1788928839619] [info] [TrackStage] project_us=2945 paint_us=10190 lines_us=1303
+[1788928839719] [info] [RaceStage] track_us=17977 cars_us=76533 upscale_us=19814 scene_width=234 surfaces=43 cars=4 track_id=0 player_car=1
+[1788928839917] [info] [RacerPerf] screen=RACING source=device frames=12 fps_x10=58 draw_us=133313 present_us=32371 peak_us=182572 input_total_us=996 detail=low
+[1788928841203] [info] [CarStage] car=1 panels=805 vertices=1114 tiles=1 prepare_us=9687 raster_us=11537 blit_us=2551
+[1788928841773] [info] [PaintStage] rows=127 clear_us=445 fill_us=4558 copy_us=3650
+[1788928841778] [info] [TrackStage] project_us=3632 paint_us=9845 lines_us=3827
+[1788928841875] [info] [RaceStage] track_us=18252 cars_us=77094 upscale_us=19543 scene_width=234 surfaces=59 cars=4 track_id=0 player_car=1
+[1788928842108] [info] [RacerPerf] screen=RACING source=device frames=13 fps_x10=60 draw_us=133642 present_us=32398 peak_us=187270 input_total_us=1070 detail=low
+[1788928843215] [info] [CarStage] car=2 panels=751 vertices=953 tiles=1 prepare_us=8814 raster_us=8019 blit_us=2068
+[1788928843877] [info] [PaintStage] rows=136 clear_us=485 fill_us=5649 copy_us=3693
+[1788928843882] [info] [TrackStage] project_us=4333 paint_us=11030 lines_us=4630
+[1788928843984] [info] [RaceStage] track_us=21157 cars_us=81132 upscale_us=19590 scene_width=234 surfaces=103 cars=4 track_id=0 player_car=1
+[1788928844192] [info] [RacerPerf] screen=RACING source=device frames=11 fps_x10=52 draw_us=154479 present_us=32288 peak_us=208300 input_total_us=936 detail=low
+[1788928845225] [info] [CarStage] car=2 panels=751 vertices=953 tiles=1 prepare_us=8826 raster_us=8281 blit_us=1799
+[1788928846029] [info] [PaintStage] rows=138 clear_us=476 fill_us=5644 copy_us=4009
+[1788928846035] [info] [TrackStage] project_us=4166 paint_us=11547 lines_us=4802
+[1788928846137] [info] [RaceStage] track_us=21276 cars_us=81132 upscale_us=19640 scene_width=234 surfaces=89 cars=4 track_id=0 player_car=1
+[1788928846346] [info] [RacerPerf] screen=RACING source=device frames=13 fps_x10=60 draw_us=131044 present_us=32284 peak_us=170306 input_total_us=1044 detail=low
+[1788928847288] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=8838 raster_us=8064 blit_us=1736
+[1788928848062] [info] [PaintStage] rows=232 clear_us=804 fill_us=12491 copy_us=5648
+[1788928848079] [info] [TrackStage] project_us=5888 paint_us=20308 lines_us=15753
+[1788928848183] [info] [RaceStage] track_us=42909 cars_us=83171 upscale_us=19554 scene_width=234 surfaces=272 cars=4 track_id=0 player_car=1
+[1788928848411] [info] [RacerPerf] screen=RACING source=device frames=11 fps_x10=53 draw_us=152351 present_us=32932 peak_us=213908 input_total_us=927 detail=low
+[1788928849326] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9142 raster_us=7945 blit_us=1838
+[1788928850106] [info] [PaintStage] rows=135 clear_us=457 fill_us=4616 copy_us=3677
+[1788928850109] [info] [TrackStage] project_us=2968 paint_us=9925 lines_us=2237
+[1788928850210] [info] [RaceStage] track_us=17690 cars_us=78764 upscale_us=19663 scene_width=234 surfaces=56 cars=4 track_id=0 player_car=1
+[1788928850425] [info] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=132984 present_us=32363 peak_us=180723 input_total_us=992 detail=low
+[1788928851343] [info] [CarStage] car=2 panels=751 vertices=953 tiles=1 prepare_us=8496 raster_us=8741 blit_us=1827
+[1788928852127] [info] [PaintStage] rows=123 clear_us=433 fill_us=5899 copy_us=3397
+[1788928852135] [info] [TrackStage] project_us=4491 paint_us=10941 lines_us=7490
+[1788928852236] [info] [RaceStage] track_us=23840 cars_us=80664 upscale_us=19577 scene_width=234 surfaces=126 cars=4 track_id=0 player_car=1
+[1788928852488] [info] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=137247 present_us=32301 peak_us=206349 input_total_us=979 detail=low
+[1788928853408] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9091 raster_us=7206 blit_us=1937
+[1788928854297] [info] [PaintStage] rows=136 clear_us=469 fill_us=5778 copy_us=3762
+[1788928854303] [info] [TrackStage] project_us=4521 paint_us=11199 lines_us=4754
+[1788928854407] [info] [RaceStage] track_us=21228 cars_us=83287 upscale_us=19604 scene_width=234 surfaces=105 cars=4 track_id=0 player_car=1
+[1788928854618] [info] [RacerPerf] screen=RACING source=device frames=11 fps_x10=50 draw_us=158588 present_us=32447 peak_us=216244 input_total_us=882 detail=low
+[1788928855472] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9291 raster_us=8008 blit_us=1583
+[1788928856309] [info] [PaintStage] rows=140 clear_us=480 fill_us=5822 copy_us=3776
+[1788928856316] [info] [TrackStage] project_us=4166 paint_us=11268 lines_us=6214
+[1788928856418] [info] [RaceStage] track_us=22598 cars_us=82080 upscale_us=19327 scene_width=234 surfaces=103 cars=4 track_id=0 player_car=1
+[1788928856630] [info] [RacerPerf] screen=RACING source=device frames=12 fps_x10=59 draw_us=133087 present_us=32284 peak_us=172955 input_total_us=967 detail=low
+[1788928857527] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9389 raster_us=8343 blit_us=1397
+[1788928858327] [info] [TrackStage] project_us=6720 paint_us=19404 lines_us=19325
+[1788928858433] [info] [RaceStage] track_us=46485 cars_us=84606 upscale_us=19677 scene_width=234 surfaces=313 cars=4 track_id=0 player_car=1
+[1788928858508] [info] [PaintStage] rows=232 clear_us=784 fill_us=12224 copy_us=5655
+[1788928858671] [info] [RacerPerf] screen=RACING source=device frames=11 fps_x10=54 draw_us=150804 present_us=32338 peak_us=207276 input_total_us=877 detail=low
+[1788928859618] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9405 raster_us=7780 blit_us=1416
+[1788928860415] [info] [TrackStage] project_us=2749 paint_us=9109 lines_us=1530
+[1788928860515] [info] [RaceStage] track_us=14518 cars_us=78752 upscale_us=19644 scene_width=234 surfaces=42 cars=4 track_id=0 player_car=1
+[1788928860577] [info] [PaintStage] rows=134 clear_us=468 fill_us=4367 copy_us=3803
+[1788928860719] [info] [RacerPerf] screen=RACING source=device frames=12 fps_x10=57 draw_us=135730 present_us=32483 peak_us=186491 input_total_us=1009 detail=low
+[1788928861631] [info] [CarStage] car=0 panels=772 vertices=1073 tiles=1 prepare_us=9535 raster_us=7601 blit_us=1455
+[1788928862448] [info] [TrackStage] project_us=3598 paint_us=9161 lines_us=2769
+[1788928862549] [info] [RaceStage] track_us=16562 cars_us=80129 upscale_us=19555 scene_width=234 surfaces=47 cars=4 track_id=0 player_car=1
+[1788928862611] [info] [PaintStage] rows=129 clear_us=439 fill_us=4144 copy_us=3655
+[1788928862755] [info] [RacerPerf] screen=RACING source=device frames=12 fps_x10=58 draw_us=135037 present_us=32260 peak_us=171398 input_total_us=1028 detail=low
+[1788928863647] [info] [CarStage] car=2 panels=751 vertices=953 tiles=1 prepare_us=8566 raster_us=9412 blit_us=4432
+[1788928864503] [info] [TrackStage] project_us=5630 paint_us=11816 lines_us=10820
+[1788928864615] [info] [PaintStage] rows=137 clear_us=461 fill_us=7507 copy_us=3913
+[1788928864671] [info] [RaceStage] track_us=28689 cars_us=26086 upscale_us=19348 scene_width=234 surfaces=188 cars=4 track_id=0 player_car=1
+[1788928864836] [info] [RacerPerf] screen=FINISH source=device frames=12 fps_x10=56 draw_us=138605 present_us=32438 peak_us=218518 input_total_us=965 detail=low
+[1788928865737] [info] [CarStage] car=1 panels=805 vertices=1114 tiles=1 prepare_us=9815 raster_us=10935 blit_us=4392
+[1788928866717] [info] [RacerPerf] screen=RESULTS source=device frames=9 fps_x10=45 draw_us=78642 present_us=32252 peak_us=120307 input_total_us=10752 detail=low

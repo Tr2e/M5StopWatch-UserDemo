@@ -1,0 +1,11 @@
+{
+  "version": "v8-half",
+  "sha256": "3a60a07eb03d3a3f5f116fe5b41b3e633727d4808c0361744c552dc54cae7e17",
+  "bytes": 4916560,
+  "scene_width": 233,
+  "scene_height": 233,
+  "hud_width": 466,
+  "hud_height": 466,
+  "extra_scene_bytes": 108578,
+  "native_fallback": true
+}

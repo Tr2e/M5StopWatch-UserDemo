@@ -1,0 +1,197 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/private/tmp/racer-player-quality-final",
+  "baseline_root": null,
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "magnum",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-0.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "70aecd6d498240383780fe4ad23203595c44058520a9d69dcccb152e1941ff84"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-0.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a7bd16e941e308cfcea9f6d3bc5bf282e29a09fa1f56b63e0460929bd0209923"
+        }
+      ]
+    },
+    {
+      "id": "sonic",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-1.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "13a6fd83323e073f987e2a90e01688adb0318c268199c68d798023d83aae0fe6"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-1.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7bea374de948d15b137a6d44decc613f02c06406ba9adb0c0937400c390c5a6e"
+        }
+      ]
+    },
+    {
+      "id": "neo",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-2.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d3821a83d5e9c8ecc2570503dbc81fa9379862c3835aca47c74e18756c96e6e9"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-2.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a3844738067202dbaad2863abe2d65d8f88d03a7e5d6c58f2a45d43de2122bd0"
+        }
+      ]
+    },
+    {
+      "id": "brocken",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-3.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6600f57d78c1e6b219b0198c26641b95b1e1a8b9f036c899184fd8ffb3f07c94"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-3.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "2ad73116d4b6240ac660744f5b31fbd0f118c864eeff5c9ae5ecb36fad5b90c0"
+        }
+      ]
+    },
+    {
+      "id": "cobra",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-4.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b0d150b3b46542a9c1dccccabd72ea2b02023fe59033635b34832d2318783502"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-4.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8cf54550bbc3728380d12e16f8bbddd90a3aa541ce1276a5218af44b5dfcaed0"
+        }
+      ]
+    },
+    {
+      "id": "spider",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-5.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d13fe0868edd1982ebec9aa1362b6cdd5cbd0868eb0df813f1093e1e9fd936d4"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-5.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "dac8795e24697b578e2b69366b13846d32ae8619299265daf979e1b2ec10b18f"
+        }
+      ]
+    },
+    {
+      "id": "stinger",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-6.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d3a0865eebeeb04e4a501701e52f5cb21a55318b6ced62a16a54e804ce00bc34"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-6.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "29b2949b3173a6de9076538fba6e6a8b9f69b58fe6102a063818d40fe3400cff"
+        }
+      ]
+    },
+    {
+      "id": "diospada",
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "player-quality-7.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "bb7111b7cda154135475f51a4f5c85666cce3805a11a7933569e71c6e9d2534f"
+        },
+        {
+          "view": "race_opponent",
+          "file": "player-quality-opponent-7.ppm",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6d76aff905e2ba9eb544366b5d86ecd2f9a94baf80a2e5b5f63eccb35a081669"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

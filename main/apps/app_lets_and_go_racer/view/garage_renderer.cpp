@@ -8,6 +8,10 @@
 #include <cmath>
 #include <cstdio>
 #include <new>
+#ifdef ESP_PLATFORM
+#include <esp_timer.h>
+#include <mooncake_log.h>
+#endif
 
 namespace lets_and_go {
 namespace {
@@ -42,6 +46,9 @@ void drawCar(LGFX_Sprite& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
     camera.principalX=centerX;camera.principalY=centerY;camera.focalLength=scale*5.8f;
     raster.begin(centerX-176,centerY-162);
     const GarageCarTransform transform(spec,yaw,pitch,wheelPhase);
+#ifdef ESP_PLATFORM
+    const uint64_t startUs=esp_timer_get_time();
+#endif
     for(int ring=0;ring<2;++ring) for(int i=0;i<24;++i) {
         const float a=i*6.2831853f/24,b=(i+1)*6.2831853f/24;
         const float radius=ring==0 ? 1.f : .82f;
@@ -52,8 +59,23 @@ void drawCar(LGFX_Sprite& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
         canvas.fillTriangle(std::lround(center.x),std::lround(center.y),std::lround(p.x),
                             std::lround(p.y),std::lround(q.x),std::lround(q.y),ring==0 ? 0xdeb8 : 0xceb7);
     }
+#ifdef ESP_PLATFORM
+    const uint64_t shadowUs=esp_timer_get_time();
+#endif
     for(std::size_t i=0;i<mesh.count;++i)raster.panel(camera,mesh.panels[i],transform);
+#ifdef ESP_PLATFORM
+    const uint64_t meshUs=esp_timer_get_time();
+#endif
     raster.blit(canvas);
+#ifdef ESP_PLATFORM
+    const uint64_t endUs=esp_timer_get_time();
+    static uint64_t lastLogUs=0;
+    if(endUs-lastLogUs>=2000000u) {
+        lastLogUs=endUs;
+        mclog::tagInfo("GarageStage","panels={} shadow_us={} raster_us={} blit_us={}",
+                       mesh.count,uint32_t(shadowUs-startUs),uint32_t(meshUs-shadowUs),uint32_t(endUs-meshUs));
+    }
+#endif
 }
 
 void drawHeader(LGFX_Sprite& canvas, const char* title)
@@ -94,6 +116,7 @@ void GarageRenderer::open(int width, int height)
     _height = height;
     _meshCached = false;
     _surface.reset(new(std::nothrow) GarageSurfaceCache);
+    if(_surface)_surface->trackSurfaces.preferInternalMemory();
     _trackPreview.open(_track);
 }
 
@@ -120,7 +143,7 @@ const CarDisplayMesh& GarageRenderer::showcaseMesh(CarId car, PencilDetail detai
 
 void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selection,
                             uint32_t screenElapsedMs, PencilDetail detail,
-                            const RacerInputStatus& inputStatus,const GarageViewState& view)
+                            const RacerInputStatus& inputStatus,const GarageViewState& view, bool deviceControls)
 {
     if (_width <= 0 || _height <= 0) return;
     auto& canvas = GetHAL().getCanvas();
@@ -139,7 +162,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         visibleCar = selection.rivalCursorCar();
     }
     const CarSpec& spec = carSpec(visibleCar);
-    const auto& mesh = showcaseMesh(visibleCar,detail);
+    const auto mesh = [&]() -> const CarDisplayMesh& { return showcaseMesh(visibleCar,detail); };
     const float seconds = static_cast<float>(screenElapsedMs) * 0.001f;
 
     if (screen == GameScreen::CarSelect) {
@@ -148,7 +171,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         drawHeader(canvas, title);
         canvas.setTextColor(kPencilFaint,kPaper);
         canvas.drawString(garageViewLabel(view.preset),_width/2,97);
-        drawCar(canvas, spec, mesh, _surface->raster, _width / 2+std::lround(view.carSlide),
+        drawCar(canvas, spec, mesh(), _surface->raster, _width / 2+std::lround(view.carSlide),
                 std::lround(view.centerY),view.scale*view.carZoom,
                 view.yaw,view.wheelPhase,detail,view.pitch);
         canvas.setTextColor(kPencil, kPaper);
@@ -162,8 +185,8 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         canvas.setTextSize(1);
         canvas.setTextColor(kPencilFaint, kPaper);
         canvas.drawString(stats, _width / 2, 398);
-        canvas.drawString("L/R: CAR   U/D: VIEW", _width / 2, 418);
-        canvas.drawString("BLUE: SELECT", _width / 2, 438);
+        canvas.drawString(deviceControls ? "A / SIDES: CAR   TOP: VIEW" : "L/R: CAR   U/D: VIEW", _width / 2, 418);
+        canvas.drawString(deviceControls ? "B / CENTER: SELECT" : "BLUE: SELECT", _width / 2, 438);
         return;
     }
 
@@ -181,7 +204,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
                 canvas.drawLine(34 + travel, y, 82 + travel, y - 3, kPencilFaint);
             }
         }
-        drawCar(canvas, spec, mesh, _surface->raster, _width / 2 + static_cast<int>(vibration),
+        drawCar(canvas, spec, mesh(), _surface->raster, _width / 2 + static_cast<int>(vibration),
                 std::lround(view.centerY+12.f*entrance),scale,view.yaw,view.wheelPhase,detail,view.pitch);
         canvas.setTextSize(2);
         canvas.setTextColor(kPencil, kPaper);
@@ -190,29 +213,33 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     }
 
     if (screen == GameScreen::RivalSelect) {
-        drawHeader(canvas, "SELECT RIVALS  0-3");
+        char header[32];
+        std::snprintf(header,sizeof(header),"SELECT RIVALS  0-%u",unsigned(kMaximumRivals));
+        drawHeader(canvas, header);
         if (selection.rivalCursorIsDone()) {
             canvas.setTextColor(kPencil, kPaper);
             canvas.setTextSize(3);
             canvas.drawString("RACE READY", _width / 2, 230);
         } else {
-            drawCar(canvas, spec, mesh, _surface->raster, _width / 2, 270, 137.0f, -0.65f,
+            drawCar(canvas, spec, mesh(), _surface->raster, _width / 2, 270, 137.0f, -0.65f,
                     0.f, detail);
             canvas.setTextColor(kPencil, kPaper);
             canvas.setTextSize(2);
             canvas.drawString(spec.shortName, _width / 2, 355);
             canvas.setTextSize(1);
             canvas.setTextColor(kPencilFaint, kPaper);
-            canvas.drawString(flow.setup().hasRival(visibleCar) ? "SELECTED" : "BLUE: TOGGLE",
+            canvas.drawString(flow.setup().hasRival(visibleCar) ? "SELECTED" :
+                              flow.setup().rivalCount()>=kMaximumRivals ? "LIMIT REACHED" :
+                              (deviceControls ? "B / CENTER: TOGGLE" : "BLUE: TOGGLE"),
                               _width / 2, 382);
         }
         char count[24] = {};
-        std::snprintf(count, sizeof(count), "RIVALS %u / 3",
-                      static_cast<unsigned>(flow.setup().rivalCount()));
+        std::snprintf(count, sizeof(count), "RIVALS %u / %u",
+                      static_cast<unsigned>(flow.setup().rivalCount()),unsigned(kMaximumRivals));
         canvas.setTextSize(1);
         canvas.setTextColor(kPencil, kPaper);
         canvas.drawString(count, _width / 2, 420);
-        canvas.drawString("L/R: RIVAL / READY",_width/2,441);
+        canvas.drawString(deviceControls ? "A: NEXT   B: SELECT" : "L/R: RIVAL / READY",_width/2,441);
         return;
     }
 
@@ -237,7 +264,7 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
         canvas.setTextSize(1);
         canvas.setTextColor(0x9d36u,track_paint::floor);
         canvas.drawString(_track.id()==TrackId::TriCross ? "2/2  3 CROSSINGS  3 LAPS" : "1/2  1 CROSSING  3 LAPS", _width / 2, 405);
-        canvas.drawString("L/R: COURSE  BLUE: START", _width / 2, 430);
+        canvas.drawString(deviceControls ? "A: COURSE   B: START" : "L/R: COURSE  BLUE: START", _width / 2, 430);
         return;
     }
 
@@ -261,7 +288,8 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
     canvas.setTextColor(kPencilFaint, kPaper);
     canvas.drawString(inputStatus.readiness == RacerInputReadiness::Fault
                           ? "INPUT FAULT - CHECK CABLE" : "CONTINUES WHEN READY", _width / 2, 345);
-    canvas.drawString("HOLD BOTH BUTTONS TO EXIT", _width / 2, 405);
+    canvas.drawString("B / TAP: USE DEVICE", _width / 2, 385);
+    canvas.drawString("HOLD A+B: EXIT", _width / 2, 410);
 }
 
 }  // namespace lets_and_go

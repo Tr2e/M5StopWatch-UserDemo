@@ -29,11 +29,15 @@ bool validateFullRaceAndRetry()
     valid &= check(!flow.toggleRival(CarId::CycloneMagnum),
                    "player car was accepted as a rival");
     valid &= check(flow.toggleRival(CarId::HurricaneSonic) &&
-                       flow.toggleRival(CarId::NeoTridaggerZmc) &&
-                       flow.toggleRival(CarId::BrockenGigant),
-                   "failed to select all three remaining rivals");
-    valid &= check(flow.setup().rivalCount() == 3,
-                   "rival count did not reach three");
+                       flow.toggleRival(CarId::NeoTridaggerZmc),
+                   "failed to select two rivals");
+    valid &= check(flow.setup().rivalCount() == 2 &&
+                       !flow.toggleRival(CarId::BrockenGigant) &&
+                       !flow.setup().hasRival(CarId::BrockenGigant),
+                   "third rival was accepted despite the device cap");
+    valid &= check(flow.toggleRival(CarId::NeoTridaggerZmc) &&
+                       flow.toggleRival(CarId::BrockenGigant) && flow.setup().rivalCount()==2,
+                   "full roster could not remove and replace a rival");
     valid &= check(flow.confirmRivals() &&
                        flow.moveTrack(1) && flow.setup().track==TrackId::TriCross &&
                        flow.moveTrack(1) && flow.setup().track==TrackId::SkyLoop &&

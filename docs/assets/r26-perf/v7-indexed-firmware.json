@@ -1,0 +1,12 @@
+{
+  "sha256": "0a8428dd5e3c76d8f7e7ea87d5c5bf807245235c4b85eb1dd4195ed72d3e21a6",
+  "bytes": 4913040,
+  "changes": [
+    "unique vertex transform/projection cache; wheel groups and UV seams preserved",
+    "ROM memset for repeated depth clears",
+    "O2 for LGFXBase/LGFX_Sprite/pixelcopy backend"
+  ],
+  "validation": "full host ASan/UBSan suite and indexed-corner mapping passed; 169 captures match v6",
+  "race_surface_cache_bytes_host": 904784,
+  "raster_resolution": "native 466x466"
+}

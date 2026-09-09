@@ -58,10 +58,13 @@ public:
         next.cancelPressed |= _latest.cancelPressed;
         next.pausePressed |= _latest.pausePressed;
         next.exitPressed |= _latest.exitPressed;
+        if (!next.navigationStep) next.navigationStep = _latest.navigationStep;
+        if (!next.viewStep) next.viewStep = _latest.viewStep;
         if (next.menuBlocked || next.exitPressed) {
             next.confirmPressed = false;
             next.cancelPressed = false;
             next.pausePressed = false;
+            next.navigationStep = next.viewStep = 0;
         }
         _latest = next;
     }
@@ -73,6 +76,7 @@ public:
         _latest.cancelPressed = false;
         _latest.pausePressed = false;
         _latest.exitPressed = false;
+        _latest.navigationStep = _latest.viewStep = 0;
         return result;
     }
 
@@ -139,6 +143,29 @@ public:
 private:
     int _axis=0;
     MenuAxisRepeater _repeat;
+};
+
+class RacerMenuEvents {
+public:
+    void setMode(RacerNavigationMode mode) {
+        if (_mode == mode) return;
+        _mode = mode;
+        resetGesture();
+    }
+    void resetGesture() { _armed = false; _navigation.reset(); }
+    GarageMenuNavigation::Step update(const RacerInput& input, uint32_t nowMs) {
+        if (_mode == RacerNavigationMode::None || !input.valid || input.menuBlocked) {
+            resetGesture(); return {};
+        }
+        const float y = _mode == RacerNavigationMode::Garage ? -input.viewAxis : 0.f;
+        if (std::abs(input.steer) <= .30f && std::abs(y) <= .30f) _armed = true;
+        if (!_armed) return {};
+        return _navigation.update(input.steer, y, nowMs);
+    }
+private:
+    GarageMenuNavigation _navigation;
+    RacerNavigationMode _mode = RacerNavigationMode::None;
+    bool _armed = false;
 };
 
 class LongChordDetector {

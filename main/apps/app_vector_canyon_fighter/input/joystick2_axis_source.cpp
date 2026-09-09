@@ -80,8 +80,9 @@ void Joystick2AxisSource::updateRgbFeedback(
                                .packed();
     if (!force && nowMs - _lastRgbUpdateMs < kRgbUpdatePeriodMs) return;
     _lastRgbUpdateMs = nowMs;
-    if (!force && color == _lastRgbColor) return;
-    if (writeRgb(color)) _lastRgbColor = color;
+    if (!force && color == _requestedRgb.load(std::memory_order_relaxed)) return;
+    // Publishing a target is non-blocking. Only the I²C worker writes RGB.
+    _requestedRgb.store(color, std::memory_order_relaxed);
 }
 
 void Joystick2AxisSource::publishOffset(int16_t x, int16_t y)
@@ -124,6 +125,7 @@ void Joystick2AxisSource::samplingTask()
                         ? errors
                         : static_cast<uint16_t>(errors + 1u),
                     std::memory_order_release);
+                lastWake = xTaskGetTickCount();
                 vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(kSamplePeriodMs));
                 continue;
             }
@@ -145,12 +147,17 @@ void Joystick2AxisSource::samplingTask()
                 _stickButtonPressed.store(buttonLevel == 0u,
                                           std::memory_order_release);
             }
+            const uint32_t color = _requestedRgb.load(std::memory_order_relaxed);
+            if (color != _lastRgbColor && writeRgb(color)) _lastRgbColor = color;
         } else {
             const uint16_t errors = _consecutiveErrors.load(std::memory_order_relaxed);
             _consecutiveErrors.store(
                 errors == UINT16_MAX ? errors : static_cast<uint16_t>(errors + 1u),
                 std::memory_order_release);
         }
+        // Do not burst through missed periods following a slow bus operation.
+        if (xTaskGetTickCount() - lastWake >= pdMS_TO_TICKS(kSamplePeriodMs))
+            lastWake = xTaskGetTickCount();
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(kSamplePeriodMs));
     }
     _samplingTaskExited.store(true, std::memory_order_release);
@@ -185,6 +192,7 @@ void Joystick2AxisSource::open()
     _lastConsumedSequence = 0;
     _lastRgbUpdateMs = 0;
     _lastRgbColor = UINT32_MAX;
+    _requestedRgb.store(0, std::memory_order_relaxed);
     _stickButton.reset();
     _samplingTaskExited.store(!_opened, std::memory_order_relaxed);
     if (!_opened) {
@@ -302,7 +310,7 @@ FlightAxisStatus Joystick2AxisSource::axisStatus(uint32_t nowMs) const
                        taskTimeMs() - result.lastValidSampleMs <= kStaleAfterMs;
     result.connected = _opened &&
                        _identified.load(std::memory_order_acquire) && fresh;
-    if (!_opened || !fresh) {
+    if (!_opened || !fresh || result.consecutiveErrors >= kFaultAfterErrors) {
         result.readiness = result.consecutiveErrors >= kFaultAfterErrors
                                ? InputReadiness::Fault
                                : InputReadiness::Disconnected;

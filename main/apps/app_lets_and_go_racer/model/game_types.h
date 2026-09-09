@@ -25,7 +25,8 @@ enum class TrackId : uint8_t {
 
 constexpr std::size_t kCarCount = static_cast<std::size_t>(CarId::Count);
 constexpr std::size_t kTrackCount = static_cast<std::size_t>(TrackId::Count);
-constexpr uint8_t kMaximumRivals = 3;
+// Device performance trial: one player plus at most two opponents.
+constexpr uint8_t kMaximumRivals = 2;
 
 static_assert(kCarCount > 0u && kCarCount <= 8u,
               "CarId must fit in the rival selection bit mask");

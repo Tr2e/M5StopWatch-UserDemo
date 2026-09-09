@@ -1,0 +1,107 @@
+{
+  "note": "Manual runs; sampled opponent roster changed (v9 car 3, v10 car 4). Not strict A/B. Stages restricted to first/last RACING summary timestamps.",
+  "statistics": {
+    "v9-four-cars-half": {
+      "racing_windows": 17,
+      "fps_x10": {
+        "min": 42,
+        "median": 54,
+        "max": 59
+      },
+      "draw_us": {
+        "min": 131924,
+        "median": 147155,
+        "max": 196506
+      },
+      "present_us": {
+        "min": 32266,
+        "median": 32354,
+        "max": 32476
+      },
+      "peak_us": {
+        "min": 176749,
+        "median": 195563,
+        "max": 250935
+      },
+      "cars_us": {
+        "samples": 15,
+        "min": 53583,
+        "median": 92872,
+        "max": 96755
+      },
+      "upscale_us": {
+        "samples": 15,
+        "min": 19387,
+        "median": 19577,
+        "max": 19787
+      },
+      "track_us": {
+        "samples": 15,
+        "min": 17420,
+        "median": 23071,
+        "max": 57975
+      },
+      "sampled_car_ids": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "car_0_prepare_us": {
+        "samples": 8,
+        "median": 11281.0
+      }
+    },
+    "v10-four-cars-inline": {
+      "racing_windows": 16,
+      "fps_x10": {
+        "min": 50,
+        "median": 57.5,
+        "max": 60
+      },
+      "draw_us": {
+        "min": 131044,
+        "median": 136488.5,
+        "max": 161928
+      },
+      "present_us": {
+        "min": 32260,
+        "median": 32350.5,
+        "max": 32932
+      },
+      "peak_us": {
+        "min": 170306,
+        "median": 189746.0,
+        "max": 216244
+      },
+      "cars_us": {
+        "samples": 15,
+        "min": 76533,
+        "median": 80129,
+        "max": 84606
+      },
+      "upscale_us": {
+        "samples": 15,
+        "min": 19292,
+        "median": 19594,
+        "max": 19814
+      },
+      "track_us": {
+        "samples": 15,
+        "min": 14518,
+        "median": 21276,
+        "max": 50242
+      },
+      "sampled_car_ids": [
+        0,
+        1,
+        2,
+        4
+      ],
+      "car_0_prepare_us": {
+        "samples": 9,
+        "median": 9216
+      }
+    }
+  }
+}

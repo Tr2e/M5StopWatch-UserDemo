@@ -1,0 +1,10 @@
+{
+  "version": "v10-vector-inline",
+  "sha256": "3ebd599e0dbbb5fdd298fa22d93382c0269694050807ee4b437924e7a6d00ff2",
+  "bytes": 4912752,
+  "scene_width": 234,
+  "scene_height": 233,
+  "hud_width": 468,
+  "hud_height": 466,
+  "change": "Inline trackAdd, trackSubtract, trackScale, trackDot; log track_id and player_car."
+}

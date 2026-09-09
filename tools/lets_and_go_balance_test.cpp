@@ -5,7 +5,7 @@
 namespace {
 using namespace lets_and_go;
 
-struct Sweep { int wins = 0; int positions = 0; };
+struct Sweep { int wins = 0; int positions = 0; double seconds = 0; };
 
 bool run(CarId car, uint32_t seed, int strategy, Sweep& sweep,TrackId track)
 {
@@ -16,7 +16,7 @@ bool run(CarId car, uint32_t seed, int strategy, Sweep& sweep,TrackId track)
         setup.rivalMask |= carMask(static_cast<CarId>((std::size_t(car)+offset)%kCarCount));
     RaceController race;
     race.prepare(setup, seed);
-    if (race.snapshot().player().position != 4u) return false;
+    if (race.snapshot().player().position != kMaximumRaceCars) return false;
     RacerInput input;
     input.valid = true;
     input.boostHeld = strategy != 0;
@@ -34,6 +34,7 @@ bool run(CarId car, uint32_t seed, int strategy, Sweep& sweep,TrackId track)
     const auto& player = race.snapshot().player();
     sweep.wins += player.position == 1u;
     sweep.positions += player.position;
+    sweep.seconds += player.finishSeconds;
     return player.completedLaps == 3u;
 }
 } // namespace
@@ -50,9 +51,17 @@ int main()
                 return 1;
             }
         }
+        // With fewer rivals, a faster run can finish in the same position.
+        // In that case require a real aggregate time gain (over 1ms/run),
+        // while still requiring the clean passing line to improve race rank.
+        const bool boostImproved=boost.positions<idle.positions ||
+            (boost.positions==idle.positions && boost.seconds+.032<idle.seconds);
         if (passing.wins < 8 || passing.wins <= idle.wins ||
-            passing.positions >= boost.positions || boost.positions >= idle.positions) {
-            std::cerr << "Car " << car << " has no meaningful boost/passing advantage\n";
+            passing.positions >= boost.positions || !boostImproved) {
+            std::cerr << "Car " << car << " has no meaningful boost/passing advantage: wins="
+                      << idle.wins << ',' << boost.wins << ',' << passing.wins
+                      << " positions=" << idle.positions << ',' << boost.positions << ',' << passing.positions
+                      << " seconds=" << idle.seconds << ',' << boost.seconds << ',' << passing.seconds << '\n';
             return 1;
         }
         std::cout << overpassTrackName(track) << ' ' << carSpec(static_cast<CarId>(car)).shortName << " wins / 32: idle="

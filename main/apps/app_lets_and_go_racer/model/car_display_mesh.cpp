@@ -440,7 +440,8 @@ CarSurfaceBuildResult buildCarSurfaceInto(CarId car,CarPanel* panels,std::size_t
                                          CarSurfaceDetail detail) {
     car=carSpec(car).id;
     MeshWriter mesh{{panels,panels ? capacity : 0}};
-    Builder b{mesh,detail==CarSurfaceDetail::High ? 24 : detail==CarSurfaceDetail::Medium ? 18 : 12};
+    Builder b{mesh,detail==CarSurfaceDetail::High ? 24 : detail==CarSurfaceDetail::Medium ? 18 :
+                   detail==CarSurfaceDetail::Minimal ? 8 : 12};
     const auto& spec=carSpec(car);
     b.part=CarPart::Chassis;
     const auto chassis=car==CarId::SpinCobra ? white : car==CarId::BeakSpider || car==CarId::RayStinger ? blue : graphite;

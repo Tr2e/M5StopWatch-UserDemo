@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "identity_view": "race_player",
+  "models": [
+    {
+      "id": "magnum",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-0.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-0.ppm"
+        }
+      ]
+    },
+    {
+      "id": "sonic",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-1.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-1.ppm"
+        }
+      ]
+    },
+    {
+      "id": "neo",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-2.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-2.ppm"
+        }
+      ]
+    },
+    {
+      "id": "brocken",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-3.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-3.ppm"
+        }
+      ]
+    },
+    {
+      "id": "cobra",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-4.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-4.ppm"
+        }
+      ]
+    },
+    {
+      "id": "spider",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-5.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-5.ppm"
+        }
+      ]
+    },
+    {
+      "id": "stinger",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-6.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-6.ppm"
+        }
+      ]
+    },
+    {
+      "id": "diospada",
+      "required_views": [
+        "race_player",
+        "race_opponent"
+      ],
+      "frames": [
+        {
+          "view": "race_player",
+          "file": "material-race-7.ppm"
+        },
+        {
+          "view": "race_opponent",
+          "file": "material-opponent-7.ppm"
+        }
+      ]
+    }
+  ]
+}

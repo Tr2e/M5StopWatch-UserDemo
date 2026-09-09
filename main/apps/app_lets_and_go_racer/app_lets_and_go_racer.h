@@ -11,7 +11,7 @@
 #include "model/race_progress_store.h"
 #include "audio/racer_audio.h"
 
-#include <apps/common/key_manager/key_manager.h>
+#include "input/device_control_source.h"
 #include <memory>
 #include <mooncake.h>
 
@@ -24,15 +24,20 @@ public:
     void onClose() override;
 
 private:
-    void handleKey(input::KeyEvent event, uint32_t nowMs);
-    void handleRacerInput(const lets_and_go::RacerInput& input, uint32_t nowMs);
+    void handleRacerInput(const lets_and_go::RacerInput& input, uint32_t nowMs,
+                          int deviceNavigation = 0, int deviceView = 0);
     void prepareRace(uint32_t nowMs);
     void persistSelectedCar();
     void updateFeedback(const lets_and_go::RacerInput& input, uint32_t nowMs);
     void playSound(lets_and_go::SoundCue cue);
     void vibrateFeedback(uint8_t strength, uint16_t durationMs);
 
-    std::unique_ptr<input::KeyManager> _keys;
+    lets_and_go::DeviceControlSource _deviceInput;
+    bool _deviceControls = false;
+    bool _externalPower = false;
+    bool _renderDirty = true;
+    uint32_t _perfStartedMs = 0, _perfFrames = 0, _perfPeakUs = 0;
+    uint64_t _perfDrawUs = 0, _perfPresentUs = 0, _perfInputUs = 0;
     std::unique_ptr<lets_and_go::RacerAudio> _audio;
     std::unique_ptr<lets_and_go::RacerInputProvider> _racerInput;
     lets_and_go::MenuAxisRepeater _menuAxis;

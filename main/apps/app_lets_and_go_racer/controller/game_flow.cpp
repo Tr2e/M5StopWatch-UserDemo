@@ -31,6 +31,13 @@ void GameFlow::clearRivals()
     _setup.rivalMask = 0u;
 }
 
+bool GameFlow::useDeviceControls()
+{
+    if (_screen != GameScreen::InputCheck && _screen != GameScreen::InputCalibration) return false;
+    _screen = GameScreen::CarSelect;
+    return true;
+}
+
 bool GameFlow::confirmInputAvailable()
 {
     return transition(GameScreen::InputCheck, GameScreen::InputCalibration);

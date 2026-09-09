@@ -6,6 +6,7 @@
 #include <mooncake_log.h>
 
 #include <algorithm>
+#include <esp_timer.h>
 
 namespace {
 bool usesRaceRenderer(lets_and_go::GameScreen screen)
@@ -32,20 +33,30 @@ void AppLetsAndGoRacer::onCreate()
 void AppLetsAndGoRacer::onOpen()
 {
     mclog::tagInfo(getAppInfo().name, "on open");
-    _keys = std::make_unique<input::KeyManager>();
+    GetHAL().stopLvglUpdate();
+    GetHAL().lvglLock(); // Wait for a touch read already in flight on LVGL.
+    GetHAL().lvglUnlock();
+    _deviceControls = false;
+    _renderDirty = true;
+    _perfStartedMs = GetHAL().millis();
+    _perfFrames = _perfPeakUs = 0;
+    _perfDrawUs = _perfPresentUs = _perfInputUs = 0;
     // Match Vector Run's external-controller startup sequence. PORT.A's red
     // wire is supplied by the PMIC-controlled 5VINOUT rail, so the Joystick2
     // probe must not start until that rail has had time to settle.
-    GetHAL().setGrove5VPower(true);
+    _externalPower = GetHAL().setGrove5VPower(true);
     GetHAL().delay(20);
-    _racerInput = std::make_unique<lets_and_go::HardwareRacerInputProvider>();
-    _racerInput->open();
+    if (_externalPower) {
+        _racerInput = std::make_unique<lets_and_go::HardwareRacerInputProvider>();
+        _racerInput->open();
+    }
     _menuAxis.reset();
     _garageBudget.reset();
     _raceBudget.reset();
     _resultsSelection.reset();
     _progress = lets_and_go::RaceProgressStore::load();
     _flow.reset();
+    _deviceInput.open();
     _selection.reset(_progress.lastCar);
     _lastFrameMs = 0;
     _lastUpdateMs = GetHAL().millis();
@@ -76,23 +87,36 @@ void AppLetsAndGoRacer::onOpen()
     GetHAL().stopLvglUpdate();
     const auto& display = GetHAL().getDisplay();
     _renderer.open(display.width(), display.height());
-    _raceRenderer.open(display.width(), display.height());
+    _raceRenderer.open(display.width(), display.height(), true, true, true, false);
     _renderer.render(_flow, _selection, 0u, lets_and_go::PencilDetail::High);
     GetHAL().updateCanvas();
 }
 
 void AppLetsAndGoRacer::onRunning()
 {
-    GetHAL().updateButtonStates();
+    const uint64_t inputStartedUs = esp_timer_get_time();
     const uint32_t nowMs = GetHAL().millis();
+    const auto screenBefore = _flow.screen();
+    auto device = _deviceInput.sample(nowMs);
+    if (!_deviceControls && device.input.confirmPressed && device.input.valid &&
+        _flow.useDeviceControls()) {
+        if (_racerInput) _racerInput->close();
+        _racerInput.reset();
+        if (_externalPower) GetHAL().setGrove5VPower(false);
+        _externalPower = false;
+        _deviceControls = true;
+        _screenStartedMs = nowMs;
+        device = {}; // The mode-selection tap cannot also select a car.
+        mclog::tagInfo(getAppInfo().name, "controls: DEVICE (buttons + touch)");
+    }
     const float deltaSeconds =
         std::min<uint32_t>(nowMs - _lastUpdateMs, 250u) * 0.001f;
     _lastUpdateMs = nowMs;
-    const lets_and_go::RacerInput racerInput =
-        _racerInput ? _racerInput->sample(nowMs) : lets_and_go::RacerInput{};
+    const lets_and_go::RacerInput racerInput = _deviceControls ? device.input :
+        (_racerInput ? _racerInput->sample(nowMs) : lets_and_go::RacerInput{});
     const lets_and_go::RacerInputStatus racerStatus =
         _racerInput ? _racerInput->status(nowMs) : lets_and_go::RacerInputStatus{};
-    if (_flow.screen() == lets_and_go::GameScreen::InputCheck &&
+    if (!_deviceControls && _flow.screen() == lets_and_go::GameScreen::InputCheck &&
         racerStatus.axesConnected && racerStatus.actionsConfigured &&
         _flow.confirmInputAvailable()) {
         _racerInput->requestCalibration(nowMs);
@@ -103,13 +127,10 @@ void AppLetsAndGoRacer::onRunning()
         mclog::tagInfo(getAppInfo().name, "controls ready; SELECT MACHINE");
         _screenStartedMs = nowMs;
     }
-    handleRacerInput(racerInput, nowMs);
-    const input::KeyEvent event = _keys ? _keys->update(false) : input::KeyEvent::None;
-    if (event == input::KeyEvent::GoHome) {
-        _flow.requestExit();
-    } else if (event != input::KeyEvent::None) {
-        handleKey(event, nowMs);
-    }
+    handleRacerInput(racerInput, nowMs, _deviceControls ? device.navigation : 0,
+                     _deviceControls ? device.view : 0);
+    if (device.input.exitPressed) _flow.requestExit();
+    _perfInputUs += esp_timer_get_time() - inputStartedUs;
     if (_flow.screen() == lets_and_go::GameScreen::ExitRequested) {
         close();
         return;
@@ -160,21 +181,48 @@ void AppLetsAndGoRacer::onRunning()
     if(_flow.screen()==lets_and_go::GameScreen::CarSelect)
         _garageView.selectCar(_selection.playerCursor(),nowMs);
     updateFeedback(racerInput, nowMs);
-    if (_lastFrameMs == 0u ||
-        nowMs - _lastFrameMs >= lets_and_go::tuning::kFrameIntervalMs) {
+    if (_flow.screen() != screenBefore) {
+        _renderDirty = true;
+        _deviceInput.setScreen(_flow.screen());
+        if (_racerInput) {
+            using lets_and_go::GameScreen;
+            using lets_and_go::RacerNavigationMode;
+            const auto next = _flow.screen();
+            _racerInput->setNavigationMode(next == GameScreen::CarSelect ? RacerNavigationMode::Garage :
+                (next == GameScreen::RivalSelect || next == GameScreen::TrackSelect || next == GameScreen::Results)
+                    ? RacerNavigationMode::Horizontal : RacerNavigationMode::None);
+        }
+    }
+    using lets_and_go::GameScreen;
+    const auto screen = _flow.screen();
+    const bool animated = screen == GameScreen::CarShowcase || screen == GameScreen::TrackSelect ||
+        screen == GameScreen::Racing || screen == GameScreen::Countdown || screen == GameScreen::Finish ||
+        screen == GameScreen::GridIntro || (screen == GameScreen::CarSelect && _garageView.animating(nowMs));
+    const bool statusRefresh = (screen == GameScreen::InputCheck || screen == GameScreen::InputCalibration) &&
+                               nowMs - _lastFrameMs >= 250u;
+    if ((_renderDirty || animated || statusRefresh) && (_lastFrameMs == 0u ||
+        nowMs - _lastFrameMs >= lets_and_go::tuning::kFrameIntervalMs)) {
         _lastFrameMs = nowMs;
-        const uint32_t renderStartedMs = GetHAL().millis();
+        _renderDirty = false;
+        const uint64_t renderStartedUs = esp_timer_get_time();
         const bool raceView = usesRaceRenderer(_flow.screen());
         if (raceView) {
             _raceRenderer.render(_flow, _race, _resultsSelection,
                                  nowMs - _screenStartedMs,
-                                 _pausedForInputLoss, _raceBudget.detail());
+                                 _pausedForInputLoss, _raceBudget.detail(), _deviceControls);
         } else {
             _renderer.render(_flow, _selection, nowMs - _screenStartedMs,
-                             _garageBudget.detail(), racerStatus,_garageView.state(nowMs));
+                             _garageBudget.detail(), racerStatus,_garageView.state(nowMs), _deviceControls);
         }
+        const uint64_t drawFinishedUs = esp_timer_get_time();
         GetHAL().updateCanvas();
-        const uint32_t renderMs = GetHAL().millis() - renderStartedMs;
+        const uint64_t presentFinishedUs = esp_timer_get_time();
+        const uint32_t renderUs = presentFinishedUs - renderStartedUs;
+        const uint32_t renderMs = (renderUs + 999u) / 1000u;
+        _perfDrawUs += drawFinishedUs - renderStartedUs;
+        _perfPresentUs += presentFinishedUs - drawFinishedUs;
+        _perfPeakUs = std::max(_perfPeakUs, renderUs);
+        ++_perfFrames;
         const uint16_t clampCount = _race.prepared()
                                         ? _race.snapshot().simulationClampCount : 0u;
         const bool simulationClamped = clampCount != _lastClampCount;
@@ -185,10 +233,22 @@ void AppLetsAndGoRacer::onRunning()
             _garageBudget.observe(renderMs, false);
         }
     }
+    if (nowMs - _perfStartedMs >= 2000u) {
+        const uint32_t elapsed = nowMs - _perfStartedMs;
+        const uint32_t frames = std::max<uint32_t>(1u, _perfFrames);
+        mclog::tagInfo("RacerPerf", "screen={} source={} frames={} fps_x10={} draw_us={} present_us={} peak_us={} input_total_us={} detail={}",
+            lets_and_go::gameScreenLabel(screen), _deviceControls ? "device" : "external", _perfFrames,
+            _perfFrames * 10000u / elapsed, uint32_t(_perfDrawUs / frames),
+            uint32_t(_perfPresentUs / frames), _perfPeakUs, uint32_t(_perfInputUs),
+            lets_and_go::pencilDetailLabel(usesRaceRenderer(screen) ? _raceBudget.detail() : _garageBudget.detail()));
+        _perfStartedMs = nowMs;
+        _perfFrames = _perfPeakUs = 0;
+        _perfDrawUs = _perfPresentUs = _perfInputUs = 0;
+    }
 }
 
 void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
-                                         uint32_t nowMs)
+                                         uint32_t nowMs, int deviceNavigation, int deviceView)
 {
     using lets_and_go::GameScreen;
     if (input.exitPressed) {
@@ -196,8 +256,11 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         return;
     }
     const GameScreen before = _flow.screen();
+    if (input.confirmPressed || input.cancelPressed || input.pausePressed || deviceNavigation || deviceView)
+        _renderDirty = true;
     if (input.pausePressed &&
         (before == GameScreen::Racing || before == GameScreen::Paused)) {
+        if (before == GameScreen::Paused && !input.valid) return;
         if (_flow.togglePause()) {
             _race.setPaused(_flow.screen() == GameScreen::Paused);
             _pausedForInputLoss = false;
@@ -211,21 +274,24 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
                                    before == GameScreen::Results;
     if (!acceptsNavigation) _menuAxis.reset();
     int navigation=0;
-    if(before==GameScreen::CarSelect) {
+    if (_deviceControls) {
         _menuAxis.reset();
-        const bool navigate=input.valid && !input.menuBlocked;
-        const auto step=_garageNavigation.update(navigate ? input.steer : 0.f,
-                                                 navigate ? -input.viewAxis : 0.f,nowMs);
-        navigation=step.car;
-        if(step.view) {
-            _garageView.changeView(step.view,nowMs);
+        _garageNavigation.reset();
+        navigation = acceptsNavigation ? deviceNavigation : 0;
+        if (before == GameScreen::CarSelect && deviceView) {
+            _garageView.changeView(deviceView, nowMs);
             playSound(lets_and_go::SoundCue::Navigate);
         }
     } else {
-        _garageNavigation.reset();
-        navigation=acceptsNavigation ? _menuAxis.update(input.valid && !input.menuBlocked ? input.steer : 0.f,nowMs) : 0;
+        navigation = acceptsNavigation ? input.navigationStep : 0;
+        if (before == GameScreen::CarSelect && input.viewStep) {
+            _renderDirty = true;
+            _garageView.changeView(input.viewStep, nowMs);
+            playSound(lets_and_go::SoundCue::Navigate);
+        }
     }
     if (navigation != 0) {
+        _renderDirty = true;
         playSound(lets_and_go::SoundCue::Navigate);
         if (before == GameScreen::CarSelect) {
             _selection.movePlayer(navigation);
@@ -238,6 +304,7 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
         }
     }
     if (input.cancelPressed || input.pausePressed) {
+        if (_deviceControls && before == GameScreen::CarSelect) { _flow.requestExit(); return; }
         const bool changed = before == GameScreen::RivalSelect && !input.pausePressed
                                  ? _selection.cancelRival(_flow)
                                  : _flow.back();
@@ -395,60 +462,6 @@ void AppLetsAndGoRacer::vibrateFeedback(uint8_t strength, uint16_t durationMs)
     if (_feedbackVibrateEnabled) GetHAL().vibrate(durationMs, strength);
 }
 
-void AppLetsAndGoRacer::handleKey(input::KeyEvent event, uint32_t nowMs)
-{
-    using lets_and_go::GameScreen;
-    const GameScreen before = _flow.screen();
-    if (event == input::KeyEvent::GoPrevious) {
-        if (before == GameScreen::TrackSelect) {
-            _flow.moveTrack(1);
-        } else if (before == GameScreen::CarSelect) {
-            _selection.movePlayer(-1);
-        } else if (before == GameScreen::RivalSelect) {
-            _selection.moveRival(1, _flow.setup().playerCar);
-        } else if (before == GameScreen::Results) {
-            _resultsSelection.move(1);
-        }
-    } else if (event == input::KeyEvent::GoNext) {
-        switch (before) {
-            // Hardware readiness/calibration cannot be bypassed by body buttons.
-            case GameScreen::CarSelect:
-                if (_selection.activatePlayer(_flow)) {
-                    playSound(lets_and_go::SoundCue::Confirm);
-                    persistSelectedCar();
-                }
-                break;
-            case GameScreen::RivalSelect:
-                playSound(_selection.activateRival(_flow) ? lets_and_go::SoundCue::Confirm : lets_and_go::SoundCue::Reject);
-                break;
-            case GameScreen::TrackSelect:
-                if (_flow.confirmTrack()) { playSound(lets_and_go::SoundCue::Confirm);prepareRace(nowMs); }
-                break;
-            case GameScreen::Results: {
-                const lets_and_go::ResultAction action = _resultsSelection.cursor();
-                if (_resultsSelection.activate(_flow)) {
-                    playSound(lets_and_go::SoundCue::Confirm);
-                    if (action == lets_and_go::ResultAction::Retry) {
-                        prepareRace(nowMs);
-                    } else if (action == lets_and_go::ResultAction::Garage) {
-                        _raceSeed = 0u;
-                        _selection.reset(_progress.lastCar);
-                    }
-                }
-                break;
-            }
-            default: break;
-        }
-    }
-    const bool navigated = event == input::KeyEvent::GoPrevious &&
-        (before == GameScreen::CarSelect || before == GameScreen::RivalSelect ||
-         before == GameScreen::TrackSelect || before == GameScreen::Results);
-    if(navigated)playSound(lets_and_go::SoundCue::Navigate);
-    if (_flow.screen() != before || navigated) {
-        _screenStartedMs = nowMs;
-    }
-}
-
 void AppLetsAndGoRacer::onClose()
 {
     _audio.reset(); // Synchronize with the audio task before releasing owner memory.
@@ -465,10 +478,11 @@ void AppLetsAndGoRacer::onClose()
                    lets_and_go::pencilDetailLabel(_raceBudget.detail()),
                    raceStats.detailTransitions);
     mclog::tagInfo(getAppInfo().name, "on close");
-    _keys.reset();
+    _deviceInput.close();
     if (_racerInput) _racerInput->close();
     _racerInput.reset();
-    GetHAL().setGrove5VPower(false);
+    if (_externalPower) GetHAL().setGrove5VPower(false);
+    _externalPower = false;
     _menuAxis.reset();
     _renderer.close();
     _garageNavigation.reset();

@@ -30,7 +30,7 @@ public:
     void close();
     void render(const GameFlow& flow, const GarageSelection& selection,
                 uint32_t screenElapsedMs, PencilDetail detail,
-                const RacerInputStatus& inputStatus = {},const GarageViewState& view = {});
+                const RacerInputStatus& inputStatus = {},const GarageViewState& view = {}, bool deviceControls = false);
 
 private:
     const CarDisplayMesh& showcaseMesh(CarId car, PencilDetail detail);

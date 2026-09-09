@@ -51,7 +51,7 @@ inline bool raceCarAhead(const RaceCarSnapshot& a, std::size_t aIndex,
     return aIndex < bIndex; // Stable, unique positions even on an exact tie.
 }
 
-static_assert(kMaximumRaceCars == 4u, "first release supports exactly four grid slots");
+static_assert(kMaximumRaceCars == 3u, "device performance trial supports three grid slots");
 static_assert(sizeof(RaceSnapshot) <= 320u,
               "race snapshot exceeded its fixed render-copy budget");
 

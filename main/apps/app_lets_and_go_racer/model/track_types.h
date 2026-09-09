@@ -26,10 +26,24 @@ enum class TrackLayer : uint8_t {
     Upper,
 };
 
-TrackVec3 trackAdd(TrackVec3 left, TrackVec3 right);
-TrackVec3 trackSubtract(TrackVec3 left, TrackVec3 right);
-TrackVec3 trackScale(TrackVec3 value, float scale);
-float trackDot(TrackVec3 left, TrackVec3 right);
+// Used for every projected vertex. Keep these tiny operations visible to the
+// renderer optimizer instead of passing/returning vectors across TU boundaries.
+inline TrackVec3 trackAdd(TrackVec3 left, TrackVec3 right)
+{
+    return {left.x + right.x, left.y + right.y, left.z + right.z};
+}
+inline TrackVec3 trackSubtract(TrackVec3 left, TrackVec3 right)
+{
+    return {left.x - right.x, left.y - right.y, left.z - right.z};
+}
+inline TrackVec3 trackScale(TrackVec3 value, float scale)
+{
+    return {value.x * scale, value.y * scale, value.z * scale};
+}
+inline float trackDot(TrackVec3 left, TrackVec3 right)
+{
+    return left.x * right.x + left.y * right.y + left.z * right.z;
+}
 float trackLength(TrackVec3 value);
 TrackVec3 trackNormalize(TrackVec3 value);
 

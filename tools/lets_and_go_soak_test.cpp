@@ -34,7 +34,7 @@ RaceSetup makeSetup(uint32_t scenario)
     RaceSetup setup;
     setup.playerCar = static_cast<CarId>(scenario % kCarCount);
     setup.track = static_cast<TrackId>((scenario/64u)%kTrackCount);
-    const uint8_t wanted = static_cast<uint8_t>((scenario / kCarCount) % 4u);
+    const uint8_t wanted = static_cast<uint8_t>((scenario / kCarCount) % kMaximumRaceCars);
     for (std::size_t index = 0; index < kCarCount && setup.rivalCount() < wanted; ++index) {
         const CarId car = static_cast<CarId>((index+scenario/32u*3u)%kCarCount);
         if (car != setup.playerCar) setup.rivalMask |= carMask(car);

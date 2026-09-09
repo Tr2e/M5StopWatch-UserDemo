@@ -1,0 +1,18 @@
+{
+  "version": "v15-solid-track-three-cars",
+  "sha256": "0a7c4b70eb3fa48c5ccd2a101f4d4563bc684587d5b0dee192733ea3340a69d8",
+  "bytes": 4924512,
+  "track": "solid white/red/blue v12 style; decorations disabled",
+  "wireframe": false,
+  "maximum_rivals": 2,
+  "maximum_cars": 3,
+  "car_quality": "unchanged: native Medium player with original paint; Minimal rivals with baked 32x32 paint",
+  "scene": [
+    234,
+    233
+  ],
+  "surface_cache_bytes_host": 788064,
+  "surface_cache_bytes_saved": 116760,
+  "validation": "Full ASan/UBSan suite and ESP32 build passed; three-car screenshots reviewed",
+  "app_flash": "Hash of data verified; RTS reset; Done"
+}

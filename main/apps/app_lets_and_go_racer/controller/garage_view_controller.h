@@ -67,6 +67,11 @@ public:
         }
         return value;
     }
+    bool animating(uint32_t nowMs) const {
+        return _view == GarageView::Front || _view == GarageView::Side ||
+               (_viewMoving && nowMs - _viewStarted < kTransitionMs) ||
+               (_carMoving && nowMs - _carStarted < kTransitionMs);
+    }
     void changeView(int direction,uint32_t nowMs) {
         if(!direction)return;
         _from=state(nowMs);

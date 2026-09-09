@@ -1,35 +1,138 @@
 #pragma once
 #include "car_paint.h"
+#include "race_paint_atlas.h"
 #include "pencil_scene.h"
+#include "color_span.h"
+#include "render_scratch.h"
 #include <array>
 #include <cmath>
 #include <algorithm>
+#include <new>
 
 namespace lets_and_go {
 struct CarSurfaceVertex {float x,y,z,u,v;};
 struct CarScreenVertex {float x,y,depth,uDepth,vDepth;};
+
+struct PreparedCarPanel {
+    union {
+        std::array<CarSurfaceVertex,4> camera{};
+        std::array<CarScreenVertex,4> screen;
+    };
+    float left=0,right=0,top=0,bottom=0;
+    uint16_t color=0;
+    CarPaint paint=CarPaint::Solid;
+    uint8_t light=255;
+    uint8_t visibility=0; // 0: behind near plane, 1: projected, 2: clipped.
+};
+
+inline CarScreenVertex projectCarSurface(const TrackCamera& camera,CarSurfaceVertex p) {
+    const float inverse=1/p.z;
+    return {camera.principalX+camera.focalLength*p.x*inverse,
+            camera.principalY-camera.focalLength*p.y*inverse,inverse,p.u*inverse,p.v*inverse};
+}
+
+template<class Transform> void prepareCarPanel(PreparedCarPanel& result,
+    const TrackCamera& camera,const CarPanel& face,Transform transform) {
+    unsigned front=0;
+    result.color=face.color;result.paint=face.paint;result.light=face.light;
+    // A slot can switch representation between cars/frames. Explicitly begin
+    // the array lifetime before using std::array::operator[] on a union member.
+    new (&result.camera) decltype(result.camera);
+    for(std::size_t i=0;i<4;++i) {
+        const auto p=transform(face.point[i],face.wheel);
+        result.camera[i]={p.x,p.y,p.z,(i==0 || i==3 ? face.u0 : face.u1)/255.f,
+                                    (i<2 ? face.v0 : face.v1)/255.f};
+        if(p.z>=kTrackNearPlane)++front;
+    }
+    result.visibility=front==0 ? 0 : front==4 ? 1 : 2;
+    if(front==0)return;
+    result.left=result.top=1e20f;result.right=result.bottom=-1e20f;
+    const auto bound=[&](CarScreenVertex p) {
+        result.left=std::min(result.left,p.x);result.right=std::max(result.right,p.x);
+        result.top=std::min(result.top,p.y);result.bottom=std::max(result.bottom,p.y);
+    };
+    if(front==4) {
+        // Copy the active union member before switching representation.
+        const auto vertices=result.camera;
+        new (&result.screen) decltype(result.screen);
+        for(std::size_t i=0;i<4;++i) {result.screen[i]=projectCarSurface(camera,vertices[i]);bound(result.screen[i]);}
+    } else {
+        // Match the original two triangle clips, including their internal edge.
+        for(unsigned tri=0;tri<2;++tri) {
+            const std::array<CarSurfaceVertex,3> points{{result.camera[0],result.camera[tri+1],result.camera[tri+2]}};
+            for(unsigned i=0;i<3;++i) {
+                const auto p=points[i],q=points[(i+1)%3];
+                if(p.z>=kTrackNearPlane)bound(projectCarSurface(camera,p));
+                if((p.z>=kTrackNearPlane)!=(q.z>=kTrackNearPlane)) {
+                    const float t=(kTrackNearPlane-p.z)/(q.z-p.z);
+                    bound(projectCarSurface(camera,{p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t,kTrackNearPlane,0,0}));
+                }
+            }
+        }
+    }
+}
 
 // A bounded car-sized RGB565/depth tile, not a second full-screen framebuffer.
 // Depth is inverse-camera-z in Q13 (near plane .2 => 40960, within uint16_t).
 template<int Width,int Height> class CarSurfaceRaster {
 public:
     static constexpr int kWidth=Width,kHeight=Height;
+    void setPaintAtlas(const RacePaintAtlas* atlas) { _paintAtlas=atlas; }
+    unsigned preferInternalMemory() {
+        return unsigned(_fastDepth.allocate())+unsigned(_fastColor.allocate());
+    }
     void begin(int x,int y) {
         _x=x;_y=y;
-        std::fill(_depth.begin(),_depth.end(),uint16_t(0));
+        std::memset(depthData(),0,Width*Height*sizeof(uint16_t));
     }
     void triangle(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
+        auto* depthBuffer=depthData();auto* colorBuffer=colorData();
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
         if(!std::isfinite(det) || std::abs(det)<.001f)return;
-        const float left=std::max(float(_x),std::floor(std::min({a.x,b.x,c.x})));
-        const float right=std::min(float(_x+Width-1),std::ceil(std::max({a.x,b.x,c.x})));
-        const float top=std::max(float(_y),std::floor(std::min({a.y,b.y,c.y})));
-        const float bottom=std::min(float(_y+Height-1),std::ceil(std::max({a.y,b.y,c.y})));
+        const float left=std::max(float(_x),rasterFloor(std::min({a.x,b.x,c.x})));
+        const float right=std::min(float(_x+Width-1),rasterCeil(std::max({a.x,b.x,c.x})));
+        const float top=std::max(float(_y),rasterFloor(std::min({a.y,b.y,c.y})));
+        const float bottom=std::min(float(_y+Height-1),rasterCeil(std::max({a.y,b.y,c.y})));
         if(left>right || top>bottom)return;
         const int x0=int(left),x1=int(right),y0=int(top),y1=int(bottom);
         const float inverse=1/det;
-        for(int y=y0;y<=y1;++y) for(int x=x0;x<=x1;++x) {
+        const uint16_t solidColor=light==255 ? color : carTint(color,light/255.f);
+        const auto* texture=_paintAtlas ? _paintAtlas->find(paint,color,light) : nullptr;
+        const bool scanRows=(x1-x0)*(y1-y0)>256;
+        const std::array<CarScreenVertex,3> points{{a,b,c}};
+        std::array<float,3> slopes{};
+        if(scanRows) for(int edge=0;edge<3;++edge) {
+            const auto& p=points[edge];const auto& q=points[(edge+1)%3];
+            if(std::abs(q.y-p.y)>=.00001f)slopes[edge]=(q.x-p.x)/(q.y-p.y);
+        }
+        for(int y=y0;y<=y1;++y) {
+            // Thin panels waste most of their bounding box. Restrict each row
+            // conservatively, retaining the original barycentric coverage test.
+            float rowLeft=right,rowRight=left;
+            bool intersects=false;
+            const float rowY=y+.5f;
+            if(scanRows) for(int edge=0;edge<3;++edge) {
+                const auto& p=points[edge];
+                const auto& q=points[(edge+1)%3];
+                if(rowY<std::min(p.y,q.y)-.001f || rowY>std::max(p.y,q.y)+.001f)continue;
+                if(std::abs(q.y-p.y)<.00001f) {
+                    rowLeft=std::min(rowLeft,std::min(p.x,q.x));
+                    rowRight=std::max(rowRight,std::max(p.x,q.x));
+                } else {
+                    const float x=p.x+slopes[edge]*(rowY-p.y);
+                    rowLeft=std::min(rowLeft,x);rowRight=std::max(rowRight,x);
+                }
+                intersects=true;
+            }
+            // The coverage epsilon admits a thin exterior strip. Fall back at
+            // extrema so degenerate/near-horizontal edges retain exact coverage.
+            int first=x0,last=x1;
+            if(intersects) {
+                first=int(std::max(float(x0),rasterFloor(rowLeft)-2.f));
+                last=int(std::min(float(x1),rasterCeil(rowRight)+2.f));
+            }
+            for(int x=first;x<=last;++x) {
             const float px=x+.5f-a.x,py=y+.5f-a.y;
             const float s=(px*(c.y-a.y)-py*(c.x-a.x))*inverse;
             const float t=((b.x-a.x)*py-(b.y-a.y)*px)*inverse;
@@ -38,15 +141,18 @@ public:
             if(!(depth>0) || !std::isfinite(depth))continue;
             const auto d=uint16_t(std::clamp(depth*8192.f,1.f,65535.f));
             const auto index=std::size_t(y-_y)*Width+(x-_x);
-            if(d<_depth[index])continue;
+            if(d<depthBuffer[index])continue;
             uint16_t pigment=color;
             if(paint!=CarPaint::Solid) {
                 const float u=(a.uDepth+s*(b.uDepth-a.uDepth)+t*(c.uDepth-a.uDepth))/depth;
                 const float v=(a.vDepth+s*(b.vDepth-a.vDepth)+t*(c.vDepth-a.vDepth))/depth;
-                pigment=carPaintColor(paint,color,std::clamp(u,0.f,1.f),std::clamp(v,0.f,1.f));
+                pigment=texture ? RacePaintAtlas::sample(texture,u,v) :
+                    carPaintColor(paint,color,std::clamp(u,0.f,1.f),std::clamp(v,0.f,1.f));
             }
-            _depth[index]=d;
-            _color[index]=light==255 ? pigment : carTint(pigment,light/255.f);
+            depthBuffer[index]=d;
+            colorBuffer[index]=texture ? pigment : paint==CarPaint::Solid ? solidColor :
+                          (light==255 ? pigment : carTint(pigment,light/255.f));
+            }
         }
     }
     void cameraTriangle(const TrackCamera& camera,CarSurfaceVertex a,CarSurfaceVertex b,
@@ -79,40 +185,88 @@ public:
             v[i]={p.x,p.y,p.z,(i==0 || i==3 ? face.u0 : face.u1)/255.f,
                   (i<2 ? face.v0 : face.v1)/255.f};
         }
+        if(v[0].z>=kTrackNearPlane && v[1].z>=kTrackNearPlane &&
+           v[2].z>=kTrackNearPlane && v[3].z>=kTrackNearPlane) {
+            const auto a=projectCarSurface(camera,v[0]),b=projectCarSurface(camera,v[1]);
+            const auto c=projectCarSurface(camera,v[2]),d=projectCarSurface(camera,v[3]);
+            triangle(a,b,c,face.color,face.paint,face.light);
+            triangle(a,c,d,face.color,face.paint,face.light);
+            return;
+        }
         cameraTriangle(camera,v[0],v[1],v[2],face.color,face.paint,face.light);
         cameraTriangle(camera,v[0],v[2],v[3],face.color,face.paint,face.light);
     }
-    void blit(LGFX_Sprite& canvas,const PencilOcclusion* occlusion=nullptr) const {
+    void preparedPanel(const TrackCamera& camera,const PreparedCarPanel& face) {
+        if(!face.visibility || face.right<_x-1 || face.left>_x+Width ||
+           face.bottom<_y-1 || face.top>_y+Height)return;
+        if(face.visibility==1) {
+            triangle(face.screen[0],face.screen[1],face.screen[2],face.color,face.paint,face.light);
+            triangle(face.screen[0],face.screen[2],face.screen[3],face.color,face.paint,face.light);
+        } else {
+            cameraTriangle(camera,face.camera[0],face.camera[1],face.camera[2],face.color,face.paint,face.light);
+            cameraTriangle(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light);
+        }
+    }
+    void blit(LGFX_Sprite& canvas,const PencilOcclusion* occlusion=nullptr,float occlusionScale=1.f) const {
+        const auto* depthBuffer=depthData();const auto* colorBuffer=colorData();
         std::array<uint16_t,PencilOcclusion::kCapacity> candidates{};
         std::size_t count=0;
         if(occlusion) for(std::size_t i=0;i<occlusion->count;++i) {
             const auto& s=occlusion->surfaces[i];
-            if(s.maxX>=_x && s.minX<_x+Width && s.maxY>=_y && s.minY<_y+Height)
-                candidates[count++]=uint16_t(i);
+            if(s.maxX>=_x*occlusionScale && s.minX<(_x+Width)*occlusionScale &&
+               s.maxY>=_y*occlusionScale && s.minY<(_y+Height)*occlusionScale) {
+                float area=0;
+                for(std::size_t edge=0;edge<s.count;++edge) {
+                    const auto p=s.points[edge],q=s.points[(edge+1)%s.count];
+                    area+=p.x*q.y-p.y*q.x;
+                }
+                // Reuse the index's spare high bit; no extra pixel/depth buffer.
+                candidates[count++]=uint16_t(i)|(area<0 ? 0x8000u : 0u);
+            }
         }
         for(int y=0;y<Height;++y) {
-            int start=-1;uint16_t color=0;
+            int start=-1;
             for(int x=0;x<=Width;++x) {
                 const auto index=std::size_t(y)*Width+x;
-                bool visible=x<Width && _depth[index]!=0;
+                bool visible=x<Width && depthBuffer[index]!=0;
                 if(visible && occlusion) {
-                    const float inverse=_depth[index]/8192.f;
-                    const TrackScreenPoint p{_x+x+.5f,_y+y+.5f};
+                    const float inverse=depthBuffer[index]/8192.f;
+                    const TrackScreenPoint p{(_x+x+.5f)*occlusionScale,(_y+y+.5f)*occlusionScale};
                     for(std::size_t s=0;s<count;++s) {
-                        float from,to;
-                        if(pencilHiddenInterval(occlusion->surfaces[candidates[s]],p,p,
-                                                inverse,inverse,from,to)) {visible=false;break;}
+                        const auto packed=candidates[s];
+                        const auto& surface=occlusion->surfaces[packed&0x7fffu];
+                        if(surface.count<3 || p.x<surface.minX || p.x>surface.maxX ||
+                           p.y<surface.minY || p.y>surface.maxY)continue;
+                        const auto& d=surface.inverseDepth;
+                        if(d.x*p.x+d.y*p.y+d.z-inverse-.0001f<0)continue;
+                        const float orientation=(packed&0x8000u) ? -1.f : 1.f;
+                        bool inside=true;
+                        for(std::size_t edge=0;edge<surface.count;++edge) {
+                            const auto a=surface.points[edge],b=surface.points[(edge+1)%surface.count];
+                            if(orientation*((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x))<0) {
+                                inside=false;break;
+                            }
+                        }
+                        if(inside) {visible=false;break;}
                     }
                 }
-                if(start>=0 && (!visible || _color[index]!=color)) {
-                    canvas.drawLine(_x+start,_y+y,_x+x-1,_y+y,color);start=-1;
+                if(start>=0 && !visible) {
+                    drawColorSpan(canvas,_x+start,_y+y,x-start,colorBuffer+std::size_t(y)*Width+start);
+                    start=-1;
                 }
-                if(visible && start<0) {start=x;color=_color[index];}
+                if(visible && start<0)start=x;
             }
         }
     }
-    uint16_t depthAt(int x,int y) const {return _depth[std::size_t(y)*Width+x];}
+    uint16_t depthAt(int x,int y) const {return depthData()[std::size_t(y)*Width+x];}
 private:
+    const RacePaintAtlas* _paintAtlas=nullptr;
+    using Pixels=std::array<uint16_t,Width*Height>;
+    RenderScratch<Pixels> _fastDepth,_fastColor;
+    uint16_t* depthData() {return _fastDepth.get() ? _fastDepth.get()->data() : _depth.data();}
+    const uint16_t* depthData() const {return _fastDepth.get() ? _fastDepth.get()->data() : _depth.data();}
+    uint16_t* colorData() {return _fastColor.get() ? _fastColor.get()->data() : _color.data();}
+    const uint16_t* colorData() const {return _fastColor.get() ? _fastColor.get()->data() : _color.data();}
     std::array<uint16_t,Width*Height> _depth{};
     std::array<uint16_t,Width*Height> _color{};
     int _x=0,_y=0;
