@@ -1,0 +1,699 @@
+{
+  "modes": [
+    {
+      "frames": 384,
+      "mean_us": {
+        "total": 158876.45572916666,
+        "draw": 127392.625,
+        "present": 31483.830729166668,
+        "prepare": 22961.268229166668,
+        "raster": 46006.8046875,
+        "blit": 14559.453125,
+        "player": 38524.541666666664,
+        "opponents": 47023.986979166664
+      },
+      "p95_us": 188980,
+      "max_us": 215223,
+      "candidate_row_pairs_before": 1487136,
+      "candidate_row_pairs_after": 1487136
+    },
+    {
+      "frames": 384,
+      "mean_us": {
+        "total": 156066.671875,
+        "draw": 124584.03645833333,
+        "present": 31482.635416666668,
+        "prepare": 22963.622395833332,
+        "raster": 46012.682291666664,
+        "blit": 11540.40625,
+        "player": 37188.809895833336,
+        "opponents": 45351.526041666664
+      },
+      "p95_us": 185101,
+      "max_us": 206461,
+      "candidate_row_pairs_before": 1487136,
+      "candidate_row_pairs_after": 453431
+    }
+  ],
+  "groups": [
+    {
+      "car": 0,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 152761.29166666666,
+            "draw": 121299.875,
+            "present": 31461.416666666668,
+            "prepare": 21432.333333333332,
+            "raster": 42240.125,
+            "blit": 13909.583333333334,
+            "player": 35964.625,
+            "opponents": 43369.125
+          },
+          "p95_us": 180788,
+          "max_us": 181058,
+          "candidate_row_pairs_before": 102144,
+          "candidate_row_pairs_after": 102144
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 149752.29166666666,
+            "draw": 118215.83333333333,
+            "present": 31536.458333333332,
+            "prepare": 21427.708333333332,
+            "raster": 42259.708333333336,
+            "blit": 10777.458333333334,
+            "player": 34398.333333333336,
+            "opponents": 41813.291666666664
+          },
+          "p95_us": 185101,
+          "max_us": 198575,
+          "candidate_row_pairs_before": 102144,
+          "candidate_row_pairs_after": 26961
+        }
+      ],
+      "saved_us": 3009.0
+    },
+    {
+      "car": 0,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 154552,
+            "draw": 123057.91666666667,
+            "present": 31494.083333333332,
+            "prepare": 21558.708333333332,
+            "raster": 43345.458333333336,
+            "blit": 14554.375,
+            "player": 36476.208333333336,
+            "opponents": 44806.625
+          },
+          "p95_us": 181955,
+          "max_us": 189393,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 83552
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 152944.375,
+            "draw": 121441.875,
+            "present": 31502.5,
+            "prepare": 21605.458333333332,
+            "raster": 43299.416666666664,
+            "blit": 11831.583333333334,
+            "player": 35297.041666666664,
+            "opponents": 43213.208333333336
+          },
+          "p95_us": 189515,
+          "max_us": 197299,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 29755
+        }
+      ],
+      "saved_us": 1607.625
+    },
+    {
+      "car": 1,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 157241.58333333334,
+            "draw": 125754.08333333333,
+            "present": 31487.5,
+            "prepare": 22685.083333333332,
+            "raster": 45515.458333333336,
+            "blit": 14451.75,
+            "player": 36390.625,
+            "opponents": 48552.5
+          },
+          "p95_us": 189338,
+          "max_us": 196936,
+          "candidate_row_pairs_before": 102368,
+          "candidate_row_pairs_after": 102368
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156342.54166666666,
+            "draw": 124862.04166666667,
+            "present": 31480.5,
+            "prepare": 22660.875,
+            "raster": 45552.166666666664,
+            "blit": 11176.708333333334,
+            "player": 34875.125,
+            "opponents": 46839.583333333336
+          },
+          "p95_us": 192133,
+          "max_us": 206461,
+          "candidate_row_pairs_before": 102368,
+          "candidate_row_pairs_after": 26874
+        }
+      ],
+      "saved_us": 899.0416666666861
+    },
+    {
+      "car": 1,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 158937.29166666666,
+            "draw": 127459,
+            "present": 31478.291666666668,
+            "prepare": 22810.75,
+            "raster": 46768.875,
+            "blit": 15080.916666666666,
+            "player": 36844.166666666664,
+            "opponents": 50134.125
+          },
+          "p95_us": 185039,
+          "max_us": 190677,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 83552
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159524.83333333334,
+            "draw": 128043.33333333333,
+            "present": 31481.5,
+            "prepare": 22808.291666666668,
+            "raster": 46832.583333333336,
+            "blit": 12229.666666666666,
+            "player": 35758.416666666664,
+            "opponents": 48479.458333333336
+          },
+          "p95_us": 200426,
+          "max_us": 203477,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 29624
+        }
+      ],
+      "saved_us": -587.5416666666861
+    },
+    {
+      "car": 2,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 157858.95833333334,
+            "draw": 126381.75,
+            "present": 31477.208333333332,
+            "prepare": 22664.5,
+            "raster": 44911.458333333336,
+            "blit": 14262.666666666666,
+            "player": 35738.916666666664,
+            "opponents": 47915.166666666664
+          },
+          "p95_us": 186033,
+          "max_us": 194024,
+          "candidate_row_pairs_before": 102928,
+          "candidate_row_pairs_after": 102928
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 153495.75,
+            "draw": 122039.08333333333,
+            "present": 31456.666666666668,
+            "prepare": 22660.583333333332,
+            "raster": 44903.833333333336,
+            "blit": 10947.625,
+            "player": 34228.833333333336,
+            "opponents": 46090.958333333336
+          },
+          "p95_us": 174226,
+          "max_us": 175079,
+          "candidate_row_pairs_before": 102928,
+          "candidate_row_pairs_after": 27012
+        }
+      ],
+      "saved_us": 4363.208333333343
+    },
+    {
+      "car": 2,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 158423.16666666666,
+            "draw": 126954.54166666667,
+            "present": 31468.625,
+            "prepare": 22835.666666666668,
+            "raster": 46046.25,
+            "blit": 14732.333333333334,
+            "player": 36111.833333333336,
+            "opponents": 49350
+          },
+          "p95_us": 186506,
+          "max_us": 205837,
+          "candidate_row_pairs_before": 82432,
+          "candidate_row_pairs_after": 82432
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 155787.66666666666,
+            "draw": 124312,
+            "present": 31475.666666666668,
+            "prepare": 22804.5,
+            "raster": 46033.208333333336,
+            "blit": 12030.75,
+            "player": 35098.5,
+            "opponents": 47620.541666666664
+          },
+          "p95_us": 172459,
+          "max_us": 173488,
+          "candidate_row_pairs_before": 82432,
+          "candidate_row_pairs_after": 29551
+        }
+      ],
+      "saved_us": 2635.5
+    },
+    {
+      "car": 3,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159770.66666666666,
+            "draw": 128285.625,
+            "present": 31485.041666666668,
+            "prepare": 22739.958333333332,
+            "raster": 46449.25,
+            "blit": 14603.541666666666,
+            "player": 42471.208333333336,
+            "opponents": 43053.666666666664
+          },
+          "p95_us": 187199,
+          "max_us": 215223,
+          "candidate_row_pairs_before": 103040,
+          "candidate_row_pairs_after": 103040
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 154797.375,
+            "draw": 123332.16666666667,
+            "present": 31465.208333333332,
+            "prepare": 22743.666666666668,
+            "raster": 46474.375,
+            "blit": 11247.875,
+            "player": 40817.375,
+            "opponents": 41422.833333333336
+          },
+          "p95_us": 177386,
+          "max_us": 198808,
+          "candidate_row_pairs_before": 103040,
+          "candidate_row_pairs_after": 27054
+        }
+      ],
+      "saved_us": 4973.291666666657
+    },
+    {
+      "car": 3,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 162750.41666666666,
+            "draw": 131258.875,
+            "present": 31491.541666666668,
+            "prepare": 22916,
+            "raster": 47795.791666666664,
+            "blit": 15156.875,
+            "player": 43138.125,
+            "opponents": 44539.416666666664
+          },
+          "p95_us": 200365,
+          "max_us": 201230,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 83552
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156756.83333333334,
+            "draw": 125262.08333333333,
+            "present": 31494.75,
+            "prepare": 22892.041666666668,
+            "raster": 47839.208333333336,
+            "blit": 12305.166666666666,
+            "player": 41837,
+            "opponents": 42961.083333333336
+          },
+          "p95_us": 175469,
+          "max_us": 177262,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 29785
+        }
+      ],
+      "saved_us": 5993.583333333314
+    },
+    {
+      "car": 4,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 157395.625,
+            "draw": 125930.33333333333,
+            "present": 31465.291666666668,
+            "prepare": 22575.75,
+            "raster": 45121.208333333336,
+            "blit": 14199.583333333334,
+            "player": 36817.25,
+            "opponents": 47431.541666666664
+          },
+          "p95_us": 188007,
+          "max_us": 190756,
+          "candidate_row_pairs_before": 102144,
+          "candidate_row_pairs_after": 102144
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 154201.04166666666,
+            "draw": 122742,
+            "present": 31459.041666666668,
+            "prepare": 22571.458333333332,
+            "raster": 45070.666666666664,
+            "blit": 11002.291666666666,
+            "player": 35205.791666666664,
+            "opponents": 45802.666666666664
+          },
+          "p95_us": 181777,
+          "max_us": 189488,
+          "candidate_row_pairs_before": 102144,
+          "candidate_row_pairs_after": 26985
+        }
+      ],
+      "saved_us": 3194.583333333343
+    },
+    {
+      "car": 4,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 160386.95833333334,
+            "draw": 128895.45833333333,
+            "present": 31491.5,
+            "prepare": 22694.791666666668,
+            "raster": 46368.875,
+            "blit": 14885.541666666666,
+            "player": 37255.875,
+            "opponents": 49050
+          },
+          "p95_us": 188956,
+          "max_us": 192053,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 83552
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 155606.66666666666,
+            "draw": 124105.04166666667,
+            "present": 31501.625,
+            "prepare": 22703.916666666668,
+            "raster": 46394.833333333336,
+            "blit": 12074.666666666666,
+            "player": 36121.75,
+            "opponents": 47462.458333333336
+          },
+          "p95_us": 176326,
+          "max_us": 193417,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 29746
+        }
+      ],
+      "saved_us": 4780.291666666686
+    },
+    {
+      "car": 5,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159729,
+            "draw": 128230.29166666667,
+            "present": 31498.708333333332,
+            "prepare": 23508.583333333332,
+            "raster": 46917.458333333336,
+            "blit": 14079.333333333334,
+            "player": 36287.208333333336,
+            "opponents": 50260.166666666664
+          },
+          "p95_us": 188980,
+          "max_us": 189301,
+          "candidate_row_pairs_before": 102592,
+          "candidate_row_pairs_after": 102592
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 157677.875,
+            "draw": 126195.33333333333,
+            "present": 31482.541666666668,
+            "prepare": 23491.916666666668,
+            "raster": 46996.708333333336,
+            "blit": 10913.625,
+            "player": 34930.375,
+            "opponents": 48518.291666666664
+          },
+          "p95_us": 178853,
+          "max_us": 179985,
+          "candidate_row_pairs_before": 102592,
+          "candidate_row_pairs_after": 27053
+        }
+      ],
+      "saved_us": 2051.125
+    },
+    {
+      "car": 5,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 161550.45833333334,
+            "draw": 130087.33333333333,
+            "present": 31463.125,
+            "prepare": 23603.291666666668,
+            "raster": 48240.458333333336,
+            "blit": 14650.291666666666,
+            "player": 36832.875,
+            "opponents": 51745.041666666664
+          },
+          "p95_us": 186234,
+          "max_us": 213912,
+          "candidate_row_pairs_before": 83104,
+          "candidate_row_pairs_after": 83104
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159861.79166666666,
+            "draw": 128387.45833333333,
+            "present": 31474.333333333332,
+            "prepare": 23652.916666666668,
+            "raster": 48232.416666666664,
+            "blit": 11928.208333333334,
+            "player": 35846.416666666664,
+            "opponents": 50048.541666666664
+          },
+          "p95_us": 193891,
+          "max_us": 194533,
+          "candidate_row_pairs_before": 83104,
+          "candidate_row_pairs_after": 29659
+        }
+      ],
+      "saved_us": 1688.666666666686
+    },
+    {
+      "car": 6,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 162384.66666666666,
+            "draw": 130844.91666666667,
+            "present": 31539.75,
+            "prepare": 24772.083333333332,
+            "raster": 47980.791666666664,
+            "blit": 14272.458333333334,
+            "player": 43107.166666666664,
+            "opponents": 46000.708333333336
+          },
+          "p95_us": 192234,
+          "max_us": 196796,
+          "candidate_row_pairs_before": 102480,
+          "candidate_row_pairs_after": 102480
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159019.95833333334,
+            "draw": 127555.58333333333,
+            "present": 31464.375,
+            "prepare": 24802.041666666668,
+            "raster": 48004.375,
+            "blit": 11014.458333333334,
+            "player": 41610.666666666664,
+            "opponents": 44253.625
+          },
+          "p95_us": 180679,
+          "max_us": 192608,
+          "candidate_row_pairs_before": 102480,
+          "candidate_row_pairs_after": 26939
+        }
+      ],
+      "saved_us": 3364.708333333314
+    },
+    {
+      "car": 6,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 164322.66666666666,
+            "draw": 132850.66666666666,
+            "present": 31472,
+            "prepare": 24984.083333333332,
+            "raster": 49249.875,
+            "blit": 14975.75,
+            "player": 43697.083333333336,
+            "opponents": 47649.208333333336
+          },
+          "p95_us": 193689,
+          "max_us": 197265,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 83552
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 161387.375,
+            "draw": 129892.08333333333,
+            "present": 31495.291666666668,
+            "prepare": 24977.75,
+            "raster": 49207.208333333336,
+            "blit": 12133.583333333334,
+            "player": 42572.5,
+            "opponents": 45827.583333333336
+          },
+          "p95_us": 181495,
+          "max_us": 197768,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 29719
+        }
+      ],
+      "saved_us": 2935.291666666657
+    },
+    {
+      "car": 7,
+      "track": 0,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156111.5,
+            "draw": 124608.33333333333,
+            "present": 31503.166666666668,
+            "prepare": 22730.583333333332,
+            "raster": 44011.041666666664,
+            "blit": 14251.583333333334,
+            "player": 39403.75,
+            "opponents": 43507.916666666664
+          },
+          "p95_us": 185140,
+          "max_us": 185842,
+          "candidate_row_pairs_before": 102592,
+          "candidate_row_pairs_after": 102592
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 153876.625,
+            "draw": 122405.08333333333,
+            "present": 31471.541666666668,
+            "prepare": 22752.916666666668,
+            "raster": 43958.5,
+            "blit": 10975.041666666666,
+            "player": 37758.958333333336,
+            "opponents": 41877.541666666664
+          },
+          "p95_us": 173919,
+          "max_us": 198028,
+          "candidate_row_pairs_before": 102592,
+          "candidate_row_pairs_after": 26975
+        }
+      ],
+      "saved_us": 2234.875
+    },
+    {
+      "car": 7,
+      "track": 1,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 157847.04166666666,
+            "draw": 126383,
+            "present": 31464.041666666668,
+            "prepare": 22868.125,
+            "raster": 45146.5,
+            "blit": 14884.666666666666,
+            "player": 39855.75,
+            "opponents": 45018.583333333336
+          },
+          "p95_us": 187724,
+          "max_us": 188878,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 83552
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156033.75,
+            "draw": 124553.58333333333,
+            "present": 31480.166666666668,
+            "prepare": 22861.916666666668,
+            "raster": 45143.708333333336,
+            "blit": 12057.791666666666,
+            "player": 38663.875,
+            "opponents": 43392.75
+          },
+          "p95_us": 188733,
+          "max_us": 196726,
+          "candidate_row_pairs_before": 83552,
+          "candidate_row_pairs_after": 29739
+        }
+      ],
+      "saved_us": 1813.291666666657
+    }
+  ],
+  "crc_pairs": 400,
+  "crc_mismatches": 0,
+  "groups_faster": 15
+}

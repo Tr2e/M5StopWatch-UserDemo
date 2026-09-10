@@ -1,0 +1,5 @@
+{
+  "nearest_reference_frames": 356,
+  "changed": [],
+  "note": "App now enables edge mode; this compares legacy renderer sampling only."
+}

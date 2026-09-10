@@ -1,0 +1,15 @@
+Race vertex cache: car=0 corners=3040 unique=1073
+Race vertex cache: car=1 corners=3172 unique=1114
+Race vertex cache: car=2 corners=2956 unique=953
+Race vertex cache: car=3 corners=3668 unique=1378
+Race vertex cache: car=4 corners=3036 unique=1029
+Race vertex cache: car=5 corners=2956 unique=934
+Race vertex cache: car=6 corners=3860 unique=1375
+Race vertex cache: car=7 corners=3468 unique=1188
+Solid car raster: depth ordering, bridge visibility, near clipping, UV tiles, 1000 fuzz triangles and 120 prepared-panel comparisons
+Track paint: order-independent depth, dark backdrop, 96-section map, 144 poses, max occluders=442
+Track paint: order-independent depth, dark backdrop, 96-section map, 144 poses, max occluders=262
+Garage cameras: 8 cars x 9 forward/reverse states x 3 LODs x 6 poses; side-only wheel pixel checks
+Renderer cache bytes: garage=3008 race=3312
+Open-only surface storage: garage=722256 race=788072
+Production renderer frames: /tmp/race-occlusion-lab/frames

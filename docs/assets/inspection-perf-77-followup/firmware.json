@@ -1,0 +1,13 @@
+{
+  "bin_sha256": "bb17eda40ed1b1d369da87b8e061fdff5837e062ab236967283f1da91437bb9d",
+  "elf_sha256": "f7ca3374f53a539bed682bc8d42790354f11d5c16bb537071f2aa1062227e98c",
+  "bin_bytes": 4945888,
+  "temporary_benchmark_symbols": false,
+  "scale_percent": 77,
+  "port": "/dev/cu.usbmodem83401",
+  "usb_serial": "44:1B:F6:C1:8A:00",
+  "app_offset": "0x20000",
+  "flash_hash_verified": true,
+  "boot_elf_prefix": "f7ca3374f",
+  "launcher_opened": true
+}

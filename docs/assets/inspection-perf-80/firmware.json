@@ -1,0 +1,13 @@
+{
+  "interaction_percent": 80,
+  "interaction_raster": [
+    282,
+    230
+  ],
+  "automatic_downshift": false,
+  "sha256": "14b8a59d8583383dcc5cd0e44a56120ec5064d1a45c72ea04fd4a426c043d262",
+  "elf_sha256": "f95d742e697acac8342ac0d8b93b7444ad3d2a7ed93485a46e3f53729f4d8875",
+  "application_bytes": 4939344,
+  "partition_free_bytes": 238000,
+  "baseline_frames_identical": 300
+}

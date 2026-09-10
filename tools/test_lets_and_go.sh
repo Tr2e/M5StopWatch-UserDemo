@@ -61,6 +61,9 @@ compile_run device_control \
 compile_run garage_view \
     "$repo_dir/tools/lets_and_go_garage_view_test.cpp"
 
+compile_run inspection_render \
+    "$repo_dir/tools/lets_and_go_inspection_render_test.cpp"
+
 compile_run racer_model \
     "$repo_dir/tools/lets_and_go_racer_model_test.cpp" \
     "$base/model/racer_model.cpp" \

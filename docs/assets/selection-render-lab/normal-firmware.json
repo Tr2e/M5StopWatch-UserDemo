@@ -1,0 +1,11 @@
+{
+  "benchmark_symbols_absent": true,
+  "bin": {
+    "bytes": 4947488,
+    "sha256": "eaddddaa8c039de67b9464cd0a43ec9da01179fc32fbbd9ccd5926237caad484"
+  },
+  "elf": {
+    "bytes": 53925184,
+    "sha256": "1c8890c5056a74c04c1906967696d3631b6c10e490b9c5b294cc245d1f178522"
+  }
+}

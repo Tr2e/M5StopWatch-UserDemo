@@ -1,0 +1,12 @@
+{
+  "normal_bin_sha256": "2480e3c29c5c3959d21631c4f310015f0e1fbe105e4c0ac80286510a3e13eac6",
+  "normal_elf_sha256": "864a39bebb9aff688f17534e3a9f30cecfe80c6a3d8aac8fac04a288284e87d0",
+  "normal_bin_bytes": 4945312,
+  "production_sources_match_start_of_round": true,
+  "normal_boot_launcher": true,
+  "benchmark_symbols_absent": true,
+  "host_asan_ubsan_passed": true,
+  "device": "83401 / 303A:1001 / 44:1B:F6:C1:8A:00",
+  "app_offset": "0x20000",
+  "papercolor_opened": false
+}

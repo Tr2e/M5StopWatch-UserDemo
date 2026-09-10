@@ -56,10 +56,13 @@ inline TouchAction menuTouchTargetPass(GameScreen screen,int x,int y,bool expand
     if(hit(next(arrowY)))return TouchAction::Next;
     return TouchAction::None;
 }
-inline TouchAction menuTouchTarget(GameScreen screen,int x,int y) {
-    if(x<0 || x>=468 || y<0 || y>=466)return TouchAction::None;
+inline bool touchOnDisplay(int x,int y) {
+    if(x<0 || x>=468 || y<0 || y>=466)return false;
     const int dx=x-234,dy=y-233;
-    if(dx*dx+dy*dy>233*233)return TouchAction::None;
+    return dx*dx+dy*dy<=233*233;
+}
+inline TouchAction menuTouchTarget(GameScreen screen,int x,int y) {
+    if(!touchOnDisplay(x,y))return TouchAction::None;
     // A visible control always wins over a neighbour's expanded touch allowance.
     const auto exact=menuTouchTargetPass(screen,x,y,false);
     return exact!=TouchAction::None ? exact : menuTouchTargetPass(screen,x,y,true);

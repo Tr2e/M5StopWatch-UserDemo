@@ -34,6 +34,18 @@ int main() {
             garage.render(flow,selection,frame*33,detail,{},view);
         });
     }
+    flow.inspectCar();
+    for(unsigned car=0;car<kCarCount;++car) {
+        selection.reset(static_cast<CarId>(car));
+        for(int percent : {100,85,80,77,75,50}) {
+            const auto name=std::string("inspection_")+std::to_string(car)+"_scale_"+std::to_string(percent);
+            measure(name.c_str(),[&](int frame) {
+                GarageViewState view;view.yaw+=frame*.04f;
+                garage.render(flow,selection,frame*33,PencilDetail::High,{},view,true,percent);
+            });
+        }
+    }
+    flow.back();selection.reset(CarId::CycloneMagnum);
     flow.selectPlayerCar(CarId::CycloneMagnum);
     flow.confirmPlayerCar(); flow.completeCarShowcase();
     flow.toggleRival(CarId::HurricaneSonic);

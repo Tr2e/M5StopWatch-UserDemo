@@ -1,0 +1,15 @@
+{
+  "bin": {
+    "size": 4943840,
+    "sha256": "8239aa466754027abcade903bbc6de170d85306e12a9d3cb123b0aa854d65817"
+  },
+  "elf": {
+    "size": 53815924,
+    "sha256": "8a1d95685f9799c284e55beb921bfb297813790037887b2a169ed0509c685ebe"
+  },
+  "port": "/dev/cu.usbmodem83401",
+  "usb": "303A:1001",
+  "serial": "44:1B:F6:C1:8A:00",
+  "partition_offset": "0x20000",
+  "temporary_test_symbols_in_final_elf": false
+}

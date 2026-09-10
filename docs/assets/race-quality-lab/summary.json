@@ -1,0 +1,242 @@
+{
+  "variants": [
+    {
+      "variant": 0,
+      "raster_pct": 100,
+      "atlas": false,
+      "timed_frames": 192,
+      "means_us": {
+        "draw_us": 127420.3125,
+        "present_us": 31499.4375,
+        "player_us": 39502.9375,
+        "opponents_us": 47093.5625,
+        "road_us": 16669.0625,
+        "total_us": 158919.75
+      },
+      "paired_total_delta_us": 0,
+      "groups_faster_than_baseline": 0
+    },
+    {
+      "variant": 1,
+      "raster_pct": 90,
+      "atlas": false,
+      "timed_frames": 192,
+      "means_us": {
+        "draw_us": 130098.4375,
+        "present_us": 31501.6875,
+        "player_us": 41873.3125,
+        "opponents_us": 47125.3125,
+        "road_us": 16666.9375,
+        "total_us": 161600.125
+      },
+      "paired_total_delta_us": 2680.375,
+      "groups_faster_than_baseline": 2
+    },
+    {
+      "variant": 2,
+      "raster_pct": 85,
+      "atlas": false,
+      "timed_frames": 192,
+      "means_us": {
+        "draw_us": 128797,
+        "present_us": 31519.9375,
+        "player_us": 40938,
+        "opponents_us": 47156.375,
+        "road_us": 16684.25,
+        "total_us": 160316.9375
+      },
+      "paired_total_delta_us": 1397.1875,
+      "groups_faster_than_baseline": 2
+    },
+    {
+      "variant": 3,
+      "raster_pct": 100,
+      "atlas": true,
+      "timed_frames": 192,
+      "means_us": {
+        "draw_us": 126573.75,
+        "present_us": 31505.1875,
+        "player_us": 38799.9375,
+        "opponents_us": 46959.0625,
+        "road_us": 16558.8125,
+        "total_us": 158078.9375
+      },
+      "paired_total_delta_us": -840.8125,
+      "groups_faster_than_baseline": 10
+    },
+    {
+      "variant": 4,
+      "raster_pct": 90,
+      "atlas": true,
+      "timed_frames": 192,
+      "means_us": {
+        "draw_us": 128896.375,
+        "present_us": 31488.875,
+        "player_us": 41313.375,
+        "opponents_us": 47054.8125,
+        "road_us": 16528.9375,
+        "total_us": 160385.25
+      },
+      "paired_total_delta_us": 1465.5,
+      "groups_faster_than_baseline": 3
+    },
+    {
+      "variant": 5,
+      "raster_pct": 85,
+      "atlas": true,
+      "timed_frames": 192,
+      "means_us": {
+        "draw_us": 128131.4375,
+        "present_us": 31495.875,
+        "player_us": 40460.625,
+        "opponents_us": 47102.1875,
+        "road_us": 16491.1875,
+        "total_us": 159627.3125
+      },
+      "paired_total_delta_us": 707.5625,
+      "groups_faster_than_baseline": 7
+    }
+  ],
+  "cache_groups": [
+    {
+      "car": 0,
+      "track": 0,
+      "entries": 11,
+      "fallback_panels": 0,
+      "cold_us": 35543,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 0,
+      "track": 1,
+      "entries": 11,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 1,
+      "track": 0,
+      "entries": 12,
+      "fallback_panels": 0,
+      "cold_us": 37173,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 1,
+      "track": 1,
+      "entries": 12,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 2,
+      "track": 0,
+      "entries": 8,
+      "fallback_panels": 0,
+      "cold_us": 26946,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 2,
+      "track": 1,
+      "entries": 8,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 3,
+      "track": 0,
+      "entries": 9,
+      "fallback_panels": 0,
+      "cold_us": 29821,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 3,
+      "track": 1,
+      "entries": 9,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 4,
+      "track": 0,
+      "entries": 8,
+      "fallback_panels": 0,
+      "cold_us": 27932,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 4,
+      "track": 1,
+      "entries": 8,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 5,
+      "track": 0,
+      "entries": 10,
+      "fallback_panels": 0,
+      "cold_us": 49479,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 5,
+      "track": 1,
+      "entries": 10,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 6,
+      "track": 0,
+      "entries": 5,
+      "fallback_panels": 0,
+      "cold_us": 22420,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 6,
+      "track": 1,
+      "entries": 5,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 7,
+      "track": 0,
+      "entries": 8,
+      "fallback_panels": 0,
+      "cold_us": 25466,
+      "restore_mismatches": 0
+    },
+    {
+      "car": 7,
+      "track": 1,
+      "entries": 8,
+      "fallback_panels": 0,
+      "cold_us": 0,
+      "restore_mismatches": 0
+    }
+  ],
+  "cold_build_us": {
+    "min": 22420,
+    "max": 49479,
+    "mean": 31847.5
+  },
+  "checks": {
+    "timed_renders": 1152,
+    "warmup_renders": 96,
+    "restore_renders": 208,
+    "restore_mismatches": 0
+  },
+  "limits": "Per-group averages are truncated to integer microseconds. Raw per-frame times were not logged; group P95 (n=12) equals max and cannot yield pooled P95."
+}

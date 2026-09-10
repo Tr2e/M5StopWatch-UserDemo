@@ -107,6 +107,40 @@ int main() {
     check(controls.consume(true).preview.changed,"inspection touch orbit missing");
     check(tap(233,414).input.confirmPressed,"inspection reset missing");
     check(tap(116,70).input.cancelPressed,"inspection back missing");
+    // Every visible non-button area may start an inspection drag, including
+    // the header, side margins, car name and space below RESET VIEW.
+    for(const auto point : {std::pair<int,int>{234,12},{25,233},{443,233},
+                           {234,375},{234,454},{90,385},{374,385}}) {
+        controls.touch(true,point.first,point.second);
+        controls.touch(true,point.first+8,point.second);
+        auto orbit=controls.consume(true);
+        check(orbit.preview.active && orbit.preview.changed,"expanded inspection drag area inactive");
+        controls.touch(true,233,414);controls.touch(false,0,0);
+        orbit=controls.consume(true);
+        check(orbit.preview.changed && !orbit.preview.active && !orbit.input.confirmPressed &&
+              !orbit.input.cancelPressed,"inspection drag into reset activated a button");
+    }
+    for(const auto point : {std::pair<int,int>{116,70},{233,414},{138,414},{116,51},
+                           {0,0},{467,465},{-1,233},{468,233}}) {
+        controls.touch(true,point.first,point.second);
+        controls.touch(true,234,230);controls.touch(false,0,0);
+        const auto orbit=controls.consume(true);
+        check(!orbit.preview.changed && !orbit.input.confirmPressed && !orbit.input.cancelPressed,
+              "button allowance or off-screen start became an inspection drag");
+    }
+    controls.touch(true,25,233);controls.touch(true,45,233);controls.consume(true);
+    controls.invalidateTouch();
+    check(!controls.consume(true).preview.active,"inspection read failure retained drag ownership");
+    controls.touch(true,55,233);
+    check(!controls.consume(true).preview.changed,"canceled inspection drag resumed before release");
+    controls.touch(false,0,0);
+    controls.setScreen(GameScreen::CarSelect);controls.setScreen(GameScreen::CarInspect);
+    controls.touch(true,25,233);controls.touch(true,45,233);
+    check(!controls.consume(true).preview.changed,"expanded orbit bypassed first presentation");
+    controls.presentScreen(GameScreen::CarInspect);controls.touch(true,55,233);
+    check(!controls.consume(true).preview.changed,"held inspection touch bypassed release gate");
+    controls.touch(false,0,0);controls.touch(true,25,233);controls.touch(true,45,233);
+    check(controls.consume(true).preview.active,"inspection drag did not rearm after release");
     show(GameScreen::CarSelect);
     check(!tap(233,240).preview.changed,"stationary tap started orbit");
     controls.touch(true,233,240);controls.touch(true,263,210);

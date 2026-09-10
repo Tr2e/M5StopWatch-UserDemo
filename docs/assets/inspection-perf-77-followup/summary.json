@@ -1,0 +1,18 @@
+{
+  "77": {
+    "before_draw_ms": 141.312,
+    "after_draw_ms": 131.36825,
+    "partial_ms": 18.309875,
+    "before_total_ms": 159.62187500000002,
+    "after_total_ms": 149.678125,
+    "reduction_percent": 6.229565966444149
+  },
+  "100": {
+    "before_draw_ms": 185.275875,
+    "after_draw_ms": 174.717875,
+    "partial_ms": 18.3025,
+    "before_total_ms": 203.57837500000002,
+    "after_total_ms": 193.020375,
+    "reduction_percent": 5.186208996903536
+  }
+}

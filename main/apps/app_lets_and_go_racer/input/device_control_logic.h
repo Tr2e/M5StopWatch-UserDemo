@@ -107,7 +107,7 @@ public:
             _candidate=menuTouchTarget(_screen,x,y);
             _gestureCanceled=!_touchArmed || !_presented;
             _orbitGesture=(_screen==GameScreen::CarSelect || _screen==GameScreen::CarInspect) && !_gestureCanceled &&
-                (_screen==GameScreen::CarInspect ? home_layout::inspectOrbit : home_layout::carOrbit).contains(x,y) &&
+                (_screen==GameScreen::CarInspect ? touchOnDisplay(x,y) : home_layout::carOrbit.contains(x,y)) &&
                 _candidate==TouchAction::None;
             if (_orbitGesture) {
                 ++_orbitId;

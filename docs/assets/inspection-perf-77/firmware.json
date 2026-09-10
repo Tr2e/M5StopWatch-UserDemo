@@ -1,0 +1,17 @@
+{
+  "bin": {
+    "size": 4943840,
+    "sha256": "a47f9fba206b863143cd69342b05384084d58ef906d07fc3354dbf2056b29bc4"
+  },
+  "elf": {
+    "size": 53815908,
+    "sha256": "baadc1b883b309499234e25de6c459a09f27aa2604d92b3a2874f05957dde0a9"
+  },
+  "interaction_percent": 77,
+  "render_width": 271,
+  "render_height": 222,
+  "port": "/dev/cu.usbmodem83401",
+  "usb": "303A:1001",
+  "serial": "44:1B:F6:C1:8A:00",
+  "app_partition": "0x20000"
+}

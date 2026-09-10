@@ -1,0 +1,341 @@
+Executing action: all (aliases: build)
+Running make in directory /Users/xudanyang/Documents/stopwatch/userdemo/build
+Executing "make -j 14 all"...
+[  0%] Built target blank_ota_data
+[  0%] Built target partition_table_bin
+[  0%] Built target sections.ld.in
+[  0%] Built target memory.ld
+[  1%] Built target custom_bundle
+[  1%] Built target _project_elf_src
+[  1%] Performing build step for 'bootloader'
+[  1%] Built target __idf_esp_https_ota
+[  1%] Built target __idf_esp_http_server
+[  1%] Built target _project_elf_src
+[  9%] Built target __idf_log
+[  2%] Built target __idf_esp_http_client
+[ 19%] Built target __idf_esp_rom
+[  2%] Built target __idf_tcp_transport
+[ 21%] Built target __idf_esp_common
+[  3%] Built target __idf_esp_adc
+[ 30%] Built target __idf_esp_hw_support
+[  3%] Built target __idf_esp-tls
+[ 32%] Built target __idf_esp_system
+[  3%] Built target __idf_http_parser
+[ 40%] Built target __idf_efuse
+[  4%] Built target __idf_driver
+[ 59%] Built target __idf_bootloader_support
+[  4%] Built target __idf_esp_driver_twai
+[ 60%] Built target __idf_esp_bootloader_format
+[  4%] Built target __idf_esp_driver_ledc
+[ 62%] Built target __idf_spi_flash
+[  4%] Built target __idf_esp_driver_i2c
+[ 68%] Built target __idf_hal
+[  4%] Built target __idf_esp_driver_sdm
+[ 69%] Built target __idf_micro-ecc
+[  4%] Built target __idf_esp_driver_tsens
+[ 92%] Built target __idf_soc
+[  4%] Built target __idf_esp_driver_rmt
+[ 94%] Built target __idf_xtensa
+[  5%] Built target __idf_esp_driver_sdspi
+[ 96%] Built target __idf_main
+[  5%] Built target __idf_esp_driver_sdmmc
+[ 98%] Built target bootloader.elf
+[  5%] Built target __idf_sdmmc
+[100%] Built target gen_project_binary
+[  5%] Built target __idf_esp_driver_i2s
+[  6%] Built target __idf_esp_driver_mcpwm
+Bootloader binary size 0x5160 bytes. 0x2ea0 bytes (36%) free.
+[100%] Built target bootloader_check_size
+[  6%] Built target __idf_esp_driver_pcnt
+[100%] Built target app
+[  6%] Built target __idf_esp_gdbstub
+[  6%] No install step for 'bootloader'
+[  6%] Completed 'bootloader'
+[  6%] Built target __idf_esp_driver_spi
+[  6%] Built target bootloader
+[  6%] Built target __idf_esp_wifi
+[  6%] Built target __idf_esp_coex
+[ 10%] Built target __idf_wpa_supplicant
+[ 11%] Built target __idf_esp_netif
+[ 15%] Built target __idf_lwip
+[ 16%] Built target __idf_vfs
+[ 17%] Built target __idf_esp_vfs_console
+[ 18%] Built target __idf_esp_driver_usb_serial_jtag
+[ 18%] Built target __idf_esp_phy
+[ 18%] Built target __idf_nvs_flash
+[ 18%] Built target __idf_esp_event
+[ 18%] Built target __idf_esp_driver_uart
+[ 19%] Built target __idf_esp_psram
+[ 19%] Built target __idf_esp_ringbuf
+[ 19%] Built target __idf_esp_driver_gptimer
+[ 19%] Built target __idf_esp_timer
+[ 19%] Built target __idf_cxx
+[ 19%] Built target __idf_pthread
+[ 20%] Built target __idf_newlib
+[ 21%] Built target __idf_freertos
+[ 23%] Built target __idf_esp_hw_support
+[ 24%] Built target __idf_esp_security
+[ 25%] Built target __idf_soc
+[ 25%] Built target __idf_heap
+[ 26%] Built target __idf_log
+[ 29%] Built target __idf_hal
+[ 29%] Built target __idf_esp_rom
+[ 29%] Built target __idf_esp_common
+[ 30%] Built target __idf_esp_system
+[ 31%] Built target __idf_spi_flash
+[ 31%] Built target __idf_esp_mm
+[ 32%] Built target __idf_bootloader_support
+[ 32%] Built target __idf_efuse
+[ 32%] Built target __idf_esp_partition
+[ 32%] Built target __idf_app_update
+[ 32%] Built target __idf_esp_bootloader_format
+[ 32%] Built target __idf_esp_app_format
+[ 33%] Built target mbedtls
+[ 33%] Built target mbedx509
+[ 38%] Built target mbedcrypto
+[ 38%] Built target p256m
+[ 38%] Built target everest
+[ 38%] Built target __idf_mbedtls
+[ 38%] Built target __idf_esp_pm
+[ 38%] Built target __idf_esp_driver_gpio
+[ 38%] Built target __idf_xtensa
+[ 38%] Built target __idf_protobuf-c
+[ 38%] Built target __idf_esp_hid
+[ 38%] Built target __idf_mooncake_log
+[ 38%] Built target __idf_esp_https_server
+[ 38%] Built target __idf_app_trace
+[ 38%] Built target __idf_unity
+[ 38%] Built target __idf_esp_driver_touch_sens
+[ 38%] Built target __idf_wear_levelling
+[ 39%] Built target __idf_espcoredump
+[ 40%] Built target __idf_esp_driver_cam
+[ 41%] Built target __idf_esp_lcd
+[ 41%] Built target __idf_esp_eth
+[ 42%] Built target __idf_console
+[ 43%] Built target __idf_smooth_ui_toolkit
+[ 43%] Built target __idf_json
+[ 43%] Built target __idf_nvs_sec_provider
+[ 44%] Built target __idf_perfmon
+[ 45%] Built target __idf_espressif__esp_codec_dev
+[ 46%] Built target __idf_rt
+[ 46%] Built target __idf_spiffs
+[ 47%] Built target __idf_touch_element
+[ 47%] Built target __idf_espressif__i2c_bus
+[ 47%] Built target __idf_usb
+[ 48%] Built target __idf_mqtt
+[ 48%] Built target __idf_mooncake
+[ 48%] Built target __idf_cmock
+[ 48%] Built target __idf_fatfs
+[ 48%] Built target __idf_protocomm
+[ 48%] Built target __idf_78__esp-wifi-connect
+[ 48%] Built target __idf_M5PM1
+[ 52%] Built target __idf_BMI270_BMM150_Sensor
+[ 53%] Built target __idf_M5GFX
+[ 58%] Built target __idf_espressif__esp-dsp
+[ 58%] Built target __idf_esp_local_ctrl
+[ 58%] Built target __idf_wifi_provisioning
+[ 58%] Built target __idf_M5IOE1
+[ 92%] Built target __idf_lvgl
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_alarm_clock/view/trigger_alarm.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_glow_field/app_glow_field.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_fft/app_fft.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_alarm_clock/view/alarm_list.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_imu/app_imu.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_launcher/app_launcher.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_launcher/view/guide_page.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_alarm_clock/model/alarm_clock.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/main.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_alarm_clock/app_alarm_clock.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_badge/app_badge.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_glow_field/glow_field_renderer.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_alarm_clock/view/add_alarm.cpp.obj
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_grokbot_lab/app_grokbot_lab.cpp.obj
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_alarm_clock/view/alarm_list.cpp: In member function 'void view::AlarmListView::createAlarmRow(int, int, const model::AlarmClock::Alarm&)':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_alarm_clock/view/alarm_list.cpp:203:86: warning: bitwise operation between different enumeration types 'lv_part_t' and 'lv_state_t' is deprecated [-Wdeprecated-enum-enum-conversion]
+  203 |     row->enabledSwitch->setBgColor(lv_color_hex(_switch_on_color), LV_PART_INDICATOR | LV_STATE_CHECKED);
+      |                                                                    ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_alarm_clock/view/alarm_list.cpp:204:66: warning: bitwise operation between different enumeration types 'lv_part_t' and 'lv_state_t' is deprecated [-Wdeprecated-enum-enum-conversion]
+  204 |     row->enabledSwitch->setBgOpa(LV_OPA_COVER, LV_PART_INDICATOR | LV_STATE_CHECKED);
+      |                                                ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_alarm_clock/view/alarm_list.cpp:205:61: warning: bitwise operation between different enumeration types 'lv_part_t' and 'lv_state_t' is deprecated [-Wdeprecated-enum-enum-conversion]
+  205 |     row->enabledSwitch->setBorderWidth(0, LV_PART_INDICATOR | LV_STATE_CHECKED);
+      |                                           ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+[ 92%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_launcher/view/view.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/app_lets_and_go_racer.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/audio/racer_audio.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/input/device_control_source.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/view/garage_renderer.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/view/phase2_device_benchmark.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/view/phase2_reference.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/view/race_renderer.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lucky_wheel/app_lucky_wheel.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lucky_wheel/view/wheel.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_ruview/app_ruview.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_setup/app_setup.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_setup/workers/about.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_setup/workers/datetime.cpp.obj
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_launcher/view/view.cpp: In member function 'void view::LauncherView::init(std::vector<mooncake::AppProps_t>)':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_launcher/view/view.cpp:351:9: warning: unused variable 'default_start_x' [-Wunused-variable]
+  351 |     int default_start_x    = base_offset_rounds * _icon_gap;
+      |         ^~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_launcher/view/view.cpp: In member function 'void view::LauncherView::handle_scroll_in_loop()':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_launcher/view/view.cpp:507:9: warning: unused variable 'center_set_start_x' [-Wunused-variable]
+  507 |     int center_set_start_x = _center_copy_index * set_width_px;
+      |         ^~~~~~~~~~~~~~~~~~
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_setup/workers/device.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_setup/workers/wifi.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_stopwatch/app_stopwatch.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_stopwatch/model/stopwatch.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_stopwatch/view/view.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_template/app_template.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_typhoon/app_typhoon.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_typhoon/typhoon_engine.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_typhoon/typhoon_port.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_typhoon/typhoon_view.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_vector_canyon_fighter/app_vector_canyon_fighter.cpp.obj
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_setup/workers/device.cpp: In member function 'void setup_workers::ButtonWorker::ButtonConfigView::createSwitchRow(int, const char*, bool, const std::function<void(bool)>&)':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_setup/workers/device.cpp:212:77: warning: bitwise operation between different enumeration types 'lv_part_t' and 'lv_state_t' is deprecated [-Wdeprecated-enum-enum-conversion]
+  212 |         switch_widget->setBgColor(lv_color_hex(0x53BD65), LV_PART_INDICATOR | LV_STATE_CHECKED);
+      |                                                           ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_setup/workers/device.cpp:213:65: warning: bitwise operation between different enumeration types 'lv_part_t' and 'lv_state_t' is deprecated [-Wdeprecated-enum-enum-conversion]
+  213 |         switch_widget->setBgOpa(LV_OPA_COVER, LV_PART_INDICATOR | LV_STATE_CHECKED);
+      |                                               ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_setup/workers/device.cpp:214:60: warning: bitwise operation between different enumeration types 'lv_part_t' and 'lv_state_t' is deprecated [-Wdeprecated-enum-enum-conversion]
+  214 |         switch_widget->setBorderWidth(0, LV_PART_INDICATOR | LV_STATE_CHECKED);
+      |                                          ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_vector_canyon_fighter/input/imu_button_input_provider.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_vector_canyon_fighter/vector_canyon_renderer.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_watch_face/app_watch_face.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_watch_face/view/big_number.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_watch_face/view/classic.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_watch_face/view/number_flow.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_watch_face/view/simple.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_watch_face/view/watch_face_manager.cpp.obj
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:2034:13: warning: 'void typhoon::imuPoll()' defined but not used [-Wunused-function]
+ 2034 | static void imuPoll() {
+      |             ^~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1733:13: warning: 'void typhoon::tmEval(float)' defined but not used [-Wunused-function]
+ 1733 | static void tmEval(float pos)
+      |             ^~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1438:13: warning: 'void typhoon::landfallLabel(char*, size_t)' defined but not used [-Wunused-function]
+ 1438 | static void landfallLabel(char* out, size_t n) {
+      |             ^~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1241:13: warning: 'void typhoon::enterWifiSetup(Page)' defined but not used [-Wunused-function]
+ 1241 | static void enterWifiSetup(Page ret) {
+      |             ^~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1219:13: warning: 'void typhoon::wifiDoScan()' defined but not used [-Wunused-function]
+ 1219 | static void wifiDoScan() {
+      |             ^~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1192:13: warning: 'void typhoon::wifiStartConnect(const char*, const char*)' defined but not used [-Wunused-function]
+ 1192 | static void wifiStartConnect(const char* ssid, const char* pass) {
+      |             ^~~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1186:13: warning: 'void typhoon::wifiClearCreds()' defined but not used [-Wunused-function]
+ 1186 | static void wifiClearCreds() {
+      |             ^~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1179:13: warning: 'void typhoon::wifiSaveCreds(const char*, const char*)' defined but not used [-Wunused-function]
+ 1179 | static void wifiSaveCreds(const char* ssid, const char* pass) {
+      |             ^~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:1019:13: warning: 'void typhoon::tryFetchTyphoonData()' defined but not used [-Wunused-function]
+ 1019 | static void tryFetchTyphoonData() { /* handled by DataService */ }
+      |             ^~~~~~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:984:13: warning: 'void typhoon::applyNmcStorms(const NmcStorm*, const NmcTrack*, uint8_t)' defined but not used [-Wunused-function]
+  984 | static void applyNmcStorms(const NmcStorm* src, const NmcTrack* tr, uint8_t n) {
+      |             ^~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:386:17: warning: 'uint32_t typhoon::getUnixTime()' defined but not used [-Wunused-function]
+  386 | static uint32_t getUnixTime() {
+      |                 ^~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:381:13: warning: 'void typhoon::drawStars(LGFX_Sprite*, uint32_t)' defined but not used [-Wunused-function]
+  381 | static void drawStars(LGFX_Sprite* s, uint32_t unixTime) {
+      |             ^~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:312:13: warning: 'void typhoon::wifiPassSet(const char*)' defined but not used [-Wunused-function]
+  312 | static void wifiPassSet(const char* pass) {
+      |             ^~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:306:13: warning: 'char typhoon::wifiPassStep(char, int)' defined but not used [-Wunused-function]
+  306 | static char wifiPassStep(char c, int dir) {
+      |             ^~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:295:17: warning: 'typhoon::wifi_scan_pending' defined but not used [-Wunused-variable]
+  295 | static bool     wifi_scan_pending = false;
+      |                 ^~~~~~~~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:287:17: warning: 'typhoon::wifi_return' defined but not used [-Wunused-variable]
+  287 | static Page     wifi_return = PAGE_MENU;
+      |                 ^~~~~~~~~~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/apps/app_typhoon/typhoon_engine.cpp:236:17: warning: 'typhoon::boot_start_ms' defined but not used [-Wunused-variable]
+  236 | static uint32_t boot_start_ms = 0;
+      |                 ^~~~~~~~~~~~~
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/common/arc_top_clock/arc_top_clock.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/common/audio/audio.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/common/key_manager/key_manager.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/common/network/wifi_service.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/common/status_bar/status_bar.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_alarm.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_audio.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_badge.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_button.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_display.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_fs.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_imu.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_ioe.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_pmic.cpp.obj
+[ 94%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hal/hal_rtc.cpp.obj
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp: In member function 'void AudioCodec::init(i2c_master_bus_handle_t)':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:49:9: warning: missing initializer for member 'audio_codec_i2s_cfg_t::port' [-Wmissing-field-initializers]
+   49 |         };
+      |         ^
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:49:9: warning: missing initializer for member 'audio_codec_i2s_cfg_t::clk_src' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:52:98: warning: missing initializer for member 'audio_codec_i2c_cfg_t::port' [-Wmissing-field-initializers]
+   52 |         audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR, .bus_handle = i2c_bus};
+      |                                                                                                  ^
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:64:9: warning: missing initializer for member 'es8311_codec_cfg_t::master_mode' [-Wmissing-field-initializers]
+   64 |         };
+      |         ^
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:64:9: warning: missing initializer for member 'es8311_codec_cfg_t::digital_mic' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:64:9: warning: missing initializer for member 'es8311_codec_cfg_t::invert_mclk' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:64:9: warning: missing initializer for member 'es8311_codec_cfg_t::invert_sclk' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:64:9: warning: missing initializer for member 'es8311_codec_cfg_t::hw_gain' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:64:9: warning: missing initializer for member 'es8311_codec_cfg_t::no_dac_ref' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:64:9: warning: missing initializer for member 'es8311_codec_cfg_t::mclk_div' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:80:9: warning: missing initializer for member 'esp_codec_dev_sample_info_t::channel_mask' [-Wmissing-field-initializers]
+   80 |         };
+      |         ^
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:80:9: warning: missing initializer for member 'esp_codec_dev_sample_info_t::mclk_multiple' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp: In member function 'void AudioCodec::_i2s_init()':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_audio.cpp:318:9: warning: missing initializer for member 'i2s_std_gpio_config_t::invert_flags' [-Wmissing-field-initializers]
+  318 |         };
+      |         ^
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_display.cpp: In function 'void lvgl_read_cb(lv_indev_t*, lv_indev_data_t*)':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_display.cpp:348:12: warning: unused variable 'gfx' [-Wunused-variable]
+  348 |     M5GFX &gfx = *(M5GFX *)lv_indev_get_driver_data(indev);
+      |            ^~~
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_display.cpp: In member function 'void Hal::lvgl_init()':
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_display.cpp:392:113: warning: missing initializer for member 'esp_timer_create_args_t::arg' [-Wmissing-field-initializers]
+  392 |     const esp_timer_create_args_t periodic_timer_args = {.callback = &lvgl_tick_timer, .name = "lvgl_tick_timer"};
+      |                                                                                                                 ^
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_display.cpp:392:113: warning: missing initializer for member 'esp_timer_create_args_t::dispatch_method' [-Wmissing-field-initializers]
+/Users/xudanyang/Documents/stopwatch/userdemo/main/hal/hal_display.cpp:392:113: warning: missing initializer for member 'esp_timer_create_args_t::skip_unhandled_events' [-Wmissing-field-initializers]
+[ 94%] Linking C static library libmain.a
+[100%] Built target __idf_main
+[100%] Generating esp-idf/esp_system/ld/sections.ld
+[100%] Built target __ldgen_output_sections.ld
+[100%] Linking CXX executable StopWatch-UserDemo.elf
+[100%] Built target StopWatch-UserDemo.elf
+[100%] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /Users/xudanyang/Documents/stopwatch/userdemo/build/StopWatch-UserDemo.bin
+[100%] Built target gen_project_binary
+StopWatch-UserDemo.bin binary size 0x4ba780 bytes. Smallest app partition is 0x4f0000 bytes. 0x35880 bytes (4%) free.
+Warning: The smallest app partition is nearly full (4% free space left)!
+[100%] Built target app_check_size
+[100%] Built target app
+
+Project build complete. To flash, run:
+ idf.py flash
+or
+ idf.py -p PORT flash
+or
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 80m 0x0 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0xd000 build/ota_data_initial.bin 0x20000 build/StopWatch-UserDemo.bin
+or from the "/Users/xudanyang/Documents/stopwatch/userdemo/build" directory
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args"

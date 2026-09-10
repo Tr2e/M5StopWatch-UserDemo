@@ -1,0 +1,741 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+Saved PC:0x403cd9a0
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xd24
+load:0x403cb700,len:0x2ef0
+entry 0x403c8924
+I (24) boot: ESP-IDF v5.5.4 2nd stage bootloader
+I (24) boot: compile time Aug 20 2026 22:56:47
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 16MB
+I (43) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (50) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00004000
+I (62) boot:  1 otadata          OTA data         01 00 0000d000 00002000
+I (69) boot:  2 phy_init         RF data          01 01 0000f000 00001000
+I (75) boot:  3 ota_0            OTA app          00 10 00020000 004f0000
+I (82) boot:  4 ota_1            OTA app          00 11 00510000 004f0000
+I (89) boot:  5 storage          Unknown data     01 81 00a00000 00400000
+I (95) boot:  6 coredump         Unknown data     01 03 00e00000 00010000
+I (102) boot: End of partition table
+I (105) esp_image: segment 0: paddr=00020020 vaddr=3c1d0020 size=2caeb4h (2928308) map
+I (628) esp_image: segment 1: paddr=002eaedc vaddr=3fc9e900 size=0513ch ( 20796) load
+I (633) esp_image: segment 2: paddr=002f0020 vaddr=42000020 size=1cda48h (1890888) map
+I (967) esp_image: segment 3: paddr=004bda70 vaddr=3fca3a3c size=00880h (  2176) load
+I (967) esp_image: segment 4: paddr=004be2f8 vaddr=40374000 size=1a87ch (108668) load
+I (994) esp_image: segment 5: paddr=004d8b7c vaddr=50000000 size=00020h (    32) load
+I (1005) boot: Loaded app from partition at offset 0x20000
+I (1005) boot: Disabling RNG early entropy source...
+I (1015) octal_psram: vendor id    : 0x0d (AP)
+I (1016) octal_psram: dev id       : 0x02 (generation 3)
+I (1016) octal_psram: density      : 0x03 (64 Mbit)
+I (1018) octal_psram: good-die     : 0x01 (Pass)
+I (1022) octal_psram: Latency      : 0x01 (Fixed)
+I (1027) octal_psram: VCC          : 0x01 (3V)
+I (1031) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (1036) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (1041) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (1045) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (1051) octal_psram: DriveStrength: 0x00 (1/1)
+I (1055) MSPI Timing: Enter psram timing tuning
+I (1060) esp_psram: Found 8MB PSRAM device
+I (1063) esp_psram: Speed: 80MHz
+I (1066) cpu_start: Multicore app
+I (1502) esp_psram: SPI SRAM memory test OK
+I (1510) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (1511) cpu_start: Pro cpu start user code
+I (1511) cpu_start: cpu freq: 240000000 Hz
+I (1513) app_init: Application information:
+I (1517) app_init: Project name:     StopWatch-UserDemo
+I (1522) app_init: App version:      V0.5-146-g7b9aaaa-dirty
+I (1527) app_init: Compile time:     Sep 10 2026 09:50:20
+I (1532) app_init: ELF file SHA256:  57e43cbae...
+I (1536) app_init: ESP-IDF:          v5.5.4
+I (1540) efuse_init: Min chip rev:     v0.0
+I (1544) efuse_init: Max chip rev:     v0.99 
+I (1548) efuse_init: Chip rev:         v0.2
+I (1552) heap_init: Initializing. RAM available for dynamic allocation:
+I (1559) heap_init: At 3FCADF68 len 0003B7A8 (237 KiB): RAM
+I (1564) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (1569) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (1574) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (1580) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (1587) spi_flash: detected chip: generic
+I (1590) spi_flash: flash io: dio
+I (1594) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (1600) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (1607) main_task: Started on CPU0
+I (1610) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1618) main_task: Calling app_main()
+[1789026267610] [[32minfo[0m] [HAL] creating hal instance
+[1789026267616] [[32minfo[0m] [HAL] init
+[1789026267628] [[32minfo[0m] [HAL] i2c init
+E (1640) i2c.master: this port has not been initialized, please initialize it first
+I (1643) i2c_bus: i2c0 bus inited
+I (1645) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+I (1653) i2c_bus: found i2c device address = 0x15
+I (1655) i2c_bus: found i2c device address = 0x18
+I (1663) i2c_bus: found i2c device address = 0x32
+I (1668) i2c_bus: found i2c device address = 0x4f
+I (1671) i2c_bus: found i2c device address = 0x68
+I (1673) i2c_bus: found i2c device address = 0x6e
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- 15 -- -- 18 -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- 32 -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 4f 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- 6e -- 
+70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+[1789026267709] [[32minfo[0m] [HAL-PMIC] pmic init
+I (1738) M5PM1_SYS: Device: ID=0x50 MODEL=0x20 HW=0x05 SW=0x53(S)
+I (1741) M5PM1_I2C: I2C config set and verified: sleep=0, speed=100K
+I (1766) M5PM1_I2C: M5PM1 initialized at address 0x6E (I2C: 100000 Hz)
+I (1769) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1771) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1775) M5PM1_SYS: Watchdog set to 0 sec
+I (1779) M5PM1_PWR: Charge Enabled
+I (1863) M5PM1_SYS: Single Reset: Disabled
+[1789026267856] [[32minfo[0m] [HAL-PMIC] start bat reading task
+[1789026267856] [[32minfo[0m] [HAL-IOE] init
+I (1869) M5IOE1_I2C: Initializing M5IOE1 with 100KHz (device default)
+I (1885) M5IOE1_SYS: Device UID: 0x2BF0, FW Version: 57
+I (1886) M5IOE1_I2C: Current I2C speed matches user request (400K)
+I (1887) M5IOE1_I2C: I2C config set and verified: sleep=0, speed=400K, wake=falling, pull=on
+I (1904) M5IOE1_I2C: M5IOE1 initialized at address 0x4F (I2C: 400000 Hz)
+I (1905) M5IOE1_IRQ: Interrupt mode -> POLLING (pause if I2C sleep on; resume when off)
+[1789026267897] [[32minfo[0m] [HAL-IOE] init success, addr: 0x4F
+I (1915) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1920) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1938) M5IOE1_GPIO: Pin 8 mode set and verified: OUTPUT (0x03)
+I (1952) M5IOE1_GPIO: Pin 7 mode set and verified: OUTPUT (0x03)
+I (1966) M5IOE1_GPIO: Pin 9 mode set and verified: OUTPUT (0x03)
+I (1979) M5IOE1_GPIO: Pin 3 mode set and verified: OUTPUT (0x03)
+I (1992) M5IOE1_GPIO: Pin 4 mode set and verified: OUTPUT (0x03)
+I (2005) M5IOE1_GPIO: Pin 0 mode set and verified: OUTPUT (0x03)
+I (2018) M5IOE1_GPIO: Pin 2 mode set and verified: OUTPUT (0x03)
+I (2021) M5IOE1_GPIO: Pin 7 digital write and verified: 1
+I (2023) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (2025) M5IOE1_GPIO: Pin 9 digital write and verified: 0
+I (2031) M5IOE1_GPIO: Pin 4 digital write and verified: 1
+I (2036) M5IOE1_GPIO: Pin 0 digital write and verified: 0
+I (2041) M5IOE1_GPIO: Pin 2 digital write and verified: 1
+I (2049) M5IOE1_PWM: PWM frequency set and verified: 5000 Hz
+[1789026268039] [[32minfo[0m] [HAL-IOE] start vibrator task
+I (2066) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1789026268174] [[32minfo[0m] [HAL-Display] display init
+[1789026268409] [[32minfo[0m] [HAL-Display] create full screen canvas
+[1789026268422] [[32minfo[0m] [HAL-Display] brightness loaded from settings: 40
+[1789026268423] [[32minfo[0m] [HAL-Display] touchpad init
+[1789026268424] [[32minfo[0m] [HAL-IOE] touchpad reset
+I (2443) M5IOE1_GPIO: Pin 3 digital write and verified: 0
+I (2456) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (2508) CST820: Chip ID: 0xb7, Soft Ver: 0x02
+[1789026268497] [[32minfo[0m] [HAL-Display] lvgl init
+[1789026268505] [[32minfo[0m] [HAL-Audio] init
+[1789026268508] [[32minfo[0m] [HAL-Audio] start audio play task
+[1789026268509] [[32minfo[0m] [HAL-Audio] i2s init
+I (2531) ES8311: Work in Slave mode
+I (2537) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2538) I2S_IF: STD Mode 1 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2539) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2544) I2S_IF: STD Mode 0 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2570) Adev_Codec: Open codec device OK
+[1789026268559] [[32minfo[0m] [HAL-IOE] set speaker enable
+I (2574) M5IOE1_GPIO: Pin 9 digital write and verified: 1
+[1789026268573] [[32minfo[0m] [HAL-Audio] volume loaded from settings: 0
+[1789026268575] [[32minfo[0m] [HAL-Audio] set speaker volume to 0
+[1789026268577] [[32minfo[0m] [HAL-IMU] init
+[1789026269633] [[32minfo[0m] [HAL-RTC] init
+[1789026269635] [[32minfo[0m] [HAL-RTC] load timezone from nvs: UTC-8
+[1789026269000] [[32minfo[0m] [HAL-RTC] rtc synced to system (UTC): 2026-09-10 07:44:29
+[1789026269002] [[32minfo[0m] [HAL-BTN] init
+[1789026269007] [[32minfo[0m] [HAL-BTN] config loaded from settings: sfx=true, vibrate=true
+[1789026269015] [[32minfo[0m] [HAL-FS] init
+I (3668) wear_levelling: Mounting FAT filesystem
+I (3674) wear_levelling: Done
+I (3675) WifiManager: Initializing...
+I (3680) pp: pp rom version: e7ae62f
+I (3682) net80211: net80211 rom version: e7ae62f
+I (3687) wifi:wifi driver task: 3fccc774, prio:23, stack:6656, core=0
+I (3693) wifi:wifi firmware version: 0947e8b
+I (3696) wifi:wifi certification version: v7.0
+I (3700) wifi:config NVS flash: disabled
+I (3704) wifi:config nano formatting: disabled
+I (3708) wifi:Init data frame dynamic rx buffer num: 32
+I (3713) wifi:Init static rx mgmt buffer num: 5
+I (3717) wifi:Init management short buffer num: 32
+I (3722) wifi:Init dynamic tx buffer num: 32
+I (3726) wifi:Init static tx FG buffer num: 2
+I (3730) wifi:Init static rx buffer size: 1600
+I (3734) wifi:Init static rx buffer num: 10
+I (3738) wifi:Init dynamic rx buffer num: 32
+I (3743) wifi_init: rx ba win: 6
+I (3745) wifi_init: accept mbox: 6
+I (3748) wifi_init: tcpip mbox: 32
+I (3751) wifi_init: udp mbox: 6
+I (3754) wifi_init: tcp mbox: 6
+I (3757) wifi_init: tcp tx win: 5760
+I (3760) wifi_init: tcp rx win: 5760
+I (3764) wifi_init: tcp mss: 1440
+I (3767) wifi_init: WiFi IRAM OP enabled
+I (3770) wifi_init: WiFi RX IRAM OP enabled
+I (3775) WifiManager: Initialized
+[1789026269172] [[32minfo[0m] [RacerMemory] scene=234x233 requested_half=true
+[1789026269204] [[32minfo[0m] [RacerMemory] track_rows_internal=true car_planes_internal=2 occlusion_rows_internal=true free_internal=97275 largest_internal=31744
+[1789026269207] [[32minfo[0m] [SelectionAB] BEGIN
+[1789026269383] [[32minfo[0m] [GarageStage] panels=1192 vertices=0 scale_pct=100 clear_us=5879 shadow_us=4056 project_us=4 raster_us=118974 blit_us=16351
+[1789026270341] [[32minfo[0m] [SelectionAB] car=0 frame=1 mode=0 percent=100 draw=110130 present=31547
+[1789026270342] [[32minfo[0m] [SelectionAB] car=0 frame=1 mode=1 percent=100 draw=107106 present=23269
+[1789026270349] [[32minfo[0m] [SelectionAB] car=0 frame=1 mode=2 percent=65 draw=82972 present=23288
+[1789026270767] [[32minfo[0m] [SelectionAB] car=0 frame=2 mode=0 percent=100 draw=92922 present=31569
+[1789026270768] [[32minfo[0m] [SelectionAB] car=0 frame=2 mode=1 percent=100 draw=90369 present=23313
+[1789026270775] [[32minfo[0m] [SelectionAB] car=0 frame=2 mode=2 percent=65 draw=74408 present=23290
+[1789026271231] [[32minfo[0m] [SelectionAB] car=0 frame=3 mode=0 percent=100 draw=107735 present=31596
+[1789026271232] [[32minfo[0m] [SelectionAB] car=0 frame=3 mode=1 percent=100 draw=105456 present=23271
+[1789026271239] [[32minfo[0m] [SelectionAB] car=0 frame=3 mode=2 percent=65 draw=81905 present=23281
+[1789026271469] [[32minfo[0m] [GarageStage] panels=1192 vertices=1553 scale_pct=65 clear_us=2175 shadow_us=2115 project_us=827 raster_us=35873 blit_us=21322
+[1789026271677] [[32minfo[0m] [SelectionAB] car=0 frame=4 mode=0 percent=100 draw=99116 present=31572
+[1789026271678] [[32minfo[0m] [SelectionAB] car=0 frame=4 mode=1 percent=100 draw=96763 present=23280
+[1789026271685] [[32minfo[0m] [SelectionAB] car=0 frame=4 mode=2 percent=65 draw=81197 present=23294
+[1789026272156] [[32minfo[0m] [SelectionAB] car=0 frame=5 mode=0 percent=100 draw=113852 present=31557
+[1789026272157] [[32minfo[0m] [SelectionAB] car=0 frame=5 mode=1 percent=100 draw=111680 present=23287
+[1789026272164] [[32minfo[0m] [SelectionAB] car=0 frame=5 mode=2 percent=65 draw=85288 present=23310
+[1789026272654] [[32minfo[0m] [SelectionAB] car=0 frame=6 mode=0 percent=100 draw=114885 present=31551
+[1789026272655] [[32minfo[0m] [SelectionAB] car=0 frame=6 mode=1 percent=100 draw=111395 present=23300
+[1789026272662] [[32minfo[0m] [SelectionAB] car=0 frame=6 mode=2 percent=85 draw=103328 present=23283
+[1789026273126] [[32minfo[0m] [SelectionAB] car=0 frame=7 mode=0 percent=100 draw=104719 present=31564
+[1789026273127] [[32minfo[0m] [SelectionAB] car=0 frame=7 mode=1 percent=100 draw=102196 present=23277
+[1789026273134] [[32minfo[0m] [SelectionAB] car=0 frame=7 mode=2 percent=85 draw=96372 present=23293
+[1789026273553] [[32minfo[0m] [GarageStage] panels=1192 vertices=1553 scale_pct=100 clear_us=5545 shadow_us=2895 project_us=833 raster_us=64291 blit_us=15117
+[1789026273606] [[32minfo[0m] [SelectionAB] car=0 frame=8 mode=0 percent=100 draw=106440 present=31593
+[1789026273607] [[32minfo[0m] [SelectionAB] car=0 frame=8 mode=1 percent=100 draw=107620 present=23349
+[1789026273614] [[32minfo[0m] [SelectionAB] car=0 frame=8 mode=2 percent=85 draw=98219 present=23335
+[1789026274184] [[32minfo[0m] [SelectionAB] car=0 frame=9 mode=0 percent=100 draw=142715 present=31584
+[1789026274185] [[32minfo[0m] [SelectionAB] car=0 frame=9 mode=1 percent=100 draw=140026 present=23310
+[1789026274192] [[32minfo[0m] [SelectionAB] car=0 frame=9 mode=2 percent=85 draw=126203 present=23278
+[1789026274833] [[32minfo[0m] [SelectionAB] car=0 frame=10 mode=0 percent=100 draw=161568 present=31563
+[1789026274834] [[32minfo[0m] [SelectionAB] car=0 frame=10 mode=1 percent=100 draw=159837 present=23311
+[1789026274842] [[32minfo[0m] [SelectionAB] car=0 frame=10 mode=2 percent=100 draw=159140 present=23302
+[1789026275464] [[32minfo[0m] [SelectionAB] car=0 frame=11 mode=0 percent=100 draw=161627 present=32051
+[1789026275465] [[32minfo[0m] [SelectionAB] car=0 frame=11 mode=1 percent=100 draw=159206 present=23283
+[1789026275473] [[32minfo[0m] [SelectionAB] car=0 frame=11 mode=2 percent=85 draw=140138 present=23331
+[1789026275609] [[32minfo[0m] [GarageStage] panels=1192 vertices=0 scale_pct=100 clear_us=5859 shadow_us=2890 project_us=5 raster_us=89029 blit_us=15411
+[1789026276009] [[32minfo[0m] [SelectionAB] car=0 frame=12 mode=0 percent=100 draw=132952 present=31583
+[1789026276010] [[32minfo[0m] [SelectionAB] car=0 frame=12 mode=1 percent=100 draw=127032 present=23292
+[1789026276018] [[32minfo[0m] [SelectionAB] car=0 frame=12 mode=2 percent=85 draw=115204 present=23313
+[1789026276500] [[32minfo[0m] [SelectionAB] car=0 frame=13 mode=0 percent=100 draw=111431 present=31562
+[1789026276501] [[32minfo[0m] [SelectionAB] car=0 frame=13 mode=1 percent=100 draw=109307 present=23272
+[1789026276509] [[32minfo[0m] [SelectionAB] car=0 frame=13 mode=2 percent=85 draw=101845 present=23288
+[1789026276991] [[32minfo[0m] [SelectionAB] car=0 frame=14 mode=0 percent=100 draw=111361 present=31554
+[1789026276992] [[32minfo[0m] [SelectionAB] car=0 frame=14 mode=1 percent=100 draw=108837 present=23323
+[1789026277000] [[32minfo[0m] [SelectionAB] car=0 frame=14 mode=2 percent=85 draw=101828 present=23278
+[1789026277513] [[32minfo[0m] [SelectionAB] car=0 frame=15 mode=0 percent=100 draw=119534 present=31570
+[1789026277514] [[32minfo[0m] [SelectionAB] car=0 frame=15 mode=1 percent=100 draw=117483 present=23314
+[1789026277522] [[32minfo[0m] [SelectionAB] car=0 frame=15 mode=2 percent=100 draw=116682 present=23299
+[1789026277646] [[32minfo[0m] [GarageStage] panels=1192 vertices=1553 scale_pct=100 clear_us=5552 shadow_us=1509 project_us=797 raster_us=78845 blit_us=14877
+[1789026278039] [[32minfo[0m] [SelectionAB] car=0 frame=16 mode=0 percent=100 draw=119088 present=31594
+[1789026278040] [[32minfo[0m] [SelectionAB] car=0 frame=16 mode=1 percent=100 draw=120511 present=23383
+[1789026278048] [[32minfo[0m] [SelectionAB] car=0 frame=16 mode=2 percent=100 draw=116685 present=23286
+[1789026278561] [[32minfo[0m] [SelectionAB] car=0 frame=17 mode=0 percent=100 draw=119776 present=31565
+[1789026278562] [[32minfo[0m] [SelectionAB] car=0 frame=17 mode=1 percent=100 draw=116652 present=23264
+[1789026278570] [[32minfo[0m] [SelectionAB] car=0 frame=17 mode=2 percent=100 draw=116819 present=23271
+[1789026279083] [[32minfo[0m] [SelectionAB] car=0 frame=18 mode=0 percent=100 draw=119299 present=31565
+[1789026279084] [[32minfo[0m] [SelectionAB] car=0 frame=18 mode=1 percent=100 draw=116592 present=23314
+[1789026279092] [[32minfo[0m] [SelectionAB] car=0 frame=18 mode=2 percent=100 draw=116901 present=23292
+[1789026279605] [[32minfo[0m] [SelectionAB] car=0 frame=19 mode=0 percent=100 draw=119083 present=31553
+[1789026279606] [[32minfo[0m] [SelectionAB] car=0 frame=19 mode=1 percent=100 draw=116759 present=23797
+[1789026279614] [[32minfo[0m] [SelectionAB] car=0 frame=19 mode=2 percent=100 draw=116755 present=23342
+[1789026279623] [[32minfo[0m] [SelectionAB] GROUP car=0 native_checks=27 mismatches=0
+[1789026279803] [[32minfo[0m] [GarageStage] panels=1225 vertices=0 scale_pct=100 clear_us=5867 shadow_us=4080 project_us=5 raster_us=121157 blit_us=16294
+[1789026280769] [[32minfo[0m] [SelectionAB] car=1 frame=1 mode=0 percent=100 draw=110835 present=31558
+[1789026280770] [[32minfo[0m] [SelectionAB] car=1 frame=1 mode=1 percent=100 draw=108449 present=23263
+[1789026280777] [[32minfo[0m] [SelectionAB] car=1 frame=1 mode=2 percent=65 draw=83757 present=23258
+[1789026281201] [[32minfo[0m] [SelectionAB] car=1 frame=2 mode=0 percent=100 draw=94857 present=31770
+[1789026281202] [[32minfo[0m] [SelectionAB] car=1 frame=2 mode=1 percent=100 draw=92495 present=23258
+[1789026281209] [[32minfo[0m] [SelectionAB] car=1 frame=2 mode=2 percent=65 draw=75540 present=23339
+[1789026281668] [[32minfo[0m] [SelectionAB] car=1 frame=3 mode=0 percent=100 draw=109723 present=31519
+[1789026281669] [[32minfo[0m] [SelectionAB] car=1 frame=3 mode=1 percent=100 draw=106499 present=23308
+[1789026281676] [[32minfo[0m] [SelectionAB] car=1 frame=3 mode=2 percent=65 draw=82817 present=23307
+[1789026281907] [[32minfo[0m] [GarageStage] panels=1225 vertices=1594 scale_pct=65 clear_us=2180 shadow_us=2142 project_us=846 raster_us=36530 blit_us=21320
+[1789026282117] [[32minfo[0m] [SelectionAB] car=1 frame=4 mode=0 percent=100 draw=100529 present=31543
+[1789026282118] [[32minfo[0m] [SelectionAB] car=1 frame=4 mode=1 percent=100 draw=97903 present=23339
+[1789026282125] [[32minfo[0m] [SelectionAB] car=1 frame=4 mode=2 percent=65 draw=81872 present=23344
+[1789026282600] [[32minfo[0m] [SelectionAB] car=1 frame=5 mode=0 percent=100 draw=115156 present=31536
+[1789026282601] [[32minfo[0m] [SelectionAB] car=1 frame=5 mode=1 percent=100 draw=112530 present=23290
+[1789026282608] [[32minfo[0m] [SelectionAB] car=1 frame=5 mode=2 percent=65 draw=85924 present=23816
+[1789026283100] [[32minfo[0m] [SelectionAB] car=1 frame=6 mode=0 percent=100 draw=115111 present=31580
+[1789026283101] [[32minfo[0m] [SelectionAB] car=1 frame=6 mode=1 percent=100 draw=112507 present=23301
+[1789026283108] [[32minfo[0m] [SelectionAB] car=1 frame=6 mode=2 percent=85 draw=104644 present=23279
+[1789026283575] [[32minfo[0m] [SelectionAB] car=1 frame=7 mode=0 percent=100 draw=105502 present=31575
+[1789026283576] [[32minfo[0m] [SelectionAB] car=1 frame=7 mode=1 percent=100 draw=103252 present=23800
+[1789026283583] [[32minfo[0m] [SelectionAB] car=1 frame=7 mode=2 percent=85 draw=97385 present=23290
+[1789026284007] [[32minfo[0m] [GarageStage] panels=1225 vertices=1594 scale_pct=100 clear_us=5555 shadow_us=2982 project_us=823 raster_us=66499 blit_us=15059
+[1789026284061] [[32minfo[0m] [SelectionAB] car=1 frame=8 mode=0 percent=100 draw=108535 present=31547
+[1789026284062] [[32minfo[0m] [SelectionAB] car=1 frame=8 mode=1 percent=100 draw=109827 present=23569
+[1789026284069] [[32minfo[0m] [SelectionAB] car=1 frame=8 mode=2 percent=85 draw=99430 present=23321
+[1789026284644] [[32minfo[0m] [SelectionAB] car=1 frame=9 mode=0 percent=100 draw=144697 present=32105
+[1789026284645] [[32minfo[0m] [SelectionAB] car=1 frame=9 mode=1 percent=100 draw=142235 present=23292
+[1789026284652] [[32minfo[0m] [SelectionAB] car=1 frame=9 mode=2 percent=85 draw=126826 present=23302
+[1789026285300] [[32minfo[0m] [SelectionAB] car=1 frame=10 mode=0 percent=100 draw=164278 present=31565
+[1789026285301] [[32minfo[0m] [SelectionAB] car=1 frame=10 mode=1 percent=100 draw=161401 present=23316
+[1789026285309] [[32minfo[0m] [SelectionAB] car=1 frame=10 mode=2 percent=100 draw=161504 present=23313
+[1789026285936] [[32minfo[0m] [SelectionAB] car=1 frame=11 mode=0 percent=100 draw=163623 present=31562
+[1789026285937] [[32minfo[0m] [SelectionAB] car=1 frame=11 mode=1 percent=100 draw=161213 present=23278
+[1789026285945] [[32minfo[0m] [SelectionAB] car=1 frame=11 mode=2 percent=85 draw=141725 present=23287
+[1789026286083] [[32minfo[0m] [GarageStage] panels=1225 vertices=0 scale_pct=100 clear_us=5915 shadow_us=2813 project_us=5 raster_us=90195 blit_us=15364
+[1789026286484] [[32minfo[0m] [SelectionAB] car=1 frame=12 mode=0 percent=100 draw=133953 present=31592
+[1789026286485] [[32minfo[0m] [SelectionAB] car=1 frame=12 mode=1 percent=100 draw=128426 present=23319
+[1789026286493] [[32minfo[0m] [SelectionAB] car=1 frame=12 mode=2 percent=85 draw=115924 present=23283
+[1789026286974] [[32minfo[0m] [SelectionAB] car=1 frame=13 mode=0 percent=100 draw=110645 present=31560
+[1789026286975] [[32minfo[0m] [SelectionAB] car=1 frame=13 mode=1 percent=100 draw=108370 present=23309
+[1789026286983] [[32minfo[0m] [SelectionAB] car=1 frame=13 mode=2 percent=85 draw=100930 present=23285
+[1789026287461] [[32minfo[0m] [SelectionAB] car=1 frame=14 mode=0 percent=100 draw=109795 present=31924
+[1789026287462] [[32minfo[0m] [SelectionAB] car=1 frame=14 mode=1 percent=100 draw=106867 present=23298
+[1789026287470] [[32minfo[0m] [SelectionAB] car=1 frame=14 mode=2 percent=85 draw=100550 present=23301
+[1789026287973] [[32minfo[0m] [SelectionAB] car=1 frame=15 mode=0 percent=100 draw=116071 present=31544
+[1789026287974] [[32minfo[0m] [SelectionAB] car=1 frame=15 mode=1 percent=100 draw=113474 present=23286
+[1789026287982] [[32minfo[0m] [SelectionAB] car=1 frame=15 mode=2 percent=100 draw=113480 present=23284
+[1789026288103] [[32minfo[0m] [GarageStage] panels=1225 vertices=1594 scale_pct=100 clear_us=5567 shadow_us=1481 project_us=836 raster_us=75909 blit_us=14815
+[1789026288490] [[32minfo[0m] [SelectionAB] car=1 frame=16 mode=0 percent=100 draw=115935 present=31541
+[1789026288491] [[32minfo[0m] [SelectionAB] car=1 frame=16 mode=1 percent=100 draw=117637 present=23308
+[1789026288499] [[32minfo[0m] [SelectionAB] car=1 frame=16 mode=2 percent=100 draw=114069 present=23323
+[1789026289002] [[32minfo[0m] [SelectionAB] car=1 frame=17 mode=0 percent=100 draw=115899 present=31552
+[1789026289003] [[32minfo[0m] [SelectionAB] car=1 frame=17 mode=1 percent=100 draw=113463 present=23297
+[1789026289011] [[32minfo[0m] [SelectionAB] car=1 frame=17 mode=2 percent=100 draw=113580 present=23321
+[1789026289515] [[32minfo[0m] [SelectionAB] car=1 frame=18 mode=0 percent=100 draw=116343 present=31558
+[1789026289516] [[32minfo[0m] [SelectionAB] car=1 frame=18 mode=1 percent=100 draw=114060 present=23259
+[1789026289524] [[32minfo[0m] [SelectionAB] car=1 frame=18 mode=2 percent=100 draw=113493 present=23280
+[1789026290027] [[32minfo[0m] [SelectionAB] car=1 frame=19 mode=0 percent=100 draw=115833 present=31557
+[1789026290028] [[32minfo[0m] [SelectionAB] car=1 frame=19 mode=1 percent=100 draw=113589 present=23282
+[1789026290036] [[32minfo[0m] [SelectionAB] car=1 frame=19 mode=2 percent=100 draw=113426 present=23285
+[1789026290045] [[32minfo[0m] [SelectionAB] GROUP car=1 native_checks=54 mismatches=0
+[1789026290237] [[32minfo[0m] [GarageStage] panels=1171 vertices=0 scale_pct=100 clear_us=5881 shadow_us=4293 project_us=4 raster_us=133573 blit_us=16657
+[1789026291250] [[32minfo[0m] [SelectionAB] car=2 frame=1 mode=0 percent=100 draw=119597 present=31558
+[1789026291251] [[32minfo[0m] [SelectionAB] car=2 frame=1 mode=1 percent=100 draw=116753 present=23336
+[1789026291258] [[32minfo[0m] [SelectionAB] car=2 frame=1 mode=2 percent=65 draw=86963 present=23529
+[1789026291689] [[32minfo[0m] [SelectionAB] car=2 frame=2 mode=0 percent=100 draw=98466 present=31585
+[1789026291690] [[32minfo[0m] [SelectionAB] car=2 frame=2 mode=1 percent=100 draw=95756 present=23348
+[1789026291697] [[32minfo[0m] [SelectionAB] car=2 frame=2 mode=2 percent=65 draw=76966 present=23315
+[1789026292175] [[32minfo[0m] [SelectionAB] car=2 frame=3 mode=0 percent=100 draw=117069 present=31616
+[1789026292176] [[32minfo[0m] [SelectionAB] car=2 frame=3 mode=1 percent=100 draw=114186 present=23319
+[1789026292183] [[32minfo[0m] [SelectionAB] car=2 frame=3 mode=2 percent=65 draw=85927 present=23309
+[1789026292294] [[32minfo[0m] [GarageStage] panels=1171 vertices=1409 scale_pct=100 clear_us=5568 shadow_us=2233 project_us=767 raster_us=64726 blit_us=14804
+[1789026292636] [[32minfo[0m] [SelectionAB] car=2 frame=4 mode=0 percent=100 draw=105130 present=31583
+[1789026292637] [[32minfo[0m] [SelectionAB] car=2 frame=4 mode=1 percent=100 draw=107135 present=23366
+[1789026292644] [[32minfo[0m] [SelectionAB] car=2 frame=4 mode=2 percent=65 draw=80330 present=23321
+[1789026293138] [[32minfo[0m] [SelectionAB] car=2 frame=5 mode=0 percent=100 draw=122692 present=31551
+[1789026293139] [[32minfo[0m] [SelectionAB] car=2 frame=5 mode=1 percent=100 draw=120253 present=23356
+[1789026293146] [[32minfo[0m] [SelectionAB] car=2 frame=5 mode=2 percent=65 draw=89453 present=23338
+[1789026293661] [[32minfo[0m] [SelectionAB] car=2 frame=6 mode=0 percent=100 draw=123352 present=31553
+[1789026293662] [[32minfo[0m] [SelectionAB] car=2 frame=6 mode=1 percent=100 draw=119973 present=23302
+[1789026293669] [[32minfo[0m] [SelectionAB] car=2 frame=6 mode=2 percent=85 draw=110160 present=23309
+[1789026294155] [[32minfo[0m] [SelectionAB] car=2 frame=7 mode=0 percent=100 draw=112850 present=31580
+[1789026294156] [[32minfo[0m] [SelectionAB] car=2 frame=7 mode=1 percent=100 draw=110092 present=23304
+[1789026294163] [[32minfo[0m] [SelectionAB] car=2 frame=7 mode=2 percent=85 draw=102170 present=23304
+[1789026294438] [[32minfo[0m] [GarageStage] panels=1171 vertices=0 scale_pct=100 clear_us=5906 shadow_us=3055 project_us=5 raster_us=74359 blit_us=15314
+[1789026294659] [[32minfo[0m] [SelectionAB] car=2 frame=8 mode=0 percent=100 draw=118525 present=31593
+[1789026294660] [[32minfo[0m] [SelectionAB] car=2 frame=8 mode=1 percent=100 draw=112464 present=23333
+[1789026294667] [[32minfo[0m] [SelectionAB] car=2 frame=8 mode=2 percent=85 draw=104566 present=23288
+[1789026295272] [[32minfo[0m] [SelectionAB] car=2 frame=9 mode=0 percent=100 draw=155723 present=31612
+[1789026295273] [[32minfo[0m] [SelectionAB] car=2 frame=9 mode=1 percent=100 draw=153131 present=23338
+[1789026295280] [[32minfo[0m] [SelectionAB] car=2 frame=9 mode=2 percent=85 draw=134907 present=23312
+[1789026295967] [[32minfo[0m] [SelectionAB] car=2 frame=10 mode=0 percent=100 draw=176818 present=31591
+[1789026295968] [[32minfo[0m] [SelectionAB] car=2 frame=10 mode=1 percent=100 draw=174447 present=23307
+[1789026295976] [[32minfo[0m] [SelectionAB] car=2 frame=10 mode=2 percent=100 draw=174208 present=23292
+[1789026296589] [[32minfo[0m] [GarageStage] panels=1171 vertices=1409 scale_pct=100 clear_us=5624 shadow_us=4212 project_us=730 raster_us=131896 blit_us=16627
+[1789026296643] [[32minfo[0m] [SelectionAB] car=2 frame=11 mode=0 percent=100 draw=177419 present=31584
+[1789026296644] [[32minfo[0m] [SelectionAB] car=2 frame=11 mode=1 percent=100 draw=178055 present=23326
+[1789026296651] [[32minfo[0m] [SelectionAB] car=2 frame=11 mode=2 percent=85 draw=151454 present=23319
+[1789026297210] [[32minfo[0m] [SelectionAB] car=2 frame=12 mode=0 percent=100 draw=139383 present=31580
+[1789026297211] [[32minfo[0m] [SelectionAB] car=2 frame=12 mode=1 percent=100 draw=136491 present=23328
+[1789026297219] [[32minfo[0m] [SelectionAB] car=2 frame=12 mode=2 percent=85 draw=122601 present=23332
+[1789026297718] [[32minfo[0m] [SelectionAB] car=2 frame=13 mode=0 percent=100 draw=117510 present=31613
+[1789026297719] [[32minfo[0m] [SelectionAB] car=2 frame=13 mode=1 percent=100 draw=115806 present=23286
+[1789026297727] [[32minfo[0m] [SelectionAB] car=2 frame=13 mode=2 percent=85 draw=106018 present=23291
+[1789026298227] [[32minfo[0m] [SelectionAB] car=2 frame=14 mode=0 percent=100 draw=117721 present=31807
+[1789026298228] [[32minfo[0m] [SelectionAB] car=2 frame=14 mode=1 percent=100 draw=115014 present=23320
+[1789026298236] [[32minfo[0m] [SelectionAB] car=2 frame=14 mode=2 percent=85 draw=106451 present=23348
+[1789026298718] [[32minfo[0m] [GarageStage] panels=1171 vertices=1409 scale_pct=100 clear_us=5615 shadow_us=1520 project_us=725 raster_us=84921 blit_us=14892
+[1789026298771] [[32minfo[0m] [SelectionAB] car=2 frame=15 mode=0 percent=100 draw=126221 present=31604
+[1789026298772] [[32minfo[0m] [SelectionAB] car=2 frame=15 mode=1 percent=100 draw=122746 present=23329
+[1789026298779] [[32minfo[0m] [SelectionAB] car=2 frame=15 mode=2 percent=100 draw=126566 present=23303
+[1789026299312] [[32minfo[0m] [SelectionAB] car=2 frame=16 mode=0 percent=100 draw=126011 present=31632
+[1789026299313] [[32minfo[0m] [SelectionAB] car=2 frame=16 mode=1 percent=100 draw=122970 present=23330
+[1789026299321] [[32minfo[0m] [SelectionAB] car=2 frame=16 mode=2 percent=100 draw=123025 present=23324
+[1789026299852] [[32minfo[0m] [SelectionAB] car=2 frame=17 mode=0 percent=100 draw=125461 present=31596
+[1789026299853] [[32minfo[0m] [SelectionAB] car=2 frame=17 mode=1 percent=100 draw=122770 present=23308
+[1789026299861] [[32minfo[0m] [SelectionAB] car=2 frame=17 mode=2 percent=100 draw=122961 present=23337
+[1789026300394] [[32minfo[0m] [SelectionAB] car=2 frame=18 mode=0 percent=100 draw=125663 present=31578
+[1789026300395] [[32minfo[0m] [SelectionAB] car=2 frame=18 mode=1 percent=100 draw=122895 present=23307
+[1789026300403] [[32minfo[0m] [SelectionAB] car=2 frame=18 mode=2 percent=100 draw=123339 present=23303
+[1789026300876] [[32minfo[0m] [GarageStage] panels=1171 vertices=0 scale_pct=100 clear_us=5874 shadow_us=1618 project_us=4 raster_us=86615 blit_us=14898
+[1789026300938] [[32minfo[0m] [SelectionAB] car=2 frame=19 mode=0 percent=100 draw=128792 present=31626
+[1789026300939] [[32minfo[0m] [SelectionAB] car=2 frame=19 mode=1 percent=100 draw=122991 present=23309
+[1789026300946] [[32minfo[0m] [SelectionAB] car=2 frame=19 mode=2 percent=100 draw=122766 present=23296
+[1789026300956] [[32minfo[0m] [SelectionAB] GROUP car=2 native_checks=81 mismatches=0
+[1789026302219] [[32minfo[0m] [SelectionAB] car=3 frame=1 mode=0 percent=100 draw=126437 present=31573
+[1789026302220] [[32minfo[0m] [SelectionAB] car=3 frame=1 mode=1 percent=100 draw=124158 present=23302
+[1789026302227] [[32minfo[0m] [SelectionAB] car=3 frame=1 mode=2 percent=65 draw=93898 present=23308
+[1789026302673] [[32minfo[0m] [SelectionAB] car=3 frame=2 mode=0 percent=100 draw=102685 present=31544
+[1789026302674] [[32minfo[0m] [SelectionAB] car=3 frame=2 mode=1 percent=100 draw=100390 present=23295
+[1789026302681] [[32minfo[0m] [SelectionAB] car=3 frame=2 mode=2 percent=65 draw=81805 present=23293
+[1789026302989] [[32minfo[0m] [GarageStage] panels=1361 vertices=1906 scale_pct=100 clear_us=5566 shadow_us=2987 project_us=981 raster_us=80749 blit_us=15122
+[1789026303183] [[32minfo[0m] [SelectionAB] car=3 frame=3 mode=0 percent=100 draw=123431 present=31554
+[1789026303184] [[32minfo[0m] [SelectionAB] car=3 frame=3 mode=1 percent=100 draw=124791 present=23296
+[1789026303191] [[32minfo[0m] [SelectionAB] car=3 frame=3 mode=2 percent=65 draw=92082 present=23295
+[1789026303666] [[32minfo[0m] [SelectionAB] car=3 frame=4 mode=0 percent=100 draw=114225 present=31563
+[1789026303667] [[32minfo[0m] [SelectionAB] car=3 frame=4 mode=1 percent=100 draw=112803 present=23289
+[1789026303674] [[32minfo[0m] [SelectionAB] car=3 frame=4 mode=2 percent=65 draw=87787 present=23321
+[1789026304191] [[32minfo[0m] [SelectionAB] car=3 frame=5 mode=0 percent=100 draw=131037 present=31550
+[1789026304192] [[32minfo[0m] [SelectionAB] car=3 frame=5 mode=1 percent=100 draw=129122 present=23309
+[1789026304199] [[32minfo[0m] [SelectionAB] car=3 frame=5 mode=2 percent=65 draw=96093 present=23308
+[1789026304739] [[32minfo[0m] [SelectionAB] car=3 frame=6 mode=0 percent=100 draw=131742 present=31574
+[1789026304740] [[32minfo[0m] [SelectionAB] car=3 frame=6 mode=1 percent=100 draw=128862 present=23294
+[1789026304747] [[32minfo[0m] [SelectionAB] car=3 frame=6 mode=2 percent=85 draw=117877 present=23322
+[1789026305030] [[32minfo[0m] [GarageStage] panels=1361 vertices=1906 scale_pct=85 clear_us=3934 shadow_us=2665 project_us=984 raster_us=64374 blit_us=22482
+[1789026305259] [[32minfo[0m] [SelectionAB] car=3 frame=7 mode=0 percent=100 draw=120425 present=31570
+[1789026305260] [[32minfo[0m] [SelectionAB] car=3 frame=7 mode=1 percent=100 draw=118303 present=23290
+[1789026305268] [[32minfo[0m] [SelectionAB] car=3 frame=7 mode=2 percent=85 draw=113680 present=23325
+[1789026305769] [[32minfo[0m] [SelectionAB] car=3 frame=8 mode=0 percent=100 draw=117933 present=31547
+[1789026305770] [[32minfo[0m] [SelectionAB] car=3 frame=8 mode=1 percent=100 draw=115724 present=23333
+[1789026305777] [[32minfo[0m] [SelectionAB] car=3 frame=8 mode=2 percent=85 draw=107793 present=23288
+[1789026306415] [[32minfo[0m] [SelectionAB] car=3 frame=9 mode=0 percent=100 draw=166528 present=31581
+[1789026306416] [[32minfo[0m] [SelectionAB] car=3 frame=9 mode=1 percent=100 draw=164511 present=23274
+[1789026306423] [[32minfo[0m] [SelectionAB] car=3 frame=9 mode=2 percent=85 draw=145911 present=23290
+[1789026307090] [[32minfo[0m] [GarageStage] panels=1361 vertices=0 scale_pct=100 clear_us=5873 shadow_us=4022 project_us=5 raster_us=146935 blit_us=16234
+[1789026307151] [[32minfo[0m] [SelectionAB] car=3 frame=10 mode=0 percent=100 draw=192934 present=31584
+[1789026307152] [[32minfo[0m] [SelectionAB] car=3 frame=10 mode=1 percent=100 draw=187281 present=23332
+[1789026307159] [[32minfo[0m] [SelectionAB] car=3 frame=10 mode=2 percent=100 draw=187097 present=23274
+[1789026307860] [[32minfo[0m] [SelectionAB] car=3 frame=11 mode=0 percent=100 draw=189299 present=31562
+[1789026307861] [[32minfo[0m] [SelectionAB] car=3 frame=11 mode=1 percent=100 draw=187018 present=23310
+[1789026307869] [[32minfo[0m] [SelectionAB] car=3 frame=11 mode=2 percent=85 draw=163808 present=23313
+[1789026308465] [[32minfo[0m] [SelectionAB] car=3 frame=12 mode=0 percent=100 draw=152106 present=31593
+[1789026308466] [[32minfo[0m] [SelectionAB] car=3 frame=12 mode=1 percent=100 draw=149577 present=23286
+[1789026308474] [[32minfo[0m] [SelectionAB] car=3 frame=12 mode=2 percent=85 draw=133506 present=23299
+[1789026309014] [[32minfo[0m] [SelectionAB] car=3 frame=13 mode=0 percent=100 draw=131976 present=31552
+[1789026309015] [[32minfo[0m] [SelectionAB] car=3 frame=13 mode=1 percent=100 draw=129964 present=23318
+[1789026309023] [[32minfo[0m] [SelectionAB] car=3 frame=13 mode=2 percent=85 draw=118123 present=23283
+[1789026309151] [[32minfo[0m] [GarageStage] panels=1361 vertices=1906 scale_pct=85 clear_us=3961 shadow_us=1511 project_us=984 raster_us=77260 blit_us=22057
+[1789026309576] [[32minfo[0m] [SelectionAB] car=3 frame=14 mode=0 percent=100 draw=135473 present=31586
+[1789026309577] [[32minfo[0m] [SelectionAB] car=3 frame=14 mode=1 percent=100 draw=132671 present=23295
+[1789026309585] [[32minfo[0m] [SelectionAB] car=3 frame=14 mode=2 percent=85 draw=125073 present=23340
+[1789026310177] [[32minfo[0m] [SelectionAB] car=3 frame=15 mode=0 percent=100 draw=145337 present=31565
+[1789026310178] [[32minfo[0m] [SelectionAB] car=3 frame=15 mode=1 percent=100 draw=143008 present=23277
+[1789026310186] [[32minfo[0m] [SelectionAB] car=3 frame=15 mode=2 percent=100 draw=143274 present=23300
+[1789026310778] [[32minfo[0m] [SelectionAB] car=3 frame=16 mode=0 percent=100 draw=145131 present=31580
+[1789026310779] [[32minfo[0m] [SelectionAB] car=3 frame=16 mode=1 percent=100 draw=143686 present=23296
+[1789026310787] [[32minfo[0m] [SelectionAB] car=3 frame=16 mode=2 percent=100 draw=142981 present=23299
+[1789026311330] [[32minfo[0m] [GarageStage] panels=1361 vertices=1906 scale_pct=100 clear_us=5629 shadow_us=1453 project_us=980 raster_us=105259 blit_us=14792
+[1789026311383] [[32minfo[0m] [SelectionAB] car=3 frame=17 mode=0 percent=100 draw=145428 present=31597
+[1789026311384] [[32minfo[0m] [SelectionAB] car=3 frame=17 mode=1 percent=100 draw=147467 present=23326
+[1789026311391] [[32minfo[0m] [SelectionAB] car=3 frame=17 mode=2 percent=100 draw=143182 present=23293
+[1789026311984] [[32minfo[0m] [SelectionAB] car=3 frame=18 mode=0 percent=100 draw=145313 present=31561
+[1789026311985] [[32minfo[0m] [SelectionAB] car=3 frame=18 mode=1 percent=100 draw=142953 present=23287
+[1789026311993] [[32minfo[0m] [SelectionAB] car=3 frame=18 mode=2 percent=100 draw=142998 present=23280
+[1789026312586] [[32minfo[0m] [SelectionAB] car=3 frame=19 mode=0 percent=100 draw=145190 present=31557
+[1789026312587] [[32minfo[0m] [SelectionAB] car=3 frame=19 mode=1 percent=100 draw=143433 present=23312
+[1789026312595] [[32minfo[0m] [SelectionAB] car=3 frame=19 mode=2 percent=100 draw=143910 present=23287
+[1789026312604] [[32minfo[0m] [SelectionAB] GROUP car=3 native_checks=108 mismatches=0
+[1789026313426] [[32minfo[0m] [GarageStage] panels=1239 vertices=1557 scale_pct=100 clear_us=5571 shadow_us=3023 project_us=805 raster_us=74100 blit_us=15164
+[1789026313785] [[32minfo[0m] [SelectionAB] car=4 frame=1 mode=0 percent=100 draw=116314 present=31557
+[1789026313786] [[32minfo[0m] [SelectionAB] car=4 frame=1 mode=1 percent=100 draw=117650 present=23367
+[1789026313793] [[32minfo[0m] [SelectionAB] car=4 frame=1 mode=2 percent=65 draw=86044 present=23273
+[1789026314224] [[32minfo[0m] [SelectionAB] car=4 frame=2 mode=0 percent=100 draw=97414 present=31778
+[1789026314225] [[32minfo[0m] [SelectionAB] car=4 frame=2 mode=1 percent=100 draw=94950 present=23262
+[1789026314232] [[32minfo[0m] [SelectionAB] car=4 frame=2 mode=2 percent=65 draw=76808 present=23313
+[1789026314704] [[32minfo[0m] [SelectionAB] car=4 frame=3 mode=0 percent=100 draw=115051 present=31554
+[1789026314705] [[32minfo[0m] [SelectionAB] car=4 frame=3 mode=1 percent=100 draw=111789 present=23265
+[1789026314712] [[32minfo[0m] [SelectionAB] car=4 frame=3 mode=2 percent=65 draw=85247 present=23271
+[1789026315157] [[32minfo[0m] [SelectionAB] car=4 frame=4 mode=0 percent=100 draw=103449 present=31549
+[1789026315158] [[32minfo[0m] [SelectionAB] car=4 frame=4 mode=1 percent=100 draw=100797 present=23300
+[1789026315165] [[32minfo[0m] [SelectionAB] car=4 frame=4 mode=2 percent=65 draw=79919 present=23292
+[1789026315429] [[32minfo[0m] [GarageStage] panels=1239 vertices=0 scale_pct=100 clear_us=5874 shadow_us=3016 project_us=5 raster_us=79629 blit_us=15135
+[1789026315655] [[32minfo[0m] [SelectionAB] car=4 frame=5 mode=0 percent=100 draw=123428 present=31564
+[1789026315656] [[32minfo[0m] [SelectionAB] car=4 frame=5 mode=1 percent=100 draw=117438 present=23273
+[1789026315663] [[32minfo[0m] [SelectionAB] car=4 frame=5 mode=2 percent=65 draw=88476 present=23857
+[1789026316169] [[32minfo[0m] [SelectionAB] car=4 frame=6 mode=0 percent=100 draw=120048 present=31549
+[1789026316170] [[32minfo[0m] [SelectionAB] car=4 frame=6 mode=1 percent=100 draw=117355 present=23299
+[1789026316177] [[32minfo[0m] [SelectionAB] car=4 frame=6 mode=2 percent=85 draw=108343 present=23311
+[1789026316657] [[32minfo[0m] [SelectionAB] car=4 frame=7 mode=0 percent=100 draw=110221 present=31562
+[1789026316658] [[32minfo[0m] [SelectionAB] car=4 frame=7 mode=1 percent=100 draw=108455 present=23279
+[1789026316665] [[32minfo[0m] [SelectionAB] car=4 frame=7 mode=2 percent=85 draw=100756 present=23269
+[1789026317152] [[32minfo[0m] [SelectionAB] car=4 frame=8 mode=0 percent=100 draw=112818 present=31559
+[1789026317153] [[32minfo[0m] [SelectionAB] car=4 frame=8 mode=1 percent=100 draw=110609 present=23260
+[1789026317160] [[32minfo[0m] [SelectionAB] car=4 frame=8 mode=2 percent=85 draw=102393 present=23292
+[1789026317525] [[32minfo[0m] [GarageStage] panels=1239 vertices=1557 scale_pct=100 clear_us=5617 shadow_us=3543 project_us=805 raster_us=107649 blit_us=15926
+[1789026317757] [[32minfo[0m] [SelectionAB] car=4 frame=9 mode=0 percent=100 draw=152103 present=31564
+[1789026317758] [[32minfo[0m] [SelectionAB] car=4 frame=9 mode=1 percent=100 draw=152421 present=23361
+[1789026317765] [[32minfo[0m] [SelectionAB] car=4 frame=9 mode=2 percent=85 draw=131465 present=23292
+[1789026318434] [[32minfo[0m] [SelectionAB] car=4 frame=10 mode=0 percent=100 draw=171477 present=31536
+[1789026318435] [[32minfo[0m] [SelectionAB] car=4 frame=10 mode=1 percent=100 draw=168459 present=23285
+[1789026318443] [[32minfo[0m] [SelectionAB] car=4 frame=10 mode=2 percent=100 draw=168603 present=23270
+[1789026319090] [[32minfo[0m] [SelectionAB] car=4 frame=11 mode=0 percent=100 draw=170777 present=31525
+[1789026319091] [[32minfo[0m] [SelectionAB] car=4 frame=11 mode=1 percent=100 draw=168497 present=23299
+[1789026319099] [[32minfo[0m] [SelectionAB] car=4 frame=11 mode=2 percent=85 draw=147077 present=23297
+[1789026319597] [[32minfo[0m] [GarageStage] panels=1239 vertices=1557 scale_pct=85 clear_us=3991 shadow_us=2791 project_us=808 raster_us=74121 blit_us=22787
+[1789026319650] [[32minfo[0m] [SelectionAB] car=4 frame=12 mode=0 percent=100 draw=135041 present=32016
+[1789026319651] [[32minfo[0m] [SelectionAB] car=4 frame=12 mode=1 percent=100 draw=132505 present=23323
+[1789026319658] [[32minfo[0m] [SelectionAB] car=4 frame=12 mode=2 percent=85 draw=123249 present=23323
+[1789026320148] [[32minfo[0m] [SelectionAB] car=4 frame=13 mode=0 percent=100 draw=113914 present=31572
+[1789026320149] [[32minfo[0m] [SelectionAB] car=4 frame=13 mode=1 percent=100 draw=111240 present=23295
+[1789026320157] [[32minfo[0m] [SelectionAB] car=4 frame=13 mode=2 percent=85 draw=102928 present=23291
+[1789026320642] [[32minfo[0m] [SelectionAB] car=4 frame=14 mode=0 percent=100 draw=112383 present=31545
+[1789026320643] [[32minfo[0m] [SelectionAB] car=4 frame=14 mode=1 percent=100 draw=109663 present=23279
+[1789026320651] [[32minfo[0m] [SelectionAB] car=4 frame=14 mode=2 percent=85 draw=102758 present=23822
+[1789026321166] [[32minfo[0m] [SelectionAB] car=4 frame=15 mode=0 percent=100 draw=119981 present=31576
+[1789026321167] [[32minfo[0m] [SelectionAB] car=4 frame=15 mode=1 percent=100 draw=117351 present=23287
+[1789026321175] [[32minfo[0m] [SelectionAB] car=4 frame=15 mode=2 percent=100 draw=117601 present=23282
+[1789026321633] [[32minfo[0m] [GarageStage] panels=1239 vertices=0 scale_pct=100 clear_us=5913 shadow_us=1530 project_us=4 raster_us=81208 blit_us=14943
+[1789026321694] [[32minfo[0m] [SelectionAB] car=4 frame=16 mode=0 percent=100 draw=123186 present=31585
+[1789026321695] [[32minfo[0m] [SelectionAB] car=4 frame=16 mode=1 percent=100 draw=118028 present=23333
+[1789026321702] [[32minfo[0m] [SelectionAB] car=4 frame=16 mode=2 percent=100 draw=117361 present=23285
+[1789026322218] [[32minfo[0m] [SelectionAB] car=4 frame=17 mode=0 percent=100 draw=119842 present=31534
+[1789026322219] [[32minfo[0m] [SelectionAB] car=4 frame=17 mode=1 percent=100 draw=117421 present=23316
+[1789026322227] [[32minfo[0m] [SelectionAB] car=4 frame=17 mode=2 percent=100 draw=117501 present=23295
+[1789026322743] [[32minfo[0m] [SelectionAB] car=4 frame=18 mode=0 percent=100 draw=120805 present=31537
+[1789026322744] [[32minfo[0m] [SelectionAB] car=4 frame=18 mode=1 percent=100 draw=117294 present=23317
+[1789026322752] [[32minfo[0m] [SelectionAB] car=4 frame=18 mode=2 percent=100 draw=117256 present=23287
+[1789026323267] [[32minfo[0m] [SelectionAB] car=4 frame=19 mode=0 percent=100 draw=119897 present=31564
+[1789026323268] [[32minfo[0m] [SelectionAB] car=4 frame=19 mode=1 percent=100 draw=117535 present=23279
+[1789026323276] [[32minfo[0m] [SelectionAB] car=4 frame=19 mode=2 percent=100 draw=117640 present=23259
+[1789026323285] [[32minfo[0m] [SelectionAB] GROUP car=4 native_checks=135 mismatches=0
+[1789026323752] [[32minfo[0m] [GarageStage] panels=1171 vertices=1366 scale_pct=100 clear_us=5566 shadow_us=4231 project_us=709 raster_us=148278 blit_us=16806
+[1789026324560] [[32minfo[0m] [SelectionAB] car=5 frame=1 mode=0 percent=100 draw=127822 present=31531
+[1789026324561] [[32minfo[0m] [SelectionAB] car=5 frame=1 mode=1 percent=100 draw=125035 present=23300
+[1789026324568] [[32minfo[0m] [SelectionAB] car=5 frame=1 mode=2 percent=65 draw=91627 present=23284
+[1789026325016] [[32minfo[0m] [SelectionAB] car=5 frame=2 mode=0 percent=100 draw=105476 present=31561
+[1789026325017] [[32minfo[0m] [SelectionAB] car=5 frame=2 mode=1 percent=100 draw=102673 present=23282
+[1789026325024] [[32minfo[0m] [SelectionAB] car=5 frame=2 mode=2 percent=65 draw=79718 present=23281
+[1789026325523] [[32minfo[0m] [SelectionAB] car=5 frame=3 mode=0 percent=100 draw=125329 present=31552
+[1789026325524] [[32minfo[0m] [SelectionAB] car=5 frame=3 mode=1 percent=100 draw=122975 present=23261
+[1789026325531] [[32minfo[0m] [SelectionAB] car=5 frame=3 mode=2 percent=65 draw=89535 present=23277
+[1789026325779] [[32minfo[0m] [GarageStage] panels=1171 vertices=1366 scale_pct=65 clear_us=2212 shadow_us=2239 project_us=713 raster_us=41776 blit_us=21500
+[1789026326002] [[32minfo[0m] [SelectionAB] car=5 frame=4 mode=0 percent=100 draw=112657 present=31562
+[1789026326003] [[32minfo[0m] [SelectionAB] car=5 frame=4 mode=1 percent=100 draw=109986 present=23348
+[1789026326010] [[32minfo[0m] [SelectionAB] car=5 frame=4 mode=2 percent=65 draw=87077 present=23280
+[1789026326525] [[32minfo[0m] [SelectionAB] car=5 frame=5 mode=0 percent=100 draw=131559 present=31615
+[1789026326526] [[32minfo[0m] [SelectionAB] car=5 frame=5 mode=1 percent=100 draw=128304 present=23301
+[1789026326533] [[32minfo[0m] [SelectionAB] car=5 frame=5 mode=2 percent=65 draw=94281 present=23268
+[1789026327070] [[32minfo[0m] [SelectionAB] car=5 frame=6 mode=0 percent=100 draw=131213 present=31556
+[1789026327071] [[32minfo[0m] [SelectionAB] car=5 frame=6 mode=1 percent=100 draw=128223 present=23283
+[1789026327078] [[32minfo[0m] [SelectionAB] car=5 frame=6 mode=2 percent=85 draw=116378 present=23537
+[1789026327586] [[32minfo[0m] [SelectionAB] car=5 frame=7 mode=0 percent=100 draw=120038 present=31559
+[1789026327587] [[32minfo[0m] [SelectionAB] car=5 frame=7 mode=1 percent=100 draw=117444 present=23287
+[1789026327594] [[32minfo[0m] [SelectionAB] car=5 frame=7 mode=2 percent=85 draw=109149 present=23281
+[1789026327883] [[32minfo[0m] [GarageStage] panels=1171 vertices=0 scale_pct=100 clear_us=5871 shadow_us=3095 project_us=4 raster_us=83272 blit_us=15288
+[1789026328113] [[32minfo[0m] [SelectionAB] car=5 frame=8 mode=0 percent=100 draw=127230 present=31613
+[1789026328114] [[32minfo[0m] [SelectionAB] car=5 frame=8 mode=1 percent=100 draw=121463 present=23273
+[1789026328121] [[32minfo[0m] [SelectionAB] car=5 frame=8 mode=2 percent=85 draw=110186 present=23276
+[1789026328765] [[32minfo[0m] [SelectionAB] car=5 frame=9 mode=0 percent=100 draw=170308 present=31563
+[1789026328766] [[32minfo[0m] [SelectionAB] car=5 frame=9 mode=1 percent=100 draw=166894 present=23278
+[1789026328773] [[32minfo[0m] [SelectionAB] car=5 frame=9 mode=2 percent=85 draw=145173 present=23282
+[1789026329510] [[32minfo[0m] [SelectionAB] car=5 frame=10 mode=0 percent=100 draw=194084 present=31542
+[1789026329511] [[32minfo[0m] [SelectionAB] car=5 frame=10 mode=1 percent=100 draw=190731 present=23297
+[1789026329519] [[32minfo[0m] [SelectionAB] car=5 frame=10 mode=2 percent=100 draw=190856 present=23331
+[1789026329930] [[32minfo[0m] [GarageStage] panels=1171 vertices=0 scale_pct=100 clear_us=5893 shadow_us=4301 project_us=4 raster_us=149972 blit_us=16801
+[1789026330231] [[32minfo[0m] [SelectionAB] car=5 frame=11 mode=0 percent=100 draw=196672 present=31596
+[1789026330232] [[32minfo[0m] [SelectionAB] car=5 frame=11 mode=1 percent=100 draw=190843 present=23309
+[1789026330240] [[32minfo[0m] [SelectionAB] car=5 frame=11 mode=2 percent=85 draw=163367 present=23314
+[1789026330826] [[32minfo[0m] [SelectionAB] car=5 frame=12 mode=0 percent=100 draw=149756 present=31548
+[1789026330827] [[32minfo[0m] [SelectionAB] car=5 frame=12 mode=1 percent=100 draw=146301 present=23313
+[1789026330835] [[32minfo[0m] [SelectionAB] car=5 frame=12 mode=2 percent=85 draw=130050 present=23291
+[1789026331346] [[32minfo[0m] [SelectionAB] car=5 frame=13 mode=0 percent=100 draw=122322 present=31595
+[1789026331347] [[32minfo[0m] [SelectionAB] car=5 frame=13 mode=1 percent=100 draw=119172 present=23324
+[1789026331355] [[32minfo[0m] [SelectionAB] car=5 frame=13 mode=2 percent=85 draw=109453 present=23329
+[1789026331852] [[32minfo[0m] [SelectionAB] car=5 frame=14 mode=0 percent=100 draw=117561 present=31525
+[1789026331853] [[32minfo[0m] [SelectionAB] car=5 frame=14 mode=1 percent=100 draw=114753 present=23275
+[1789026331861] [[32minfo[0m] [SelectionAB] car=5 frame=14 mode=2 percent=85 draw=105888 present=23307
+[1789026331993] [[32minfo[0m] [GarageStage] panels=1171 vertices=0 scale_pct=100 clear_us=5881 shadow_us=1558 project_us=4 raster_us=86187 blit_us=14870
+[1789026332394] [[32minfo[0m] [SelectionAB] car=5 frame=15 mode=0 percent=100 draw=128298 present=31831
+[1789026332395] [[32minfo[0m] [SelectionAB] car=5 frame=15 mode=1 percent=100 draw=122137 present=23280
+[1789026332403] [[32minfo[0m] [SelectionAB] car=5 frame=15 mode=2 percent=100 draw=122824 present=23279
+[1789026332933] [[32minfo[0m] [SelectionAB] car=5 frame=16 mode=0 percent=100 draw=124785 present=31539
+[1789026332934] [[32minfo[0m] [SelectionAB] car=5 frame=16 mode=1 percent=100 draw=122258 present=23282
+[1789026332942] [[32minfo[0m] [SelectionAB] car=5 frame=16 mode=2 percent=100 draw=122015 present=23258
+[1789026333472] [[32minfo[0m] [SelectionAB] car=5 frame=17 mode=0 percent=100 draw=124823 present=31543
+[1789026333473] [[32minfo[0m] [SelectionAB] car=5 frame=17 mode=1 percent=100 draw=122246 present=23291
+[1789026333481] [[32minfo[0m] [SelectionAB] car=5 frame=17 mode=2 percent=100 draw=122515 present=23271
+[1789026334011] [[32minfo[0m] [SelectionAB] car=5 frame=18 mode=0 percent=100 draw=124996 present=31574
+[1789026334012] [[32minfo[0m] [SelectionAB] car=5 frame=18 mode=1 percent=100 draw=122020 present=23297
+[1789026334020] [[32minfo[0m] [SelectionAB] car=5 frame=18 mode=2 percent=100 draw=122040 present=23294
+[1789026334149] [[32minfo[0m] [GarageStage] panels=1171 vertices=1366 scale_pct=100 clear_us=5592 shadow_us=1523 project_us=703 raster_us=84484 blit_us=14877
+[1789026334554] [[32minfo[0m] [SelectionAB] car=5 frame=19 mode=0 percent=100 draw=124842 present=31542
+[1789026334555] [[32minfo[0m] [SelectionAB] car=5 frame=19 mode=1 percent=100 draw=126271 present=23281
+[1789026334563] [[32minfo[0m] [SelectionAB] car=5 frame=19 mode=2 percent=100 draw=122741 present=23309
+[1789026334572] [[32minfo[0m] [SelectionAB] GROUP car=5 native_checks=162 mismatches=0
+[1789026335793] [[32minfo[0m] [SelectionAB] car=6 frame=1 mode=0 percent=100 draw=123423 present=31546
+[1789026335794] [[32minfo[0m] [SelectionAB] car=6 frame=1 mode=1 percent=100 draw=121419 present=23291
+[1789026335801] [[32minfo[0m] [SelectionAB] car=6 frame=1 mode=2 percent=65 draw=93409 present=23285
+[1789026336199] [[32minfo[0m] [GarageStage] panels=1565 vertices=2095 scale_pct=100 clear_us=5576 shadow_us=2206 project_us=1088 raster_us=61703 blit_us=14592
+[1789026336253] [[32minfo[0m] [SelectionAB] car=6 frame=2 mode=0 percent=100 draw=103439 present=31564
+[1789026336254] [[32minfo[0m] [SelectionAB] car=6 frame=2 mode=1 percent=100 draw=104848 present=23333
+[1789026336261] [[32minfo[0m] [SelectionAB] car=6 frame=2 mode=2 percent=65 draw=82892 present=23333
+[1789026336756] [[32minfo[0m] [SelectionAB] car=6 frame=3 mode=0 percent=100 draw=122265 present=31601
+[1789026336757] [[32minfo[0m] [SelectionAB] car=6 frame=3 mode=1 percent=100 draw=119341 present=23306
+[1789026336764] [[32minfo[0m] [SelectionAB] car=6 frame=3 mode=2 percent=65 draw=92117 present=23279
+[1789026337230] [[32minfo[0m] [SelectionAB] car=6 frame=4 mode=0 percent=100 draw=110215 present=31568
+[1789026337231] [[32minfo[0m] [SelectionAB] car=6 frame=4 mode=1 percent=100 draw=108071 present=23323
+[1789026337238] [[32minfo[0m] [SelectionAB] car=6 frame=4 mode=2 percent=65 draw=86777 present=23538
+[1789026337744] [[32minfo[0m] [SelectionAB] car=6 frame=5 mode=0 percent=100 draw=125827 present=31553
+[1789026337745] [[32minfo[0m] [SelectionAB] car=6 frame=5 mode=1 percent=100 draw=123644 present=23286
+[1789026337752] [[32minfo[0m] [SelectionAB] car=6 frame=5 mode=2 percent=65 draw=96480 present=23272
+[1789026338228] [[32minfo[0m] [GarageStage] panels=1565 vertices=2095 scale_pct=85 clear_us=3981 shadow_us=2891 project_us=1080 raster_us=68708 blit_us=22408
+[1789026338281] [[32minfo[0m] [SelectionAB] car=6 frame=6 mode=0 percent=100 draw=125959 present=31545
+[1789026338282] [[32minfo[0m] [SelectionAB] car=6 frame=6 mode=1 percent=100 draw=123934 present=23287
+[1789026338289] [[32minfo[0m] [SelectionAB] car=6 frame=6 mode=2 percent=85 draw=118636 present=23297
+[1789026338790] [[32minfo[0m] [SelectionAB] car=6 frame=7 mode=0 percent=100 draw=116923 present=31541
+[1789026338791] [[32minfo[0m] [SelectionAB] car=6 frame=7 mode=1 percent=100 draw=114930 present=23337
+[1789026338798] [[32minfo[0m] [SelectionAB] car=6 frame=7 mode=2 percent=85 draw=108026 present=23305
+[1789026339304] [[32minfo[0m] [SelectionAB] car=6 frame=8 mode=0 percent=100 draw=119034 present=31604
+[1789026339305] [[32minfo[0m] [SelectionAB] car=6 frame=8 mode=1 percent=100 draw=116673 present=23293
+[1789026339312] [[32minfo[0m] [SelectionAB] car=6 frame=8 mode=2 percent=85 draw=108685 present=23286
+[1789026339924] [[32minfo[0m] [SelectionAB] car=6 frame=9 mode=0 percent=100 draw=157203 present=31563
+[1789026339925] [[32minfo[0m] [SelectionAB] car=6 frame=9 mode=1 percent=100 draw=154862 present=23285
+[1789026339932] [[32minfo[0m] [SelectionAB] car=6 frame=9 mode=2 percent=85 draw=138392 present=23278
+[1789026340335] [[32minfo[0m] [GarageStage] panels=1565 vertices=2095 scale_pct=100 clear_us=5585 shadow_us=4078 project_us=1076 raster_us=131452 blit_us=16312
+[1789026340621] [[32minfo[0m] [SelectionAB] car=6 frame=10 mode=0 percent=100 draw=175963 present=31540
+[1789026340622] [[32minfo[0m] [SelectionAB] car=6 frame=10 mode=1 percent=100 draw=174181 present=23310
+[1789026340630] [[32minfo[0m] [SelectionAB] car=6 frame=10 mode=2 percent=100 draw=178181 present=23375
+[1789026341293] [[32minfo[0m] [SelectionAB] car=6 frame=11 mode=0 percent=100 draw=175852 present=31797
+[1789026341295] [[32minfo[0m] [SelectionAB] car=6 frame=11 mode=1 percent=100 draw=173816 present=23296
+[1789026341302] [[32minfo[0m] [SelectionAB] car=6 frame=11 mode=2 percent=85 draw=153208 present=23314
+[1789026341871] [[32minfo[0m] [SelectionAB] car=6 frame=12 mode=0 percent=100 draw=142155 present=31578
+[1789026341872] [[32minfo[0m] [SelectionAB] car=6 frame=12 mode=1 percent=100 draw=139812 present=23305
+[1789026341880] [[32minfo[0m] [SelectionAB] car=6 frame=12 mode=2 percent=85 draw=127221 present=23284
+[1789026342346] [[32minfo[0m] [GarageStage] panels=1565 vertices=0 scale_pct=100 clear_us=5885 shadow_us=2036 project_us=4 raster_us=86945 blit_us=14824
+[1789026342407] [[32minfo[0m] [SelectionAB] car=6 frame=13 mode=0 percent=100 draw=129391 present=31614
+[1789026342408] [[32minfo[0m] [SelectionAB] car=6 frame=13 mode=1 percent=100 draw=123204 present=23568
+[1789026342415] [[32minfo[0m] [SelectionAB] car=6 frame=13 mode=2 percent=85 draw=114277 present=23286
+[1789026342943] [[32minfo[0m] [SelectionAB] car=6 frame=14 mode=0 percent=100 draw=126690 present=31545
+[1789026342944] [[32minfo[0m] [SelectionAB] car=6 frame=14 mode=1 percent=100 draw=124549 present=23274
+[1789026342952] [[32minfo[0m] [SelectionAB] car=6 frame=14 mode=2 percent=85 draw=115829 present=23314
+[1789026343514] [[32minfo[0m] [SelectionAB] car=6 frame=15 mode=0 percent=100 draw=135579 present=31564
+[1789026343515] [[32minfo[0m] [SelectionAB] car=6 frame=15 mode=1 percent=100 draw=133030 present=23838
+[1789026343523] [[32minfo[0m] [SelectionAB] car=6 frame=15 mode=2 percent=100 draw=133212 present=23280
+[1789026344085] [[32minfo[0m] [SelectionAB] car=6 frame=16 mode=0 percent=100 draw=135339 present=31579
+[1789026344086] [[32minfo[0m] [SelectionAB] car=6 frame=16 mode=1 percent=100 draw=133182 present=23286
+[1789026344094] [[32minfo[0m] [SelectionAB] car=6 frame=16 mode=2 percent=100 draw=132998 present=23281
+[1789026344418] [[32minfo[0m] [GarageStage] panels=1565 vertices=0 scale_pct=100 clear_us=5942 shadow_us=1559 project_us=5 raster_us=96506 blit_us=14864
+[1789026344660] [[32minfo[0m] [SelectionAB] car=6 frame=17 mode=0 percent=100 draw=139119 present=31615
+[1789026344661] [[32minfo[0m] [SelectionAB] car=6 frame=17 mode=1 percent=100 draw=133074 present=23302
+[1789026344669] [[32minfo[0m] [SelectionAB] car=6 frame=17 mode=2 percent=100 draw=133216 present=23280
+[1789026345231] [[32minfo[0m] [SelectionAB] car=6 frame=18 mode=0 percent=100 draw=135287 present=31594
+[1789026345232] [[32minfo[0m] [SelectionAB] car=6 frame=18 mode=1 percent=100 draw=133031 present=23299
+[1789026345240] [[32minfo[0m] [SelectionAB] car=6 frame=18 mode=2 percent=100 draw=133092 present=23304
+[1789026345802] [[32minfo[0m] [SelectionAB] car=6 frame=19 mode=0 percent=100 draw=135211 present=31552
+[1789026345803] [[32minfo[0m] [SelectionAB] car=6 frame=19 mode=1 percent=100 draw=133798 present=23325
+[1789026345811] [[32minfo[0m] [SelectionAB] car=6 frame=19 mode=2 percent=100 draw=133074 present=23308
+[1789026345820] [[32minfo[0m] [SelectionAB] GROUP car=6 native_checks=189 mismatches=0
+[1789026346461] [[32minfo[0m] [GarageStage] panels=1335 vertices=1704 scale_pct=100 clear_us=5599 shadow_us=3950 project_us=910 raster_us=122065 blit_us=16424
+[1789026346989] [[32minfo[0m] [SelectionAB] car=7 frame=1 mode=0 percent=100 draw=115265 present=31581
+[1789026346990] [[32minfo[0m] [SelectionAB] car=7 frame=1 mode=1 percent=100 draw=112955 present=23311
+[1789026346997] [[32minfo[0m] [SelectionAB] car=7 frame=1 mode=2 percent=65 draw=86791 present=23337
+[1789026347427] [[32minfo[0m] [SelectionAB] car=7 frame=2 mode=0 percent=100 draw=96337 present=31565
+[1789026347428] [[32minfo[0m] [SelectionAB] car=7 frame=2 mode=1 percent=100 draw=94441 present=23319
+[1789026347435] [[32minfo[0m] [SelectionAB] car=7 frame=2 mode=2 percent=65 draw=77757 present=23293
+[1789026347905] [[32minfo[0m] [SelectionAB] car=7 frame=3 mode=0 percent=100 draw=113058 present=31580
+[1789026347906] [[32minfo[0m] [SelectionAB] car=7 frame=3 mode=1 percent=100 draw=110474 present=23286
+[1789026347913] [[32minfo[0m] [SelectionAB] car=7 frame=3 mode=2 percent=65 draw=86036 present=23287
+[1789026348361] [[32minfo[0m] [SelectionAB] car=7 frame=4 mode=0 percent=100 draw=104182 present=31578
+[1789026348362] [[32minfo[0m] [SelectionAB] car=7 frame=4 mode=1 percent=100 draw=101409 present=23538
+[1789026348369] [[32minfo[0m] [SelectionAB] car=7 frame=4 mode=2 percent=65 draw=81430 present=23288
+[1789026348466] [[32minfo[0m] [GarageStage] panels=1335 vertices=1704 scale_pct=65 clear_us=2251 shadow_us=2847 project_us=883 raster_us=46426 blit_us=21648
+[1789026348858] [[32minfo[0m] [SelectionAB] car=7 frame=5 mode=0 percent=100 draw=119179 present=31565
+[1789026348859] [[32minfo[0m] [SelectionAB] car=7 frame=5 mode=1 percent=100 draw=116665 present=23338
+[1789026348866] [[32minfo[0m] [SelectionAB] car=7 frame=5 mode=2 percent=65 draw=93309 present=23404
+[1789026349372] [[32minfo[0m] [SelectionAB] car=7 frame=6 mode=0 percent=100 draw=119329 present=31551
+[1789026349373] [[32minfo[0m] [SelectionAB] car=7 frame=6 mode=1 percent=100 draw=116789 present=23300
+[1789026349380] [[32minfo[0m] [SelectionAB] car=7 frame=6 mode=2 percent=85 draw=109020 present=23299
+[1789026349860] [[32minfo[0m] [SelectionAB] car=7 frame=7 mode=0 percent=100 draw=109907 present=31557
+[1789026349861] [[32minfo[0m] [SelectionAB] car=7 frame=7 mode=1 percent=100 draw=107688 present=23309
+[1789026349868] [[32minfo[0m] [SelectionAB] car=7 frame=7 mode=2 percent=85 draw=101174 present=23291
+[1789026350350] [[32minfo[0m] [SelectionAB] car=7 frame=8 mode=0 percent=100 draw=110953 present=31546
+[1789026350351] [[32minfo[0m] [SelectionAB] car=7 frame=8 mode=1 percent=100 draw=108211 present=23832
+[1789026350358] [[32minfo[0m] [SelectionAB] car=7 frame=8 mode=2 percent=85 draw=101609 present=23318
+[1789026350514] [[32minfo[0m] [GarageStage] panels=1335 vertices=0 scale_pct=100 clear_us=5927 shadow_us=3511 project_us=4 raster_us=106327 blit_us=15937
+[1789026350946] [[32minfo[0m] [SelectionAB] car=7 frame=9 mode=0 percent=100 draw=151663 present=31616
+[1789026350947] [[32minfo[0m] [SelectionAB] car=7 frame=9 mode=1 percent=100 draw=145674 present=23330
+[1789026350954] [[32minfo[0m] [SelectionAB] car=7 frame=9 mode=2 percent=85 draw=130575 present=23297
+[1789026351612] [[32minfo[0m] [SelectionAB] car=7 frame=10 mode=0 percent=100 draw=166829 present=31562
+[1789026351613] [[32minfo[0m] [SelectionAB] car=7 frame=10 mode=1 percent=100 draw=164792 present=23288
+[1789026351621] [[32minfo[0m] [SelectionAB] car=7 frame=10 mode=2 percent=100 draw=164919 present=23329
+[1789026352258] [[32minfo[0m] [SelectionAB] car=7 frame=11 mode=0 percent=100 draw=166721 present=31562
+[1789026352259] [[32minfo[0m] [SelectionAB] car=7 frame=11 mode=1 percent=100 draw=164376 present=23357
+[1789026352267] [[32minfo[0m] [SelectionAB] car=7 frame=11 mode=2 percent=85 draw=145432 present=23316
+[1789026352597] [[32minfo[0m] [GarageStage] panels=1335 vertices=1704 scale_pct=100 clear_us=5619 shadow_us=2751 project_us=878 raster_us=91579 blit_us=15519
+[1789026352817] [[32minfo[0m] [SelectionAB] car=7 frame=12 mode=0 percent=100 draw=134879 present=31588
+[1789026352818] [[32minfo[0m] [SelectionAB] car=7 frame=12 mode=1 percent=100 draw=135488 present=23368
+[1789026352826] [[32minfo[0m] [SelectionAB] car=7 frame=12 mode=2 percent=85 draw=119764 present=23337
+[1789026353320] [[32minfo[0m] [SelectionAB] car=7 frame=13 mode=0 percent=100 draw=115189 present=31572
+[1789026353321] [[32minfo[0m] [SelectionAB] car=7 frame=13 mode=1 percent=100 draw=112958 present=23304
+[1789026353329] [[32minfo[0m] [SelectionAB] car=7 frame=13 mode=2 percent=85 draw=105457 present=23355
+[1789026353823] [[32minfo[0m] [SelectionAB] car=7 frame=14 mode=0 percent=100 draw=115485 present=31592
+[1789026353824] [[32minfo[0m] [SelectionAB] car=7 frame=14 mode=1 percent=100 draw=113090 present=23303
+[1789026353832] [[32minfo[0m] [SelectionAB] car=7 frame=14 mode=2 percent=85 draw=105956 present=23303
+[1789026354357] [[32minfo[0m] [SelectionAB] car=7 frame=15 mode=0 percent=100 draw=123004 present=31544
+[1789026354358] [[32minfo[0m] [SelectionAB] car=7 frame=15 mode=1 percent=100 draw=120699 present=23340
+[1789026354366] [[32minfo[0m] [SelectionAB] car=7 frame=15 mode=2 percent=100 draw=121057 present=23338
+[1789026354661] [[32minfo[0m] [GarageStage] panels=1335 vertices=1704 scale_pct=100 clear_us=5542 shadow_us=1464 project_us=912 raster_us=82047 blit_us=14927
+[1789026354894] [[32minfo[0m] [SelectionAB] car=7 frame=16 mode=0 percent=100 draw=122805 present=31572
+[1789026354895] [[32minfo[0m] [SelectionAB] car=7 frame=16 mode=1 percent=100 draw=120554 present=23313
+[1789026354903] [[32minfo[0m] [SelectionAB] car=7 frame=16 mode=2 percent=100 draw=124083 present=23322
+[1789026355428] [[32minfo[0m] [SelectionAB] car=7 frame=17 mode=0 percent=100 draw=122776 present=31593
+[1789026355429] [[32minfo[0m] [SelectionAB] car=7 frame=17 mode=1 percent=100 draw=120973 present=23321
+[1789026355437] [[32minfo[0m] [SelectionAB] car=7 frame=17 mode=2 percent=100 draw=120812 present=23333
+[1789026355961] [[32minfo[0m] [SelectionAB] car=7 frame=18 mode=0 percent=100 draw=122929 present=31547
+[1789026355962] [[32minfo[0m] [SelectionAB] car=7 frame=18 mode=1 percent=100 draw=120338 present=23310
+[1789026355970] [[32minfo[0m] [SelectionAB] car=7 frame=18 mode=2 percent=100 draw=120411 present=23284
+[1789026356495] [[32minfo[0m] [SelectionAB] car=7 frame=19 mode=0 percent=100 draw=122922 present=31581
+[1789026356496] [[32minfo[0m] [SelectionAB] car=7 frame=19 mode=1 percent=100 draw=120837 present=23316
+[1789026356504] [[32minfo[0m] [SelectionAB] car=7 frame=19 mode=2 percent=100 draw=120371 present=23301
+[1789026356513] [[32minfo[0m] [SelectionAB] GROUP car=7 native_checks=216 mismatches=0
+[1789026356521] [[32minfo[0m] [SelectionAB] END native_checks=216 mismatches=0
+
+ _____ _____ _____ _____ _____ _____ _____ _____
+|     |     |     |   | |     |  _  |  |  |   __|
+| | | |  |  |  |  | | | |   --|     |    -|   __|
+|_|_|_|_____|_____|_|___|_____|__|__|__|__|_____|
+
+- @author Forairaaaaa
+- @version 2.3.3
+- @build at 17:29:29 Aug 31 2026
+
+[1789026356555] [[32minfo[0m] [Launcher] on create
+[1789026356557] [[32minfo[0m] [Launcher] on open
+[1789026356562] [[32minfo[0m] [HAL] skip guide, launch count: 5
+[1789026356568] [[32minfo[0m] [LauncherView] init
+I (91221) M5PM1_PWR: Boost Enabled
+[1789026356579] [[32minfo[0m] [HAL-PMIC] Grove 5V enabled
+E (91250) i2c.master: this port has not been initialized, please initialize it first
+I (91251) i2c_bus: i2c1 bus inited
+I (91251) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+[1789026356833] [[32minfo[0m] [HAL-Audio] play boot sfx
+[1789026356889] [[32minfo[0m] [Typhoon] on create
+[1789026356890] [[32minfo[0m] [Bot Lab] on create
+[1789026356891] [[32minfo[0m] [Glow Field] on create
+[1789026356893] [[32minfo[0m] [Vector Run] on create
+[1789026356898] [[32minfo[0m] [Let's & Go!!] on create
+[1789026356903] [[32minfo[0m] [RuView] on create
+[1789026356907] [[32minfo[0m] [AlarmClock] on create
+[1789026356912] [[32minfo[0m] [AlarmClockModel] init
+[1789026356917] [[32minfo[0m] [HAL-Alarm] alarm storage missing, using defaults
+[1789026356925] [[32minfo[0m] [AlarmClockModel] loaded storage snapshot, count: 0
+[1789026356932] [[32minfo[0m] [AlarmClockModel] import storage, count: 0, persist: false
+[1789026356941] [[32minfo[0m] [WatchFace] on create
+[1789026356945] [[32minfo[0m] [Stopwatch] on create
+[1789026356949] [[32minfo[0m] [Badge] on create
+[1789026356954] [[32minfo[0m] [IMU] on create
+[1789026356958] [[32minfo[0m] [Audio.FFT] on create
+[1789026356963] [[32minfo[0m] [LuckyWheel] on create
+[1789026356968] [[32minfo[0m] [Settings] on create

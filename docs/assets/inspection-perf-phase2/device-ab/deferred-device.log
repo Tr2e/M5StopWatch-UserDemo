@@ -1,0 +1,368 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40056f6f
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xd24
+load:0x403cb700,len:0x2ef0
+entry 0x403c8924
+I (24) boot: ESP-IDF v5.5.4 2nd stage bootloader
+I (24) boot: compile time Aug 20 2026 22:56:47
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 16MB
+I (43) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (50) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00004000
+I (62) boot:  1 otadata          OTA data         01 00 0000d000 00002000
+I (69) boot:  2 phy_init         RF data          01 01 0000f000 00001000
+I (75) boot:  3 ota_0            OTA app          00 10 00020000 004f0000
+I (82) boot:  4 ota_1            OTA app          00 11 00510000 004f0000
+I (89) boot:  5 storage          Unknown data     01 81 00a00000 00400000
+I (95) boot:  6 coredump         Unknown data     01 03 00e00000 00010000
+I (102) boot: End of partition table
+I (105) esp_image: segment 0: paddr=00020020 vaddr=3c1e0020 size=2cacf4h (2927860) map
+I (628) esp_image: segment 1: paddr=002ead1c vaddr=3fc9e900 size=052fch ( 21244) load
+I (633) esp_image: segment 2: paddr=002f0020 vaddr=42000020 size=1d0d64h (1903972) map
+I (969) esp_image: segment 3: paddr=004c0d8c vaddr=3fca3bfc size=006c0h (  1728) load
+I (970) esp_image: segment 4: paddr=004c1454 vaddr=40374000 size=1a87ch (108668) load
+I (996) esp_image: segment 5: paddr=004dbcd8 vaddr=50000000 size=00020h (    32) load
+I (1007) boot: Loaded app from partition at offset 0x20000
+I (1007) boot: Disabling RNG early entropy source...
+I (1018) octal_psram: vendor id    : 0x0d (AP)
+I (1018) octal_psram: dev id       : 0x02 (generation 3)
+I (1018) octal_psram: density      : 0x03 (64 Mbit)
+I (1020) octal_psram: good-die     : 0x01 (Pass)
+I (1025) octal_psram: Latency      : 0x01 (Fixed)
+I (1029) octal_psram: VCC          : 0x01 (3V)
+I (1033) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (1038) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (1043) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (1048) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (1053) octal_psram: DriveStrength: 0x00 (1/1)
+I (1057) MSPI Timing: Enter psram timing tuning
+I (1062) esp_psram: Found 8MB PSRAM device
+I (1065) esp_psram: Speed: 80MHz
+I (1069) cpu_start: Multicore app
+I (1504) esp_psram: SPI SRAM memory test OK
+I (1513) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (1513) cpu_start: Pro cpu start user code
+I (1513) cpu_start: cpu freq: 240000000 Hz
+I (1515) app_init: Application information:
+I (1519) app_init: Project name:     StopWatch-UserDemo
+I (1524) app_init: App version:      V0.5-146-g7b9aaaa-dirty
+I (1529) app_init: Compile time:     Sep 10 2026 09:50:20
+I (1534) app_init: ELF file SHA256:  591b2bb4a...
+I (1539) app_init: ESP-IDF:          v5.5.4
+I (1543) efuse_init: Min chip rev:     v0.0
+I (1547) efuse_init: Max chip rev:     v0.99 
+I (1551) efuse_init: Chip rev:         v0.2
+I (1555) heap_init: Initializing. RAM available for dynamic allocation:
+I (1561) heap_init: At 3FCADF70 len 0003B7A0 (237 KiB): RAM
+I (1566) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (1572) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (1577) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (1582) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (1590) spi_flash: detected chip: generic
+I (1593) spi_flash: flash io: dio
+I (1596) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (1602) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (1609) main_task: Started on CPU0
+I (1612) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1620) main_task: Calling app_main()
+[1789010051534] [[32minfo[0m] [HAL] creating hal instance
+[1789010051540] [[32minfo[0m] [HAL] init
+[1789010051552] [[32minfo[0m] [HAL] i2c init
+E (1642) i2c.master: this port has not been initialized, please initialize it first
+I (1645) i2c_bus: i2c0 bus inited
+I (1647) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+I (1655) i2c_bus: found i2c device address = 0x15
+I (1657) i2c_bus: found i2c device address = 0x18
+I (1665) i2c_bus: found i2c device address = 0x32
+I (1670) i2c_bus: found i2c device address = 0x4f
+I (1673) i2c_bus: found i2c device address = 0x68
+I (1675) i2c_bus: found i2c device address = 0x6e
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- 15 -- -- 18 -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- 32 -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 4f 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- 6e -- 
+70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+[1789010051633] [[32minfo[0m] [HAL-PMIC] pmic init
+I (1740) M5PM1_SYS: Device: ID=0x50 MODEL=0x20 HW=0x05 SW=0x53(S)
+I (1743) M5PM1_I2C: I2C config set and verified: sleep=0, speed=100K
+I (1768) M5PM1_I2C: M5PM1 initialized at address 0x6E (I2C: 100000 Hz)
+I (1771) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1773) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1777) M5PM1_SYS: Watchdog set to 0 sec
+I (1781) M5PM1_PWR: Charge Enabled
+I (1865) M5PM1_SYS: Single Reset: Disabled
+[1789010051781] [[32minfo[0m] [HAL-PMIC] start bat reading task
+[1789010051780] [[32minfo[0m] [HAL-IOE] init
+I (1871) M5IOE1_I2C: Initializing M5IOE1 with 100KHz (device default)
+I (1886) M5IOE1_SYS: Device UID: 0x2BF0, FW Version: 57
+I (1887) M5IOE1_I2C: Current I2C speed matches user request (400K)
+I (1888) M5IOE1_I2C: I2C config set and verified: sleep=0, speed=400K, wake=falling, pull=on
+I (1905) M5IOE1_I2C: M5IOE1 initialized at address 0x4F (I2C: 400000 Hz)
+I (1906) M5IOE1_IRQ: Interrupt mode -> POLLING (pause if I2C sleep on; resume when off)
+[1789010051820] [[32minfo[0m] [HAL-IOE] init success, addr: 0x4F
+I (1917) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1921) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1939) M5IOE1_GPIO: Pin 8 mode set and verified: OUTPUT (0x03)
+I (1953) M5IOE1_GPIO: Pin 7 mode set and verified: OUTPUT (0x03)
+I (1967) M5IOE1_GPIO: Pin 9 mode set and verified: OUTPUT (0x03)
+I (1980) M5IOE1_GPIO: Pin 3 mode set and verified: OUTPUT (0x03)
+I (1993) M5IOE1_GPIO: Pin 4 mode set and verified: OUTPUT (0x03)
+I (2007) M5IOE1_GPIO: Pin 0 mode set and verified: OUTPUT (0x03)
+I (2020) M5IOE1_GPIO: Pin 2 mode set and verified: OUTPUT (0x03)
+I (2022) M5IOE1_GPIO: Pin 7 digital write and verified: 1
+I (2024) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (2027) M5IOE1_GPIO: Pin 9 digital write and verified: 0
+I (2032) M5IOE1_GPIO: Pin 4 digital write and verified: 1
+I (2037) M5IOE1_GPIO: Pin 0 digital write and verified: 0
+I (2042) M5IOE1_GPIO: Pin 2 digital write and verified: 1
+I (2050) M5IOE1_PWM: PWM frequency set and verified: 5000 Hz
+[1789010051962] [[32minfo[0m] [HAL-IOE] start vibrator task
+I (2068) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1789010052098] [[32minfo[0m] [HAL-Display] display init
+[1789010052333] [[32minfo[0m] [HAL-Display] create full screen canvas
+[1789010052346] [[32minfo[0m] [HAL-Display] brightness loaded from settings: 40
+[1789010052347] [[32minfo[0m] [HAL-Display] touchpad init
+[1789010052348] [[32minfo[0m] [HAL-IOE] touchpad reset
+I (2445) M5IOE1_GPIO: Pin 3 digital write and verified: 0
+I (2458) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (2510) CST820: Chip ID: 0xb7, Soft Ver: 0x02
+[1789010052421] [[32minfo[0m] [HAL-Display] lvgl init
+[1789010052429] [[32minfo[0m] [HAL-Audio] init
+[1789010052432] [[32minfo[0m] [HAL-Audio] start audio play task
+[1789010052433] [[32minfo[0m] [HAL-Audio] i2s init
+I (2533) ES8311: Work in Slave mode
+I (2539) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2540) I2S_IF: STD Mode 1 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2541) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2546) I2S_IF: STD Mode 0 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2571) Adev_Codec: Open codec device OK
+[1789010052483] [[32minfo[0m] [HAL-IOE] set speaker enable
+I (2575) M5IOE1_GPIO: Pin 9 digital write and verified: 1
+[1789010052497] [[32minfo[0m] [HAL-Audio] volume loaded from settings: 0
+[1789010052498] [[32minfo[0m] [HAL-Audio] set speaker volume to 0
+[1789010052501] [[32minfo[0m] [HAL-IMU] init
+[1789010053555] [[32minfo[0m] [HAL-RTC] init
+[1789010053557] [[32minfo[0m] [HAL-RTC] load timezone from nvs: UTC-8
+[1789010054000] [[32minfo[0m] [HAL-RTC] rtc synced to system (UTC): 2026-09-10 03:14:14
+[1789010054002] [[32minfo[0m] [HAL-BTN] init
+[1789010054007] [[32minfo[0m] [HAL-BTN] config loaded from settings: sfx=true, vibrate=true
+[1789010054015] [[32minfo[0m] [HAL-FS] init
+I (3668) wear_levelling: Mounting FAT filesystem
+I (3674) wear_levelling: Done
+I (3676) WifiManager: Initializing...
+I (3680) pp: pp rom version: e7ae62f
+I (3682) net80211: net80211 rom version: e7ae62f
+I (3688) wifi:wifi driver task: 3fccc77c, prio:23, stack:6656, core=0
+I (3694) wifi:wifi firmware version: 0947e8b
+I (3696) wifi:wifi certification version: v7.0
+I (3701) wifi:config NVS flash: disabled
+I (3704) wifi:config nano formatting: disabled
+I (3709) wifi:Init data frame dynamic rx buffer num: 32
+I (3713) wifi:Init static rx mgmt buffer num: 5
+I (3718) wifi:Init management short buffer num: 32
+I (3722) wifi:Init dynamic tx buffer num: 32
+I (3726) wifi:Init static tx FG buffer num: 2
+I (3730) wifi:Init static rx buffer size: 1600
+I (3734) wifi:Init static rx buffer num: 10
+I (3738) wifi:Init dynamic rx buffer num: 32
+I (3743) wifi_init: rx ba win: 6
+I (3745) wifi_init: accept mbox: 6
+I (3748) wifi_init: tcpip mbox: 32
+I (3751) wifi_init: udp mbox: 6
+I (3754) wifi_init: tcp mbox: 6
+I (3757) wifi_init: tcp tx win: 5760
+I (3760) wifi_init: tcp rx win: 5760
+I (3764) wifi_init: tcp mss: 1440
+I (3767) wifi_init: WiFi IRAM OP enabled
+I (3770) wifi_init: WiFi RX IRAM OP enabled
+I (3775) WifiManager: Initialized
+[1789010054158] [[32minfo[0m] [RacerMemory] scene=234x233 requested_half=true
+[1789010054190] [[32minfo[0m] [RacerMemory] track_rows_internal=true car_planes_internal=2 free_internal=95475 largest_internal=31744
+[1789010054226] [[32minfo[0m] [InspectionAB] BEGIN width=468 height=466 free_internal=92655
+[1789010054380] [[32minfo[0m] [ReferenceInspectionStage] car=MAGNUM scale_pct=80 fit_us=8835 model_us=120333
+[1789010054443] [[32minfo[0m] [GarageMemory] strip=352x16 internal_planes=2 plane_bytes=11264
+[1789010054568] [[32minfo[0m] [GarageStage] panels=1192 scale_pct=80 shadow_us=4261 prepare_us=10508 clear_us=198 raster_us=67003 shade_us=25137 blit_us=16964
+[1789010054572] [[32minfo[0m] [InspectionStage] car=MAGNUM scale_pct=80 fit_us=12652 model_us=129078
+[1789010056544] [[32minfo[0m] [ReferenceInspectionStage] car=MAGNUM scale_pct=80 fit_us=8890 model_us=111751
+[1789010056703] [[32minfo[0m] [GarageStage] panels=1192 scale_pct=80 shadow_us=4495 prepare_us=10554 clear_us=198 raster_us=56189 shade_us=26711 blit_us=16952
+[1789010056707] [[32minfo[0m] [InspectionStage] car=MAGNUM scale_pct=80 fit_us=4110 model_us=118938
+[1789010058682] [[32minfo[0m] [ReferenceInspectionStage] car=MAGNUM scale_pct=80 fit_us=8881 model_us=117926
+[1789010058848] [[32minfo[0m] [GarageStage] panels=1192 scale_pct=80 shadow_us=4134 prepare_us=10533 clear_us=197 raster_us=65610 shade_us=24764 blit_us=16834
+[1789010058852] [[32minfo[0m] [InspectionStage] car=MAGNUM scale_pct=80 fit_us=4135 model_us=125912
+[1789010058918] [[32minfo[0m] [InspectionAB] car=0 pct=80 frames=12 before_us=137637 after_us=138923 before_max=142624 after_max=153797 transfer_us=31191 mismatches=0
+[1789010060792] [[32minfo[0m] [ReferenceInspectionStage] car=MAGNUM scale_pct=100 fit_us=8904 model_us=143933
+[1789010060983] [[32minfo[0m] [GarageStage] panels=1192 scale_pct=100 shadow_us=4356 prepare_us=10538 clear_us=305 raster_us=77295 shade_us=40260 blit_us=13803
+[1789010060987] [[32minfo[0m] [InspectionStage] car=MAGNUM scale_pct=100 fit_us=4102 model_us=150508
+[1789010063059] [[32minfo[0m] [ReferenceInspectionStage] car=MAGNUM scale_pct=100 fit_us=8849 model_us=144670
+[1789010063479] [[32minfo[0m] [GarageStage] panels=1192 scale_pct=100 shadow_us=4164 prepare_us=10543 clear_us=295 raster_us=83728 shade_us=37486 blit_us=13610
+[1789010063483] [[32minfo[0m] [InspectionStage] car=MAGNUM scale_pct=100 fit_us=4049 model_us=153782
+[1789010064402] [[32minfo[0m] [InspectionAB] car=0 pct=100 frames=12 before_us=169781 after_us=170349 before_max=175202 after_max=181683 transfer_us=31240 mismatches=0
+[1789010065102] [[32minfo[0m] [ReferenceInspectionStage] car=SONIC scale_pct=80 fit_us=9125 model_us=117323
+[1789010065646] [[32minfo[0m] [GarageStage] panels=1225 scale_pct=80 shadow_us=4201 prepare_us=10805 clear_us=194 raster_us=58944 shade_us=23346 blit_us=16733
+[1789010065650] [[32minfo[0m] [InspectionStage] car=SONIC scale_pct=80 fit_us=4167 model_us=118066
+[1789010067214] [[32minfo[0m] [ReferenceInspectionStage] car=SONIC scale_pct=80 fit_us=9125 model_us=111317
+[1789010067752] [[32minfo[0m] [GarageStage] panels=1225 scale_pct=80 shadow_us=4075 prepare_us=10813 clear_us=195 raster_us=60055 shade_us=22247 blit_us=16755
+[1789010067756] [[32minfo[0m] [InspectionStage] car=SONIC scale_pct=80 fit_us=4198 model_us=117987
+[1789010069046] [[32minfo[0m] [InspectionAB] car=1 pct=80 frames=12 before_us=137397 after_us=136228 before_max=142161 after_max=145926 transfer_us=31237 mismatches=0
+[1789010069228] [[32minfo[0m] [ReferenceInspectionStage] car=SONIC scale_pct=100 fit_us=9137 model_us=154567
+[1789010070269] [[32minfo[0m] [GarageStage] panels=1225 scale_pct=100 shadow_us=4084 prepare_us=10816 clear_us=297 raster_us=83859 shade_us=35323 blit_us=13677
+[1789010070273] [[32minfo[0m] [InspectionStage] car=SONIC scale_pct=100 fit_us=4153 model_us=151973
+[1789010071515] [[32minfo[0m] [ReferenceInspectionStage] car=SONIC scale_pct=100 fit_us=9136 model_us=144559
+[1789010072741] [[32minfo[0m] [GarageStage] panels=1225 scale_pct=100 shadow_us=4124 prepare_us=10844 clear_us=313 raster_us=78545 shade_us=34916 blit_us=13613
+[1789010072745] [[32minfo[0m] [InspectionStage] car=SONIC scale_pct=100 fit_us=4187 model_us=146311
+[1789010073995] [[32minfo[0m] [ReferenceInspectionStage] car=SONIC scale_pct=100 fit_us=9102 model_us=147036
+[1789010074476] [[32minfo[0m] [InspectionAB] car=1 pct=100 frames=12 before_us=169486 after_us=166438 before_max=174328 after_max=179863 transfer_us=31214 mismatches=0
+[1789010074813] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=80 shadow_us=3851 prepare_us=10216 clear_us=194 raster_us=65167 shade_us=23627 blit_us=16771
+[1789010074817] [[32minfo[0m] [InspectionStage] car=TRIDAGGER scale_pct=80 fit_us=12104 model_us=123668
+[1789010076080] [[32minfo[0m] [ReferenceInspectionStage] car=TRIDAGGER scale_pct=80 fit_us=8722 model_us=112813
+[1789010076935] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=80 shadow_us=4264 prepare_us=10202 clear_us=195 raster_us=55170 shade_us=26578 blit_us=17072
+[1789010076939] [[32minfo[0m] [InspectionStage] car=TRIDAGGER scale_pct=80 fit_us=3749 model_us=117327
+[1789010078191] [[32minfo[0m] [ReferenceInspectionStage] car=TRIDAGGER scale_pct=80 fit_us=8707 model_us=114438
+[1789010079062] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=80 shadow_us=3929 prepare_us=10224 clear_us=195 raster_us=63632 shade_us=23621 blit_us=16844
+[1789010079066] [[32minfo[0m] [InspectionStage] car=TRIDAGGER scale_pct=80 fit_us=3782 model_us=122314
+[1789010079133] [[32minfo[0m] [InspectionAB] car=2 pct=80 frames=12 before_us=138042 after_us=136140 before_max=140578 after_max=150202 transfer_us=31214 mismatches=0
+[1789010080762] [[32minfo[0m] [ReferenceInspectionStage] car=TRIDAGGER scale_pct=100 fit_us=8724 model_us=146646
+[1789010081174] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=100 shadow_us=4146 prepare_us=10223 clear_us=302 raster_us=75491 shade_us=39417 blit_us=13771
+[1789010081178] [[32minfo[0m] [InspectionStage] car=TRIDAGGER scale_pct=100 fit_us=3979 model_us=147316
+[1789010083248] [[32minfo[0m] [ReferenceInspectionStage] car=TRIDAGGER scale_pct=100 fit_us=8706 model_us=145805
+[1789010083664] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=100 shadow_us=3898 prepare_us=10234 clear_us=297 raster_us=81341 shade_us=36466 blit_us=13562
+[1789010083668] [[32minfo[0m] [InspectionStage] car=TRIDAGGER scale_pct=100 fit_us=3774 model_us=149734
+[1789010084574] [[32minfo[0m] [InspectionAB] car=2 pct=100 frames=12 before_us=170760 after_us=166367 before_max=174225 after_max=177706 transfer_us=31204 mismatches=0
+[1789010085395] [[32minfo[0m] [ReferenceInspectionStage] car=BROCKEN scale_pct=80 fit_us=10127 model_us=146461
+[1789010085816] [[32minfo[0m] [GarageStage] panels=1361 scale_pct=80 shadow_us=4553 prepare_us=12111 clear_us=197 raster_us=90528 shade_us=27578 blit_us=17016
+[1789010085820] [[32minfo[0m] [InspectionStage] car=BROCKEN scale_pct=80 fit_us=4831 model_us=155838
+[1789010087859] [[32minfo[0m] [ReferenceInspectionStage] car=BROCKEN scale_pct=80 fit_us=10136 model_us=141444
+[1789010088289] [[32minfo[0m] [GarageStage] panels=1361 scale_pct=80 shadow_us=5052 prepare_us=12098 clear_us=202 raster_us=91805 shade_us=30102 blit_us=17646
+[1789010088293] [[32minfo[0m] [InspectionStage] car=BROCKEN scale_pct=80 fit_us=4840 model_us=160762
+[1789010090090] [[32minfo[0m] [InspectionAB] car=3 pct=80 frames=12 before_us=168459 after_us=173437 before_max=175389 after_max=189510 transfer_us=31205 mismatches=0
+[1789010090302] [[32minfo[0m] [ReferenceInspectionStage] car=BROCKEN scale_pct=100 fit_us=10131 model_us=184266
+[1789010090538] [[32minfo[0m] [GarageStage] panels=1361 scale_pct=100 shadow_us=4061 prepare_us=12099 clear_us=293 raster_us=121829 shade_us=38309 blit_us=13691
+[1789010090542] [[32minfo[0m] [InspectionStage] car=BROCKEN scale_pct=100 fit_us=4872 model_us=194306
+[1789010092323] [[32minfo[0m] [ReferenceInspectionStage] car=BROCKEN scale_pct=100 fit_us=10106 model_us=177731
+[1789010092553] [[32minfo[0m] [GarageStage] panels=1361 scale_pct=100 shadow_us=4701 prepare_us=12110 clear_us=304 raster_us=109401 shade_us=44016 blit_us=13954
+[1789010092556] [[32minfo[0m] [InspectionStage] car=BROCKEN scale_pct=100 fit_us=4880 model_us=188522
+[1789010094811] [[32minfo[0m] [GarageStage] panels=1361 scale_pct=100 shadow_us=4939 prepare_us=12118 clear_us=293 raster_us=126597 shade_us=45574 blit_us=14009
+[1789010094815] [[32minfo[0m] [InspectionStage] car=BROCKEN scale_pct=100 fit_us=4885 model_us=207549
+[1789010095069] [[32minfo[0m] [ReferenceInspectionStage] car=BROCKEN scale_pct=100 fit_us=10145 model_us=195436
+[1789010096694] [[32minfo[0m] [InspectionAB] car=3 pct=100 frames=12 before_us=211146 after_us=215889 before_max=221338 after_max=236473 transfer_us=31202 mismatches=0
+[1789010097044] [[32minfo[0m] [GarageStage] panels=1239 scale_pct=80 shadow_us=4044 prepare_us=10888 clear_us=217 raster_us=70949 shade_us=22992 blit_us=16942
+[1789010097048] [[32minfo[0m] [InspectionStage] car=COBRA scale_pct=80 fit_us=12980 model_us=129879
+[1789010097424] [[32minfo[0m] [ReferenceInspectionStage] car=COBRA scale_pct=80 fit_us=9209 model_us=120349
+[1789010099213] [[32minfo[0m] [GarageStage] panels=1239 scale_pct=80 shadow_us=4318 prepare_us=10904 clear_us=198 raster_us=59676 shade_us=25209 blit_us=17013
+[1789010099216] [[32minfo[0m] [InspectionStage] car=COBRA scale_pct=80 fit_us=4106 model_us=121175
+[1789010099581] [[32minfo[0m] [ReferenceInspectionStage] car=COBRA scale_pct=80 fit_us=9224 model_us=115022
+[1789010101391] [[32minfo[0m] [GarageStage] panels=1239 scale_pct=80 shadow_us=4543 prepare_us=11015 clear_us=197 raster_us=69070 shade_us=22894 blit_us=16904
+[1789010101395] [[32minfo[0m] [InspectionStage] car=COBRA scale_pct=80 fit_us=4113 model_us=128469
+[1789010101461] [[32minfo[0m] [InspectionAB] car=4 pct=80 frames=12 before_us=141275 after_us=140823 before_max=145439 after_max=156212 transfer_us=31251 mismatches=0
+[1789010101647] [[32minfo[0m] [ReferenceInspectionStage] car=COBRA scale_pct=100 fit_us=9226 model_us=158554
+[1789010103557] [[32minfo[0m] [GarageStage] panels=1239 scale_pct=100 shadow_us=4193 prepare_us=10908 clear_us=302 raster_us=81579 shade_us=37874 blit_us=13765
+[1789010103561] [[32minfo[0m] [InspectionStage] car=COBRA scale_pct=100 fit_us=4117 model_us=152558
+[1789010103990] [[32minfo[0m] [ReferenceInspectionStage] car=COBRA scale_pct=100 fit_us=9224 model_us=148878
+[1789010106102] [[32minfo[0m] [GarageStage] panels=1239 scale_pct=100 shadow_us=4031 prepare_us=10916 clear_us=302 raster_us=89039 shade_us=35506 blit_us=13606
+[1789010106105] [[32minfo[0m] [InspectionStage] car=COBRA scale_pct=100 fit_us=4104 model_us=157350
+[1789010106546] [[32minfo[0m] [ReferenceInspectionStage] car=COBRA scale_pct=100 fit_us=9200 model_us=153028
+[1789010107040] [[32minfo[0m] [InspectionAB] car=4 pct=100 frames=12 before_us=174716 after_us=172946 before_max=179778 after_max=185218 transfer_us=31235 mismatches=0
+[1789010108163] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=80 shadow_us=4014 prepare_us=10186 clear_us=194 raster_us=64554 shade_us=32180 blit_us=16953
+[1789010108167] [[32minfo[0m] [InspectionStage] car=SPIDER scale_pct=80 fit_us=3653 model_us=131934
+[1789010108550] [[32minfo[0m] [ReferenceInspectionStage] car=SPIDER scale_pct=80 fit_us=8695 model_us=125617
+[1789010110409] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=80 shadow_us=4177 prepare_us=10176 clear_us=195 raster_us=61375 shade_us=32204 blit_us=16917
+[1789010110413] [[32minfo[0m] [InspectionStage] car=SPIDER scale_pct=80 fit_us=3634 model_us=128895
+[1789010110795] [[32minfo[0m] [ReferenceInspectionStage] car=SPIDER scale_pct=80 fit_us=8704 model_us=124921
+[1789010111989] [[32minfo[0m] [InspectionAB] car=5 pct=80 frames=12 before_us=149797 after_us=147469 before_max=152859 after_max=159592 transfer_us=31204 mismatches=0
+[1789010112646] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=100 shadow_us=3892 prepare_us=10180 clear_us=297 raster_us=90698 shade_us=48947 blit_us=13852
+[1789010112650] [[32minfo[0m] [InspectionStage] car=SPIDER scale_pct=100 fit_us=3663 model_us=171808
+[1789010112877] [[32minfo[0m] [ReferenceInspectionStage] car=SPIDER scale_pct=100 fit_us=8716 model_us=169789
+[1789010114912] [[32minfo[0m] [ReferenceInspectionStage] car=SPIDER scale_pct=100 fit_us=8734 model_us=163211
+[1789010115116] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=100 shadow_us=4269 prepare_us=10164 clear_us=294 raster_us=78052 shade_us=53596 blit_us=13923
+[1789010115120] [[32minfo[0m] [InspectionStage] car=SPIDER scale_pct=100 fit_us=3683 model_us=164245
+[1789010117154] [[32minfo[0m] [GarageStage] panels=1171 scale_pct=100 shadow_us=4000 prepare_us=10176 clear_us=309 raster_us=90288 shade_us=46944 blit_us=13759
+[1789010117157] [[32minfo[0m] [InspectionStage] car=SPIDER scale_pct=100 fit_us=3637 model_us=169390
+[1789010117382] [[32minfo[0m] [ReferenceInspectionStage] car=SPIDER scale_pct=100 fit_us=8694 model_us=166981
+[1789010117897] [[32minfo[0m] [InspectionAB] car=5 pct=100 frames=12 before_us=188444 after_us=184599 before_max=194198 after_max=199395 transfer_us=31196 mismatches=0
+[1789010119318] [[32minfo[0m] [GarageStage] panels=1565 scale_pct=80 shadow_us=4623 prepare_us=13821 clear_us=198 raster_us=86989 shade_us=19952 blit_us=17059
+[1789010119322] [[32minfo[0m] [InspectionStage] car=STINGER scale_pct=80 fit_us=5356 model_us=146478
+[1789010119514] [[32minfo[0m] [ReferenceInspectionStage] car=STINGER scale_pct=80 fit_us=11562 model_us=132070
+[1789010121471] [[32minfo[0m] [GarageStage] panels=1565 scale_pct=80 shadow_us=4772 prepare_us=13839 clear_us=196 raster_us=87900 shade_us=20206 blit_us=16917
+[1789010121475] [[32minfo[0m] [InspectionStage] car=STINGER scale_pct=80 fit_us=5360 model_us=147697
+[1789010121900] [[32minfo[0m] [ReferenceInspectionStage] car=STINGER scale_pct=80 fit_us=11566 model_us=139212
+[1789010123220] [[32minfo[0m] [InspectionAB] car=6 pct=80 frames=12 before_us=160288 after_us=166210 before_max=170073 after_max=177028 transfer_us=31201 mismatches=0
+[1789010123638] [[32minfo[0m] [GarageStage] panels=1565 scale_pct=100 shadow_us=4029 prepare_us=13835 clear_us=295 raster_us=117701 shade_us=27623 blit_us=13588
+[1789010123641] [[32minfo[0m] [InspectionStage] car=STINGER scale_pct=100 fit_us=5310 model_us=181095
+[1789010124135] [[32minfo[0m] [ReferenceInspectionStage] car=STINGER scale_pct=100 fit_us=11550 model_us=172898
+[1789010125801] [[32minfo[0m] [GarageStage] panels=1565 scale_pct=100 shadow_us=4524 prepare_us=13828 clear_us=299 raster_us=102822 shade_us=29909 blit_us=13687
+[1789010125805] [[32minfo[0m] [InspectionStage] car=STINGER scale_pct=100 fit_us=5348 model_us=169115
+[1789010126262] [[32minfo[0m] [ReferenceInspectionStage] car=STINGER scale_pct=100 fit_us=11578 model_us=158163
+[1789010128418] [[32minfo[0m] [GarageStage] panels=1565 scale_pct=100 shadow_us=5068 prepare_us=13818 clear_us=299 raster_us=130104 shade_us=33486 blit_us=14030
+[1789010128422] [[32minfo[0m] [InspectionStage] car=STINGER scale_pct=100 fit_us=5305 model_us=200821
+[1789010128931] [[32minfo[0m] [ReferenceInspectionStage] car=STINGER scale_pct=100 fit_us=11555 model_us=179874
+[1789010129485] [[32minfo[0m] [InspectionAB] car=6 pct=100 frames=12 before_us=197292 after_us=204112 before_max=210061 after_max=230084 transfer_us=31189 mismatches=0
+[1789010130587] [[32minfo[0m] [GarageStage] panels=1335 scale_pct=80 shadow_us=4187 prepare_us=11724 clear_us=194 raster_us=73620 shade_us=17432 blit_us=16765
+[1789010130590] [[32minfo[0m] [InspectionStage] car=DIOSPADA scale_pct=80 fit_us=4439 model_us=127760
+[1789010130961] [[32minfo[0m] [ReferenceInspectionStage] car=DIOSPADA scale_pct=80 fit_us=9921 model_us=116605
+[1789010132739] [[32minfo[0m] [GarageStage] panels=1335 scale_pct=80 shadow_us=4206 prepare_us=11761 clear_us=196 raster_us=70935 shade_us=17386 blit_us=16713
+[1789010132743] [[32minfo[0m] [InspectionStage] car=DIOSPADA scale_pct=80 fit_us=4474 model_us=125057
+[1789010133118] [[32minfo[0m] [ReferenceInspectionStage] car=DIOSPADA scale_pct=80 fit_us=9933 model_us=118639
+[1789010134300] [[32minfo[0m] [InspectionAB] car=7 pct=80 frames=12 before_us=142849 after_us=143639 before_max=149807 after_max=156217 transfer_us=31205 mismatches=0
+[1789010134932] [[32minfo[0m] [GarageStage] panels=1335 scale_pct=100 shadow_us=4086 prepare_us=11751 clear_us=292 raster_us=104450 shade_us=26656 blit_us=13655
+[1789010134936] [[32minfo[0m] [InspectionStage] car=DIOSPADA scale_pct=100 fit_us=4430 model_us=164899
+[1789010135151] [[32minfo[0m] [ReferenceInspectionStage] car=DIOSPADA scale_pct=100 fit_us=9917 model_us=156648
+[1789010137247] [[32minfo[0m] [GarageStage] panels=1335 scale_pct=100 shadow_us=4270 prepare_us=11738 clear_us=316 raster_us=87181 shade_us=27155 blit_us=13618
+[1789010137251] [[32minfo[0m] [InspectionStage] car=DIOSPADA scale_pct=100 fit_us=4443 model_us=148222
+[1789010137679] [[32minfo[0m] [ReferenceInspectionStage] car=DIOSPADA scale_pct=100 fit_us=9920 model_us=145420
+[1789010139855] [[32minfo[0m] [GarageStage] panels=1335 scale_pct=100 shadow_us=4271 prepare_us=11758 clear_us=308 raster_us=106375 shade_us=27406 blit_us=13803
+[1789010139858] [[32minfo[0m] [InspectionStage] car=DIOSPADA scale_pct=100 fit_us=4458 model_us=167986
+[1789010139925] [[32minfo[0m] [InspectionAB] car=7 pct=100 frames=12 before_us=174784 after_us=176076 before_max=184114 after_max=196534 transfer_us=31213 mismatches=0
+[1789010139930] [[32minfo[0m] [InspectionAB] END mismatches=0
+
+ _____ _____ _____ _____ _____ _____ _____ _____
+|     |     |     |   | |     |  _  |  |  |   __|
+| | | |  |  |  |  | | | |   --|     |    -|   __|
+|_|_|_|_____|_____|_|___|_____|__|__|__|__|_____|
+
+- @author Forairaaaaa
+- @version 2.3.3
+- @build at 17:29:29 Aug 31 2026
+
+[1789010139963] [[32minfo[0m] [Launcher] on create
+[1789010139965] [[32minfo[0m] [Launcher] on open
+[1789010139970] [[32minfo[0m] [HAL] skip guide, launch count: 5
+[1789010139976] [[32minfo[0m] [LauncherView] init
+I (89629) M5PM1_PWR: Boost Enabled
+[1789010139986] [[32minfo[0m] [HAL-PMIC] Grove 5V enabled
+E (89658) i2c.master: this port has not been initialized, please initialize it first
+I (89659) i2c_bus: i2c1 bus inited
+I (89659) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+[1789010140243] [[32minfo[0m] [HAL-Audio] play boot sfx
+[1789010140298] [[32minfo[0m] [Typhoon] on create
+[1789010140299] [[32minfo[0m] [Bot Lab] on create
+[1789010140301] [[32minfo[0m] [Glow Field] on create
+[1789010140302] [[32minfo[0m] [Vector Run] on create
+[1789010140307] [[32minfo[0m] [Let's & Go!!] on create
+[1789010140312] [[32minfo[0m] [RuView] on create
+[1789010140317] [[32minfo[0m] [AlarmClock] on create
+[1789010140322] [[32minfo[0m] [AlarmClockModel] init
+[1789010140327] [[32minfo[0m] [HAL-Alarm] alarm storage missing, using defaults
+[1789010140334] [[32minfo[0m] [AlarmClockModel] loaded storage snapshot, count: 0
+[1789010140341] [[32minfo[0m] [AlarmClockModel] import storage, count: 0, persist: false
+[1789010140350] [[32minfo[0m] [WatchFace] on create
+[1789010140354] [[32minfo[0m] [Stopwatch] on create
+[1789010140359] [[32minfo[0m] [Badge] on create
+[1789010140363] [[32minfo[0m] [IMU] on create
+[1789010140367] [[32minfo[0m] [Audio.FFT] on create
+[1789010140372] [[32minfo[0m] [LuckyWheel] on create
+[1789010140377] [[32minfo[0m] [Settings] on create

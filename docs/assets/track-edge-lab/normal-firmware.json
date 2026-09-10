@@ -1,0 +1,12 @@
+{
+  "benchmark_symbols_absent": true,
+  "edge_mode_enabled_in_app": true,
+  "bin": {
+    "bytes": 4948256,
+    "sha256": "8f44b51ac8e4889f5f2b2b0d4967059687fe4f35d26e4ec7c03b502a05d7b0ba"
+  },
+  "elf": {
+    "bytes": 53972268,
+    "sha256": "154f661b57aa40e2004cf1cd196bee94192a36fdef814cda98c79f0d7124cd0b"
+  }
+}

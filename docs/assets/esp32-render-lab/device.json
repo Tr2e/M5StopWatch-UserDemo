@@ -1,0 +1,50 @@
+{
+  "0": {
+    "draw_ms": 140.0316875,
+    "present_ms": 31.505625,
+    "road_ms": 16.8998125,
+    "player_ms": 39.024625,
+    "opponents_ms": 54.6356875,
+    "upscale_ms": 19.1943125,
+    "hud_ms": 3.6515,
+    "total_ms": 171.5373125
+  },
+  "1": {
+    "draw_ms": 134.772875,
+    "present_ms": 31.486,
+    "road_ms": 16.83175,
+    "player_ms": 39.0150625,
+    "opponents_ms": 54.6473125,
+    "upscale_ms": 14.31225,
+    "hud_ms": 3.6153125,
+    "total_ms": 166.258875,
+    "reduction_pct": 3.077136643376077
+  },
+  "2": {
+    "draw_ms": 139.5411875,
+    "present_ms": 31.50075,
+    "road_ms": 17.15475,
+    "player_ms": 38.746125,
+    "opponents_ms": 54.207875,
+    "upscale_ms": 19.1980625,
+    "hud_ms": 3.6064375,
+    "total_ms": 171.04193750000002,
+    "reduction_pct": 0.28878556669703626
+  },
+  "3": {
+    "draw_ms": 134.69325,
+    "present_ms": 31.5018125,
+    "road_ms": 16.96275,
+    "player_ms": 38.7388125,
+    "opponents_ms": 54.179625,
+    "upscale_ms": 14.320875,
+    "hud_ms": 3.7079375,
+    "total_ms": 166.1950625,
+    "reduction_pct": 3.114337004667722
+  },
+  "validation": {
+    "copy_mismatches": 0,
+    "uv_changed_frames": 0,
+    "uv_changed_pixels": 0
+  }
+}

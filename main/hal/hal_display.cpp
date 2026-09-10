@@ -11,6 +11,7 @@
 #include <smooth_ui_toolkit.hpp>
 #include <uitk/short_namespace.hpp>
 #include <memory>
+#include <algorithm>
 
 static const std::string_view _tag = "HAL-Display";
 
@@ -197,6 +198,21 @@ LGFX_Sprite &Hal::getCanvas()
 void Hal::updateCanvas()
 {
     _canvas->pushSprite(0, 0);
+}
+
+void Hal::updateCanvasRegion(int x,int y,int width,int height)
+{
+    int32_t oldX,oldY,oldWidth,oldHeight;
+    _display->getClipRect(&oldX,&oldY,&oldWidth,&oldHeight);
+    const int left=std::max(x,int(oldX)),top=std::max(y,int(oldY));
+    const int right=std::min(x+width,int(oldX+oldWidth));
+    const int bottom=std::min(y+height,int(oldY+oldHeight));
+    if(right<=left || bottom<=top)return;
+    // Destination clipping preserves the full sprite's source stride and
+    // RGB565 conversion. Restore the previous clip for every other app.
+    _display->setClipRect(left,top,right-left,bottom-top);
+    _canvas->pushSprite(0,0);
+    _display->setClipRect(oldX,oldY,oldWidth,oldHeight);
 }
 
 void Hal::setBackLightBrightness(int brightness, bool saveToSettings)

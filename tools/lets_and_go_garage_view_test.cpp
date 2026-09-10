@@ -71,10 +71,15 @@ int main()
         for(int i=0;i<preset;++i)motion.changeView(1,i*500);
         const auto home=motion.state(2000);
         motion.drag({1,200,1000,true,true},2000);
-        assert(motion.dragging() && near(motion.state(2000).pitch,.12f));
+        assert(motion.dragging() && near(motion.state(2000).pitch,1.5707963f));
+        motion.drag({1,200,999,true,true},2010);
+        assert(motion.state(2010).pitch<1.5707963f);
         motion.drag({1,400,-1000,true,true},2100);
         const auto held=motion.state(2100);
-        assert(near(held.pitch,1.5707963f));
+        assert(near(held.pitch,.12f));
+        auto reversed=motion;
+        reversed.drag({1,400,-999,true,true},2110);
+        assert(reversed.state(2110).pitch>.12f);
         assert(near(held.wheelPhase,motion.state(2500).wheelPhase));
         motion.drag({1,400,-1000,false,true},2600);
         const auto released=motion.state(2600);
@@ -93,17 +98,60 @@ int main()
     CarInspectionController inspection;
     inspection.reset();
     const auto initial=inspection.state();
-    inspection.drag({1,40,-200,true,true});
+    inspection.drag({1,40,200,true,true});
     assert(!inspection.turn(1,1));
-    inspection.drag({1,40,-200,false,true});
+    inspection.drag({1,40,200,false,true});
     const auto held=inspection.state();
     assert(near(held.pitch,1.5707963f) && !near(held.yaw,initial.yaw));
-    assert(inspection.turn(1,1) && inspection.state().pitch<held.pitch);
-    for(int i=0;i<100;++i)inspection.turn(1,1);
+    assert(inspection.turn(1,-1) && inspection.state().pitch<held.pitch);
+    for(int i=0;i<100;++i)inspection.turn(1,-1);
     assert(near(inspection.state().pitch,.12f) && std::abs(inspection.state().yaw)<=3.141593f);
+    assert(!inspection.turn(0,-1)); // No redraw while pushing against the limit.
     inspection.reset();assert(near(inspection.state().yaw,initial.yaw));
     inspection.drag({1,60,0,true,true}); // Reset cancels the still-held gesture.
     assert(near(inspection.state().yaw,initial.yaw));
+
+    // Overshoot either stop, then reverse just one pixel without lifting. The
+    // old gesture-origin calculation required retracing all excess movement.
+    inspection.drag({2,0,300,true,true});
+    inspection.drag({2,0,400,true,true});
+    const auto top=inspection.state();
+    inspection.drag({2,0,399,true,true});
+    assert(inspection.state().pitch<top.pitch);
+    inspection.drag({2,0,-300,true,true});
+    inspection.drag({2,0,-400,true,true});
+    const auto bottom=inspection.state();
+    inspection.drag({2,0,-399,true,true});
+    assert(inspection.state().pitch>bottom.pitch);
+    const auto stationary=inspection.state();
+    inspection.drag({2,0,-399,true,false});
+    inspection.drag({2,0,-399,false,true});
+    assert(near(inspection.state().pitch,stationary.pitch));
+    assert(inspection.turn(0,1)); // Release hands control back to the stick.
+    inspection.drag({3,10,10,true,true});inspection.release();
+    const auto canceled=inspection.state();
+    inspection.drag({3,100,100,true,true});
+    assert(near(inspection.state().yaw,canceled.yaw) && near(inspection.state().pitch,canceled.pitch));
+
+    // Follow the production external-input context through a short Y flick
+    // and 400 ms slow frame. Joystick +Y is up; menu and touch +Y are down.
+    for(int direction : {-1,1}) {
+        RacerScreenInput context;
+        RawRacerInput raw;raw.axesValid=raw.actionsValid=true;
+        context.changeScreen(RacerNavigationMode::Garage);context.presentScreen();
+        for(uint32_t time=0;time<=400;time+=10) {
+            raw.viewAxis=time>=50 && time<150 ? -direction*.9f : 0.f;
+            context.publish(raw,time/10,time);
+        }
+        const auto event=context.consume();
+        assert(event.valid && event.viewStep==direction && event.navigationStep==0);
+        CarInspectionController stick,finger;
+        assert(stick.turn(event.navigationStep,event.viewStep));
+        finger.drag({1,0,direction*20,false,true});
+        assert((stick.state().pitch-initial.pitch)*direction>0);
+        assert((finger.state().pitch-initial.pitch)*direction>0);
+        assert(context.consume().viewStep==0);
+    }
     auto step=nav.update(.9f,.8f,100);assert(step.car==1 && step.view==0);
     step=nav.update(.7f,1.f,460);assert(step.car==1 && step.view==0);
     step=nav.update(0,1.f,500);assert(step.car==0 && step.view==0);

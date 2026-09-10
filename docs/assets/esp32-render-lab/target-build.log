@@ -1,0 +1,167 @@
+Executing action: all (aliases: build)
+Running make in directory /Users/xudanyang/Documents/stopwatch/userdemo/build
+Executing "make -j 14 all"...
+[  0%] Built target custom_bundle
+[  0%] Built target memory.ld
+[  0%] Built target partition_table_bin
+[  1%] Built target _project_elf_src
+[  1%] Built target sections.ld.in
+[  1%] Built target blank_ota_data
+[  1%] Performing build step for 'bootloader'
+[  1%] Built target __idf_esp_https_ota
+[  1%] Built target __idf_esp_http_server
+[  1%] Built target _project_elf_src
+[  9%] Built target __idf_log
+[  2%] Built target __idf_esp_http_client
+[ 19%] Built target __idf_esp_rom
+[  2%] Built target __idf_tcp_transport
+[ 21%] Built target __idf_esp_common
+[  3%] Built target __idf_esp_adc
+[ 30%] Built target __idf_esp_hw_support
+[  3%] Built target __idf_esp-tls
+[ 32%] Built target __idf_esp_system
+[  3%] Built target __idf_http_parser
+[ 40%] Built target __idf_efuse
+[  4%] Built target __idf_driver
+[ 59%] Built target __idf_bootloader_support
+[  4%] Built target __idf_esp_driver_twai
+[ 60%] Built target __idf_esp_bootloader_format
+[  4%] Built target __idf_esp_driver_ledc
+[ 62%] Built target __idf_spi_flash
+[  4%] Built target __idf_esp_driver_i2c
+[ 68%] Built target __idf_hal
+[  4%] Built target __idf_esp_driver_sdm
+[ 69%] Built target __idf_micro-ecc
+[  4%] Built target __idf_esp_driver_tsens
+[ 92%] Built target __idf_soc
+[  4%] Built target __idf_esp_driver_rmt
+[ 94%] Built target __idf_xtensa
+[  5%] Built target __idf_esp_driver_sdspi
+[ 96%] Built target __idf_main
+[  5%] Built target __idf_esp_driver_sdmmc
+[ 98%] Built target bootloader.elf
+[  5%] Built target __idf_sdmmc
+[100%] Built target gen_project_binary
+[  5%] Built target __idf_esp_driver_i2s
+Bootloader binary size 0x5160 bytes. 0x2ea0 bytes (36%) free.
+[  6%] Built target __idf_esp_driver_mcpwm
+[100%] Built target bootloader_check_size
+[  6%] Built target __idf_esp_driver_pcnt
+[100%] Built target app
+[  6%] No install step for 'bootloader'
+[  6%] Built target __idf_esp_gdbstub
+[  6%] Completed 'bootloader'
+[  6%] Built target bootloader
+[  6%] Built target __idf_esp_driver_spi
+[  6%] Built target __idf_esp_wifi
+[  6%] Built target __idf_esp_coex
+[ 10%] Built target __idf_wpa_supplicant
+[ 11%] Built target __idf_esp_netif
+[ 16%] Built target __idf_lwip
+[ 17%] Built target __idf_vfs
+[ 18%] Built target __idf_esp_vfs_console
+[ 19%] Built target __idf_esp_driver_usb_serial_jtag
+[ 19%] Built target __idf_esp_phy
+[ 20%] Built target __idf_nvs_flash
+[ 20%] Built target __idf_esp_event
+[ 20%] Built target __idf_esp_driver_uart
+[ 21%] Built target __idf_esp_psram
+[ 21%] Built target __idf_esp_ringbuf
+[ 21%] Built target __idf_esp_driver_gptimer
+[ 21%] Built target __idf_esp_timer
+[ 21%] Built target __idf_cxx
+[ 21%] Built target __idf_pthread
+[ 21%] Built target __idf_newlib
+[ 22%] Built target __idf_freertos
+[ 24%] Built target __idf_esp_hw_support
+[ 25%] Built target __idf_esp_security
+[ 26%] Built target __idf_soc
+[ 26%] Built target __idf_heap
+[ 27%] Built target __idf_log
+[ 30%] Built target __idf_hal
+[ 30%] Built target __idf_esp_rom
+[ 30%] Built target __idf_esp_common
+[ 31%] Built target __idf_esp_system
+[ 32%] Built target __idf_spi_flash
+[ 32%] Built target __idf_esp_mm
+[ 33%] Built target __idf_bootloader_support
+[ 33%] Built target __idf_efuse
+[ 33%] Built target __idf_esp_partition
+[ 33%] Built target __idf_app_update
+[ 33%] Built target __idf_esp_bootloader_format
+[ 33%] Built target __idf_esp_app_format
+[ 34%] Built target mbedtls
+[ 34%] Built target mbedx509
+[ 39%] Built target mbedcrypto
+[ 39%] Built target p256m
+[ 39%] Built target everest
+[ 39%] Built target __idf_mbedtls
+[ 39%] Built target __idf_esp_pm
+[ 39%] Built target __idf_esp_driver_gpio
+[ 39%] Built target __idf_xtensa
+[ 39%] Built target __idf_json
+[ 39%] Built target __idf_protobuf-c
+[ 39%] Built target __idf_nvs_sec_provider
+[ 40%] Built target __idf_mqtt
+[ 40%] Built target __idf_wear_levelling
+[ 40%] Built target __idf_esp_https_server
+[ 41%] Built target __idf_espcoredump
+[ 42%] Built target __idf_touch_element
+[ 43%] Built target __idf_perfmon
+[ 43%] Built target __idf_spiffs
+[ 45%] Built target __idf_esp_lcd
+[ 45%] Built target __idf_usb
+[ 45%] Built target __idf_rt
+[ 46%] Built target __idf_console
+[ 46%] Built target __idf_espressif__i2c_bus
+[ 46%] Built target __idf_mooncake_log
+[ 46%] Built target __idf_esp_driver_touch_sens
+[ 47%] Built target __idf_espressif__esp_codec_dev
+[ 47%] Built target __idf_unity
+[ 48%] Built target __idf_esp_driver_cam
+[ 48%] Built target __idf_app_trace
+[ 48%] Built target __idf_esp_hid
+[ 48%] Built target __idf_esp_eth
+[ 48%] Built target __idf_mooncake
+[ 49%] Built target __idf_smooth_ui_toolkit
+[ 49%] Built target __idf_protocomm
+[ 49%] Built target __idf_M5PM1
+[ 49%] Built target __idf_BMI270_BMM150_Sensor
+[ 49%] Built target __idf_cmock
+[ 49%] Built target __idf_fatfs
+[ 56%] Built target __idf_espressif__esp-dsp
+[ 56%] Built target __idf_78__esp-wifi-connect
+[ 56%] Built target __idf_esp_local_ctrl
+[ 56%] Built target __idf_wifi_provisioning
+[ 59%] Built target __idf_M5GFX
+[ 59%] Built target __idf_M5IOE1
+[ 93%] Built target __idf_lvgl
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/main.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/app_lets_and_go_racer.cpp.obj
+[ 93%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_lets_and_go_racer/view/race_renderer.cpp.obj
+[ 93%] Linking C static library libmain.a
+[100%] Built target __idf_main
+[100%] Generating esp-idf/esp_system/ld/sections.ld
+[100%] Built target __ldgen_output_sections.ld
+[100%] Linking CXX executable StopWatch-UserDemo.elf
+[100%] Built target StopWatch-UserDemo.elf
+[100%] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /Users/xudanyang/Documents/stopwatch/userdemo/build/StopWatch-UserDemo.bin
+[100%] Built target gen_project_binary
+StopWatch-UserDemo.bin binary size 0x4b7630 bytes. Smallest app partition is 0x4f0000 bytes. 0x389d0 bytes (4%) free.
+Warning: The smallest app partition is nearly full (4% free space left)!
+[100%] Built target app_check_size
+[100%] Built target app
+
+Project build complete. To flash, run:
+ idf.py flash
+or
+ idf.py -p PORT flash
+or
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 80m 0x0 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0xd000 build/ota_data_initial.bin 0x20000 build/StopWatch-UserDemo.bin
+or from the "/Users/xudanyang/Documents/stopwatch/userdemo/build" directory
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args"

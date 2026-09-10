@@ -1,0 +1,191 @@
+[host-test] game_flow
+[host-test] chip_audio
+Chip audio: 4 scene arrangements, 14 cues, 4 sample rates, chunk invariance, pause/resume, priority, 8-bit headroom passed; synth=76 bytes
+[host-test] audio_lifecycle
+RacerAudio: unavailable/competing stream, idempotent open/close, 100 concurrent lifecycles passed
+[host-test] car_geometry
+MAGNUM wire lines: race=108 reference=148
+SONIC wire lines: race=112 reference=158
+TRIDAGGER wire lines: race=108 reference=148
+BROCKEN wire lines: race=108 reference=148
+COBRA wire lines: race=108 reference=148
+SPIDER wire lines: race=108 reference=148
+STINGER wire lines: race=108 reference=148
+DIOSPADA wire lines: race=108 reference=148
+MAGNUM display panels: 1192
+MAGNUM medium race panels: 976
+MAGNUM solid race panels: 760
+MAGNUM minimal opponent panels: 616
+SONIC display panels: 1225
+SONIC medium race panels: 1009
+SONIC solid race panels: 793
+SONIC minimal opponent panels: 649
+TRIDAGGER display panels: 1171
+TRIDAGGER medium race panels: 955
+TRIDAGGER solid race panels: 739
+TRIDAGGER minimal opponent panels: 595
+BROCKEN display panels: 1361
+BROCKEN medium race panels: 1139
+BROCKEN solid race panels: 917
+BROCKEN minimal opponent panels: 781
+COBRA display panels: 1239
+COBRA medium race panels: 999
+COBRA solid race panels: 759
+COBRA minimal opponent panels: 615
+SPIDER display panels: 1171
+SPIDER medium race panels: 955
+SPIDER solid race panels: 739
+SPIDER minimal opponent panels: 595
+STINGER display panels: 1565
+STINGER medium race panels: 1265
+STINGER solid race panels: 965
+STINGER minimal opponent panels: 821
+DIOSPADA display panels: 1335
+DIOSPADA medium race panels: 1101
+DIOSPADA solid race panels: 867
+DIOSPADA minimal opponent panels: 711
+Magnum structure: shoulder/waist, open channels, canopy and tire clearance across 3 LODs
+SONIC structure: tire clearance, mirrored UV and authored components across 3 LODs
+TRIDAGGER structure: tire clearance, mirrored UV and authored components across 3 LODs
+BROCKEN structure: tire clearance, mirrored UV and authored components across 3 LODs
+COBRA structure: tire clearance, mirrored UV and authored components across 3 LODs
+SPIDER structure: tire clearance, mirrored UV and authored components across 3 LODs
+STINGER structure: tire clearance, mirrored UV and authored components across 3 LODs
+DIOSPADA structure: tire clearance, mirrored UV and authored components across 3 LODs
+[host-test] mesh_builder
+Mesh parts: bounded output, mirrored cowl UV, recessed ducts, tube basis (3 LODs)
+[host-test] garage_selection
+[host-test] track
+Tri Cross lap length=140.188
+Tri Cross: crossings=3 clearance=3.90585 curvature=0.117194 grade=0.481919
+[host-test] input
+External screen input: presentation, release, same-mode transitions, slow frames, results, axis loss, pause and exit passed
+[host-test] device_control
+Device controls: precise targets, release taps, settling/drag cancellation, read failure, presentation/release gates, slow GPIO, steering, chord and results passed
+[host-test] garage_view
+Garage view: four presets, 350ms easing, retarget continuity, retained view, side-only wheels, axis lock, rollover; state=108 bytes
+[host-test] inspection_render
+Inspection render: compact touch/stick, staged recovery, re-grab, slow-frame flick, cancellation and rollover passed
+[host-test] racer_model
+[host-test] race
+[host-test] balance
+SKY LOOP 01 MAGNUM wins / 32: idle=5 boost=14 passing=32
+SKY LOOP 01 SONIC wins / 32: idle=0 boost=2 passing=32
+SKY LOOP 01 TRIDAGGER wins / 32: idle=0 boost=2 passing=32
+SKY LOOP 01 BROCKEN wins / 32: idle=1 boost=6 passing=32
+SKY LOOP 01 COBRA wins / 32: idle=0 boost=1 passing=32
+SKY LOOP 01 SPIDER wins / 32: idle=1 boost=6 passing=32
+SKY LOOP 01 STINGER wins / 32: idle=0 boost=6 passing=32
+SKY LOOP 01 DIOSPADA wins / 32: idle=0 boost=7 passing=32
+TRI CROSS 02 MAGNUM wins / 32: idle=0 boost=0 passing=32
+TRI CROSS 02 SONIC wins / 32: idle=0 boost=0 passing=32
+TRI CROSS 02 TRIDAGGER wins / 32: idle=0 boost=0 passing=32
+TRI CROSS 02 BROCKEN wins / 32: idle=0 boost=0 passing=32
+TRI CROSS 02 COBRA wins / 32: idle=0 boost=0 passing=32
+TRI CROSS 02 SPIDER wins / 32: idle=0 boost=0 passing=32
+TRI CROSS 02 STINGER wins / 32: idle=0 boost=0 passing=32
+TRI CROSS 02 DIOSPADA wins / 32: idle=0 boost=0 passing=32
+[host-test] results
+[host-test] render_budget
+[host-test] soak
+128 deterministic 180-second-bound scenarios on two courses passed
+[host-test] vector_input_contract
+[host-test] vector_render_budget
+render_budget_controller_size=3
+[host-test] vector_external_input
+[host-test] launcher_external_input
+[host-test] vector_composite_input
+[host-test] vector_flight_attitude
+[host-test] vector_hud_layout
+[host-test] vector_hud_semantics
+[host-test] vector_imu_attitude
+[host-test] vector_explicit_event_stream
+stream_hash=5676508318530387190
+repeat_stream_hash=5676508318530387190
+different_seed_stream_hash=8131017708030784353
+recycled_slices=117
+boost_frames=450
+left_intrusion_frames=1800
+right_intrusion_frames=1800
+maximum_event_count=3
+maximum_recycle_per_frame=1
+final_player_world_s=131.76
+[host-test] vector_explicit_projection
+far_field_depth=92.9168
+far_floor_horizon_gap_px=4.00386
+visible_points=825
+host_renderer_size=3608
+rib_segments=816
+high_lod_rail_segments=487
+low_lod_rail_segments=319
+high_frame_segments=1433
+medium_frame_segments=1365
+low_frame_segments=1197
+[host-test] vector_explicit_curved_baseline
+center_x_span=2.6289
+center_step_range=1.11686..1.12023
+minimum_forward_alignment=0.998149
+minimum_tangent_continuity=0.993244
+reviewed_projected_rows=32
+minimum_projected_row_width=46.1634
+projected_row_angle_span=0.0267547
+top_debug_visible_centers=34
+[host-test] vector_explicit_static_baseline
+visible_points=825
+projected_bounds=-2579.55,-1006.46..3047.55,455.885
+review_floor_y=173.554
+review_cap_y=40.466
+[host-test] vector_explicit_production
+maximum_spacing_error=0.00182676
+maximum_frame_error=1.19209e-07
+maximum_curvature_width_product=0.728224
+initial_route_x_span=2.6289
+explicit_slice_size=32
+explicit_stream_size=1272
+event_window_size=100
+recycle_count=231
+maximum_window_event_count=3
+window_overflow_count=0
+minimum_total_width=3.22974
+maximum_cached_error=0
+maximum_adjacent_boundary_delta=0.393731
+minimum_reachability_margin=1.35174
+maximum_streamed_route_spacing_error=0.00182676
+maximum_streamed_route_frame_error=1.19209e-07
+maximum_streamed_curvature_width_product=0.728224
+minimum_outer_rail_forward_dot=1.0845
+stream_hash=18143387014092071028
+repeat_stream_hash=18143387014092071028
+different_seed_stream_hash=7910892448959688316
+route_hash=11546994807901823007
+repeat_route_hash=11546994807901823007
+different_seed_route_hash=9275331466964235812
+[host-test] vector_collision_visual_alignment
+left_contact_gap_px=0 half_span_px=49.5976
+right_contact_gap_px=0 half_span_px=49.8448
+attitude_slope_up_down=-79.4848,-28.0899
+neutral_chase_aspect=1.97858 engine_diameter_y=9.65642
+floor_y_low_high=284.667,451.849 threshold_pitch_range=31.6828 threshold_tail_y=346.395 shadow_low_high_y=355,379 shadow_low_high_rx=16,10
+[host-test] vector_explicit_integration
+left_event_widths=1.20214,2.18
+right_event_widths=2.18,1.18013
+look_ahead_current_clearance=0.35
+look_ahead_warning_clearance=-0.125694
+flight_lateral_after_right=0.519669
+[host-test] production_renderers
+Race vertex cache: car=0 corners=3040 unique=1073
+Race vertex cache: car=1 corners=3172 unique=1114
+Race vertex cache: car=2 corners=2956 unique=953
+Race vertex cache: car=3 corners=3668 unique=1378
+Race vertex cache: car=4 corners=3036 unique=1029
+Race vertex cache: car=5 corners=2956 unique=934
+Race vertex cache: car=6 corners=3860 unique=1375
+Race vertex cache: car=7 corners=3468 unique=1188
+Solid car raster: depth ordering, bridge visibility, near clipping, UV tiles, 1000 fuzz triangles and 120 prepared-panel comparisons
+Track paint: order-independent depth, dark backdrop, 96-section map, 144 poses, max occluders=442
+Track paint: order-independent depth, dark backdrop, 96-section map, 144 poses, max occluders=262
+Garage cameras: 8 cars x 9 forward/reverse states x 3 LODs x 6 poses; side-only wheel pixel checks
+Renderer cache bytes: garage=3008 race=3264
+Open-only surface storage: garage=722256 race=788072
+Production renderer frames: /var/folders/xb/kjy7gz3d3g540g65b46lg0gc0000gn/T//lets-and-go-host-tests/frames
+[host-test] all game, device control, Vector Run, Launcher and renderer suites passed

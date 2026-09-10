@@ -1,0 +1,5 @@
+{
+  "bin": "e5d75d42691db1fa29c8035be480c6898bdf23bb74a3c5397c03353cf017062b",
+  "elf": "ed83f0d67801e57892971c9e2cb361d231ebd00442e5f7a252c38bdb40493aac",
+  "status": "superseded: 1248-byte row list moved from task stack to optional internal heap"
+}

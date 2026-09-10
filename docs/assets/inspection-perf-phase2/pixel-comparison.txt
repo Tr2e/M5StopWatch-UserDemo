@@ -1,0 +1,4 @@
+332 production PPM images compared with previous 80% version: 0 mismatches.
+8 cars x 80 poses x 80% and 100%: every changed pixel lies within the refresh region.
+Shared vertex cache fitting equals original fitting for all 640 poses.
+Full ASan/UBSan suite passed; see final-tests.log.

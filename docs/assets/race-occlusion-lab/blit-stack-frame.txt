@@ -1,0 +1,3 @@
+00000000 <lets_and_go::CarSurfaceRaster<112, 112>::blit(lgfx::v1::LGFX_Sprite&, lets_and_go::PencilOcclusion const*, float, bool, lets_and_go::CarBlitWork*) const>:
+   0:	0b6136        	entry	a1, 0x5b0
+   3:	40a592        	movi	a9, 0x540

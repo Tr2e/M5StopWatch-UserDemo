@@ -1,0 +1,20 @@
+{
+  "bin": {
+    "bytes": 4946624,
+    "sha256": "b62273d211873a37ee50cfbf0ad9cee3bd4df3319615f2f2d2afe89737cbace5"
+  },
+  "elf": {
+    "bytes": 53916804,
+    "sha256": "7ca8acba2eb3a16b8442ea453687b4d5b0bb730a7c7e3a3588f81550bc4f1ba8"
+  },
+  "benchmark_symbols_absent": true,
+  "usb_identity": "83401 / 303A:1001 / 44:1B:F6:C1:8A:00",
+  "app_offset": "0x20000",
+  "flash_hash_verified": true,
+  "launcher_boot_verified": true,
+  "papercolor_opened": false,
+  "host_asan_ubsan_passed": true,
+  "production_images_unchanged": 356,
+  "device_crc_pairs": 400,
+  "device_crc_mismatches": 0
+}

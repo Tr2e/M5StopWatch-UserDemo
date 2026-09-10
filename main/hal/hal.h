@@ -168,6 +168,7 @@ public:
     LGFX_Device& getDisplay();
     LGFX_Sprite& getCanvas();
     void updateCanvas();
+    void updateCanvasRegion(int x,int y,int width,int height);
 
     // Lvgl
     lv_indev_t* lvTouchpad = nullptr;

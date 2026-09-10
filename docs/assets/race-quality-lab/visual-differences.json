@@ -1,0 +1,66 @@
+[
+  {
+    "car": 0,
+    "90_paint_changed_pixels": 570,
+    "85_paint_changed_pixels": 650,
+    "100_atlas_changed_pixels": 61,
+    "90_atlas_changed_pixels": 568,
+    "85_atlas_changed_pixels": 655
+  },
+  {
+    "car": 1,
+    "90_paint_changed_pixels": 567,
+    "85_paint_changed_pixels": 500,
+    "100_atlas_changed_pixels": 59,
+    "90_atlas_changed_pixels": 573,
+    "85_atlas_changed_pixels": 497
+  },
+  {
+    "car": 2,
+    "90_paint_changed_pixels": 599,
+    "85_paint_changed_pixels": 627,
+    "100_atlas_changed_pixels": 66,
+    "90_atlas_changed_pixels": 594,
+    "85_atlas_changed_pixels": 643
+  },
+  {
+    "car": 3,
+    "90_paint_changed_pixels": 552,
+    "85_paint_changed_pixels": 592,
+    "100_atlas_changed_pixels": 31,
+    "90_atlas_changed_pixels": 569,
+    "85_atlas_changed_pixels": 590
+  },
+  {
+    "car": 4,
+    "90_paint_changed_pixels": 540,
+    "85_paint_changed_pixels": 572,
+    "100_atlas_changed_pixels": 44,
+    "90_atlas_changed_pixels": 543,
+    "85_atlas_changed_pixels": 578
+  },
+  {
+    "car": 5,
+    "90_paint_changed_pixels": 519,
+    "85_paint_changed_pixels": 576,
+    "100_atlas_changed_pixels": 56,
+    "90_atlas_changed_pixels": 515,
+    "85_atlas_changed_pixels": 584
+  },
+  {
+    "car": 6,
+    "90_paint_changed_pixels": 599,
+    "85_paint_changed_pixels": 641,
+    "100_atlas_changed_pixels": 50,
+    "90_atlas_changed_pixels": 593,
+    "85_atlas_changed_pixels": 629
+  },
+  {
+    "car": 7,
+    "90_paint_changed_pixels": 431,
+    "85_paint_changed_pixels": 384,
+    "100_atlas_changed_pixels": 58,
+    "90_atlas_changed_pixels": 436,
+    "85_atlas_changed_pixels": 378
+  }
+]

@@ -1,0 +1,3 @@
+I (1003) boot: Loaded app from partition at offset 0x20000
+I (1530) app_init: ELF file SHA256:  f95d742e6...
+[1789008383157] [info] [Launcher] on open

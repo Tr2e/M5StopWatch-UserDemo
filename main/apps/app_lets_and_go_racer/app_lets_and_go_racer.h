@@ -3,11 +3,14 @@
 #include "controller/game_flow.h"
 #include "controller/garage_selection.h"
 #include "controller/car_inspection_controller.h"
+#include "controller/inspection_render_policy.h"
+#include "controller/inspection_presentation.h"
 #include "controller/race_controller.h"
 #include "controller/results_selection.h"
 #include "input/hardware_racer_input_provider.h"
 #include "input/racer_input_logic.h"
 #include "view/garage_renderer.h"
+#include "view/inspection_frame_window.h"
 #include "view/race_renderer.h"
 #include "model/race_progress_store.h"
 #include "audio/racer_audio.h"
@@ -46,6 +49,9 @@ private:
     lets_and_go::GarageMenuNavigation _garageNavigation;
     lets_and_go::GarageViewController _garageView;
     lets_and_go::CarInspectionController _inspection;
+    lets_and_go::InspectionRenderPolicy _inspectionRender;
+    lets_and_go::InspectionPresentation _inspectionPresentation;
+    lets_and_go::InspectionFrameWindow _inspectionFrames, _raceFrames;
     lets_and_go::GameFlow _flow;
     lets_and_go::GarageSelection _selection;
     lets_and_go::RaceController _race;
