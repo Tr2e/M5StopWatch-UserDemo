@@ -1,0 +1,1250 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40056f6f
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xd24
+load:0x403cb700,len:0x2ef0
+entry 0x403c8924
+I (24) boot: ESP-IDF v5.5.4 2nd stage bootloader
+I (24) boot: compile time Aug 20 2026 22:56:47
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 16MB
+I (43) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (50) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00004000
+I (62) boot:  1 otadata          OTA data         01 00 0000d000 00002000
+I (69) boot:  2 phy_init         RF data          01 01 0000f000 00001000
+I (75) boot:  3 ota_0            OTA app          00 10 00020000 004f0000
+I (82) boot:  4 ota_1            OTA app          00 11 00510000 004f0000
+I (89) boot:  5 storage          Unknown data     01 81 00a00000 00400000
+I (95) boot:  6 coredump         Unknown data     01 03 00e00000 00010000
+I (102) boot: End of partition table
+I (105) esp_image: segment 0: paddr=00020020 vaddr=3c1d0020 size=2ce964h (2943332) map
+I (631) esp_image: segment 1: paddr=002ee98c vaddr=3fc9e900 size=0168ch (  5772) load
+I (633) esp_image: segment 2: paddr=002f0020 vaddr=42000020 size=1cdd50h (1891664) map
+I (968) esp_image: segment 3: paddr=004bdd78 vaddr=3fc9ff8c size=04330h ( 17200) load
+I (972) esp_image: segment 4: paddr=004c20b0 vaddr=40374000 size=1a87ch (108668) load
+I (996) esp_image: segment 5: paddr=004dc934 vaddr=50000000 size=00020h (    32) load
+I (1007) boot: Loaded app from partition at offset 0x20000
+I (1007) boot: Disabling RNG early entropy source...
+I (1018) octal_psram: vendor id    : 0x0d (AP)
+I (1018) octal_psram: dev id       : 0x02 (generation 3)
+I (1018) octal_psram: density      : 0x03 (64 Mbit)
+I (1020) octal_psram: good-die     : 0x01 (Pass)
+I (1024) octal_psram: Latency      : 0x01 (Fixed)
+I (1029) octal_psram: VCC          : 0x01 (3V)
+I (1033) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (1038) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (1043) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (1048) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (1053) octal_psram: DriveStrength: 0x00 (1/1)
+I (1057) MSPI Timing: Enter psram timing tuning
+I (1062) esp_psram: Found 8MB PSRAM device
+I (1065) esp_psram: Speed: 80MHz
+I (1068) cpu_start: Multicore app
+I (1504) esp_psram: SPI SRAM memory test OK
+I (1512) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (1513) cpu_start: Pro cpu start user code
+I (1513) cpu_start: cpu freq: 240000000 Hz
+I (1515) app_init: Application information:
+I (1519) app_init: Project name:     StopWatch-UserDemo
+I (1524) app_init: App version:      V0.5-147-gd2d4a58-dirty
+I (1529) app_init: Compile time:     Sep 10 2026 16:48:36
+I (1534) app_init: ELF file SHA256:  e569b2b48...
+I (1539) app_init: ESP-IDF:          v5.5.4
+I (1543) efuse_init: Min chip rev:     v0.0
+I (1546) efuse_init: Max chip rev:     v0.99 
+I (1551) efuse_init: Chip rev:         v0.2
+I (1554) heap_init: Initializing. RAM available for dynamic allocation:
+I (1561) heap_init: At 3FCADF68 len 0003B7A8 (237 KiB): RAM
+I (1566) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (1571) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (1577) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (1582) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (1589) spi_flash: detected chip: generic
+I (1592) spi_flash: flash io: dio
+I (1596) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (1602) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (1609) main_task: Started on CPU0
+I (1612) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1620) main_task: Calling app_main()
+[1789031130869] [[32minfo[0m] [HAL] creating hal instance
+[1789031130874] [[32minfo[0m] [HAL] init
+[1789031130887] [[32minfo[0m] [HAL] i2c init
+E (1642) i2c.master: this port has not been initialized, please initialize it first
+I (1645) i2c_bus: i2c0 bus inited
+I (1647) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+I (1655) i2c_bus: found i2c device address = 0x15
+I (1657) i2c_bus: found i2c device address = 0x18
+I (1665) i2c_bus: found i2c device address = 0x32
+I (1670) i2c_bus: found i2c device address = 0x4f
+I (1673) i2c_bus: found i2c device address = 0x68
+I (1675) i2c_bus: found i2c device address = 0x6e
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- 15 -- -- 18 -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- 32 -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 4f 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- 6e -- 
+70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+[1789031130967] [[32minfo[0m] [HAL-PMIC] pmic init
+I (1740) M5PM1_SYS: Device: ID=0x50 MODEL=0x20 HW=0x05 SW=0x53(S)
+I (1743) M5PM1_I2C: I2C config set and verified: sleep=0, speed=100K
+I (1768) M5PM1_I2C: M5PM1 initialized at address 0x6E (I2C: 100000 Hz)
+I (1771) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1773) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1777) M5PM1_SYS: Watchdog set to 0 sec
+I (1781) M5PM1_PWR: Charge Enabled
+I (1865) M5PM1_SYS: Single Reset: Disabled
+[1789031131115] [[32minfo[0m[1789031131116] ] [[32minfo[0m] [HAL-IOE] init
+[HAL-PMIC] start bat reading task
+I (1871) M5IOE1_I2C: Initializing M5IOE1 with 100KHz (device default)
+I (1887) M5IOE1_SYS: Device UID: 0x2BF0, FW Version: 57
+I (1888) M5IOE1_I2C: Current I2C speed matches user request (400K)
+I (1889) M5IOE1_I2C: I2C config set and verified: sleep=0, speed=400K, wake=falling, pull=on
+I (1906) M5IOE1_I2C: M5IOE1 initialized at address 0x4F (I2C: 400000 Hz)
+I (1907) M5IOE1_IRQ: Interrupt mode -> POLLING (pause if I2C sleep on; resume when off)
+[1789031131156] [[32minfo[0m] [HAL-IOE] init success, addr: 0x4F
+I (1917) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1922) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1940) M5IOE1_GPIO: Pin 8 mode set and verified: OUTPUT (0x03)
+I (1954) M5IOE1_GPIO: Pin 7 mode set and verified: OUTPUT (0x03)
+I (1968) M5IOE1_GPIO: Pin 9 mode set and verified: OUTPUT (0x03)
+I (1981) M5IOE1_GPIO: Pin 3 mode set and verified: OUTPUT (0x03)
+I (1994) M5IOE1_GPIO: Pin 4 mode set and verified: OUTPUT (0x03)
+I (2007) M5IOE1_GPIO: Pin 0 mode set and verified: OUTPUT (0x03)
+I (2020) M5IOE1_GPIO: Pin 2 mode set and verified: OUTPUT (0x03)
+I (2023) M5IOE1_GPIO: Pin 7 digital write and verified: 1
+I (2025) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (2027) M5IOE1_GPIO: Pin 9 digital write and verified: 0
+I (2033) M5IOE1_GPIO: Pin 4 digital write and verified: 1
+I (2038) M5IOE1_GPIO: Pin 0 digital write and verified: 0
+I (2043) M5IOE1_GPIO: Pin 2 digital write and verified: 1
+I (2051) M5IOE1_PWM: PWM frequency set and verified: 5000 Hz
+[1789031131297] [[32minfo[0m] [HAL-IOE] start vibrator task
+I (2068) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1789031131432] [[32minfo[0m] [HAL-Display] display init
+[1789031131667] [[32minfo[0m] [HAL-Display] create full screen canvas
+[1789031131681] [[32minfo[0m] [HAL-Display] brightness loaded from settings: 40
+[1789031131682] [[32minfo[0m] [HAL-Display] touchpad init
+[1789031131683] [[32minfo[0m] [HAL-IOE] touchpad reset
+I (2445) M5IOE1_GPIO: Pin 3 digital write and verified: 0
+I (2458) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (2510) CST820: Chip ID: 0xb7, Soft Ver: 0x02
+[1789031131756] [[32minfo[0m] [HAL-Display] lvgl init
+[1789031131764] [[32minfo[0m] [HAL-Audio] init
+[1789031131767] [[32minfo[0m] [HAL-Audio] start audio play task
+[1789031131767] [[32minfo[0m] [HAL-Audio] i2s init
+I (2533) ES8311: Work in Slave mode
+I (2539) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2540) I2S_IF: STD Mode 1 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2541) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2546) I2S_IF: STD Mode 0 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2571) Adev_Codec: Open codec device OK
+[1789031131818] [[32minfo[0m] [HAL-IOE] set speaker enable
+I (2576) M5IOE1_GPIO: Pin 9 digital write and verified: 1
+[1789031131832] [[32minfo[0m] [HAL-Audio] volume loaded from settings: 0
+[1789031131833] [[32minfo[0m] [HAL-Audio] set speaker volume to 0
+[1789031131836] [[32minfo[0m] [HAL-IMU] init
+[1789031132897] [[32minfo[0m] [HAL-RTC] init
+[1789031132899] [[32minfo[0m] [HAL-RTC] load timezone from nvs: UTC-8
+[1789031134000] [[32minfo[0m] [HAL-RTC] rtc synced to system (UTC): 2026-09-10 09:05:34
+[1789031134002] [[32minfo[0m] [HAL-BTN] init
+[1789031134007] [[32minfo[0m] [HAL-BTN] config loaded from settings: sfx=true, vibrate=true
+[1789031134015] [[32minfo[0m] [HAL-FS] init
+I (3676) wear_levelling: Mounting FAT filesystem
+I (3682) wear_levelling: Done
+I (3683) WifiManager: Initializing...
+I (3688) pp: pp rom version: e7ae62f
+I (3690) net80211: net80211 rom version: e7ae62f
+I (3695) wifi:wifi driver task: 3fccc77c, prio:23, stack:6656, core=0
+I (3701) wifi:wifi firmware version: 0947e8b
+I (3704) wifi:wifi certification version: v7.0
+I (3708) wifi:config NVS flash: disabled
+I (3712) wifi:config nano formatting: disabled
+I (3716) wifi:Init data frame dynamic rx buffer num: 32
+I (3721) wifi:Init static rx mgmt buffer num: 5
+I (3725) wifi:Init management short buffer num: 32
+I (3730) wifi:Init dynamic tx buffer num: 32
+I (3734) wifi:Init static tx FG buffer num: 2
+I (3738) wifi:Init static rx buffer size: 1600
+I (3742) wifi:Init static rx buffer num: 10
+I (3746) wifi:Init dynamic rx buffer num: 32
+I (3751) wifi_init: rx ba win: 6
+I (3753) wifi_init: accept mbox: 6
+I (3756) wifi_init: tcpip mbox: 32
+I (3759) wifi_init: udp mbox: 6
+I (3762) wifi_init: tcp mbox: 6
+I (3765) wifi_init: tcp tx win: 5760
+I (3768) wifi_init: tcp rx win: 5760
+I (3771) wifi_init: tcp mss: 1440
+I (3774) wifi_init: WiFi IRAM OP enabled
+I (3778) wifi_init: WiFi RX IRAM OP enabled
+I (3782) WifiManager: Initialized
+[1789031134173] [[32minfo[0m] [RacerMemory] scene=234x233 requested_half=true
+[1789031134206] [[32minfo[0m] [RacerMemory] track_rows_internal=true car_planes_internal=2 occlusion_rows_internal=true free_internal=77923 largest_internal=31744
+[1789031134211] [[32minfo[0m] [SpiralAB] BEGIN edge=true internal=76895 psram=5493908
+[1789031134407] [[32minfo[0m] [PaintStage] rows=186 clear_us=1318 fill_us=124494 copy_us=7567
+[1789031134687] [[32minfo[0m] [TrackStage] project_us=9944 paint_us=135867 lines_us=278394 wireframe=false
+[1789031135731] [[32minfo[0m] [SpiralPreview] track=0 frame=1 mode=1 draw=472060 present=31602
+[1789031136238] [[32minfo[0m] [SpiralPreview] track=0 frame=1 mode=0 draw=472291 present=32163
+[1789031136433] [[32minfo[0m] [PaintStage] rows=195 clear_us=1344 fill_us=128211 copy_us=7836
+[1789031136712] [[32minfo[0m] [TrackStage] project_us=9942 paint_us=139835 lines_us=277771 wireframe=false
+[1789031136747] [[32minfo[0m] [SpiralPreview] track=0 frame=2 mode=0 draw=475500 present=31642
+[1789031137256] [[32minfo[0m] [SpiralPreview] track=0 frame=2 mode=1 draw=474236 present=31987
+[1789031137770] [[32minfo[0m] [SpiralPreview] track=0 frame=3 mode=1 draw=479075 present=31612
+[1789031138284] [[32minfo[0m] [SpiralPreview] track=0 frame=3 mode=0 draw=480087 present=31673
+[1789031138480] [[32minfo[0m] [PaintStage] rows=198 clear_us=1394 fill_us=129165 copy_us=7896
+[1789031138763] [[32minfo[0m] [TrackStage] project_us=9942 paint_us=140915 lines_us=282217 wireframe=false
+[1789031138799] [[32minfo[0m] [SpiralPreview] track=0 frame=4 mode=0 draw=481105 present=31662
+[1789031139313] [[32minfo[0m] [SpiralPreview] track=0 frame=4 mode=1 draw=480475 present=31666
+[1789031139826] [[32minfo[0m] [SpiralPreview] track=0 frame=5 mode=1 draw=478318 present=31612
+[1789031140340] [[32minfo[0m] [SpiralPreview] track=0 frame=5 mode=0 draw=479236 present=31635
+[1789031140535] [[32minfo[0m] [PaintStage] rows=195 clear_us=1346 fill_us=128159 copy_us=7794
+[1789031140814] [[32minfo[0m] [TrackStage] project_us=9946 paint_us=139789 lines_us=278440 wireframe=false
+[1789031140850] [[32minfo[0m] [SpiralPreview] track=0 frame=6 mode=0 draw=476162 present=31656
+[1789031141359] [[32minfo[0m] [SpiralPreview] track=0 frame=6 mode=1 draw=475106 present=31708
+[1789031141864] [[32minfo[0m] [SpiralPreview] track=0 frame=7 mode=1 draw=470920 present=31630
+[1789031142370] [[32minfo[0m] [SpiralPreview] track=0 frame=7 mode=0 draw=472101 present=31635
+[1789031142561] [[32minfo[0m] [PaintStage] rows=186 clear_us=1311 fill_us=124640 copy_us=7578
+[1789031142841] [[32minfo[0m] [TrackStage] project_us=9951 paint_us=135972 lines_us=278737 wireframe=false
+[1789031142876] [[32minfo[0m] [SpiralPreview] track=0 frame=8 mode=0 draw=472538 present=31653
+[1789031143382] [[32minfo[0m] [SpiralPreview] track=0 frame=8 mode=1 draw=471672 present=31641
+[1789031143884] [[32minfo[0m] [SpiralPreview] track=0 frame=9 mode=1 draw=467080 present=31625
+[1789031144386] [[32minfo[0m] [SpiralPreview] track=0 frame=9 mode=0 draw=468176 present=31662
+[1789031144571] [[32minfo[0m] [PaintStage] rows=173 clear_us=1202 fill_us=119285 copy_us=7153
+[1789031144847] [[32minfo[0m] [TrackStage] project_us=9920 paint_us=130072 lines_us=275182 wireframe=false
+[1789031144883] [[32minfo[0m] [SpiralPreview] track=0 frame=10 mode=0 draw=463035 present=31637
+[1789031145379] [[32minfo[0m] [SpiralPreview] track=0 frame=10 mode=1 draw=462030 present=31662
+[1789031145876] [[32minfo[0m] [SpiralPreview] track=0 frame=11 mode=1 draw=463226 present=31630
+[1789031146374] [[32minfo[0m] [SpiralPreview] track=0 frame=11 mode=0 draw=464755 present=31637
+[1789031146870] [[32minfo[0m] [SpiralPreview] track=0 frame=12 mode=0 draw=461673 present=31620
+[1789031147054] [[32minfo[0m] [PaintStage] rows=167 clear_us=1147 fill_us=117345 copy_us=6914
+[1789031147334] [[32minfo[0m] [TrackStage] project_us=9955 paint_us=127867 lines_us=279367 wireframe=false
+[1789031147370] [[32minfo[0m] [SpiralPreview] track=0 frame=12 mode=1 draw=465178 present=31647
+[1789031147421] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=20 fallback_panels=0 map_cached=true
+[1789031147470] [[32minfo[0m] [CarStage] car=1 panels=661 vertices=954 tiles=1 prepare_us=6723 raster_us=8582 blit_us=2001
+[1789031147554] [[32minfo[0m] [RaceStage] track_us=16880 cars_us=81585 upscale_us=20267 scene_width=234 surfaces=194 cars=3 track_id=0 player_car=0 submitted=3 player_us=33762 opponents_us=47428 player_native=true prepare_us=22466 raster_us=45514 blit_us=11990 candidate_rows_before=9296 candidate_rows_after=1207
+[1789031147575] [[32minfo[0m] [HudStage] map_us=1411 total_us=3383 map_cached=true
+[1789031148164] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=1 mode=0 draw=118073 present=31452 road=12587 faces=68 upscale=20456 player=31899 opponents=44384
+[1789031148168] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=1 mode=1 draw=117616 present=31493 road=12565 faces=68 upscale=20220 player=31738 opponents=44380
+[1789031148533] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=2 mode=0 draw=120221 present=31445 road=15561 faces=118 upscale=20688 player=31784 opponents=43370
+[1789031148537] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=2 mode=1 draw=119364 present=31432 road=15544 faces=118 upscale=20223 player=31580 opponents=43255
+[1789031148857] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=3 mode=0 draw=97234 present=31461 road=14038 faces=95 upscale=20215 player=30885 opponents=23176
+[1789031148861] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=3 mode=1 draw=97315 present=31466 road=14087 faces=95 upscale=20223 player=30862 opponents=23125
+[1789031149071] [[32minfo[0m] [PaintStage] rows=132 clear_us=475 fill_us=4475 copy_us=3578
+[1789031149232] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=4 mode=0 draw=122105 present=31492 road=12496 faces=46 upscale=20209 player=34605 opponents=45925
+[1789031149236] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=4 mode=1 draw=123222 present=31494 road=13525 faces=46 upscale=20213 player=34600 opponents=46004
+[1789031149467] [[32minfo[0m] [TrackStage] project_us=6617 paint_us=18343 lines_us=10 wireframe=false
+[1789031149486] [[32minfo[0m] [CarStage] car=1 panels=661 vertices=954 tiles=1 prepare_us=6778 raster_us=8704 blit_us=1812
+[1789031149567] [[32minfo[0m] [RaceStage] track_us=26145 cars_us=78385 upscale_us=20283 scene_width=234 surfaces=312 cars=3 track_id=0 player_car=0 submitted=3 player_us=32240 opponents_us=45694 player_native=true prepare_us=22793 raster_us=45214 blit_us=8707 candidate_rows_before=2800 candidate_rows_after=780
+[1789031149588] [[32minfo[0m] [HudStage] map_us=1473 total_us=3445 map_cached=true
+[1789031149648] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=5 mode=0 draw=154758 present=31455 road=26145 faces=312 upscale=20283 player=32240 opponents=45694
+[1789031149652] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=5 mode=1 draw=130715 present=31457 road=25024 faces=312 upscale=20222 player=31989 opponents=44587
+[1789031150020] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=6 mode=0 draw=121695 present=31430 road=15624 faces=138 upscale=20231 player=31919 opponents=44999
+[1789031150024] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=6 mode=1 draw=121565 present=31470 road=15619 faces=138 upscale=20222 player=31921 opponents=45047
+[1789031150352] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=7 mode=0 draw=101441 present=31485 road=13028 faces=68 upscale=20720 player=34866 opponents=23906
+[1789031150356] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=7 mode=1 draw=100827 present=31444 road=13032 faces=68 upscale=20233 player=34711 opponents=23803
+[1789031150748] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=8 mode=0 draw=133160 present=31491 road=14381 faces=111 upscale=20202 player=37616 opponents=52101
+[1789031150752] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=8 mode=1 draw=133079 present=31443 road=14379 faces=111 upscale=20221 player=37607 opponents=52078
+[1789031151134] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=9 mode=0 draw=128343 present=31455 road=14024 faces=95 upscale=20253 player=35833 opponents=49412
+[1789031151138] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=9 mode=1 draw=128071 present=31475 road=14000 faces=95 upscale=20227 player=35585 opponents=49349
+[1789031151169] [[32minfo[0m] [PaintStage] rows=132 clear_us=459 fill_us=4267 copy_us=3581
+[1789031151526] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=10 mode=0 draw=132506 present=31454 road=13088 faces=42 upscale=20210 player=38374 opponents=51830
+[1789031151530] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=10 mode=1 draw=130578 present=31470 road=12002 faces=42 upscale=20223 player=37829 opponents=51664
+[1789031151573] [[32minfo[0m] [TrackStage] project_us=7406 paint_us=16403 lines_us=8 wireframe=false
+[1789031151593] [[32minfo[0m] [CarStage] car=1 panels=661 vertices=954 tiles=1 prepare_us=6826 raster_us=8718 blit_us=2618
+[1789031151659] [[32minfo[0m] [RaceStage] track_us=24932 cars_us=64444 upscale_us=20248 scene_width=234 surfaces=370 cars=3 track_id=0 player_car=0 submitted=3 player_us=38565 opponents_us=25430 player_native=true prepare_us=16775 raster_us=28682 blit_us=11227 candidate_rows_before=10304 candidate_rows_after=2254
+[1789031151680] [[32minfo[0m] [HudStage] map_us=1436 total_us=3529 map_cached=true
+[1789031151912] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=11 mode=0 draw=115696 present=31450 road=23881 faces=370 upscale=20233 player=38323 opponents=24341
+[1789031151916] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=11 mode=1 draw=140017 present=31489 road=24932 faces=370 upscale=20248 player=38565 opponents=25430
+[1789031152296] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=12 mode=0 draw=126699 present=31470 road=16911 faces=194 upscale=20222 player=33676 opponents=47018
+[1789031152300] [[32minfo[0m] [SpiralAB] car=0 track=0 frame=12 mode=1 draw=126898 present=31925 road=16867 faces=194 upscale=20243 player=33670 opponents=47200
+[1789031152314] [[32minfo[0m] [SpiralAB] GROUP car=0 track=0 mismatches=0 stack_free=2188
+[1789031153415] [[32minfo[0m] [PaintStage] rows=169 clear_us=1176 fill_us=93827 copy_us=7005
+[1789031153685] [[32minfo[0m] [TrackStage] project_us=9928 paint_us=104439 lines_us=269498 wireframe=false
+[1789031153721] [[32minfo[0m] [SpiralPreview] track=1 frame=1 mode=1 draw=431887 present=31661
+[1789031154184] [[32minfo[0m] [SpiralPreview] track=1 frame=1 mode=0 draw=429657 present=31637
+[1789031154649] [[32minfo[0m] [SpiralPreview] track=1 frame=2 mode=0 draw=430720 present=31628
+[1789031155114] [[32minfo[0m] [SpiralPreview] track=1 frame=2 mode=1 draw=430694 present=31625
+[1789031155580] [[32minfo[0m] [SpiralPreview] track=1 frame=3 mode=1 draw=431301 present=31636
+[1789031155743] [[32minfo[0m] [PaintStage] rows=174 clear_us=1224 fill_us=96455 copy_us=7177
+[1789031156013] [[32minfo[0m] [TrackStage] project_us=9913 paint_us=107358 lines_us=268196 wireframe=false
+[1789031156049] [[32minfo[0m] [SpiralPreview] track=1 frame=3 mode=0 draw=433503 present=31918
+[1789031156515] [[32minfo[0m] [SpiralPreview] track=1 frame=4 mode=0 draw=432090 present=31664
+[1789031156980] [[32minfo[0m] [SpiralPreview] track=1 frame=4 mode=1 draw=431244 present=31635
+[1789031157446] [[32minfo[0m] [SpiralPreview] track=1 frame=5 mode=1 draw=432328 present=31647
+[1789031157912] [[32minfo[0m] [SpiralPreview] track=1 frame=5 mode=0 draw=430845 present=31596
+[1789031158074] [[32minfo[0m] [PaintStage] rows=172 clear_us=1185 fill_us=95906 copy_us=7093
+[1789031158345] [[32minfo[0m] [TrackStage] project_us=9929 paint_us=106625 lines_us=269967 wireframe=false
+[1789031158381] [[32minfo[0m] [SpiralPreview] track=1 frame=6 mode=0 draw=434794 present=31625
+[1789031158846] [[32minfo[0m] [SpiralPreview] track=1 frame=6 mode=1 draw=430934 present=31618
+[1789031159306] [[32minfo[0m] [SpiralPreview] track=1 frame=7 mode=1 draw=426275 present=31631
+[1789031159765] [[32minfo[0m] [SpiralPreview] track=1 frame=7 mode=0 draw=425476 present=31632
+[1789031160230] [[32minfo[0m] [SpiralPreview] track=1 frame=8 mode=0 draw=429816 present=31619
+[1789031160389] [[32minfo[0m] [PaintStage] rows=165 clear_us=1161 fill_us=92916 copy_us=6910
+[1789031160661] [[32minfo[0m] [TrackStage] project_us=9939 paint_us=103454 lines_us=271029 wireframe=false
+[1789031160697] [[32minfo[0m] [SpiralPreview] track=1 frame=8 mode=1 draw=432924 present=31654
+[1789031161158] [[32minfo[0m] [SpiralPreview] track=1 frame=9 mode=1 draw=427623 present=31658
+[1789031161621] [[32minfo[0m] [SpiralPreview] track=1 frame=9 mode=0 draw=427983 present=31655
+[1789031162078] [[32minfo[0m] [SpiralPreview] track=1 frame=10 mode=0 draw=423032 present=31656
+[1789031162536] [[32minfo[0m] [SpiralPreview] track=1 frame=10 mode=1 draw=424320 present=31666
+[1789031162689] [[32minfo[0m] [PaintStage] rows=155 clear_us=1080 fill_us=86798 copy_us=6634
+[1789031162962] [[32minfo[0m] [TrackStage] project_us=9933 paint_us=96919 lines_us=271545 wireframe=false
+[1789031162997] [[32minfo[0m] [SpiralPreview] track=1 frame=11 mode=1 draw=426399 present=31668
+[1789031163457] [[32minfo[0m] [SpiralPreview] track=1 frame=11 mode=0 draw=424759 present=31648
+[1789031163915] [[32minfo[0m] [SpiralPreview] track=1 frame=12 mode=0 draw=423800 present=31609
+[1789031164373] [[32minfo[0m] [SpiralPreview] track=1 frame=12 mode=1 draw=424503 present=31659
+[1789031164425] [[32minfo[0m] [CarStage] car=1 panels=661 vertices=954 tiles=1 prepare_us=6739 raster_us=9342 blit_us=2611
+[1789031164526] [[32minfo[0m] [RaceStage] track_us=14406 cars_us=99427 upscale_us=20278 scene_width=234 surfaces=110 cars=3 track_id=1 player_car=0 submitted=3 player_us=42112 opponents_us=56888 player_native=true prepare_us=22560 raster_us=55942 blit_us=19277 candidate_rows_before=8400 candidate_rows_after=2034
+[1789031164547] [[32minfo[0m] [HudStage] map_us=1491 total_us=3481 map_cached=true
+[1789031164827] [[32minfo[0m] [PaintStage] rows=134 clear_us=500 fill_us=8516 copy_us=3560
+[1789031165018] [[32minfo[0m] [TrackStage] project_us=5323 paint_us=12763 lines_us=10 wireframe=false
+[1789031165187] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=1 mode=0 draw=136098 present=31475 road=19298 faces=196 upscale=20220 player=37270 opponents=50274
+[1789031165191] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=1 mode=1 draw=135619 present=31475 road=19158 faces=196 upscale=20226 player=37137 opponents=50091
+[1789031165544] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=2 mode=0 draw=113880 present=31470 road=18797 faces=123 upscale=20725 player=27790 opponents=37480
+[1789031165548] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=2 mode=1 draw=112971 present=31461 road=18757 faces=123 upscale=20233 player=27568 opponents=37470
+[1789031165878] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=3 mode=0 draw=102008 present=31447 road=13477 faces=61 upscale=20231 player=35372 opponents=23930
+[1789031165882] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=3 mode=1 draw=102103 present=31461 road=13466 faces=61 upscale=20243 player=35356 opponents=23950
+[1789031166276] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=4 mode=0 draw=134153 present=31477 road=12418 faces=62 upscale=20228 player=38797 opponents=53314
+[1789031166280] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=4 mode=1 draw=133790 present=31946 road=12404 faces=62 upscale=20225 player=38823 opponents=53356
+[1789031166427] [[32minfo[0m] [CarStage] car=2 panels=607 vertices=801 tiles=1 prepare_us=6164 raster_us=19984 blit_us=5387
+[1789031166620] [[32minfo[0m] [RaceStage] track_us=19346 cars_us=88126 upscale_us=20229 scene_width=234 surfaces=244 cars=3 track_id=1 player_car=0 submitted=3 player_us=37409 opponents_us=50303 player_native=true prepare_us=22867 raster_us=49619 blit_us=15114 candidate_rows_before=8400 candidate_rows_after=2353
+[1789031166641] [[32minfo[0m] [HudStage] map_us=1485 total_us=3493 map_cached=true
+[1789031166701] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=5 mode=0 draw=157768 present=31490 road=19346 faces=244 upscale=20229 player=37409 opponents=50303
+[1789031166705] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=5 mode=1 draw=137490 present=31446 road=19313 faces=244 upscale=20199 player=37410 opponents=51406
+[1789031166912] [[32minfo[0m] [PaintStage] rows=232 clear_us=821 fill_us=7545 copy_us=5609
+[1789031167058] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=6 mode=0 draw=113216 present=31446 road=18915 faces=123 upscale=20236 player=27589 opponents=37489
+[1789031167062] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=6 mode=1 draw=114264 present=31708 road=19960 faces=123 upscale=20233 player=27544 opponents=37554
+[1789031167095] [[32minfo[0m] [TrackStage] project_us=3234 paint_us=9970 lines_us=10 wireframe=false
+[1789031167393] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=7 mode=0 draw=102554 present=31426 road=13839 faces=61 upscale=20224 player=35372 opponents=23987
+[1789031167397] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=7 mode=1 draw=103279 present=31461 road=14339 faces=61 upscale=20229 player=35374 opponents=23949
+[1789031167790] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=8 mode=0 draw=133753 present=31473 road=12373 faces=62 upscale=20219 player=38816 opponents=53338
+[1789031167794] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=8 mode=1 draw=133686 present=31495 road=12356 faces=62 upscale=20237 player=38827 opponents=53372
+[1789031168190] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=9 mode=0 draw=135347 present=31461 road=18276 faces=196 upscale=20206 player=37462 opponents=50532
+[1789031168194] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=9 mode=1 draw=135106 present=31447 road=18281 faces=196 upscale=20207 player=37356 opponents=50258
+[1789031168467] [[32minfo[0m] [CarStage] car=0 panels=988 vertices=1313 tiles=1 prepare_us=9863 raster_us=15513 blit_us=2156
+[1789031168548] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=10 mode=0 draw=113921 present=31470 road=18876 faces=123 upscale=20750 player=27789 opponents=37505
+[1789031168552] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=10 mode=1 draw=114354 present=31474 road=18837 faces=123 upscale=20236 player=28716 opponents=37696
+[1789031168666] [[32minfo[0m] [RaceStage] track_us=14348 cars_us=59623 upscale_us=20233 scene_width=234 surfaces=93 cars=3 track_id=1 player_car=0 submitted=3 player_us=35423 opponents_us=23896 player_native=true prepare_us=16793 raster_us=29695 blit_us=6652 candidate_rows_before=1568 candidate_rows_after=771
+[1789031168687] [[32minfo[0m] [HudStage] map_us=1477 total_us=3549 map_cached=true
+[1789031168905] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=11 mode=0 draw=103113 present=31433 road=14348 faces=93 upscale=20236 player=35435 opponents=23914
+[1789031168909] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=11 mode=1 draw=124272 present=31455 road=14348 faces=93 upscale=20233 player=35423 opponents=23896
+[1789031168943] [[32minfo[0m] [PaintStage] rows=139 clear_us=485 fill_us=5870 copy_us=3711
+[1789031169142] [[32minfo[0m] [TrackStage] project_us=4211 paint_us=10192 lines_us=8 wireframe=false
+[1789031169321] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=12 mode=0 draw=143391 present=31504 road=15472 faces=110 upscale=20244 player=41968 opponents=56513
+[1789031169325] [[32minfo[0m] [SpiralAB] car=0 track=1 frame=12 mode=1 draw=143500 present=31444 road=15554 faces=110 upscale=20224 player=41970 opponents=56754
+[1789031169339] [[32minfo[0m] [SpiralAB] GROUP car=0 track=1 mismatches=0 stack_free=2188
+[1789031171002] [[32minfo[0m] [PaintStage] rows=119 clear_us=826 fill_us=152061 copy_us=4706
+[1789031171038] [[32minfo[0m] [SpiralPreview] track=2 frame=1 mode=1 draw=226900 present=31916
+[1789031172152] [[32minfo[0m] [TrackStage] project_us=15997 paint_us=159980 lines_us=888243 wireframe=false
+[1789031172188] [[32minfo[0m] [SpiralPreview] track=2 frame=1 mode=0 draw=1115999 present=31684
+[1789031173329] [[32minfo[0m] [SpiralPreview] track=2 frame=2 mode=0 draw=1107644 present=31631
+[1789031173548] [[32minfo[0m] [PaintStage] rows=117 clear_us=811 fill_us=145031 copy_us=4662
+[1789031173584] [[32minfo[0m] [SpiralPreview] track=2 frame=2 mode=1 draw=219884 present=31647
+[1789031173830] [[32minfo[0m] [SpiralPreview] track=2 frame=3 mode=1 draw=212747 present=31590
+[1789031174927] [[32minfo[0m] [TrackStage] project_us=15987 paint_us=146379 lines_us=883965 wireframe=false
+[1789031174963] [[32minfo[0m] [SpiralPreview] track=2 frame=3 mode=0 draw=1098161 present=31656
+[1789031176085] [[32minfo[0m] [SpiralPreview] track=2 frame=4 mode=0 draw=1088156 present=31647
+[1789031176295] [[32minfo[0m] [PaintStage] rows=114 clear_us=809 fill_us=137436 copy_us=4619
+[1789031176331] [[32minfo[0m] [SpiralPreview] track=2 frame=4 mode=1 draw=212372 present=31630
+[1789031176577] [[32minfo[0m] [SpiralPreview] track=2 frame=5 mode=1 draw=212728 present=31627
+[1789031177672] [[32minfo[0m] [TrackStage] project_us=15996 paint_us=146128 lines_us=882508 wireframe=false
+[1789031177708] [[32minfo[0m] [SpiralPreview] track=2 frame=5 mode=0 draw=1096378 present=31684
+[1789031178849] [[32minfo[0m] [SpiralPreview] track=2 frame=6 mode=0 draw=1106298 present=31624
+[1789031179068] [[32minfo[0m] [PaintStage] rows=117 clear_us=807 fill_us=145125 copy_us=4670
+[1789031179104] [[32minfo[0m] [SpiralPreview] track=2 frame=6 mode=1 draw=220059 present=31642
+[1789031179365] [[32minfo[0m] [SpiralPreview] track=2 frame=7 mode=1 draw=227187 present=31606
+[1789031180481] [[32minfo[0m] [TrackStage] project_us=16021 paint_us=159542 lines_us=890794 wireframe=false
+[1789031180517] [[32minfo[0m] [SpiralPreview] track=2 frame=7 mode=0 draw=1118190 present=31680
+[1789031181678] [[32minfo[0m] [SpiralPreview] track=2 frame=8 mode=0 draw=1126865 present=31652
+[1789031181911] [[32minfo[0m] [PaintStage] rows=120 clear_us=837 fill_us=159931 copy_us=4713
+[1789031181947] [[32minfo[0m] [SpiralPreview] track=2 frame=8 mode=1 draw=234843 present=31658
+[1789031182223] [[32minfo[0m] [SpiralPreview] track=2 frame=9 mode=1 draw=242790 present=31588
+[1789031183360] [[32minfo[0m] [TrackStage] project_us=16037 paint_us=175956 lines_us=893948 wireframe=false
+[1789031183396] [[32minfo[0m] [SpiralPreview] track=2 frame=9 mode=0 draw=1138350 present=31662
+[1789031184571] [[32minfo[0m] [SpiralPreview] track=2 frame=10 mode=0 draw=1141097 present=31657
+[1789031184818] [[32minfo[0m] [PaintStage] rows=123 clear_us=836 fill_us=173571 copy_us=4845
+[1789031184853] [[32minfo[0m] [SpiralPreview] track=2 frame=10 mode=1 draw=248624 present=31675
+[1789031185142] [[32minfo[0m] [SpiralPreview] track=2 frame=11 mode=1 draw=254594 present=31606
+[1789031186291] [[32minfo[0m] [TrackStage] project_us=16013 paint_us=188489 lines_us=893979 wireframe=false
+[1789031186327] [[32minfo[0m] [SpiralPreview] track=2 frame=11 mode=0 draw=1150100 present=31669
+[1789031187515] [[32minfo[0m] [SpiralPreview] track=2 frame=12 mode=0 draw=1154065 present=31664
+[1789031187772] [[32minfo[0m] [PaintStage] rows=124 clear_us=854 fill_us=183781 copy_us=4810
+[1789031187807] [[32minfo[0m] [SpiralPreview] track=2 frame=12 mode=1 draw=258722 present=31663
+[1789031187858] [[32minfo[0m] [CarStage] car=1 panels=661 vertices=954 tiles=1 prepare_us=6800 raster_us=8569 blit_us=2221
+[1789031187946] [[32minfo[0m] [RaceStage] track_us=17304 cars_us=84974 upscale_us=20244 scene_width=234 surfaces=127 cars=3 track_id=2 player_car=0 submitted=3 player_us=35161 opponents_us=49490 player_native=true prepare_us=22626 raster_us=45459 blit_us=15340 candidate_rows_before=8848 candidate_rows_after=1430
+[1789031187966] [[32minfo[0m] [HudStage] map_us=1328 total_us=3282 map_cached=true
+[1789031188417] [[32minfo[0m] [TrackStage] project_us=5123 paint_us=10229 lines_us=10 wireframe=false
+[1789031188587] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=1 mode=0 draw=135662 present=31460 road=16520 faces=83 upscale=20229 player=37393 opponents=52815
+[1789031188591] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=1 mode=1 draw=131751 present=31438 road=12068 faces=83 upscale=20238 player=38004 opponents=52828
+[1789031189013] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=2 mode=0 draw=149689 present=31443 road=26081 faces=330 upscale=20253 player=38914 opponents=55707
+[1789031189017] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=2 mode=1 draw=147033 present=31505 road=23553 faces=330 upscale=20229 player=38915 opponents=55776
+[1789031189353] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=3 mode=0 draw=107369 present=31427 road=18750 faces=129 upscale=20227 player=35547 opponents=24136
+[1789031189357] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=3 mode=1 draw=102979 present=31424 road=14927 faces=129 upscale=20201 player=34971 opponents=24095
+[1789031189766] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=4 mode=0 draw=142646 present=31470 road=14051 faces=139 upscale=20226 player=40914 opponents=58727
+[1789031189770] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=4 mode=1 draw=139770 present=31474 road=11205 faces=139 upscale=20223 player=40939 opponents=58756
+[1789031189800] [[32minfo[0m] [PaintStage] rows=137 clear_us=488 fill_us=5174 copy_us=3722
+[1789031189874] [[32minfo[0m] [CarStage] car=0 panels=988 vertices=1313 tiles=1 prepare_us=9829 raster_us=19755 blit_us=4896
+[1789031190088] [[32minfo[0m] [RaceStage] track_us=14594 cars_us=83194 upscale_us=20217 scene_width=234 surfaces=64 cars=3 track_id=2 player_car=0 submitted=3 player_us=34822 opponents_us=48119 player_native=true prepare_us=23199 raster_us=46999 blit_us=12631 candidate_rows_before=3248 candidate_rows_after=1391
+[1789031190109] [[32minfo[0m] [HudStage] map_us=1339 total_us=3342 map_cached=true
+[1789031190169] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=5 mode=0 draw=147981 present=31464 road=14594 faces=64 upscale=20217 player=34822 opponents=48119
+[1789031190173] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=5 mode=1 draw=125047 present=31436 road=12100 faces=64 upscale=20199 player=35640 opponents=48248
+[1789031190569] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=6 mode=0 draw=136443 present=31471 road=30710 faces=541 upscale=20240 player=31643 opponents=45181
+[1789031190573] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=6 mode=1 draw=133898 present=31460 road=28877 faces=541 upscale=20235 player=31120 opponents=45121
+[1789031190610] [[32minfo[0m] [TrackStage] project_us=4094 paint_us=13390 lines_us=10 wireframe=false
+[1789031190904] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=7 mode=0 draw=103393 present=31454 road=20441 faces=217 upscale=20228 player=30757 opponents=23171
+[1789031190908] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=7 mode=1 draw=101702 present=31450 road=18592 faces=217 upscale=20225 player=30714 opponents=23205
+[1789031191272] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=8 mode=0 draw=120730 present=31481 road=13721 faces=89 upscale=20193 player=32651 opponents=45510
+[1789031191276] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=8 mode=1 draw=117282 present=31488 road=10650 faces=89 upscale=20199 player=32645 opponents=45307
+[1789031191621] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=9 mode=0 draw=111424 present=31469 road=15678 faces=108 upscale=20195 player=28170 opponents=38864
+[1789031191625] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=9 mode=1 draw=108313 present=31447 road=12529 faces=108 upscale=20210 player=28124 opponents=38751
+[1789031191834] [[32minfo[0m] [PaintStage] rows=160 clear_us=593 fill_us=5553 copy_us=4041
+[1789031191904] [[32minfo[0m] [CarStage] car=0 panels=988 vertices=1313 tiles=1 prepare_us=9803 raster_us=18480 blit_us=3400
+[1789031191992] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=10 mode=0 draw=121190 present=31469 road=16110 faces=108 upscale=20209 player=31743 opponents=44461
+[1789031191996] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=10 mode=1 draw=120037 present=31502 road=13631 faces=108 upscale=20218 player=32831 opponents=44750
+[1789031192127] [[32minfo[0m] [RaceStage] track_us=33452 cars_us=58336 upscale_us=20248 scene_width=234 surfaces=540 cars=3 track_id=2 player_car=0 submitted=3 player_us=34132 opponents_us=23950 player_native=true prepare_us=16650 raster_us=28490 blit_us=6665 candidate_rows_before=2016 candidate_rows_after=848
+[1789031192148] [[32minfo[0m] [HudStage] map_us=1370 total_us=3441 map_cached=true
+[1789031192386] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=11 mode=0 draw=122610 present=31424 road=34571 faces=540 upscale=20462 player=34314 opponents=24403
+[1789031192390] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=11 mode=1 draw=142075 present=31475 road=33452 faces=540 upscale=20248 player=34132 opponents=23950
+[1789031192772] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=12 mode=0 draw=130102 present=31496 road=17316 faces=127 upscale=20225 player=35124 opponents=48745
+[1789031192776] [[32minfo[0m] [SpiralAB] car=0 track=2 frame=12 mode=1 draw=126365 present=31475 road=13647 faces=127 upscale=20225 player=35146 opponents=48788
+[1789031192790] [[32minfo[0m] [SpiralAB] GROUP car=0 track=2 mismatches=0 stack_free=2188
+[1789031192848] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=17 fallback_panels=0 map_cached=true
+[1789031192879] [[32minfo[0m] [TrackStage] project_us=5553 paint_us=11291 lines_us=9 wireframe=false
+[1789031193595] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=1 mode=0 draw=123904 present=31447 road=12550 faces=68 upscale=20213 player=32175 opponents=50186
+[1789031193599] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=1 mode=1 draw=124653 present=31477 road=12540 faces=68 upscale=20699 player=32460 opponents=50122
+[1789031193916] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8254 raster_us=19914 blit_us=4188
+[1789031193976] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=2 mode=0 draw=125311 present=31455 road=15542 faces=118 upscale=20214 player=32003 opponents=48681
+[1789031193980] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=2 mode=1 draw=126469 present=31442 road=15515 faces=118 upscale=20200 player=32039 opponents=49830
+[1789031194013] [[32minfo[0m] [PaintStage] rows=139 clear_us=482 fill_us=5452 copy_us=3719
+[1789031194245] [[32minfo[0m] [RaceStage] track_us=14079 cars_us=55820 upscale_us=20207 scene_width=234 surfaces=95 cars=3 track_id=0 player_car=1 submitted=3 player_us=31303 opponents_us=24185 player_native=true prepare_us=16259 raster_us=26446 blit_us=4449 candidate_rows_before=2352 candidate_rows_after=581
+[1789031194266] [[32minfo[0m] [HudStage] map_us=1438 total_us=3494 map_cached=true
+[1789031194326] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=3 mode=0 draw=119917 present=31929 road=14079 faces=95 upscale=20207 player=31303 opponents=24185
+[1789031194330] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=3 mode=1 draw=100381 present=31456 road=15062 faces=95 upscale=20215 player=31430 opponents=24519
+[1789031194712] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=4 mode=0 draw=128493 present=31469 road=12490 faces=46 upscale=20210 player=35064 opponents=51811
+[1789031194716] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=4 mode=1 draw=128416 present=31498 road=12480 faces=46 upscale=20214 player=35091 opponents=51904
+[1789031194953] [[32minfo[0m] [TrackStage] project_us=6603 paint_us=18381 lines_us=10 wireframe=false
+[1789031195117] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=5 mode=0 draw=138485 present=31480 road=26132 faces=312 upscale=20238 player=32377 opponents=50854
+[1789031195121] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=5 mode=1 draw=136939 present=31494 road=25028 faces=312 upscale=20238 player=32406 opponents=50404
+[1789031195504] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=6 mode=0 draw=128143 present=32004 road=15614 faces=138 upscale=20223 player=32312 opponents=51102
+[1789031195508] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=6 mode=1 draw=128172 present=31463 road=15654 faces=138 upscale=20255 player=32346 opponents=51025
+[1789031195838] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=7 mode=0 draw=102245 present=31455 road=13066 faces=68 upscale=20221 player=35183 opponents=24912
+[1789031195842] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=7 mode=1 draw=102302 present=31448 road=13048 faces=68 upscale=20231 player=35158 opponents=24890
+[1789031195951] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10119 raster_us=21923 blit_us=5980
+[1789031196074] [[32minfo[0m] [PaintStage] rows=145 clear_us=514 fill_us=5877 copy_us=3781
+[1789031196252] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=8 mode=0 draw=142230 present=31689 road=14342 faces=111 upscale=20227 player=39228 opponents=59446
+[1789031196256] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=8 mode=1 draw=141913 present=31484 road=15402 faces=111 upscale=20212 player=38055 opponents=59337
+[1789031196403] [[32minfo[0m] [RaceStage] track_us=14459 cars_us=92468 upscale_us=20232 scene_width=234 surfaces=95 cars=3 track_id=0 player_car=1 submitted=3 player_us=35963 opponents_us=56133 player_native=true prepare_us=24486 raster_us=55056 blit_us=12444 candidate_rows_before=2912 candidate_rows_after=1027
+[1789031196423] [[32minfo[0m] [HudStage] map_us=1435 total_us=3440 map_cached=true
+[1789031196674] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=9 mode=0 draw=135245 present=31458 road=13998 faces=95 upscale=20210 player=35966 opponents=56137
+[1789031196678] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=9 mode=1 draw=157341 present=31443 road=14459 faces=95 upscale=20232 player=35963 opponents=56133
+[1789031197080] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=10 mode=0 draw=138314 present=31446 road=12049 faces=42 upscale=20201 player=38267 opponents=58825
+[1789031197084] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=10 mode=1 draw=138162 present=31700 road=12010 faces=42 upscale=20217 player=38256 opponents=58874
+[1789031197127] [[32minfo[0m] [TrackStage] project_us=7437 paint_us=16355 lines_us=8 wireframe=false
+[1789031197446] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=11 mode=0 draw=117589 present=31423 road=24201 faces=370 upscale=20225 player=38708 opponents=25348
+[1789031197450] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=11 mode=1 draw=118502 present=31478 road=24991 faces=370 upscale=20208 player=38727 opponents=25407
+[1789031197842] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=12 mode=0 draw=133237 present=31433 road=16875 faces=194 upscale=20245 player=34070 opponents=53081
+[1789031197846] [[32minfo[0m] [SpiralAB] car=1 track=0 frame=12 mode=1 draw=133010 present=31479 road=16874 faces=194 upscale=20243 player=34040 opponents=53066
+[1789031197860] [[32minfo[0m] [SpiralAB] GROUP car=1 track=0 mismatches=0 stack_free=2188
+[1789031197979] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=9962 raster_us=23187 blit_us=8998
+[1789031198106] [[32minfo[0m] [PaintStage] rows=139 clear_us=483 fill_us=5855 copy_us=3707
+[1789031198431] [[32minfo[0m] [RaceStage] track_us=18130 cars_us=94683 upscale_us=20224 scene_width=234 surfaces=196 cars=3 track_id=1 player_car=1 submitted=3 player_us=37654 opponents_us=56726 player_native=true prepare_us=24341 raster_us=54567 blit_us=15364 candidate_rows_before=8400 candidate_rows_after=2332
+[1789031198452] [[32minfo[0m] [HudStage] map_us=1475 total_us=3462 map_cached=true
+[1789031198710] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=1 mode=0 draw=141682 present=31464 road=18121 faces=196 upscale=20225 player=37678 opponents=56750
+[1789031198714] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=1 mode=1 draw=163278 present=31490 road=18130 faces=196 upscale=20224 player=37654 opponents=56726
+[1789031199076] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=2 mode=0 draw=118213 present=31508 road=18816 faces=123 upscale=20212 player=28037 opponents=42174
+[1789031199080] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=2 mode=1 draw=118196 present=31715 road=18796 faces=123 upscale=20209 player=28070 opponents=42229
+[1789031199272] [[32minfo[0m] [TrackStage] project_us=3442 paint_us=9963 lines_us=11 wireframe=false
+[1789031199414] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=3 mode=0 draw=105401 present=31450 road=14535 faces=61 upscale=20211 player=35964 opponents=25519
+[1789031199418] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=3 mode=1 draw=103621 present=31429 road=13431 faces=61 upscale=20219 player=35789 opponents=25004
+[1789031199826] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=4 mode=0 draw=141686 present=31455 road=12446 faces=62 upscale=20226 player=39156 opponents=60787
+[1789031199830] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=4 mode=1 draw=141603 present=31472 road=12390 faces=62 upscale=20229 player=39162 opponents=60861
+[1789031199984] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8253 raster_us=25321 blit_us=5768
+[1789031200244] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=5 mode=0 draw=143442 present=31460 road=19355 faces=244 upscale=20210 player=37858 opponents=57018
+[1789031200248] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=5 mode=1 draw=144674 present=31432 road=19349 faces=244 upscale=20235 player=37861 opponents=58035
+[1789031200287] [[32minfo[0m] [PaintStage] rows=232 clear_us=791 fill_us=7638 copy_us=6015
+[1789031200553] [[32minfo[0m] [RaceStage] track_us=18905 cars_us=70622 upscale_us=20237 scene_width=234 surfaces=123 cars=3 track_id=1 player_car=1 submitted=3 player_us=28022 opponents_us=42191 player_native=true prepare_us=24606 raster_us=39262 blit_us=6236 candidate_rows_before=2576 candidate_rows_after=803
+[1789031200574] [[32minfo[0m] [HudStage] map_us=1467 total_us=3406 map_cached=true
+[1789031200633] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=6 mode=0 draw=120040 present=31481 road=20429 faces=123 upscale=20235 player=28032 opponents=42194
+[1789031200637] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=6 mode=1 draw=139665 present=31477 road=18905 faces=123 upscale=20237 player=28022 opponents=42191
+[1789031200969] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=7 mode=0 draw=103220 present=31465 road=13243 faces=61 upscale=20223 player=35844 opponents=24948
+[1789031200973] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=7 mode=1 draw=103328 present=31445 road=13253 faces=61 upscale=20227 player=35832 opponents=24931
+[1789031201383] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=8 mode=0 draw=142095 present=31444 road=12349 faces=62 upscale=20457 player=39250 opponents=60853
+[1789031201387] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=8 mode=1 draw=142116 present=31500 road=12327 faces=62 upscale=20225 player=39136 opponents=61443
+[1789031201424] [[32minfo[0m] [TrackStage] project_us=5430 paint_us=12820 lines_us=8 wireframe=false
+[1789031201798] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=9 mode=0 draw=142183 present=31507 road=18273 faces=196 upscale=20207 player=37813 opponents=56966
+[1789031201802] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=9 mode=1 draw=143550 present=31467 road=19361 faces=196 upscale=20220 player=37783 opponents=56999
+[1789031202030] [[32minfo[0m] [CarStage] car=2 panels=607 vertices=801 tiles=1 prepare_us=6204 raster_us=7512 blit_us=1714
+[1789031202166] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=10 mode=0 draw=118277 present=31465 road=18853 faces=123 upscale=20242 player=28046 opponents=42128
+[1789031202170] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=10 mode=1 draw=119792 present=31463 road=18836 faces=123 upscale=20269 player=28280 opponents=43477
+[1789031202365] [[32minfo[0m] [PaintStage] rows=167 clear_us=584 fill_us=5479 copy_us=4202
+[1789031202507] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=11 mode=0 draw=105615 present=31425 road=15391 faces=93 upscale=20224 player=35829 opponents=25086
+[1789031202511] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=11 mode=1 draw=105848 present=31428 road=14343 faces=93 upscale=20225 player=36403 opponents=25402
+[1789031202672] [[32minfo[0m] [RaceStage] track_us=14414 cars_us=106724 upscale_us=20250 scene_width=234 surfaces=110 cars=3 track_id=1 player_car=1 submitted=3 player_us=42398 opponents_us=64013 player_native=true prepare_us=24651 raster_us=61423 blit_us=20229 candidate_rows_before=8400 candidate_rows_after=2034
+[1789031202693] [[32minfo[0m] [HudStage] map_us=1495 total_us=3506 map_cached=true
+[1789031202959] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=12 mode=0 draw=171775 present=31489 road=14414 faces=110 upscale=20250 player=42398 opponents=64013
+[1789031202963] [[32minfo[0m] [SpiralAB] car=1 track=1 frame=12 mode=1 draw=150134 present=31453 road=14429 faces=110 upscale=20247 player=42393 opponents=64030
+[1789031202977] [[32minfo[0m] [SpiralAB] GROUP car=1 track=1 mismatches=0 stack_free=2188
+[1789031203591] [[32minfo[0m] [TrackStage] project_us=5167 paint_us=10211 lines_us=11 wireframe=false
+[1789031203769] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=1 mode=0 draw=143285 present=31479 road=16541 faces=83 upscale=20223 player=37744 opponents=60156
+[1789031203773] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=1 mode=1 draw=138752 present=31479 road=12057 faces=83 upscale=20203 player=37777 opponents=60125
+[1789031204047] [[32minfo[0m] [CarStage] car=2 panels=607 vertices=801 tiles=1 prepare_us=6465 raster_us=9059 blit_us=2195
+[1789031204212] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=2 mode=0 draw=157645 present=31445 road=26111 faces=330 upscale=20257 player=39300 opponents=63242
+[1789031204216] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=2 mode=1 draw=156589 present=31485 road=23550 faces=330 upscale=20252 player=39540 opponents=64641
+[1789031204415] [[32minfo[0m] [PaintStage] rows=183 clear_us=648 fill_us=6679 copy_us=4457
+[1789031204556] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=3 mode=0 draw=109448 present=31441 road=19830 faces=129 upscale=20206 player=35414 opponents=25146
+[1789031204560] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=3 mode=1 draw=105150 present=31440 road=14937 faces=129 upscale=20568 player=35737 opponents=25137
+[1789031204724] [[32minfo[0m] [RaceStage] track_us=13981 cars_us=110177 upscale_us=20224 scene_width=234 surfaces=139 cars=3 track_id=2 player_car=1 submitted=3 player_us=41181 opponents_us=68766 player_native=true prepare_us=24687 raster_us=72246 blit_us=12904 candidate_rows_before=1456 candidate_rows_after=751
+[1789031204744] [[32minfo[0m] [HudStage] map_us=1311 total_us=3204 map_cached=true
+[1789031205010] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=4 mode=0 draw=174554 present=31434 road=13981 faces=139 upscale=20224 player=41181 opponents=68766
+[1789031205014] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=4 mode=1 draw=149948 present=31473 road=11242 faces=139 upscale=20230 player=41195 opponents=68748
+[1789031205403] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=5 mode=0 draw=133669 present=31463 road=14572 faces=64 upscale=20216 player=35489 opponents=54745
+[1789031205407] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=5 mode=1 draw=129834 present=31461 road=11109 faces=64 upscale=20207 player=34963 opponents=54612
+[1789031205653] [[32minfo[0m] [TrackStage] project_us=9808 paint_us=19018 lines_us=10 wireframe=false
+[1789031205816] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=6 mode=0 draw=142156 present=31470 road=30725 faces=541 upscale=20241 player=31585 opponents=50988
+[1789031205820] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=6 mode=1 draw=141477 present=31450 road=29961 faces=541 upscale=20229 player=31591 opponents=51039
+[1789031206086] [[32minfo[0m] [CarStage] car=1 panels=1021 vertices=1354 tiles=1 prepare_us=10197 raster_us=17926 blit_us=3098
+[1789031206154] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=7 mode=0 draw=106497 present=31453 road=20486 faces=217 upscale=20245 player=32452 opponents=24593
+[1789031206158] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=7 mode=1 draw=101934 present=31446 road=17465 faces=217 upscale=20243 player=31183 opponents=24218
+[1789031206535] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=8 mode=0 draw=127588 present=31435 road=13730 faces=89 upscale=20195 player=33159 opponents=51746
+[1789031206539] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=8 mode=1 draw=123940 present=31451 road=10653 faces=89 upscale=20205 player=33130 opponents=51291
+[1789031206571] [[32minfo[0m] [PaintStage] rows=155 clear_us=605 fill_us=5585 copy_us=3971
+[1789031206838] [[32minfo[0m] [RaceStage] track_us=15660 cars_us=72773 upscale_us=20210 scene_width=234 surfaces=108 cars=3 track_id=2 player_car=1 submitted=3 player_us=28589 opponents_us=43924 player_native=true prepare_us=24685 raster_us=39478 blit_us=8242 candidate_rows_before=3024 candidate_rows_after=914
+[1789031206858] [[32minfo[0m] [HudStage] map_us=1346 total_us=3277 map_cached=true
+[1789031206918] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=9 mode=0 draw=138512 present=31458 road=15660 faces=108 upscale=20210 player=28589 opponents=43924
+[1789031206922] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=9 mode=1 draw=115056 present=31479 road=13571 faces=108 upscale=20216 player=28545 opponents=43933
+[1789031207301] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=10 mode=0 draw=128000 present=31472 road=16050 faces=108 upscale=20216 player=32180 opponents=50886
+[1789031207305] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=10 mode=1 draw=124197 present=31960 road=12619 faces=108 upscale=20214 player=32179 opponents=50677
+[1789031207676] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=11 mode=0 draw=123079 present=31421 road=34485 faces=540 upscale=20251 player=34574 opponents=24989
+[1789031207680] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=11 mode=1 draw=121796 present=31437 road=33196 faces=540 upscale=20243 player=34571 opponents=24958
+[1789031207717] [[32minfo[0m] [TrackStage] project_us=6277 paint_us=10985 lines_us=9 wireframe=false
+[1789031208077] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=12 mode=0 draw=138070 present=31475 road=18396 faces=127 upscale=20218 player=35402 opponents=55244
+[1789031208081] [[32minfo[0m] [SpiralAB] car=1 track=2 frame=12 mode=1 draw=133133 present=31725 road=13625 faces=127 upscale=20224 player=35409 opponents=55276
+[1789031208095] [[32minfo[0m] [SpiralAB] GROUP car=1 track=2 mismatches=0 stack_free=2188
+[1789031208154] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=17 fallback_panels=0 map_cached=true
+[1789031208206] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8117 raster_us=10615 blit_us=2015
+[1789031208733] [[32minfo[0m] [PaintStage] rows=131 clear_us=450 fill_us=4832 copy_us=3605
+[1789031208894] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=1 mode=0 draw=122876 present=31453 road=13593 faces=68 upscale=20222 player=31566 opponents=48651
+[1789031208898] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=1 mode=1 draw=121751 present=31452 road=12550 faces=68 upscale=20224 player=31550 opponents=48617
+[1789031209032] [[32minfo[0m] [RaceStage] track_us=15561 cars_us=79295 upscale_us=20210 scene_width=234 surfaces=118 cars=3 track_id=0 player_car=2 submitted=3 player_us=31268 opponents_us=47766 player_native=true prepare_us=24063 raster_us=45353 blit_us=9522 candidate_rows_before=4144 candidate_rows_after=1110
+[1789031209053] [[32minfo[0m] [HudStage] map_us=1422 total_us=3380 map_cached=true
+[1789031209292] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=2 mode=0 draw=145185 present=31509 road=15561 faces=118 upscale=20210 player=31268 opponents=47766
+[1789031209296] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=2 mode=1 draw=123359 present=31494 road=15512 faces=118 upscale=20208 player=31312 opponents=47540
+[1789031209624] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=3 mode=0 draw=100754 present=31443 road=14031 faces=95 upscale=20233 player=30674 opponents=26846
+[1789031209628] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=3 mode=1 draw=100802 present=31458 road=14060 faces=95 upscale=20224 player=30659 opponents=26827
+[1789031209842] [[32minfo[0m] [TrackStage] project_us=3781 paint_us=8666 lines_us=9 wireframe=false
+[1789031210008] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=4 mode=0 draw=126623 present=31448 road=12534 faces=46 upscale=20208 player=34608 opponents=50345
+[1789031210012] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=4 mode=1 draw=127722 present=31464 road=13584 faces=46 upscale=20196 player=34690 opponents=50387
+[1789031210268] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8223 raster_us=10731 blit_us=1828
+[1789031210410] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=5 mode=0 draw=136706 present=31449 road=25002 faces=312 upscale=20257 player=32530 opponents=50096
+[1789031210414] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=5 mode=1 draw=135010 present=31456 road=25019 faces=312 upscale=20238 player=31767 opponents=48851
+[1789031210791] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=6 mode=0 draw=125757 present=31474 road=15650 faces=138 upscale=20246 player=31803 opponents=49185
+[1789031210795] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=6 mode=1 draw=125662 present=31451 road=15638 faces=138 upscale=20234 player=31809 opponents=49226
+[1789031210827] [[32minfo[0m] [PaintStage] rows=152 clear_us=524 fill_us=5236 copy_us=3914
+[1789031211073] [[32minfo[0m] [RaceStage] track_us=13054 cars_us=62877 upscale_us=20453 scene_width=234 surfaces=68 cars=3 track_id=0 player_car=2 submitted=3 player_us=34708 opponents_us=27824 player_native=true prepare_us=17754 raster_us=31193 blit_us=7075 candidate_rows_before=2576 candidate_rows_after=760
+[1789031211093] [[32minfo[0m] [HudStage] map_us=1424 total_us=3497 map_cached=true
+[1789031211153] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=7 mode=0 draw=126197 present=31515 road=13054 faces=68 upscale=20453 player=34708 opponents=27824
+[1789031211157] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=7 mode=1 draw=105844 present=31435 road=14065 faces=68 upscale=20227 player=34573 opponents=27826
+[1789031211558] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=8 mode=0 draw=138276 present=31464 road=14381 faces=111 upscale=20227 player=37625 opponents=57095
+[1789031211562] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=8 mode=1 draw=137619 present=31457 road=14336 faces=111 upscale=20233 player=37600 opponents=56669
+[1789031211952] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=9 mode=0 draw=132353 present=31500 road=13975 faces=95 upscale=20231 player=35566 opponents=53776
+[1789031211956] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=9 mode=1 draw=132489 present=31440 road=13998 faces=95 upscale=20219 player=35561 opponents=53765
+[1789031211987] [[32minfo[0m] [TrackStage] project_us=3515 paint_us=8450 lines_us=8 wireframe=false
+[1789031212296] [[32minfo[0m] [CarStage] car=4 panels=627 vertices=869 tiles=1 prepare_us=6909 raster_us=21873 blit_us=6389
+[1789031212356] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=10 mode=0 draw=136951 present=31480 road=13132 faces=42 upscale=20444 player=37898 opponents=56385
+[1789031212360] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=10 mode=1 draw=137367 present=31441 road=12022 faces=42 upscale=20220 player=37803 opponents=58371
+[1789031212724] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=11 mode=0 draw=119422 present=31439 road=23852 faces=370 upscale=20240 player=38254 opponents=28146
+[1789031212728] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=11 mode=1 draw=119485 present=31444 road=23830 faces=370 upscale=20246 player=38250 opponents=28172
+[1789031212951] [[32minfo[0m] [PaintStage] rows=138 clear_us=491 fill_us=6944 copy_us=3673
+[1789031213117] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=12 mode=0 draw=130562 present=31470 road=16899 faces=194 upscale=20242 player=33517 opponents=51015
+[1789031213121] [[32minfo[0m] [SpiralAB] car=2 track=0 frame=12 mode=1 draw=131922 present=31480 road=17963 faces=194 upscale=20236 player=33458 opponents=51397
+[1789031213135] [[32minfo[0m] [SpiralAB] GROUP car=2 track=0 mismatches=0 stack_free=2188
+[1789031213296] [[32minfo[0m] [RaceStage] track_us=14402 cars_us=102709 upscale_us=20258 scene_width=234 surfaces=110 cars=3 track_id=1 player_car=2 submitted=3 player_us=41109 opponents_us=61199 player_native=true prepare_us=23649 raster_us=59069 blit_us=19491 candidate_rows_before=7952 candidate_rows_after=1938
+[1789031213318] [[32minfo[0m] [HudStage] map_us=1531 total_us=3530 map_cached=true
+[1789031213968] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=1 mode=0 draw=138780 present=31474 road=18099 faces=196 upscale=20237 player=36980 opponents=54606
+[1789031213972] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=1 mode=1 draw=138828 present=31459 road=18109 faces=196 upscale=20222 player=37019 opponents=54604
+[1789031214010] [[32minfo[0m] [TrackStage] project_us=4477 paint_us=14282 lines_us=8 wireframe=false
+[1789031214333] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=2 mode=0 draw=118455 present=31467 road=19905 faces=123 upscale=20231 player=27325 opponents=41764
+[1789031214337] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=2 mode=1 draw=116595 present=31976 road=18774 faces=123 upscale=20240 player=27183 opponents=41572
+[1789031214392] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8295 raster_us=11164 blit_us=1928
+[1789031214676] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=3 mode=0 draw=105862 present=31431 road=13422 faces=61 upscale=20216 player=35270 opponents=27796
+[1789031214680] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=3 mode=1 draw=107378 present=31439 road=13477 faces=61 upscale=20233 player=35488 opponents=28965
+[1789031215083] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=4 mode=0 draw=138549 present=31439 road=12395 faces=62 upscale=20231 player=38813 opponents=58021
+[1789031215087] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=4 mode=1 draw=138423 present=31733 road=12389 faces=62 upscale=20235 player=38756 opponents=58118
+[1789031215126] [[32minfo[0m] [PaintStage] rows=134 clear_us=468 fill_us=9145 copy_us=3567
+[1789031215436] [[32minfo[0m] [RaceStage] track_us=19385 cars_us=92402 upscale_us=20224 scene_width=234 surfaces=244 cars=3 track_id=1 player_car=2 submitted=3 player_us=37268 opponents_us=54799 player_native=true prepare_us=24176 raster_us=52456 blit_us=15329 candidate_rows_before=8400 candidate_rows_after=2334
+[1789031215457] [[32minfo[0m] [HudStage] map_us=1528 total_us=3503 map_cached=true
+[1789031215517] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=5 mode=0 draw=162394 present=31472 road=19385 faces=244 upscale=20224 player=37268 opponents=54799
+[1789031215521] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=5 mode=1 draw=141905 present=31487 road=20413 faces=244 upscale=20223 player=37159 opponents=54913
+[1789031215880] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=6 mode=0 draw=116840 present=31475 road=18917 faces=123 upscale=20236 player=27169 opponents=41509
+[1789031215884] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=6 mode=1 draw=116772 present=31458 road=18912 faces=123 upscale=20240 player=27183 opponents=41551
+[1789031216078] [[32minfo[0m] [TrackStage] project_us=3267 paint_us=9949 lines_us=8 wireframe=false
+[1789031216223] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=7 mode=0 draw=106852 present=31471 road=14355 faces=61 upscale=20202 player=35205 opponents=27930
+[1789031216227] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=7 mode=1 draw=105661 present=31679 road=13236 faces=61 upscale=20206 player=35246 opponents=27843
+[1789031216476] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8302 raster_us=11647 blit_us=2020
+[1789031216632] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=8 mode=0 draw=139250 present=31465 road=12382 faces=62 upscale=20705 player=38980 opponents=58051
+[1789031216636] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=8 mode=1 draw=139741 present=31480 road=12336 faces=62 upscale=20246 player=39021 opponents=59148
+[1789031217040] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=9 mode=0 draw=139384 present=31473 road=18270 faces=196 upscale=20234 player=37148 opponents=54798
+[1789031217044] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=9 mode=1 draw=139432 present=31470 road=18290 faces=196 upscale=20232 player=37181 opponents=54687
+[1789031217255] [[32minfo[0m] [PaintStage] rows=232 clear_us=808 fill_us=7593 copy_us=5578
+[1789031217406] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=10 mode=0 draw=116765 present=31471 road=18860 faces=123 upscale=20218 player=27186 opponents=41523
+[1789031217410] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=10 mode=1 draw=119161 present=31481 road=19902 faces=123 upscale=20232 player=27914 opponents=42134
+[1789031217528] [[32minfo[0m] [RaceStage] track_us=14320 cars_us=63450 upscale_us=20234 scene_width=234 surfaces=93 cars=3 track_id=1 player_car=2 submitted=3 player_us=35308 opponents_us=27842 player_native=true prepare_us=17808 raster_us=32172 blit_us=6679 candidate_rows_before=1568 candidate_rows_after=771
+[1789031217548] [[32minfo[0m] [HudStage] map_us=1540 total_us=3614 map_cached=true
+[1789031217771] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=11 mode=0 draw=106807 present=31447 road=14356 faces=93 upscale=20231 player=35245 opponents=27901
+[1789031217775] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=11 mode=1 draw=128080 present=31464 road=14320 faces=93 upscale=20234 player=35308 opponents=27842
+[1789031218193] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=12 mode=0 draw=146197 present=31472 road=14421 faces=110 upscale=20230 player=41364 opponents=61153
+[1789031218197] [[32minfo[0m] [SpiralAB] car=2 track=1 frame=12 mode=1 draw=146583 present=31465 road=14433 faces=110 upscale=20269 player=41473 opponents=61419
+[1789031218211] [[32minfo[0m] [SpiralAB] GROUP car=2 track=1 mismatches=0 stack_free=2188
+[1789031218250] [[32minfo[0m] [TrackStage] project_us=6287 paint_us=10984 lines_us=8 wireframe=false
+[1789031218514] [[32minfo[0m] [CarStage] car=2 panels=967 vertices=1181 tiles=1 prepare_us=9231 raster_us=19235 blit_us=6134
+[1789031218993] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=1 mode=0 draw=139167 present=31497 road=15407 faces=83 upscale=20240 player=37499 opponents=57436
+[1789031218997] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=1 mode=1 draw=135801 present=31465 road=12080 faces=83 upscale=20236 player=37517 opponents=57366
+[1789031219430] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=2 mode=0 draw=154877 present=31452 road=26346 faces=330 upscale=20252 player=39061 opponents=60520
+[1789031219434] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=2 mode=1 draw=152579 present=31457 road=23559 faces=330 upscale=20238 player=39630 opponents=60585
+[1789031219468] [[32minfo[0m] [PaintStage] rows=183 clear_us=643 fill_us=6695 copy_us=4522
+[1789031219553] [[32minfo[0m] [RaceStage] track_us=15965 cars_us=63269 upscale_us=20204 scene_width=234 surfaces=129 cars=3 track_id=2 player_car=2 submitted=3 player_us=34855 opponents_us=28087 player_native=true prepare_us=17734 raster_us=31569 blit_us=7110 candidate_rows_before=2464 candidate_rows_after=855
+[1789031219573] [[32minfo[0m] [HudStage] map_us=1344 total_us=3418 map_cached=true
+[1789031219799] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=3 mode=0 draw=110670 present=31454 road=18732 faces=129 upscale=20228 player=34839 opponents=28055
+[1789031219803] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=3 mode=1 draw=129480 present=31427 road=15965 faces=129 upscale=20204 player=34855 opponents=28087
+[1789031220224] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=4 mode=0 draw=149109 present=31478 road=13999 faces=139 upscale=20239 player=41250 opponents=65039
+[1789031220228] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=4 mode=1 draw=146660 present=31478 road=11490 faces=139 upscale=20233 player=41259 opponents=65098
+[1789031220258] [[32minfo[0m] [TrackStage] project_us=1558 paint_us=9531 lines_us=8 wireframe=false
+[1789031220523] [[32minfo[0m] [CarStage] car=2 panels=967 vertices=1181 tiles=1 prepare_us=9433 raster_us=20018 blit_us=4874
+[1789031220614] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=5 mode=0 draw=131636 present=31462 road=14572 faces=64 upscale=20206 player=35479 opponents=52731
+[1789031220618] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=5 mode=1 draw=128730 present=31464 road=12210 faces=64 upscale=20196 player=34940 opponents=52619
+[1789031221022] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=6 mode=0 draw=140047 present=31467 road=30756 faces=541 upscale=20242 player=31049 opponents=49366
+[1789031221026] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=6 mode=1 draw=138143 present=31474 road=28884 faces=541 upscale=20227 player=31085 opponents=49396
+[1789031221363] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=7 mode=0 draw=107399 present=31425 road=20442 faces=217 upscale=20247 player=30471 opponents=26990
+[1789031221367] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=7 mode=1 draw=103965 present=31420 road=17517 faces=217 upscale=20226 player=30478 opponents=26962
+[1789031221577] [[32minfo[0m] [PaintStage] rows=125 clear_us=440 fill_us=4747 copy_us=3353
+[1789031221680] [[32minfo[0m] [RaceStage] track_us=11726 cars_us=82332 upscale_us=20211 scene_width=234 surfaces=89 cars=3 track_id=2 player_car=2 submitted=3 player_us=32445 opponents_us=49563 player_native=true prepare_us=24151 raster_us=47718 blit_us=10030 candidate_rows_before=2688 candidate_rows_after=890
+[1789031221701] [[32minfo[0m] [HudStage] map_us=1337 total_us=3306 map_cached=true
+[1789031221761] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=8 mode=0 draw=124508 present=31450 road=13711 faces=89 upscale=20213 player=32486 opponents=49466
+[1789031221765] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=8 mode=1 draw=144144 present=31478 road=11726 faces=89 upscale=20211 player=32445 opponents=49563
+[1789031222117] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=9 mode=0 draw=115318 present=31452 road=15673 faces=108 upscale=20218 player=27931 opponents=42929
+[1789031222121] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=9 mode=1 draw=111853 present=31439 road=12518 faces=108 upscale=20216 player=27667 opponents=42812
+[1789031222335] [[32minfo[0m] [TrackStage] project_us=2177 paint_us=10371 lines_us=11 wireframe=false
+[1789031222496] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=10 mode=0 draw=125295 present=31960 road=16068 faces=108 upscale=20232 player=31568 opponents=48755
+[1789031222500] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=10 mode=1 draw=123082 present=31459 road=13704 faces=108 upscale=20217 player=31558 opponents=48831
+[1789031222574] [[32minfo[0m] [CarStage] car=3 panels=793 vertices=1226 tiles=1 prepare_us=8297 raster_us=10814 blit_us=2206
+[1789031222876] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=11 mode=0 draw=125252 present=31438 road=34520 faces=540 upscale=20239 player=33979 opponents=27738
+[1789031222880] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=11 mode=1 draw=125463 present=31437 road=33181 faces=540 upscale=20269 player=34186 opponents=28891
+[1789031223272] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=12 mode=0 draw=134522 present=31687 road=17300 faces=127 upscale=20213 player=34834 opponents=53374
+[1789031223276] [[32minfo[0m] [SpiralAB] car=2 track=2 frame=12 mode=1 draw=130769 present=31495 road=13638 faces=127 upscale=20226 player=34917 opponents=53345
+[1789031223290] [[32minfo[0m] [SpiralAB] GROUP car=2 track=2 mismatches=0 stack_free=2188
+[1789031223354] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=18 fallback_panels=0 map_cached=true
+[1789031223756] [[32minfo[0m] [PaintStage] rows=131 clear_us=452 fill_us=4876 copy_us=3558
+[1789031223859] [[32minfo[0m] [RaceStage] track_us=13579 cars_us=82301 upscale_us=20211 scene_width=234 surfaces=68 cars=3 track_id=0 player_car=3 submitted=3 player_us=37794 opponents_us=44119 player_native=true prepare_us=23660 raster_us=49294 blit_us=8859 candidate_rows_before=4816 candidate_rows_after=898
+[1789031223880] [[32minfo[0m] [HudStage] map_us=1418 total_us=3414 map_cached=true
+[1789031224120] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=1 mode=0 draw=123755 present=31445 road=12565 faces=68 upscale=20218 player=38093 opponents=44118
+[1789031224124] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=1 mode=1 draw=145888 present=31474 road=13579 faces=68 upscale=20211 player=37794 opponents=44119
+[1789031224340] [[32minfo[0m] [TrackStage] project_us=4911 paint_us=10618 lines_us=8 wireframe=false
+[1789031224501] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=2 mode=0 draw=125121 present=31472 road=15550 faces=118 upscale=20222 player=37534 opponents=43034
+[1789031224505] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=2 mode=1 draw=126361 present=31473 road=16673 faces=118 upscale=20211 player=37509 opponents=43042
+[1789031224612] [[32minfo[0m] [CarStage] car=3 panels=1151 vertices=1642 tiles=1 prepare_us=11493 raster_us=22226 blit_us=3010
+[1789031224837] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=3 mode=0 draw=102487 present=31448 road=14056 faces=95 upscale=20233 player=36787 opponents=22512
+[1789031224841] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=3 mode=1 draw=103905 present=31425 road=14072 faces=95 upscale=20229 player=37919 opponents=22685
+[1789031225223] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=4 mode=0 draw=128290 present=31471 road=12481 faces=46 upscale=20193 player=40910 opponents=45803
+[1789031225227] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=4 mode=1 draw=128218 present=31495 road=12484 faces=46 upscale=20204 player=40924 opponents=45815
+[1789031225626] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=5 mode=0 draw=136391 present=31450 road=24980 faces=312 upscale=20244 player=37977 opponents=44341
+[1789031225630] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=5 mode=1 draw=137254 present=31462 road=25034 faces=312 upscale=20620 player=38340 opponents=44334
+[1789031225848] [[32minfo[0m] [PaintStage] rows=161 clear_us=552 fill_us=6287 copy_us=4089
+[1789031225952] [[32minfo[0m] [RaceStage] track_us=16659 cars_us=82720 upscale_us=20235 scene_width=234 surfaces=138 cars=3 track_id=0 player_car=3 submitted=3 player_us=37883 opponents_us=44375 player_native=true prepare_us=24023 raster_us=49320 blit_us=8809 candidate_rows_before=2576 candidate_rows_after=752
+[1789031225972] [[32minfo[0m] [HudStage] map_us=1431 total_us=3402 map_cached=true
+[1789031226033] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=6 mode=0 draw=126992 present=31444 road=15611 faces=138 upscale=20233 player=37866 opponents=44383
+[1789031226037] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=6 mode=1 draw=149527 present=31507 road=16659 faces=138 upscale=20235 player=37883 opponents=44375
+[1789031226376] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=7 mode=0 draw=107211 present=31435 road=13029 faces=68 upscale=20220 player=41647 opponents=23326
+[1789031226380] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=7 mode=1 draw=106740 present=31421 road=13056 faces=68 upscale=20210 player=41207 opponents=23212
+[1789031226414] [[32minfo[0m] [TrackStage] project_us=3980 paint_us=10347 lines_us=9 wireframe=false
+[1789031226629] [[32minfo[0m] [CarStage] car=4 panels=627 vertices=869 tiles=1 prepare_us=6448 raster_us=9008 blit_us=2304
+[1789031226788] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=8 mode=0 draw=141350 present=31484 road=15450 faces=111 upscale=20212 player=44733 opponents=51862
+[1789031226792] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=8 mode=1 draw=141330 present=31469 road=14396 faces=111 upscale=20237 player=44966 opponents=52984
+[1789031227186] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=9 mode=0 draw=134584 present=31457 road=13973 faces=95 upscale=20231 player=42385 opponents=49157
+[1789031227190] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=9 mode=1 draw=134272 present=31467 road=13981 faces=95 upscale=20223 player=42256 opponents=48889
+[1789031227592] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=10 mode=0 draw=138944 present=31499 road=12003 faces=42 upscale=20234 player=45547 opponents=52244
+[1789031227596] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=10 mode=1 draw=137548 present=31478 road=11990 faces=42 upscale=20233 player=45006 opponents=51528
+[1789031227966] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=11 mode=0 draw=122023 present=31424 road=23826 faces=370 upscale=20227 player=45323 opponents=23660
+[1789031227970] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=11 mode=1 draw=122070 present=31465 road=23887 faces=370 upscale=20245 player=45312 opponents=23669
+[1789031228006] [[32minfo[0m] [PaintStage] rows=138 clear_us=491 fill_us=6952 copy_us=3691
+[1789031228115] [[32minfo[0m] [RaceStage] track_us=17937 cars_us=86692 upscale_us=20461 scene_width=234 surfaces=194 cars=3 track_id=0 player_car=3 submitted=3 player_us=39977 opponents_us=46242 player_native=true prepare_us=24094 raster_us=49417 blit_us=12587 candidate_rows_before=9296 candidate_rows_after=1218
+[1789031228135] [[32minfo[0m] [HudStage] map_us=1436 total_us=3405 map_cached=true
+[1789031228384] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=12 mode=0 draw=155330 present=31451 road=17937 faces=194 upscale=20461 player=39977 opponents=46242
+[1789031228388] [[32minfo[0m] [SpiralAB] car=3 track=0 frame=12 mode=1 draw=132729 present=31467 road=16873 faces=194 upscale=20254 player=39840 opponents=46768
+[1789031228402] [[32minfo[0m] [SpiralAB] GROUP car=3 track=0 mismatches=0 stack_free=2188
+[1789031228440] [[32minfo[0m] [TrackStage] project_us=4206 paint_us=10194 lines_us=9 wireframe=false
+[1789031228665] [[32minfo[0m] [CarStage] car=4 panels=627 vertices=869 tiles=1 prepare_us=6330 raster_us=9188 blit_us=2623
+[1789031229227] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=1 mode=0 draw=141115 present=31485 road=18150 faces=196 upscale=20220 player=44060 opponents=49800
+[1789031229231] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=1 mode=1 draw=141068 present=31457 road=18090 faces=196 upscale=20238 player=44078 opponents=49779
+[1789031229594] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=2 mode=0 draw=118803 present=31465 road=18800 faces=123 upscale=20231 player=33460 opponents=37333
+[1789031229598] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=2 mode=1 draw=118047 present=31467 road=18779 faces=123 upscale=20240 player=32888 opponents=37262
+[1789031229940] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=3 mode=0 draw=108026 present=31452 road=13447 faces=61 upscale=20227 player=42012 opponents=23328
+[1789031229944] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=3 mode=1 draw=108156 present=31449 road=13464 faces=61 upscale=20229 player=42025 opponents=23257
+[1789031230173] [[32minfo[0m] [PaintStage] rows=139 clear_us=506 fill_us=4430 copy_us=3646
+[1789031230294] [[32minfo[0m] [RaceStage] track_us=13447 cars_us=99909 upscale_us=20221 scene_width=234 surfaces=62 cars=3 track_id=1 player_car=3 submitted=3 player_us=46021 opponents_us=53394 player_native=true prepare_us=24185 raster_us=61285 blit_us=13833 candidate_rows_before=1792 candidate_rows_after=1072
+[1789031230315] [[32minfo[0m] [HudStage] map_us=2049 total_us=4028 map_cached=true
+[1789031230374] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=4 mode=0 draw=141485 present=31444 road=12400 faces=62 upscale=20227 player=46340 opponents=53409
+[1789031230378] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=4 mode=1 draw=163612 present=31489 road=13447 faces=62 upscale=20221 player=46021 opponents=53394
+[1789031230614] [[32minfo[0m] [TrackStage] project_us=5975 paint_us=13322 lines_us=11 wireframe=false
+[1789031230699] [[32minfo[0m] [CarStage] car=3 panels=1151 vertices=1642 tiles=1 prepare_us=11568 raster_us=25248 blit_us=7415
+[1789031230791] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=5 mode=0 draw=145470 present=31470 road=20440 faces=244 upscale=20223 player=45442 opponents=50398
+[1789031230795] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=5 mode=1 draw=142976 present=31460 road=19335 faces=244 upscale=20218 player=44307 opponents=50128
+[1789031231157] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=6 mode=0 draw=118180 present=31511 road=18942 faces=123 upscale=20223 player=32859 opponents=37208
+[1789031231161] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=6 mode=1 draw=118514 present=31480 road=18901 faces=123 upscale=20448 player=32990 opponents=37239
+[1789031231503] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=7 mode=0 draw=107824 present=31473 road=13252 faces=61 upscale=20236 player=42056 opponents=23255
+[1789031231507] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=7 mode=1 draw=107863 present=31809 road=13228 faces=61 upscale=20233 player=42014 opponents=23291
+[1789031231915] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=8 mode=0 draw=141060 present=31473 road=12362 faces=62 upscale=20204 player=46080 opponents=53361
+[1789031231919] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=8 mode=1 draw=140966 present=31474 road=12346 faces=62 upscale=20229 player=46064 opponents=53348
+[1789031232330] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=9 mode=0 draw=142346 present=31498 road=18270 faces=196 upscale=20227 player=44247 opponents=50650
+[1789031232334] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=9 mode=1 draw=142156 present=31466 road=18264 faces=196 upscale=20224 player=44525 opponents=50119
+[1789031232372] [[32minfo[0m] [PaintStage] rows=232 clear_us=811 fill_us=7565 copy_us=5638
+[1789031232464] [[32minfo[0m] [RaceStage] track_us=19912 cars_us=70610 upscale_us=20210 scene_width=234 surfaces=123 cars=3 track_id=1 player_car=3 submitted=3 player_us=32839 opponents_us=37274 player_native=true prepare_us=24219 raster_us=39606 blit_us=6177 candidate_rows_before=2576 candidate_rows_after=804
+[1789031232485] [[32minfo[0m] [HudStage] map_us=1481 total_us=3415 map_cached=true
+[1789031232719] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=10 mode=0 draw=140887 present=31477 road=19912 faces=123 upscale=20210 player=32839 opponents=37274
+[1789031232723] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=10 mode=1 draw=118172 present=31492 road=18885 faces=123 upscale=20224 player=32927 opponents=37177
+[1789031232757] [[32minfo[0m] [TrackStage] project_us=3854 paint_us=10445 lines_us=8 wireframe=false
+[1789031232776] [[32minfo[0m] [CarStage] car=4 panels=627 vertices=869 tiles=1 prepare_us=6431 raster_us=8776 blit_us=1946
+[1789031233070] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=11 mode=0 draw=108954 present=31687 road=14334 faces=93 upscale=20231 player=42036 opponents=23339
+[1789031233074] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=11 mode=1 draw=111844 present=31428 road=15482 faces=93 upscale=20256 player=42287 opponents=24359
+[1789031233500] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=12 mode=0 draw=149878 present=31447 road=14438 faces=110 upscale=20245 player=49778 opponents=56356
+[1789031233504] [[32minfo[0m] [SpiralAB] car=3 track=1 frame=12 mode=1 draw=150454 present=31462 road=14390 faces=110 upscale=20247 player=49955 opponents=56908
+[1789031233518] [[32minfo[0m] [SpiralAB] GROUP car=3 track=1 mismatches=0 stack_free=2188
+[1789031234305] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=1 mode=0 draw=141500 present=31480 road=15404 faces=83 upscale=20221 player=44638 opponents=52598
+[1789031234309] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=1 mode=1 draw=138312 present=31473 road=12055 faces=83 upscale=20231 player=44600 opponents=52841
+[1789031234565] [[32minfo[0m] [PaintStage] rows=232 clear_us=817 fill_us=11240 copy_us=5448
+[1789031234688] [[32minfo[0m] [RaceStage] track_us=24590 cars_us=102197 upscale_us=20255 scene_width=234 surfaces=330 cars=3 track_id=2 player_car=3 submitted=3 player_us=46290 opponents_us=55585 player_native=true prepare_us=24137 raster_us=62999 blit_us=14627 candidate_rows_before=2352 candidate_rows_after=1043
+[1789031234709] [[32minfo[0m] [HudStage] map_us=1324 total_us=3370 map_cached=true
+[1789031234769] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=2 mode=0 draw=156939 present=31462 road=26092 faces=330 upscale=20252 player=46289 opponents=55535
+[1789031234773] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=2 mode=1 draw=177164 present=31453 road=24590 faces=330 upscale=20255 player=46290 opponents=55585
+[1789031234807] [[32minfo[0m] [TrackStage] project_us=2822 paint_us=12020 lines_us=10 wireframe=false
+[1789031234826] [[32minfo[0m] [CarStage] car=4 panels=627 vertices=869 tiles=1 prepare_us=6465 raster_us=8670 blit_us=2185
+[1789031235123] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=3 mode=0 draw=113083 present=31470 road=18734 faces=129 upscale=20213 player=41941 opponents=23456
+[1789031235127] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=3 mode=1 draw=111711 present=31445 road=16021 faces=129 upscale=20230 player=41889 opponents=24538
+[1789031235549] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=4 mode=0 draw=149454 present=31937 road=14046 faces=139 upscale=20217 player=48576 opponents=57852
+[1789031235553] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=4 mode=1 draw=146623 present=31463 road=11226 faces=139 upscale=20213 player=48596 opponents=57884
+[1789031235940] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=5 mode=0 draw=132326 present=31469 road=14612 faces=64 upscale=20210 player=41136 opponents=47850
+[1789031235944] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=5 mode=1 draw=128800 present=31499 road=11094 faces=64 upscale=20190 player=41103 opponents=47781
+[1789031236351] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=6 mode=0 draw=141581 present=31468 road=30709 faces=541 upscale=20455 player=37225 opponents=44518
+[1789031236355] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=6 mode=1 draw=139312 present=31945 road=28861 faces=541 upscale=20240 player=37111 opponents=44513
+[1789031236696] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=7 mode=0 draw=108712 present=31439 road=20442 faces=217 upscale=20234 player=36695 opponents=22557
+[1789031236700] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=7 mode=1 draw=105701 present=31455 road=17505 faces=217 upscale=20224 player=36625 opponents=22556
+[1789031236733] [[32minfo[0m] [PaintStage] rows=125 clear_us=423 fill_us=4786 copy_us=3361
+[1789031236838] [[32minfo[0m] [CarStage] car=5 panels=607 vertices=790 tiles=1 prepare_us=6053 raster_us=17753 blit_us=3953
+[1789031236839] [[32minfo[0m] [RaceStage] track_us=14701 cars_us=85091 upscale_us=20208 scene_width=234 surfaces=89 cars=3 track_id=2 player_car=3 submitted=3 player_us=38876 opponents_us=45889 player_native=true prepare_us=24150 raster_us=49193 blit_us=10180 candidate_rows_before=2688 candidate_rows_after=902
+[1789031236870] [[32minfo[0m] [HudStage] map_us=1340 total_us=3337 map_cached=true
+[1789031236946] [[32minfo[0m] [TrackStage] project_us=1878 paint_us=8745 lines_us=10 wireframe=false
+[1789031237110] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=8 mode=0 draw=159770 present=31470 road=14701 faces=89 upscale=20208 player=38876 opponents=45889
+[1789031237114] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=8 mode=1 draw=124603 present=31472 road=11757 faces=89 upscale=20219 player=38874 opponents=45035
+[1789031237470] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=9 mode=0 draw=117047 present=31453 road=15720 faces=108 upscale=20203 player=33572 opponents=38923
+[1789031237474] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=9 mode=1 draw=113158 present=31936 road=12542 faces=108 upscale=20192 player=33391 opponents=38407
+[1789031237850] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=10 mode=0 draw=126956 present=31465 road=16099 faces=108 upscale=20202 player=37932 opponents=44096
+[1789031237854] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=10 mode=1 draw=123444 present=31457 road=12607 faces=108 upscale=20208 player=37937 opponents=44159
+[1789031238233] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=11 mode=0 draw=127428 present=31432 road=34540 faces=540 upscale=20257 player=40617 opponents=23250
+[1789031238237] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=11 mode=1 draw=126091 present=31420 road=33180 faces=540 upscale=20235 player=40564 opponents=23317
+[1789031238632] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=12 mode=0 draw=136964 present=31469 road=17343 faces=127 upscale=20221 player=42149 opponents=48512
+[1789031238636] [[32minfo[0m] [SpiralAB] car=3 track=2 frame=12 mode=1 draw=132504 present=31477 road=13635 faces=127 upscale=20222 player=41579 opponents=48443
+[1789031238650] [[32minfo[0m] [SpiralAB] GROUP car=3 track=2 mismatches=0 stack_free=2188
+[1789031238713] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=14 fallback_panels=0 map_cached=true
+[1789031238745] [[32minfo[0m] [PaintStage] rows=138 clear_us=468 fill_us=6935 copy_us=3724
+[1789031238852] [[32minfo[0m] [CarStage] car=6 panels=833 vertices=1215 tiles=1 prepare_us=8299 raster_us=21202 blit_us=5276
+[1789031238853] [[32minfo[0m] [RaceStage] track_us=17913 cars_us=87087 upscale_us=20228 scene_width=234 surfaces=194 cars=3 track_id=0 player_car=4 submitted=3 player_us=34322 opponents_us=52360 player_native=true prepare_us=24045 raster_us=49228 blit_us=12181 candidate_rows_before=9296 candidate_rows_after=1219
+[1789031238884] [[32minfo[0m] [HudStage] map_us=1410 total_us=3390 map_cached=true
+[1789031238966] [[32minfo[0m] [TrackStage] project_us=5543 paint_us=11291 lines_us=8 wireframe=false
+[1789031239491] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=1 mode=0 draw=123375 present=31467 road=13040 faces=68 upscale=20228 player=32562 opponents=48803
+[1789031239495] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=1 mode=1 draw=122837 present=31468 road=12561 faces=68 upscale=20215 player=32544 opponents=48818
+[1789031239869] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=2 mode=0 draw=124442 present=31453 road=15559 faces=118 upscale=20202 player=32271 opponents=47600
+[1789031239873] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=2 mode=1 draw=124390 present=31439 road=15547 faces=118 upscale=20221 player=32311 opponents=47632
+[1789031240198] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=3 mode=0 draw=99392 present=31470 road=14058 faces=95 upscale=20201 player=31656 opponents=24531
+[1789031240202] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=3 mode=1 draw=99412 present=31480 road=14041 faces=95 upscale=20228 player=31592 opponents=24517
+[1789031240582] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=4 mode=0 draw=127930 present=31480 road=12493 faces=46 upscale=20212 player=35388 opponents=50928
+[1789031240586] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=4 mode=1 draw=127241 present=31484 road=12492 faces=46 upscale=20229 player=35408 opponents=50400
+[1789031240822] [[32minfo[0m] [PaintStage] rows=227 clear_us=788 fill_us=11947 copy_us=5357
+[1789031240893] [[32minfo[0m] [CarStage] car=4 panels=1011 vertices=1293 tiles=1 prepare_us=9914 raster_us=19642 blit_us=3127
+[1789031240927] [[32minfo[0m] [RaceStage] track_us=26060 cars_us=83612 upscale_us=20239 scene_width=234 surfaces=312 cars=3 track_id=0 player_car=4 submitted=3 player_us=33886 opponents_us=49295 player_native=true prepare_us=24631 raster_us=48461 blit_us=8804 candidate_rows_before=2800 candidate_rows_after=780
+[1789031240948] [[32minfo[0m] [HudStage] map_us=1454 total_us=3416 map_cached=true
+[1789031241008] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=5 mode=0 draw=159824 present=31485 road=26060 faces=312 upscale=20239 player=33886 opponents=49295
+[1789031241012] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=5 mode=1 draw=135782 present=31492 road=25042 faces=312 upscale=20251 player=32741 opponents=48917
+[1789031241047] [[32minfo[0m] [TrackStage] project_us=4478 paint_us=11093 lines_us=9 wireframe=false
+[1789031241393] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=6 mode=0 draw=128668 present=31473 road=16789 faces=138 upscale=20206 player=32778 opponents=49614
+[1789031241397] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=6 mode=1 draw=127571 present=31451 road=15646 faces=138 upscale=20255 player=32761 opponents=50069
+[1789031241729] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=7 mode=0 draw=102942 present=31425 road=13034 faces=68 upscale=20234 player=35592 opponents=25216
+[1789031241733] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=7 mode=1 draw=103044 present=31437 road=13086 faces=68 upscale=20227 player=35579 opponents=25170
+[1789031242138] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=8 mode=0 draw=139616 present=31498 road=14355 faces=111 upscale=20224 player=38574 opponents=57566
+[1789031242142] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=8 mode=1 draw=139917 present=31460 road=14400 faces=111 upscale=20203 player=38814 opponents=57686
+[1789031242537] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=9 mode=0 draw=134139 present=31462 road=14004 faces=95 upscale=20224 player=36507 opponents=54489
+[1789031242541] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=9 mode=1 draw=134680 present=31487 road=14001 faces=95 upscale=20229 player=36480 opponents=55029
+[1789031242941] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=10 mode=0 draw=137085 present=31442 road=11997 faces=42 upscale=20221 player=38800 opponents=57139
+[1789031242945] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=10 mode=1 draw=137012 present=31463 road=12003 faces=42 upscale=20221 player=38827 opponents=57194
+[1789031242988] [[32minfo[0m] [PaintStage] rows=138 clear_us=475 fill_us=12060 copy_us=3650
+[1789031243007] [[32minfo[0m] [CarStage] car=5 panels=607 vertices=790 tiles=1 prepare_us=6063 raster_us=8494 blit_us=2616
+[1789031243077] [[32minfo[0m] [RaceStage] track_us=24877 cars_us=67098 upscale_us=20247 scene_width=234 surfaces=370 cars=3 track_id=0 player_car=4 submitted=3 player_us=39870 opponents_us=26789 player_native=true prepare_us=16345 raster_us=29145 blit_us=11509 candidate_rows_before=10304 candidate_rows_after=2254
+[1789031243098] [[32minfo[0m] [HudStage] map_us=1480 total_us=3562 map_cached=true
+[1789031243186] [[32minfo[0m] [TrackStage] project_us=7474 paint_us=16339 lines_us=8 wireframe=false
+[1789031243333] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=11 mode=0 draw=119359 present=31467 road=24923 faces=370 upscale=20236 player=39349 opponents=25650
+[1789031243337] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=11 mode=1 draw=142576 present=31484 road=24877 faces=370 upscale=20247 player=39870 opponents=26789
+[1789031243727] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=12 mode=0 draw=131994 present=31494 road=16901 faces=194 upscale=20245 player=34494 opponents=51495
+[1789031243731] [[32minfo[0m] [SpiralAB] car=4 track=0 frame=12 mode=1 draw=131941 present=31475 road=16899 faces=194 upscale=20231 player=34517 opponents=51507
+[1789031243745] [[32minfo[0m] [SpiralAB] GROUP car=4 track=0 mismatches=0 stack_free=2188
+[1789031244565] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=1 mode=0 draw=140681 present=31465 road=18135 faces=196 upscale=20216 player=38141 opponents=55227
+[1789031244569] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=1 mode=1 draw=140584 present=31943 road=18121 faces=196 upscale=20226 player=38141 opponents=55260
+[1789031244931] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=2 mode=0 draw=117792 present=31473 road=18783 faces=123 upscale=20227 player=28204 opponents=41557
+[1789031244935] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=2 mode=1 draw=117753 present=31477 road=18796 faces=123 upscale=20234 player=28234 opponents=41586
+[1789031245042] [[32minfo[0m] [CarStage] car=4 panels=1011 vertices=1293 tiles=1 prepare_us=9965 raster_us=21596 blit_us=4897
+[1789031245130] [[32minfo[0m] [PaintStage] rows=167 clear_us=576 fill_us=4930 copy_us=4263
+[1789031245213] [[32minfo[0m] [RaceStage] track_us=14539 cars_us=61999 upscale_us=20221 scene_width=234 surfaces=61 cars=3 track_id=1 player_car=4 submitted=3 player_us=36207 opponents_us=25324 player_native=true prepare_us=16060 raster_us=30158 blit_us=6727 candidate_rows_before=1568 candidate_rows_after=771
+[1789031245234] [[32minfo[0m] [HudStage] map_us=1480 total_us=3581 map_cached=true
+[1789031245293] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=3 mode=0 draw=126606 present=31458 road=14539 faces=61 upscale=20221 player=36207 opponents=25324
+[1789031245297] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=3 mode=1 draw=105929 present=31460 road=13483 faces=61 upscale=20228 player=37663 opponents=25441
+[1789031245329] [[32minfo[0m] [TrackStage] project_us=3664 paint_us=9097 lines_us=8 wireframe=false
+[1789031245705] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=4 mode=0 draw=142269 present=31478 road=14045 faces=62 upscale=20202 player=39770 opponents=59007
+[1789031245709] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=4 mode=1 draw=140399 present=31453 road=12402 faces=62 upscale=20234 player=39768 opponents=59035
+[1789031246119] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=5 mode=0 draw=142637 present=31492 road=19352 faces=244 upscale=20228 player=38359 opponents=55812
+[1789031246123] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=5 mode=1 draw=142416 present=31463 road=19346 faces=244 upscale=20214 player=38365 opponents=55480
+[1789031246485] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=6 mode=0 draw=117888 present=31469 road=18925 faces=123 upscale=20257 player=28194 opponents=41547
+[1789031246489] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=6 mode=1 draw=118386 present=31447 road=19365 faces=123 upscale=20235 player=28203 opponents=41588
+[1789031246823] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=7 mode=0 draw=103962 present=31466 road=13240 faces=61 upscale=20227 player=36206 opponents=25279
+[1789031246827] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=7 mode=1 draw=104085 present=31468 road=13235 faces=61 upscale=20206 player=36254 opponents=25259
+[1789031247072] [[32minfo[0m] [CarStage] car=5 panels=607 vertices=790 tiles=1 prepare_us=6190 raster_us=9106 blit_us=1943
+[1789031247235] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=8 mode=0 draw=140417 present=31468 road=12362 faces=62 upscale=20211 player=39802 opponents=58991
+[1789031247239] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=8 mode=1 draw=141773 present=31498 road=12328 faces=62 upscale=20263 player=39998 opponents=60130
+[1789031247277] [[32minfo[0m] [PaintStage] rows=135 clear_us=937 fill_us=8619 copy_us=3588
+[1789031247393] [[32minfo[0m] [RaceStage] track_us=19828 cars_us=94996 upscale_us=20207 scene_width=234 surfaces=196 cars=3 track_id=1 player_car=4 submitted=3 player_us=38800 opponents_us=55683 player_native=true prepare_us=24607 raster_us=54433 blit_us=15324 candidate_rows_before=8400 candidate_rows_after=2351
+[1789031247414] [[32minfo[0m] [HudStage] map_us=1473 total_us=3441 map_cached=true
+[1789031247498] [[32minfo[0m] [TrackStage] project_us=5399 paint_us=12855 lines_us=9 wireframe=false
+[1789031247672] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=9 mode=0 draw=142599 present=31498 road=19389 faces=196 upscale=20220 player=38271 opponents=55502
+[1789031247676] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=9 mode=1 draw=165351 present=31473 road=19828 faces=196 upscale=20207 player=38800 opponents=55683
+[1789031248038] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=10 mode=0 draw=117870 present=31472 road=18879 faces=123 upscale=20239 player=28192 opponents=41565
+[1789031248042] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=10 mode=1 draw=117834 present=31483 road=18837 faces=123 upscale=20244 player=28235 opponents=41598
+[1789031248379] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=11 mode=0 draw=105188 present=31989 road=14343 faces=93 upscale=20217 player=36284 opponents=25288
+[1789031248383] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=11 mode=1 draw=105322 present=31438 road=14336 faces=93 upscale=20232 player=36300 opponents=25262
+[1789031248807] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=12 mode=0 draw=148790 present=31509 road=14416 faces=110 upscale=20253 player=43170 opponents=61914
+[1789031248811] [[32minfo[0m] [SpiralAB] car=4 track=1 frame=12 mode=1 draw=148744 present=31469 road=14417 faces=110 upscale=20232 player=43163 opponents=61941
+[1789031248825] [[32minfo[0m] [SpiralAB] GROUP car=4 track=1 mismatches=0 stack_free=2060
+[1789031249125] [[32minfo[0m] [CarStage] car=4 panels=1011 vertices=1293 tiles=1 prepare_us=9771 raster_us=19536 blit_us=6467
+[1789031249436] [[32minfo[0m] [PaintStage] rows=164 clear_us=551 fill_us=5349 copy_us=4140
+[1789031249555] [[32minfo[0m] [RaceStage] track_us=16460 cars_us=97096 upscale_us=20213 scene_width=234 surfaces=83 cars=3 track_id=2 player_car=4 submitted=3 player_us=38429 opponents_us=58329 player_native=true prepare_us=24636 raster_us=59261 blit_us=12749 candidate_rows_before=2464 candidate_rows_after=1027
+[1789031249576] [[32minfo[0m] [HudStage] map_us=1331 total_us=3317 map_cached=true
+[1789031249636] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=1 mode=0 draw=163730 present=31447 road=16460 faces=83 upscale=20213 player=38429 opponents=58329
+[1789031249640] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=1 mode=1 draw=138154 present=31445 road=12094 faces=83 upscale=20230 player=38430 opponents=58754
+[1789031249685] [[32minfo[0m] [TrackStage] project_us=8269 paint_us=17784 lines_us=8 wireframe=false
+[1789031250077] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=2 mode=0 draw=157729 present=31468 road=27250 faces=330 upscale=20254 player=39968 opponents=61445
+[1789031250081] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=2 mode=1 draw=153808 present=31695 road=23529 faces=330 upscale=20235 player=40001 opponents=61437
+[1789031250421] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=3 mode=0 draw=109663 present=31436 road=18735 faces=129 upscale=20232 player=36457 opponents=25498
+[1789031250425] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=3 mode=1 draw=105291 present=31449 road=14901 faces=129 upscale=20220 player=35878 opponents=25387
+[1789031250850] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=4 mode=0 draw=151027 present=31468 road=14034 faces=139 upscale=20223 player=42184 opponents=65959
+[1789031250854] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=4 mode=1 draw=148112 present=31463 road=11213 faces=139 upscale=20210 player=42143 opponents=66052
+[1789031251146] [[32minfo[0m] [CarStage] car=4 panels=1011 vertices=1293 tiles=1 prepare_us=9937 raster_us=20360 blit_us=5054
+[1789031251242] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=5 mode=0 draw=133478 present=31495 road=14597 faces=64 upscale=20223 player=36565 opponents=53495
+[1789031251246] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=5 mode=1 draw=128622 present=31475 road=11104 faces=64 upscale=20213 player=35376 opponents=53274
+[1789031251492] [[32minfo[0m] [PaintStage] rows=149 clear_us=512 fill_us=14303 copy_us=3809
+[1789031251595] [[32minfo[0m] [RaceStage] track_us=29951 cars_us=81902 upscale_us=20229 scene_width=234 surfaces=541 cars=3 track_id=2 player_car=4 submitted=3 player_us=31966 opponents_us=49612 player_native=true prepare_us=24538 raster_us=47050 blit_us=9881 candidate_rows_before=8736 candidate_rows_after=1448
+[1789031251616] [[32minfo[0m] [HudStage] map_us=1327 total_us=3282 map_cached=true
+[1789031251676] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=6 mode=0 draw=141890 present=31466 road=30723 faces=541 upscale=20236 player=32612 opponents=49689
+[1789031251680] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=6 mode=1 draw=162031 present=31440 road=29951 faces=541 upscale=20229 player=31966 opponents=49612
+[1789031251717] [[32minfo[0m] [TrackStage] project_us=4109 paint_us=13340 lines_us=8 wireframe=false
+[1789031252015] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=7 mode=0 draw=105685 present=31423 road=20450 faces=217 upscale=20249 player=31614 opponents=24523
+[1789031252019] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=7 mode=1 draw=103991 present=31464 road=18635 faces=217 upscale=20243 player=31566 opponents=24559
+[1789031252395] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=8 mode=0 draw=126162 present=31459 road=13698 faces=89 upscale=20190 player=33448 opponents=50074
+[1789031252399] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=8 mode=1 draw=124111 present=31446 road=10625 faces=89 upscale=20193 player=34021 opponents=50477
+[1789031252754] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=9 mode=0 draw=116395 present=31464 road=15709 faces=108 upscale=20187 player=28837 opponents=43128
+[1789031252758] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=9 mode=1 draw=113231 present=31474 road=12534 faces=108 upscale=20205 player=28802 opponents=43023
+[1789031253135] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=10 mode=0 draw=127036 present=31454 road=16115 faces=108 upscale=20213 player=32617 opponents=49390
+[1789031253139] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=10 mode=1 draw=123755 present=31471 road=12555 faces=108 upscale=20219 player=32861 opponents=49490
+[1789031253209] [[32minfo[0m] [CarStage] car=5 panels=607 vertices=790 tiles=1 prepare_us=6133 raster_us=8453 blit_us=2160
+[1789031253513] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=11 mode=0 draw=124319 present=31416 road=34527 faces=540 upscale=20231 player=34929 opponents=25289
+[1789031253517] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=11 mode=1 draw=123843 present=31456 road=33201 faces=540 upscale=20265 player=35137 opponents=26398
+[1789031253554] [[32minfo[0m] [PaintStage] rows=154 clear_us=537 fill_us=6322 copy_us=3950
+[1789031253665] [[32minfo[0m] [RaceStage] track_us=18375 cars_us=89823 upscale_us=20215 scene_width=234 surfaces=127 cars=3 track_id=2 player_car=4 submitted=3 player_us=36006 opponents_us=53479 player_native=true prepare_us=24588 raster_us=48989 blit_us=15787 candidate_rows_before=8848 candidate_rows_after=1441
+[1789031253686] [[32minfo[0m] [HudStage] map_us=1337 total_us=3308 map_cached=true
+[1789031253765] [[32minfo[0m] [TrackStage] project_us=2609 paint_us=10989 lines_us=8 wireframe=false
+[1789031253935] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=12 mode=0 draw=158553 present=31437 road=18375 faces=127 upscale=20215 player=36006 opponents=53479
+[1789031253939] [[32minfo[0m] [SpiralAB] car=4 track=2 frame=12 mode=1 draw=133267 present=31469 road=14747 faces=127 upscale=20202 player=36026 opponents=53452
+[1789031253953] [[32minfo[0m] [SpiralAB] GROUP car=4 track=2 mismatches=0 stack_free=2060
+[1789031254012] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=13 fallback_panels=0 map_cached=true
+[1789031254761] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=1 mode=0 draw=125188 present=31478 road=12568 faces=68 upscale=20239 player=32225 opponents=51465
+[1789031254765] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=1 mode=1 draw=125230 present=31464 road=12546 faces=68 upscale=20232 player=32233 opponents=51512
+[1789031255145] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=2 mode=0 draw=127034 present=31472 road=15566 faces=118 upscale=20224 player=32095 opponents=50354
+[1789031255149] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=2 mode=1 draw=127407 present=31442 road=15544 faces=118 upscale=20214 player=32388 opponents=50459
+[1789031255255] [[32minfo[0m] [CarStage] car=5 panels=967 vertices=1150 tiles=1 prepare_us=9257 raster_us=19185 blit_us=2766
+[1789031255482] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=3 mode=0 draw=103056 present=31439 road=14497 faces=95 upscale=20214 player=31297 opponents=28026
+[1789031255486] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=3 mode=1 draw=103833 present=31453 road=14067 faces=95 upscale=20199 player=32347 opponents=28166
+[1789031255704] [[32minfo[0m] [PaintStage] rows=132 clear_us=469 fill_us=4398 copy_us=3670
+[1789031255814] [[32minfo[0m] [RaceStage] track_us=13541 cars_us=89015 upscale_us=20213 scene_width=234 surfaces=46 cars=3 track_id=0 player_car=5 submitted=3 player_us=35509 opponents_us=53081 player_native=true prepare_us=25079 raster_us=48000 blit_us=15407 candidate_rows_before=5488 candidate_rows_after=1699
+[1789031255835] [[32minfo[0m] [HudStage] map_us=1431 total_us=3390 map_cached=true
+[1789031255895] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=4 mode=0 draw=130149 present=31455 road=12519 faces=46 upscale=20210 player=35466 opponents=53050
+[1789031255899] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=4 mode=1 draw=152764 present=31459 road=13541 faces=46 upscale=20213 player=35509 opponents=53081
+[1789031255943] [[32minfo[0m] [TrackStage] project_us=6598 paint_us=18373 lines_us=9 wireframe=false
+[1789031256302] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=5 mode=0 draw=138232 present=31507 road=25011 faces=312 upscale=20249 player=32449 opponents=51781
+[1789031256306] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=5 mode=1 draw=139976 present=31464 road=26162 faces=312 upscale=20218 player=32479 opponents=52083
+[1789031256691] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=6 mode=0 draw=129818 present=31466 road=16108 faces=138 upscale=20208 player=32217 opponents=52255
+[1789031256695] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=6 mode=1 draw=129025 present=31450 road=15604 faces=138 upscale=20222 player=32198 opponents=52224
+[1789031257033] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=7 mode=0 draw=105986 present=31455 road=13060 faces=68 upscale=20217 player=35065 opponents=28727
+[1789031257037] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=7 mode=1 draw=106059 present=31451 road=13063 faces=68 upscale=20228 player=35058 opponents=28701
+[1789031257290] [[32minfo[0m] [CarStage] car=6 panels=833 vertices=1215 tiles=1 prepare_us=8987 raster_us=11204 blit_us=2306
+[1789031257448] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=8 mode=0 draw=141613 present=31462 road=14397 faces=111 upscale=20222 player=38449 opponents=59689
+[1789031257452] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=8 mode=1 draw=144135 present=31468 road=14385 faces=111 upscale=20245 player=39227 opponents=61461
+[1789031257850] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=9 mode=0 draw=135907 present=31440 road=13975 faces=95 upscale=20230 player=35966 opponents=56926
+[1789031257854] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=9 mode=1 draw=136010 present=31447 road=13996 faces=95 upscale=20235 player=35981 opponents=56904
+[1789031257885] [[32minfo[0m] [PaintStage] rows=132 clear_us=456 fill_us=4312 copy_us=3565
+[1789031258005] [[32minfo[0m] [RaceStage] track_us=13047 cars_us=98439 upscale_us=20191 scene_width=234 surfaces=42 cars=3 track_id=0 player_car=5 submitted=3 player_us=38593 opponents_us=59411 player_native=true prepare_us=25100 raster_us=58460 blit_us=14336 candidate_rows_before=3024 candidate_rows_after=1280
+[1789031258026] [[32minfo[0m] [HudStage] map_us=1417 total_us=3395 map_cached=true
+[1789031258103] [[32minfo[0m] [TrackStage] project_us=3513 paint_us=8469 lines_us=9 wireframe=false
+[1789031258282] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=10 mode=0 draw=161857 present=31458 road=13047 faces=42 upscale=20191 player=38593 opponents=59411
+[1789031258286] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=10 mode=1 draw=140378 present=31485 road=13118 faces=42 upscale=20212 player=38614 opponents=59375
+[1789031258655] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=11 mode=0 draw=120845 present=31440 road=23833 faces=370 upscale=20256 player=38646 opponents=29123
+[1789031258659] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=11 mode=1 draw=121659 present=31468 road=23885 faces=370 upscale=20236 player=38851 opponents=29667
+[1789031259053] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=12 mode=0 draw=133916 present=31490 road=16894 faces=194 upscale=20245 player=33818 opponents=54061
+[1789031259057] [[32minfo[0m] [SpiralAB] car=5 track=0 frame=12 mode=1 draw=133845 present=31473 road=16872 faces=194 upscale=20247 player=33830 opponents=54089
+[1789031259071] [[32minfo[0m] [SpiralAB] GROUP car=5 track=0 mismatches=0 stack_free=2060
+[1789031259337] [[32minfo[0m] [CarStage] car=6 panels=833 vertices=1215 tiles=1 prepare_us=8396 raster_us=11300 blit_us=2614
+[1789031259898] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=1 mode=0 draw=142307 present=31476 road=18122 faces=196 upscale=20230 player=37695 opponents=57419
+[1789031259902] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=1 mode=1 draw=142291 present=31460 road=18117 faces=196 upscale=20220 player=37661 opponents=57453
+[1789031259940] [[32minfo[0m] [PaintStage] rows=232 clear_us=796 fill_us=7636 copy_us=5618
+[1789031260034] [[32minfo[0m] [RaceStage] track_us=19832 cars_us=72835 upscale_us=20226 scene_width=234 surfaces=123 cars=3 track_id=1 player_car=5 submitted=3 player_us=27794 opponents_us=44560 player_native=true prepare_us=25193 raster_us=40905 blit_us=6144 candidate_rows_before=2576 candidate_rows_after=801
+[1789031260055] [[32minfo[0m] [HudStage] map_us=1483 total_us=3419 map_cached=true
+[1789031260139] [[32minfo[0m] [TrackStage] project_us=4483 paint_us=14295 lines_us=8 wireframe=false
+[1789031260292] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=2 mode=0 draw=143072 present=31443 road=19832 faces=123 upscale=20226 player=27794 opponents=44560
+[1789031260296] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=2 mode=1 draw=121359 present=31479 road=19924 faces=123 upscale=20212 player=27781 opponents=44319
+[1789031260637] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=3 mode=0 draw=107399 present=31444 road=13434 faces=61 upscale=20204 player=35932 opponents=28762
+[1789031260641] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=3 mode=1 draw=108303 present=31453 road=13480 faces=61 upscale=20211 player=36132 opponents=29275
+[1789031261051] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=4 mode=0 draw=142544 present=31423 road=12414 faces=62 upscale=20211 player=39594 opponents=61185
+[1789031261055] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=4 mode=1 draw=142406 present=31476 road=12398 faces=62 upscale=20229 player=39599 opponents=61226
+[1789031261375] [[32minfo[0m] [CarStage] car=5 panels=967 vertices=1150 tiles=1 prepare_us=9816 raster_us=21966 blit_us=6627
+[1789031261471] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=5 mode=0 draw=145977 present=31484 road=19347 faces=244 upscale=20232 player=39545 opponents=57976
+[1789031261475] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=5 mode=1 draw=144172 present=31481 road=19357 faces=244 upscale=20231 player=37888 opponents=57690
+[1789031261841] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=6 mode=0 draw=120197 present=31453 road=18912 faces=123 upscale=20238 player=27796 opponents=44220
+[1789031261845] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=6 mode=1 draw=120092 present=31476 road=18882 faces=123 upscale=20236 player=27821 opponents=44241
+[1789031262041] [[32minfo[0m] [PaintStage] rows=167 clear_us=595 fill_us=4973 copy_us=4193
+[1789031262127] [[32minfo[0m] [RaceStage] track_us=14535 cars_us=65169 upscale_us=20221 scene_width=234 surfaces=61 cars=3 track_id=1 player_car=5 submitted=3 player_us=35921 opponents_us=28768 player_native=true prepare_us=17880 raster_us=32782 blit_us=6576 candidate_rows_before=1568 candidate_rows_after=771
+[1789031262148] [[32minfo[0m] [HudStage] map_us=1556 total_us=3649 map_cached=true
+[1789031262208] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=7 mode=0 draw=129802 present=31457 road=14535 faces=61 upscale=20221 player=35921 opponents=28768
+[1789031262212] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=7 mode=1 draw=107237 present=31481 road=13253 faces=61 upscale=20233 player=35879 opponents=28769
+[1789031262243] [[32minfo[0m] [TrackStage] project_us=3554 paint_us=8755 lines_us=8 wireframe=false
+[1789031262624] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=8 mode=0 draw=145000 present=31478 road=13447 faces=62 upscale=20720 player=39775 opponents=61710
+[1789031262628] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=8 mode=1 draw=142347 present=31480 road=12335 faces=62 upscale=20225 player=39574 opponents=61218
+[1789031263040] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=9 mode=0 draw=142942 present=31467 road=18266 faces=196 upscale=20212 player=37876 opponents=57705
+[1789031263044] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=9 mode=1 draw=143030 present=31445 road=18280 faces=196 upscale=20228 player=37834 opponents=57685
+[1789031263410] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=10 mode=0 draw=120178 present=31482 road=18857 faces=123 upscale=20239 player=27802 opponents=44225
+[1789031263414] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=10 mode=1 draw=120596 present=31464 road=18832 faces=123 upscale=20227 player=27782 opponents=44816
+[1789031263470] [[32minfo[0m] [CarStage] car=6 panels=833 vertices=1215 tiles=1 prepare_us=8508 raster_us=10980 blit_us=1907
+[1789031263758] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=11 mode=0 draw=108373 present=31461 road=14339 faces=93 upscale=20231 player=35956 opponents=28816
+[1789031263762] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=11 mode=1 draw=109926 present=31453 road=14373 faces=93 upscale=20238 player=36153 opponents=29947
+[1789031264188] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=12 mode=0 draw=150138 present=31467 road=14420 faces=110 upscale=20221 player=42181 opponents=64257
+[1789031264192] [[32minfo[0m] [SpiralAB] car=5 track=1 frame=12 mode=1 draw=150466 present=31470 road=14429 faces=110 upscale=20468 player=42314 opponents=64312
+[1789031264206] [[32minfo[0m] [SpiralAB] GROUP car=5 track=1 mismatches=0 stack_free=2060
+[1789031264245] [[32minfo[0m] [PaintStage] rows=154 clear_us=534 fill_us=6255 copy_us=4013
+[1789031264246] [[32minfo[0m] [TrackStage] project_us=6263 paint_us=12049 lines_us=11 wireframe=false
+[1789031264364] [[32minfo[0m] [RaceStage] track_us=24407 cars_us=91792 upscale_us=20232 scene_width=234 surfaces=127 cars=3 track_id=2 player_car=5 submitted=3 player_us=35067 opponents_us=56384 player_native=true prepare_us=24754 raster_us=50968 blit_us=15620 candidate_rows_before=8848 candidate_rows_after=1449
+[1789031264385] [[32minfo[0m] [HudStage] map_us=1328 total_us=3294 map_cached=true
+[1789031265029] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=1 mode=0 draw=143177 present=31470 road=15395 faces=83 upscale=20227 player=38337 opponents=60637
+[1789031265033] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=1 mode=1 draw=139849 present=31487 road=12047 faces=83 upscale=20235 player=38327 opponents=60660
+[1789031265474] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=2 mode=0 draw=158548 present=31474 road=26095 faces=330 upscale=20252 player=39808 opponents=63695
+[1789031265478] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=2 mode=1 draw=156595 present=31454 road=23573 faces=330 upscale=20255 player=40361 opponents=63763
+[1789031265534] [[32minfo[0m] [CarStage] car=6 panels=833 vertices=1215 tiles=1 prepare_us=8569 raster_us=10756 blit_us=2150
+[1789031265826] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=3 mode=0 draw=112206 present=31435 road=18748 faces=129 upscale=20223 player=35576 opponents=28866
+[1789031265830] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=3 mode=1 draw=109800 present=31444 road=14929 faces=129 upscale=20261 player=35784 opponents=29996
+[1789031266259] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=4 mode=0 draw=153313 present=31459 road=13985 faces=139 upscale=20215 player=41723 opponents=68759
+[1789031266263] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=4 mode=1 draw=150461 present=31487 road=11229 faces=139 upscale=20210 player=41742 opponents=68792
+[1789031266293] [[32minfo[0m] [PaintStage] rows=137 clear_us=479 fill_us=5205 copy_us=3683
+[1789031266294] [[32minfo[0m] [TrackStage] project_us=1546 paint_us=10546 lines_us=11 wireframe=false
+[1789031266412] [[32minfo[0m] [RaceStage] track_us=18175 cars_us=91414 upscale_us=20218 scene_width=234 surfaces=64 cars=3 track_id=2 player_car=5 submitted=3 player_us=35542 opponents_us=55528 player_native=true prepare_us=25752 raster_us=52254 blit_us=12942 candidate_rows_before=3248 candidate_rows_after=1391
+[1789031266433] [[32minfo[0m] [HudStage] map_us=1326 total_us=3295 map_cached=true
+[1789031266683] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=5 mode=0 draw=133850 present=31484 road=14597 faces=64 upscale=20222 player=34988 opponents=55419
+[1789031266687] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=5 mode=1 draw=159902 present=31495 road=18175 faces=64 upscale=20218 player=35542 opponents=55528
+[1789031267097] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=6 mode=0 draw=143259 present=31453 road=30710 faces=541 upscale=20233 player=31411 opponents=52265
+[1789031267101] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=6 mode=1 draw=141633 present=31489 road=28871 faces=541 upscale=20246 player=31454 opponents=52494
+[1789031267442] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=7 mode=0 draw=109096 present=31466 road=20482 faces=217 upscale=20242 player=31456 opponents=28113
+[1789031267446] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=7 mode=1 draw=105467 present=31445 road=17512 faces=217 upscale=20217 player=30864 opponents=27968
+[1789031267554] [[32minfo[0m] [CarStage] car=5 panels=967 vertices=1150 tiles=1 prepare_us=9312 raster_us=19771 blit_us=3889
+[1789031267826] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=8 mode=0 draw=129431 present=31442 road=13698 faces=89 upscale=20215 player=34136 opponents=52673
+[1789031267830] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=8 mode=1 draw=124953 present=31444 road=10665 faces=89 upscale=20202 player=33003 opponents=52473
+[1789031268189] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=9 mode=0 draw=118572 present=31457 road=15919 faces=108 upscale=20204 player=28167 opponents=45670
+[1789031268193] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=9 mode=1 draw=115175 present=31420 road=12524 faces=108 upscale=20210 player=28161 opponents=45560
+[1789031268410] [[32minfo[0m] [PaintStage] rows=160 clear_us=562 fill_us=5556 copy_us=4043
+[1789031268411] [[32minfo[0m] [TrackStage] project_us=2252 paint_us=11400 lines_us=11 wireframe=false
+[1789031268521] [[32minfo[0m] [RaceStage] track_us=19720 cars_us=84316 upscale_us=20195 scene_width=234 surfaces=108 cars=3 track_id=2 player_car=5 submitted=3 player_us=32140 opponents_us=51844 player_native=true prepare_us=25253 raster_us=48910 blit_us=9715 candidate_rows_before=2688 candidate_rows_after=1107
+[1789031268542] [[32minfo[0m] [HudStage] map_us=1321 total_us=3291 map_cached=true
+[1789031268602] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=10 mode=0 draw=128886 present=31997 road=16092 faces=108 upscale=20219 player=32158 opponents=51770
+[1789031268606] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=10 mode=1 draw=154248 present=31487 road=19720 faces=108 upscale=20195 player=32140 opponents=51844
+[1789031268984] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=11 mode=0 draw=126871 present=31441 road=34561 faces=540 upscale=20233 player=34566 opponents=28762
+[1789031268988] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=11 mode=1 draw=125566 present=31428 road=33217 faces=540 upscale=20251 player=34541 opponents=28736
+[1789031269386] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=12 mode=0 draw=138237 present=31466 road=17315 faces=127 upscale=20226 player=35420 opponents=56526
+[1789031269390] [[32minfo[0m] [SpiralAB] car=5 track=2 frame=12 mode=1 draw=134150 present=31945 road=13627 faces=127 upscale=20226 player=35349 opponents=56284
+[1789031269404] [[32minfo[0m] [SpiralAB] GROUP car=5 track=2 mismatches=0 stack_free=2060
+[1789031269458] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=19 fallback_panels=0 map_cached=true
+[1789031269567] [[32minfo[0m] [CarStage] car=6 panels=1277 vertices=1711 tiles=1 prepare_us=12350 raster_us=23334 blit_us=4973
+[1789031270219] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=1 mode=0 draw=127531 present=31448 road=12541 faces=68 upscale=20194 player=38725 opponents=47287
+[1789031270223] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=1 mode=1 draw=127574 present=31456 road=12588 faces=68 upscale=20224 player=38731 opponents=47255
+[1789031270443] [[32minfo[0m] [PaintStage] rows=146 clear_us=527 fill_us=6140 copy_us=3788
+[1789031270444] [[32minfo[0m] [TrackStage] project_us=4887 paint_us=11658 lines_us=11 wireframe=false
+[1789031270555] [[32minfo[0m] [RaceStage] track_us=22632 cars_us=85048 upscale_us=20227 scene_width=234 surfaces=118 cars=3 track_id=0 player_car=6 submitted=3 player_us=38429 opponents_us=46200 player_native=true prepare_us=26392 raster_us=48805 blit_us=9325 candidate_rows_before=4144 candidate_rows_after=1114
+[1789031270576] [[32minfo[0m] [HudStage] map_us=1406 total_us=3360 map_cached=true
+[1789031270636] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=2 mode=0 draw=129791 present=31489 road=15544 faces=118 upscale=20225 player=38427 opponents=46719
+[1789031270640] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=2 mode=1 draw=157839 present=31441 road=22632 faces=118 upscale=20227 player=38429 opponents=46200
+[1789031270976] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=3 mode=0 draw=104811 present=31438 road=14027 faces=95 upscale=20231 player=37797 opponents=23762
+[1789031270980] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=3 mode=1 draw=104902 present=31464 road=14021 faces=95 upscale=20221 player=37798 opponents=23739
+[1789031271370] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=4 mode=0 draw=132480 present=31478 road=12498 faces=46 upscale=20210 player=41710 opponents=49160
+[1789031271374] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=4 mode=1 draw=131936 present=31460 road=12525 faces=46 upscale=20233 player=41589 opponents=48864
+[1789031271631] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6507 raster_us=8451 blit_us=1769
+[1789031271782] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=5 mode=0 draw=141918 present=31473 road=24975 faces=312 upscale=20251 player=39210 opponents=48672
+[1789031271786] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=5 mode=1 draw=140626 present=31458 road=25012 faces=312 upscale=20249 player=38945 opponents=47511
+[1789031272176] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=6 mode=0 draw=131743 present=31453 road=15652 faces=138 upscale=20233 player=39019 opponents=47987
+[1789031272180] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=6 mode=1 draw=132122 present=31470 road=15631 faces=138 upscale=20471 player=39180 opponents=48052
+[1789031272524] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=7 mode=0 draw=108675 present=31461 road=13081 faces=68 upscale=20239 player=41923 opponents=24437
+[1789031272528] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=7 mode=1 draw=109296 present=31449 road=13030 faces=68 upscale=20227 player=42419 opponents=24582
+[1789031272562] [[32minfo[0m] [PaintStage] rows=145 clear_us=504 fill_us=5928 copy_us=3738
+[1789031272563] [[32minfo[0m] [TrackStage] project_us=4009 paint_us=11367 lines_us=10 wireframe=false
+[1789031272690] [[32minfo[0m] [RaceStage] track_us=21438 cars_us=100976 upscale_us=20228 scene_width=234 surfaces=111 cars=3 track_id=0 player_car=6 submitted=3 player_us=45126 opponents_us=55426 player_native=true prepare_us=26394 raster_us=59533 blit_us=14515 candidate_rows_before=2800 candidate_rows_after=1224
+[1789031272711] [[32minfo[0m] [HudStage] map_us=1449 total_us=3442 map_cached=true
+[1789031272971] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=8 mode=0 draw=172959 present=31474 road=21438 faces=111 upscale=20228 player=45126 opponents=55426
+[1789031272975] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=8 mode=1 draw=143966 present=31484 road=14385 faces=111 upscale=20201 player=45136 opponents=55455
+[1789031273379] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=9 mode=0 draw=138601 present=31477 road=13977 faces=95 upscale=20231 player=42932 opponents=52658
+[1789031273383] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=9 mode=1 draw=139177 present=31459 road=14017 faces=95 upscale=20446 player=43126 opponents=52685
+[1789031273695] [[32minfo[0m] [CarStage] car=6 panels=1277 vertices=1711 tiles=1 prepare_us=12524 raster_us=26500 blit_us=6260
+[1789031273793] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=10 mode=0 draw=141625 present=31433 road=12008 faces=42 upscale=20229 player=45330 opponents=55087
+[1789031273797] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=10 mode=1 draw=142899 present=31519 road=12002 faces=42 upscale=20234 player=46481 opponents=55390
+[1789031274171] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=11 mode=0 draw=124019 present=31437 road=23864 faces=370 upscale=20213 player=45797 opponents=25232
+[1789031274175] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=11 mode=1 draw=123676 present=31439 road=23876 faces=370 upscale=20230 player=45661 opponents=24944
+[1789031274575] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=12 mode=0 draw=136765 present=31793 road=16910 faces=194 upscale=20223 player=40925 opponents=49857
+[1789031274579] [[32minfo[0m] [SpiralAB] car=6 track=0 frame=12 mode=1 draw=136823 present=31461 road=16914 faces=194 upscale=20244 player=40911 opponents=49849
+[1789031274593] [[32minfo[0m] [SpiralAB] GROUP car=6 track=0 mismatches=0 stack_free=2060
+[1789031274631] [[32minfo[0m] [PaintStage] rows=139 clear_us=503 fill_us=5877 copy_us=3654
+[1789031274632] [[32minfo[0m] [TrackStage] project_us=4212 paint_us=11255 lines_us=10 wireframe=false
+[1789031274769] [[32minfo[0m] [RaceStage] track_us=21522 cars_us=109742 upscale_us=20272 scene_width=234 surfaces=110 cars=3 track_id=1 player_car=6 submitted=3 player_us=49527 opponents_us=59749 player_native=true prepare_us=26025 raster_us=63060 blit_us=20082 candidate_rows_before=8400 candidate_rows_after=2034
+[1789031274790] [[32minfo[0m] [HudStage] map_us=1505 total_us=3538 map_cached=true
+[1789031275461] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=1 mode=0 draw=145693 present=31455 road=18116 faces=196 upscale=20204 player=45019 opponents=53528
+[1789031275465] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=1 mode=1 draw=145066 present=31471 road=18124 faces=196 upscale=20208 player=44517 opponents=53324
+[1789031275697] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6557 raster_us=7660 blit_us=1471
+[1789031275836] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=2 mode=0 draw=122201 present=31490 road=18809 faces=123 upscale=20216 player=34067 opponents=40131
+[1789031275840] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=2 mode=1 draw=123521 present=31443 road=18778 faces=123 upscale=20226 player=34329 opponents=41225
+[1789031276186] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=3 mode=0 draw=110214 present=31460 road=13697 faces=61 upscale=20225 player=42672 opponents=24487
+[1789031276190] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=3 mode=1 draw=110031 present=31441 road=13452 faces=61 upscale=20225 player=42644 opponents=24553
+[1789031276606] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=4 mode=0 draw=145041 present=32006 road=12393 faces=62 upscale=20232 player=46308 opponents=56993
+[1789031276610] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=4 mode=1 draw=145039 present=31456 road=12402 faces=62 upscale=20220 player=46345 opponents=57018
+[1789031276649] [[32minfo[0m] [PaintStage] rows=134 clear_us=466 fill_us=9131 copy_us=3615
+[1789031276650] [[32minfo[0m] [TrackStage] project_us=5929 paint_us=14432 lines_us=10 wireframe=false
+[1789031276775] [[32minfo[0m] [RaceStage] track_us=26427 cars_us=98735 upscale_us=20219 scene_width=234 surfaces=244 cars=3 track_id=1 player_car=6 submitted=3 player_us=44734 opponents_us=53514 player_native=true prepare_us=26419 raster_us=56286 blit_us=15426 candidate_rows_before=8400 candidate_rows_after=2353
+[1789031276795] [[32minfo[0m] [HudStage] map_us=1482 total_us=3441 map_cached=true
+[1789031277058] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=5 mode=0 draw=146864 present=31693 road=19365 faces=244 upscale=20227 player=44756 opponents=53520
+[1789031277062] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=5 mode=1 draw=175702 present=31449 road=26427 faces=244 upscale=20219 player=44734 opponents=53514
+[1789031277433] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=6 mode=0 draw=122341 present=31477 road=18917 faces=123 upscale=20237 player=34094 opponents=40082
+[1789031277437] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=6 mode=1 draw=123376 present=31464 road=19402 faces=123 upscale=20234 player=34083 opponents=40656
+[1789031277716] [[32minfo[0m] [CarStage] car=6 panels=1277 vertices=1711 tiles=1 prepare_us=12573 raster_us=25193 blit_us=4815
+[1789031277784] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=7 mode=0 draw=111163 present=31436 road=13235 faces=61 upscale=20242 player=43857 opponents=24713
+[1789031277788] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=7 mode=1 draw=109789 present=31451 road=13262 faces=61 upscale=20230 player=42651 opponents=24454
+[1789031278204] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=8 mode=0 draw=144972 present=31495 road=12371 faces=62 upscale=20203 player=46369 opponents=56989
+[1789031278208] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=8 mode=1 draw=145347 present=31468 road=12344 faces=62 upscale=20203 player=46476 opponents=57295
+[1789031278625] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=9 mode=0 draw=145622 present=31462 road=18259 faces=196 upscale=20226 player=44699 opponents=53510
+[1789031278629] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=9 mode=1 draw=146243 present=31472 road=18304 faces=196 upscale=20228 player=44693 opponents=53939
+[1789031278667] [[32minfo[0m] [PaintStage] rows=232 clear_us=807 fill_us=7573 copy_us=5589
+[1789031278668] [[32minfo[0m] [TrackStage] project_us=4561 paint_us=15297 lines_us=10 wireframe=false
+[1789031278769] [[32minfo[0m] [RaceStage] track_us=25945 cars_us=74721 upscale_us=20217 scene_width=234 surfaces=123 cars=3 track_id=1 player_car=6 submitted=3 player_us=34044 opponents_us=40171 player_native=true prepare_us=26539 raster_us=41435 blit_us=6131 candidate_rows_before=2576 candidate_rows_after=802
+[1789031278968] [[32minfo[0m] [HudStage] map_us=1460 total_us=3396 map_cached=true
+[1789031279025] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=10 mode=0 draw=146925 present=31445 road=25945 faces=123 upscale=20217 player=34044 opponents=40171
+[1789031279029] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=10 mode=1 draw=123304 present=31469 road=18829 faces=123 upscale=20240 player=34092 opponents=40102
+[1789031279377] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=11 mode=0 draw=110867 present=31460 road=14395 faces=93 upscale=20215 player=42716 opponents=24512
+[1789031279381] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=11 mode=1 draw=110977 present=31437 road=14371 faces=93 upscale=20231 player=42676 opponents=24547
+[1789031279754] [[32minfo[0m] [CarStage] car=7 panels=723 vertices=1016 tiles=1 prepare_us=7399 raster_us=26041 blit_us=8261
+[1789031279815] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=12 mode=0 draw=153556 present=31492 road=14420 faces=110 upscale=20254 player=49787 opponents=60019
+[1789031279819] [[32minfo[0m] [SpiralAB] car=6 track=1 frame=12 mode=1 draw=154725 present=31459 road=14397 faces=110 upscale=20250 player=49791 opponents=61182
+[1789031279833] [[32minfo[0m] [SpiralAB] GROUP car=6 track=1 mismatches=0 stack_free=2060
+[1789031280639] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=1 mode=0 draw=145686 present=31485 road=15411 faces=83 upscale=20238 player=45055 opponents=56390
+[1789031280643] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=1 mode=1 draw=142835 present=31458 road=12069 faces=83 upscale=20235 player=45060 opponents=56866
+[1789031280688] [[32minfo[0m] [PaintStage] rows=232 clear_us=790 fill_us=11247 copy_us=5488
+[1789031280689] [[32minfo[0m] [TrackStage] project_us=8309 paint_us=18809 lines_us=10 wireframe=false
+[1789031280822] [[32minfo[0m] [RaceStage] track_us=33256 cars_us=106420 upscale_us=20247 scene_width=234 surfaces=330 cars=3 track_id=2 player_car=6 submitted=3 player_us=46659 opponents_us=59441 player_native=true prepare_us=26543 raster_us=64997 blit_us=14445 candidate_rows_before=2352 candidate_rows_after=1045
+[1789031281058] [[32minfo[0m] [HudStage] map_us=1310 total_us=3306 map_cached=true
+[1789031281115] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=2 mode=0 draw=185983 present=31444 road=33256 faces=330 upscale=20247 player=46659 opponents=59441
+[1789031281119] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=2 mode=1 draw=159815 present=31497 road=23567 faces=330 upscale=20257 player=46651 opponents=59668
+[1789031281471] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=3 mode=0 draw=115430 present=31445 road=18752 faces=129 upscale=20212 player=42954 opponents=24841
+[1789031281475] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=3 mode=1 draw=110963 present=31441 road=14878 faces=129 upscale=20219 player=42295 opponents=24709
+[1789031281805] [[32minfo[0m] [CarStage] car=6 panels=1277 vertices=1711 tiles=1 prepare_us=12562 raster_us=31376 blit_us=5002
+[1789031281911] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=4 mode=0 draw=156133 present=31479 road=14022 faces=139 upscale=20205 player=48972 opponents=64385
+[1789031281915] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=4 mode=1 draw=154589 present=31489 road=11215 faces=139 upscale=20232 player=50143 opponents=64517
+[1789031282311] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=5 mode=0 draw=136394 present=31948 road=14608 faces=64 upscale=20217 player=41724 opponents=51319
+[1789031282315] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=5 mode=1 draw=133122 present=31464 road=11087 faces=64 upscale=20196 player=41695 opponents=51502
+[1789031282731] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=6 mode=0 draw=146519 present=31461 road=30706 faces=541 upscale=20239 player=38288 opponents=48614
+[1789031282735] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=6 mode=1 draw=144045 present=31469 road=28868 faces=541 upscale=20227 player=38262 opponents=48125
+[1789031282772] [[32minfo[0m] [PaintStage] rows=156 clear_us=528 fill_us=8596 copy_us=4052
+[1789031282773] [[32minfo[0m] [TrackStage] project_us=4134 paint_us=14366 lines_us=11 wireframe=false
+[1789031282861] [[32minfo[0m] [RaceStage] track_us=24585 cars_us=61968 upscale_us=20227 scene_width=234 surfaces=217 cars=3 track_id=2 player_car=6 submitted=3 player_us=37765 opponents_us=23848 player_native=true prepare_us=19076 raster_us=30233 blit_us=4821 candidate_rows_before=4368 candidate_rows_after=1401
+[1789031283105] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=7 mode=0 draw=111400 present=31448 road=20453 faces=217 upscale=20220 player=38047 opponents=23901
+[1789031283109] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=7 mode=1 draw=132715 present=31441 road=24585 faces=217 upscale=20227 player=37765 opponents=23848
+[1789031283254] [[32minfo[0m] [HudStage] map_us=1268 total_us=3232 map_cached=true
+[1789031283495] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=8 mode=0 draw=131692 present=31492 road=13677 faces=89 upscale=20196 player=39754 opponents=48317
+[1789031283499] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=8 mode=1 draw=128271 present=31448 road=10639 faces=89 upscale=20211 player=40385 opponents=48377
+[1789031283863] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=9 mode=0 draw=120681 present=31470 road=15673 faces=108 upscale=20215 player=34708 opponents=41527
+[1789031283867] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=9 mode=1 draw=117513 present=31457 road=12525 faces=108 upscale=20203 player=34719 opponents=41403
+[1789031283919] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6621 raster_us=8252 blit_us=1785
+[1789031284254] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=10 mode=0 draw=132723 present=31701 road=16109 faces=108 upscale=20244 player=39103 opponents=48630
+[1789031284258] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=10 mode=1 draw=127906 present=31476 road=12612 faces=108 upscale=20218 player=38908 opponents=47567
+[1789031284642] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=11 mode=0 draw=129366 present=31448 road=34492 faces=540 upscale=20244 player=41284 opponents=24592
+[1789031284646] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=11 mode=1 draw=128609 present=31443 road=33187 faces=540 upscale=20246 player=41692 opponents=24635
+[1789031284876] [[32minfo[0m] [PaintStage] rows=154 clear_us=526 fill_us=6299 copy_us=3979
+[1789031284877] [[32minfo[0m] [TrackStage] project_us=2594 paint_us=12018 lines_us=10 wireframe=false
+[1789031284998] [[32minfo[0m] [RaceStage] track_us=20700 cars_us=94801 upscale_us=20198 scene_width=234 surfaces=127 cars=3 track_id=2 player_car=6 submitted=3 player_us=42351 opponents_us=52102 player_native=true prepare_us=26559 raster_us=51847 blit_us=15933 candidate_rows_before=8848 candidate_rows_after=1452
+[1789031285075] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=12 mode=0 draw=140691 present=31475 road=17356 faces=127 upscale=20198 player=42371 opponents=52082
+[1789031285079] [[32minfo[0m] [SpiralAB] car=6 track=2 frame=12 mode=1 draw=161557 present=31692 road=20700 faces=127 upscale=20198 player=42351 opponents=52102
+[1789031285093] [[32minfo[0m] [SpiralAB] GROUP car=6 track=2 mismatches=0 stack_free=2060
+[1789031285146] [[32minfo[0m] [RacerMaterial] texture_side=32 entries=22 fallback_panels=0 map_cached=true
+[1789031285284] [[32minfo[0m] [HudStage] map_us=1346 total_us=3320 map_cached=true
+[1789031285881] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=1 mode=0 draw=120852 present=31456 road=12532 faces=68 upscale=20202 player=35072 opponents=44324
+[1789031285885] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=1 mode=1 draw=120935 present=31448 road=12540 faces=68 upscale=20220 player=35014 opponents=44348
+[1789031285937] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6550 raster_us=8357 blit_us=1903
+[1789031286258] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=2 mode=0 draw=124330 present=31689 road=15556 faces=118 upscale=20225 player=35077 opponents=44619
+[1789031286262] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=2 mode=1 draw=122878 present=31466 road=15562 faces=118 upscale=20216 player=34856 opponents=43478
+[1789031286589] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=3 mode=0 draw=100521 present=31424 road=14053 faces=95 upscale=20223 player=34126 opponents=23227
+[1789031286593] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=3 mode=1 draw=101273 present=31417 road=14049 faces=95 upscale=20221 player=34124 opponents=23709
+[1789031286969] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=4 mode=0 draw=125675 present=31461 road=12492 faces=46 upscale=20193 player=38027 opponents=46105
+[1789031286973] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=4 mode=1 draw=125598 present=31460 road=12496 faces=46 upscale=20219 player=38014 opponents=46114
+[1789031287017] [[32minfo[0m] [PaintStage] rows=227 clear_us=777 fill_us=11951 copy_us=5369
+[1789031287018] [[32minfo[0m] [TrackStage] project_us=6610 paint_us=19399 lines_us=10 wireframe=false
+[1789031287125] [[32minfo[0m] [RaceStage] track_us=32166 cars_us=80668 upscale_us=20235 scene_width=234 surfaces=312 cars=3 track_id=0 player_car=7 submitted=3 player_us=35366 opponents_us=44874 player_native=true prepare_us=24475 raster_us=46895 blit_us=8754 candidate_rows_before=2800 candidate_rows_after=780
+[1789031287337] [[32minfo[0m] [HudStage] map_us=1306 total_us=3265 map_cached=true
+[1789031287394] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=5 mode=0 draw=135713 present=31492 road=25034 faces=312 upscale=20242 player=35815 opponents=44853
+[1789031287398] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=5 mode=1 draw=159000 present=31475 road=32166 faces=312 upscale=20235 player=35366 opponents=44874
+[1789031287774] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=6 mode=0 draw=124897 present=31495 road=15647 faces=138 upscale=20223 player=35214 opponents=44935
+[1789031287778] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=6 mode=1 draw=124829 present=31467 road=15617 faces=138 upscale=20230 player=35214 opponents=44966
+[1789031287988] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6515 raster_us=8490 blit_us=2104
+[1789031288114] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=7 mode=0 draw=105963 present=31418 road=13076 faces=68 upscale=20241 player=38635 opponents=25055
+[1789031288118] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=7 mode=1 draw=104253 present=31486 road=13044 faces=68 upscale=20220 player=38112 opponents=23874
+[1789031288517] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=8 mode=0 draw=136607 present=31461 road=14405 faces=111 upscale=20216 player=41123 opponents=51940
+[1789031288521] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=8 mode=1 draw=137201 present=31471 road=14329 faces=111 upscale=20711 player=41335 opponents=51968
+[1789031288909] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=9 mode=0 draw=131360 present=31461 road=14005 faces=95 upscale=20213 player=39075 opponents=49309
+[1789031288913] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=9 mode=1 draw=131423 present=31466 road=14002 faces=95 upscale=20216 player=39064 opponents=49257
+[1789031289134] [[32minfo[0m] [PaintStage] rows=132 clear_us=459 fill_us=4304 copy_us=3562
+[1789031289135] [[32minfo[0m] [TrackStage] project_us=3496 paint_us=9523 lines_us=10 wireframe=false
+[1789031289255] [[32minfo[0m] [RaceStage] track_us=19008 cars_us=93408 upscale_us=20211 scene_width=234 surfaces=42 cars=3 track_id=0 player_car=7 submitted=3 player_us=41345 opponents_us=51628 player_native=true prepare_us=24186 raster_us=54197 blit_us=14482 candidate_rows_before=3024 candidate_rows_after=1280
+[1789031289331] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=10 mode=0 draw=134377 present=31490 road=12011 faces=42 upscale=20228 player=41343 opponents=51877
+[1789031289335] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=10 mode=1 draw=158460 present=31478 road=19008 faces=42 upscale=20211 player=41345 opponents=51628
+[1789031289469] [[32minfo[0m] [HudStage] map_us=1367 total_us=3522 map_cached=true
+[1789031289701] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=11 mode=0 draw=119405 present=31437 road=23846 faces=370 upscale=20241 player=41997 opponents=24385
+[1789031289705] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=11 mode=1 draw=121069 present=31479 road=24296 faces=370 upscale=20216 player=41952 opponents=24362
+[1789031290002] [[32minfo[0m] [CarStage] car=7 panels=1113 vertices=1446 tiles=1 prepare_us=10898 raster_us=21128 blit_us=4990
+[1789031290092] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=12 mode=0 draw=129810 present=31423 road=16913 faces=194 upscale=20239 player=37005 opponents=46702
+[1789031290096] [[32minfo[0m] [SpiralAB] car=7 track=0 frame=12 mode=1 draw=131373 present=31504 road=16858 faces=194 upscale=20253 player=38228 opponents=47224
+[1789031290110] [[32minfo[0m] [SpiralAB] GROUP car=7 track=0 mismatches=0 stack_free=2060
+[1789031290920] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=1 mode=0 draw=137801 present=31473 road=18121 faces=196 upscale=20209 player=40656 opponents=49974
+[1789031290924] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=1 mode=1 draw=137874 present=31466 road=18129 faces=196 upscale=20231 player=40626 opponents=50009
+[1789031291135] [[32minfo[0m] [PaintStage] rows=232 clear_us=817 fill_us=7544 copy_us=5608
+[1789031291136] [[32minfo[0m] [TrackStage] project_us=4531 paint_us=15265 lines_us=10 wireframe=false
+[1789031291290] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=2 mode=0 draw=116819 present=31497 road=18804 faces=123 upscale=20228 player=30901 opponents=37924
+[1789031291294] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=2 mode=1 draw=123435 present=31476 road=25861 faces=123 upscale=20225 player=30619 opponents=37793
+[1789031291411] [[32minfo[0m] [RaceStage] track_us=13443 cars_us=63810 upscale_us=20207 scene_width=234 surfaces=61 cars=3 track_id=1 player_car=7 submitted=3 player_us=39345 opponents_us=24165 player_native=true prepare_us=18090 raster_us=31675 blit_us=6724 candidate_rows_before=1568 candidate_rows_after=771
+[1789031291592] [[32minfo[0m] [HudStage] map_us=1378 total_us=3485 map_cached=true
+[1789031291649] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=3 mode=0 draw=106481 present=31482 road=13414 faces=61 upscale=20226 player=38752 opponents=24023
+[1789031291653] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=3 mode=1 draw=123514 present=31442 road=13443 faces=61 upscale=20207 player=39345 opponents=24165
+[1789031292053] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=4 mode=0 draw=137375 present=31484 road=12401 faces=62 upscale=20228 player=42337 opponents=53357
+[1789031292057] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=4 mode=1 draw=137368 present=31440 road=12426 faces=62 upscale=20230 player=42365 opponents=53375
+[1789031292114] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6560 raster_us=8656 blit_us=2848
+[1789031292465] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=5 mode=0 draw=140876 present=31468 road=19845 faces=244 upscale=20219 player=40836 opponents=50948
+[1789031292469] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=5 mode=1 draw=141204 present=31463 road=19363 faces=244 upscale=20257 player=41086 opponents=51441
+[1789031292827] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=6 mode=0 draw=116547 present=31482 road=18926 faces=123 upscale=20235 player=30637 opponents=37721
+[1789031292831] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=6 mode=1 draw=116447 present=31475 road=18930 faces=123 upscale=20240 player=30646 opponents=37739
+[1789031293167] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=7 mode=0 draw=105555 present=31459 road=13214 faces=61 upscale=20204 player=38832 opponents=24287
+[1789031293171] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=7 mode=1 draw=105350 present=31439 road=13228 faces=61 upscale=20229 player=38764 opponents=23937
+[1789031293203] [[32minfo[0m] [PaintStage] rows=139 clear_us=478 fill_us=4454 copy_us=3672
+[1789031293204] [[32minfo[0m] [TrackStage] project_us=3529 paint_us=9824 lines_us=11 wireframe=false
+[1789031293520] [[32minfo[0m] [RaceStage] track_us=12347 cars_us=96091 upscale_us=20220 scene_width=234 surfaces=62 cars=3 track_id=1 player_car=7 submitted=3 player_us=42371 opponents_us=53379 player_native=true prepare_us=24396 raster_us=57743 blit_us=13507 candidate_rows_before=1792 candidate_rows_after=1066
+[1789031293597] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=8 mode=0 draw=144580 present=31498 road=19328 faces=62 upscale=20199 player=42337 opponents=53413
+[1789031293601] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=8 mode=1 draw=154784 present=31450 road=12347 faces=62 upscale=20220 player=42371 opponents=53379
+[1789031293754] [[32minfo[0m] [HudStage] map_us=1382 total_us=3345 map_cached=true
+[1789031294004] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=9 mode=0 draw=138658 present=31480 road=18276 faces=196 upscale=20234 player=40843 opponents=50304
+[1789031294008] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=9 mode=1 draw=139688 present=31465 road=18270 faces=196 upscale=20214 player=40830 opponents=50274
+[1789031294136] [[32minfo[0m] [CarStage] car=1 panels=661 vertices=954 tiles=1 prepare_us=6825 raster_us=12765 blit_us=2390
+[1789031294368] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=10 mode=0 draw=118044 present=31451 road=19060 faces=123 upscale=20237 player=30642 opponents=38924
+[1789031294372] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=10 mode=1 draw=116286 present=31489 road=18832 faces=123 upscale=20243 player=30609 opponents=37733
+[1789031294711] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=11 mode=0 draw=106362 present=31464 road=14367 faces=93 upscale=20233 player=38786 opponents=24004
+[1789031294715] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=11 mode=1 draw=106537 present=31465 road=14325 faces=93 upscale=20230 player=38800 opponents=24028
+[1789031295133] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=12 mode=0 draw=145753 present=31481 road=14419 faces=110 upscale=20224 player=45766 opponents=56357
+[1789031295137] [[32minfo[0m] [SpiralAB] car=7 track=1 frame=12 mode=1 draw=146105 present=31482 road=14417 faces=110 upscale=20227 player=45988 opponents=56551
+[1789031295151] [[32minfo[0m] [SpiralAB] GROUP car=7 track=1 mismatches=0 stack_free=2060
+[1789031295375] [[32minfo[0m] [PaintStage] rows=154 clear_us=529 fill_us=6339 copy_us=3929
+[1789031295376] [[32minfo[0m] [TrackStage] project_us=2590 paint_us=12018 lines_us=11 wireframe=false
+[1789031295680] [[32minfo[0m] [RaceStage] track_us=12071 cars_us=94173 upscale_us=20226 scene_width=234 surfaces=83 cars=3 track_id=2 player_car=7 submitted=3 player_us=41045 opponents_us=52881 player_native=true prepare_us=24424 raster_us=56546 blit_us=12855 candidate_rows_before=2464 candidate_rows_after=1027
+[1789031295894] [[32minfo[0m] [HudStage] map_us=1282 total_us=3262 map_cached=true
+[1789031295951] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=1 mode=0 draw=139213 present=31499 road=15379 faces=83 upscale=20244 player=41040 opponents=52883
+[1789031295955] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=1 mode=1 draw=152206 present=31446 road=12071 faces=83 upscale=20226 player=41045 opponents=52881
+[1789031296225] [[32minfo[0m] [CarStage] car=0 panels=628 vertices=913 tiles=1 prepare_us=6591 raster_us=9194 blit_us=2172
+[1789031296386] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=2 mode=0 draw=153797 present=31451 road=26094 faces=330 upscale=20478 player=42773 opponents=55752
+[1789031296390] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=2 mode=1 draw=152166 present=31454 road=23537 faces=330 upscale=20263 player=42892 opponents=56820
+[1789031296732] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=3 mode=0 draw=110254 present=31474 road=18764 faces=129 upscale=20207 player=38402 opponents=24175
+[1789031296736] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=3 mode=1 draw=106532 present=31428 road=14882 faces=129 upscale=20223 player=38408 opponents=24097
+[1789031297154] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=4 mode=0 draw=147565 present=31458 road=14030 faces=139 upscale=20224 player=44885 opponents=59788
+[1789031297158] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=4 mode=1 draw=145041 present=31460 road=11225 faces=139 upscale=20202 player=45173 opponents=59875
+[1789031297540] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=5 mode=0 draw=130124 present=31454 road=14574 faces=64 upscale=20216 player=38094 opponents=48655
+[1789031297544] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=5 mode=1 draw=126545 present=31469 road=11130 faces=64 upscale=20193 player=37908 opponents=48598
+[1789031297594] [[32minfo[0m] [PaintStage] rows=149 clear_us=518 fill_us=14283 copy_us=3835
+[1789031297595] [[32minfo[0m] [TrackStage] project_us=11645 paint_us=20061 lines_us=10 wireframe=false
+[1789031297701] [[32minfo[0m] [RaceStage] track_us=37943 cars_us=79940 upscale_us=20231 scene_width=234 surfaces=541 cars=3 track_id=2 player_car=7 submitted=3 player_us=34473 opponents_us=45137 player_native=true prepare_us=24290 raster_us=45280 blit_us=9928 candidate_rows_before=8736 candidate_rows_after=1448
+[1789031297915] [[32minfo[0m] [HudStage] map_us=1251 total_us=3220 map_cached=true
+[1789031297972] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=6 mode=0 draw=163917 present=31430 road=37943 faces=541 upscale=20231 player=34473 opponents=45137
+[1789031297976] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=6 mode=1 draw=138303 present=31513 road=28864 faces=541 upscale=20239 player=34470 opponents=45111
+[1789031298247] [[32minfo[0m] [CarStage] car=7 panels=1113 vertices=1446 tiles=1 prepare_us=10942 raster_us=19900 blit_us=3135
+[1789031298314] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=7 mode=0 draw=108124 present=31453 road=20460 faces=217 upscale=20240 player=35246 opponents=23400
+[1789031298318] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=7 mode=1 draw=104162 present=31445 road=17501 faces=217 upscale=20240 player=34108 opponents=23534
+[1789031298690] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=8 mode=0 draw=124647 present=31476 road=13713 faces=89 upscale=20726 player=36127 opponents=45416
+[1789031298694] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=8 mode=1 draw=120784 present=31492 road=10650 faces=89 upscale=20217 player=35960 opponents=45401
+[1789031299046] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=9 mode=0 draw=114871 present=31452 road=15681 faces=108 upscale=20216 player=31234 opponents=39151
+[1789031299050] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=9 mode=1 draw=111685 present=31445 road=12525 faces=108 upscale=20215 player=31199 opponents=39079
+[1789031299423] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=10 mode=0 draw=124759 present=31480 road=16066 faces=108 upscale=20215 player=35088 opponents=44676
+[1789031299427] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=10 mode=1 draw=121185 present=32007 road=12593 faces=108 upscale=20197 player=35079 opponents=44755
+[1789031299661] [[32minfo[0m] [PaintStage] rows=232 clear_us=806 fill_us=16516 copy_us=5301
+[1789031299662] [[32minfo[0m] [TrackStage] project_us=11433 paint_us=24128 lines_us=11 wireframe=false
+[1789031299750] [[32minfo[0m] [RaceStage] track_us=41821 cars_us=61801 upscale_us=20239 scene_width=234 surfaces=540 cars=3 track_id=2 player_car=7 submitted=3 player_us=37405 opponents_us=24069 player_native=true prepare_us=17406 raster_us=30360 blit_us=6750 candidate_rows_before=2016 candidate_rows_after=848
+[1789031299826] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=11 mode=0 draw=149614 present=31420 road=41821 faces=540 upscale=20239 player=37405 opponents=24069
+[1789031299830] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=11 mode=1 draw=123708 present=31441 road=33203 faces=540 upscale=20232 player=37434 opponents=24034
+[1789031299978] [[32minfo[0m] [HudStage] map_us=1332 total_us=3288 map_cached=true
+[1789031300221] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=12 mode=0 draw=134934 present=31488 road=17317 faces=127 upscale=20223 player=38650 opponents=48897
+[1789031300225] [[32minfo[0m] [SpiralAB] car=7 track=2 frame=12 mode=1 draw=130126 present=31471 road=13645 faces=127 upscale=20224 player=38678 opponents=48888
+[1789031300239] [[32minfo[0m] [SpiralAB] GROUP car=7 track=2 mismatches=0 stack_free=2060
+[1789031300248] [[32minfo[0m] [SpiralAB] END mismatches=0 internal=76887 psram=5493908 stack_free=2060
+
+ _____ _____ _____ _____ _____ _____ _____ _____
+|     |     |     |   | |     |  _  |  |  |   __|
+| | | |  |  |  |  | | | |   --|     |    -|   __|
+|_|_|_|_____|_____|_|___|_____|__|__|__|__|_____|
+
+- @author Forairaaaaa
+- @version 2.3.3
+- @build at 17:29:29 Aug 31 2026
+
+[1789031300284] [[32minfo[0m] [Launcher] on create
+[1789031300286] [[32minfo[0m] [Launcher] on open
+[1789031300291] [[32minfo[0m] [HAL] skip guide, launch count: 5
+[1789031300297] [[32minfo[0m] [LauncherView] init
+I (169958) M5PM1_PWR: Boost Enabled
+[1789031300308] [[32minfo[0m] [HAL-PMIC] Grove 5V enabled
+E (169987) i2c.master: this port has not been initialized, please initialize it first
+I (169988) i2c_bus: i2c1 bus inited
+I (169988) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+[1789031300561] [[32minfo[0m] [HAL-Audio] play boot sfx
+[1789031300625] [[32minfo[0m] [Typhoon] on create
+[1789031300627] [[32minfo[0m] [Bot Lab] on create
+[1789031300628] [[32minfo[0m] [Glow Field] on create
+[1789031300630] [[32minfo[0m] [Vector Run] on create
+[1789031300635] [[32minfo[0m] [Let's & Go!!] on create
+[1789031300640] [[32minfo[0m] [RuView] on create
+[1789031300644] [[32minfo[0m] [AlarmClock] on create
+[1789031300649] [[32minfo[0m] [AlarmClockModel] init
+[1789031300654] [[32minfo[0m] [HAL-Alarm] alarm storage missing, using defaults
+[1789031300661] [[32minfo[0m] [AlarmClockModel] loaded storage snapshot, count: 0
+[1789031300669] [[32minfo[0m] [AlarmClockModel] import storage, count: 0, persist: false
+[1789031300677] [[32minfo[0m] [WatchFace] on create
+[1789031300681] [[32minfo[0m] [Stopwatch] on create
+[1789031300686] [[32minfo[0m] [Badge] on create
+[1789031300690] [[32minfo[0m] [IMU] on create
+[1789031300695] [[32minfo[0m] [Audio.FFT] on create
+[1789031300699] [[32minfo[0m] [LuckyWheel] on create
+[1789031300704] [[32minfo[0m] [Settings] on create

@@ -40,7 +40,9 @@ bool validateFullRaceAndRetry()
                    "full roster could not remove and replace a rival");
     valid &= check(flow.confirmRivals() &&
                        flow.moveTrack(1) && flow.setup().track==TrackId::TriCross &&
+                       flow.moveTrack(1) && flow.setup().track==TrackId::GrandSpiral &&
                        flow.moveTrack(1) && flow.setup().track==TrackId::SkyLoop &&
+                       flow.moveTrack(-1) && flow.setup().track==TrackId::GrandSpiral &&
                        flow.moveTrack(-1) && flow.setup().track==TrackId::TriCross &&
                        !flow.selectTrack(TrackId::Count) && flow.confirmTrack() &&
                        flow.completeGridIntro() && flow.completeCountdown(),

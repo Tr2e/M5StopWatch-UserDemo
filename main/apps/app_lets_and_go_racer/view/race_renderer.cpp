@@ -484,8 +484,10 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
 #ifdef ESP_PLATFORM
     const uint64_t trackStartedUs=esp_timer_get_time();
 #endif
+    _trackGeometry.cullSegments=_trackCulling && race.track().id()==TrackId::GrandSpiral;
     drawPencilTrack(scene, camera, _trackGeometry, detail, &_surface->occlusion,!_playerQuality,
                     _wireframeTrack);
+    _stages.roadSurfaces=uint32_t(_surface->occlusion.count);
 #ifdef ESP_PLATFORM
     const uint64_t trackFinishedUs=esp_timer_get_time();
 #endif
@@ -610,7 +612,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
 #endif
     drawHud(canvas,snapshot,race.track(),_miniMap,_miniMapImage.get(),deviceControls);
 #ifdef ESP_PLATFORM
-    _stages={uint32_t(trackFinishedUs-trackStartedUs),playerUs,opponentsUs,
+    _stages={uint32_t(_surface->occlusion.count),uint32_t(trackFinishedUs-trackStartedUs),playerUs,opponentsUs,
         uint32_t(upscaleFinishedUs-carsFinishedUs),uint32_t(esp_timer_get_time()-hudStartedUs),carStages};
 #endif
     const GameScreen screen = flow.screen();

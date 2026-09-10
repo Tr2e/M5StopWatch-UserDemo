@@ -1,0 +1,57 @@
+{
+  "reference_frames": 356,
+  "changed": [
+    "device-track.ppm",
+    "track.ppm",
+    "external-course-native.ppm",
+    "track-0.ppm",
+    "track-1.ppm",
+    "setup-course-native-1.ppm",
+    "setup-course-native-0.ppm"
+  ],
+  "note": "Track selection labels intentionally change from /2 to /3.",
+  "changed_bounds": {
+    "device-track.ppm": [
+      176,
+      380,
+      181,
+      387
+    ],
+    "track.ppm": [
+      176,
+      380,
+      181,
+      387
+    ],
+    "external-course-native.ppm": [
+      177,
+      380,
+      182,
+      387
+    ],
+    "track-0.ppm": [
+      176,
+      380,
+      181,
+      387
+    ],
+    "track-1.ppm": [
+      173,
+      380,
+      178,
+      387
+    ],
+    "setup-course-native-1.ppm": [
+      174,
+      380,
+      179,
+      387
+    ],
+    "setup-course-native-0.ppm": [
+      177,
+      380,
+      182,
+      387
+    ]
+  }
+}

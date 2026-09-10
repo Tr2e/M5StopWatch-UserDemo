@@ -79,8 +79,15 @@ bool validateProgress()
                    migrated.bestLapMilliseconds[1]==0,"V1 record migration failed");
     valid &= check(recordBestLap(migrated,TrackId::TriCross,20.f) && migrated.bestLapMilliseconds[0]==12345 &&
                    migrated.bestLapMilliseconds[1]==20000,"track records are not independent");
+    struct V2 { uint8_t version=2; CarId lastCar=CarId::Diospada; uint32_t laps[2]={12345,23456}; } v2;
+    const auto third=decodePlayerProgress(&v2,sizeof(v2));
+    valid &= check(third.version==3 && third.lastCar==v2.lastCar && third.bestLapMilliseconds[0]==12345 &&
+        third.bestLapMilliseconds[1]==23456 && third.bestLapMilliseconds[2]==0,"V2 records lost adding third track");
+    valid &= check(recordBestLap(migrated,TrackId::GrandSpiral,30.f) && migrated.bestLapMilliseconds[2]==30000 &&
+        migrated.bestLapMilliseconds[0]==12345 && migrated.bestLapMilliseconds[1]==20000,"third record is not independent");
+    v2.version=99;valid &= check(decodePlayerProgress(&v2,sizeof(v2)).bestLapMilliseconds[0]==0,"bad V2 version accepted");
     auto reloaded=decodePlayerProgress(&migrated,sizeof(migrated));
-    valid &= check(reloaded.bestLapMilliseconds==migrated.bestLapMilliseconds,"V2 roundtrip failed");
+    valid &= check(reloaded.bestLapMilliseconds==migrated.bestLapMilliseconds,"V3 roundtrip failed");
     migrated.lastCar=CarId::Diospada;
     valid &= check(decodePlayerProgress(&migrated,sizeof(migrated)).lastCar==CarId::Diospada,
                    "eighth car does not survive progress roundtrip");

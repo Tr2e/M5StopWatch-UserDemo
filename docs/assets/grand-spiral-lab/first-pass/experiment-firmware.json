@@ -1,0 +1,10 @@
+{
+  "bin": {
+    "sha256": "1dc95e9f0cbe9f53d24c9e2042da86ed78b79ea4971b910af4f9b96cdea7c491",
+    "bytes": 4971056
+  },
+  "elf": {
+    "sha256": "4274d812af5256449bc26a35a364bcf66a55ea4ee958aee19f4e95765c402fe9",
+    "bytes": 54451240
+  }
+}

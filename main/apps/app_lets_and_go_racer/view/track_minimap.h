@@ -5,15 +5,16 @@
 
 namespace lets_and_go {
 
-// Cached, height-sorted miniature of the same 96 physical road segments.
+// Cached, height-sorted miniature of the active physical road segments.
 // No unrelated figure-eight icon: banking, bridge and colors match the course.
 struct TrackMiniMap {
     struct Point { int16_t x,y; };
     struct Section { Point left,right; };
-    std::array<Section,PencilTrack::kSegments+1> section{};
-    std::array<uint8_t,PencilTrack::kSegments> order{};
+    std::array<Section,PencilTrack::kMaximumSegments+1> section{};
+    std::array<uint8_t,PencilTrack::kMaximumSegments> order{};
     static constexpr int centerX=354,centerY=122,radius=43;
 
+    std::size_t count=0;
     float originX=0,originY=0,scale=2.6f;
     // View from above: +x is screen-right, +z is screen-up. Elevation
     // also moves up. Using +z down reflects the road's turn handedness.
@@ -23,20 +24,21 @@ struct TrackMiniMap {
                 int16_t(std::lround(centerY+(mapY(p)-originY)*scale))};
     }
     void open(const PencilTrack& track) {
+        count=track.count;
         float minX=1e6f,maxX=-1e6f,minY=1e6f,maxY=-1e6f;
-        for(std::size_t i=0;i<section.size();++i) for(auto p:{track.left[i],track.right[i]}) {
+        for(std::size_t i=0;i<=count;++i) for(auto p:{track.left[i],track.right[i]}) {
             minX=std::min(minX,p.x);maxX=std::max(maxX,p.x);
             minY=std::min(minY,mapY(p));maxY=std::max(maxY,mapY(p));
         }
         originX=(minX+maxX)*.5f;originY=(minY+maxY)*.5f;
         float extent=1.f;
-        for(std::size_t i=0;i<section.size();++i) for(auto p:{track.left[i],track.right[i]})
+        for(std::size_t i=0;i<=count;++i) for(auto p:{track.left[i],track.right[i]})
             extent=std::max(extent,std::hypot(p.x-originX,mapY(p)-originY));
         scale=(radius-6.f)/extent; // Include shadows and four-pixel markers.
-        for(std::size_t i=0;i<section.size();++i)
+        for(std::size_t i=0;i<=count;++i)
             section[i]={project(track.left[i]),project(track.right[i])};
-        for(std::size_t i=0;i<order.size();++i)order[i]=uint8_t(i);
-        std::sort(order.begin(),order.end(),[&](uint8_t a,uint8_t b) {
+        for(std::size_t i=0;i<count;++i)order[i]=uint8_t(i);
+        std::sort(order.begin(),order.begin()+count,[&](uint8_t a,uint8_t b) {
             const float ay=track.left[a].y+track.right[a+1].y;
             const float by=track.left[b].y+track.right[b+1].y;
             return ay==by ? a<b : ay<by;
@@ -48,11 +50,12 @@ struct TrackMiniMap {
         const auto line=[&](Point a,Point b,uint16_t color) {
             canvas.drawLine(a.x-originX,a.y-originY,b.x-originX,b.y-originY,color);
         };
-        for(int pass=0;pass<2;++pass) for(auto i:order) {
+        for(int pass=0;pass<2;++pass) for(std::size_t index=0;index<count;++index) {
+            const auto i=order[index];
             const auto local=[&](Point p){return Point{int16_t(p.x-originX),int16_t(p.y-originY)};};
             const auto a=local(section[i].left),b=local(section[i].right);
             const auto c=local(section[i+1].right),d=local(section[i+1].left);
-            const auto paint=track_paint::module(i);
+            const auto paint=track_paint::module(i,count);
             // All contact shadows precede the ribbon. A per-segment shadow
             // would cut stripes into the neighbouring module at this size.
             if(pass==0) {

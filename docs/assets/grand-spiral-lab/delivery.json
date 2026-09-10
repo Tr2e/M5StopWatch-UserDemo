@@ -1,0 +1,19 @@
+{
+  "bin": {
+    "sha256": "82424a546c3e9a073a54910b74f546922aa828aacddba82f3347017f99c7778f",
+    "bytes": 4962608
+  },
+  "elf": {
+    "sha256": "f9a849e79dd629ef0ef9a45add505b6a44d6cf5e5966185be8894f0c98b9b43e",
+    "bytes": 54056228
+  },
+  "temporary_benchmark_symbols_absent": true,
+  "device": "StopWatch",
+  "port": "/dev/cu.usbmodem83401",
+  "usb_serial": "44:1B:F6:C1:8A:00",
+  "application_offset": "0x20000",
+  "write_hash_verified": true,
+  "boot_elf_prefix": "f9a849e79",
+  "launcher_open_verified": true,
+  "other_device_accessed": false
+}

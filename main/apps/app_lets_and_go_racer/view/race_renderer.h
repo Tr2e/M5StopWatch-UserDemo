@@ -84,6 +84,7 @@ using SceneUpscalePixel=uint16_t;
 #endif
 
 struct RaceRenderStages {
+    uint32_t roadSurfaces=0;
     uint32_t trackUs=0,playerUs=0,opponentsUs=0,upscaleUs=0,hudUs=0;
     RaceCarStages cars{};
 };
@@ -93,6 +94,7 @@ public:
     void open(int width, int height, bool halfResolution = false, bool raceCaches = false,
               bool playerQuality = false, bool wireframeTrack = false);
     void close();
+    void setTrackCulling(bool enabled) { _trackCulling=enabled; }
     void setEdgeUpscale(bool enabled) { _edgeUpscale=enabled; }
     bool edgeUpscaleActive() const { return _edgeUpscale && _edgeRow.get(); }
     void setRowOcclusionFilter(bool enabled) { _rowOcclusionFilter=enabled; }
@@ -109,6 +111,7 @@ private:
     std::unique_ptr<LGFX_Sprite> _scene;
     std::unique_ptr<LGFX_Sprite> _miniMapImage;
     std::unique_ptr<RacePaintAtlas> _paintAtlas;
+    bool _trackCulling=true;
     PencilTrack _trackGeometry{};
     TrackId _cachedTrack = TrackId::Count;
     TrackMiniMap _miniMap{};
@@ -127,7 +130,7 @@ private:
     bool _wireframeTrack=false;
 };
 
-static_assert(sizeof(RaceRenderer) <= 3500u,
+static_assert(sizeof(RaceRenderer) <= 9000u,
               "race renderer cache exceeded its reviewed resident budget");
 
 }  // namespace lets_and_go

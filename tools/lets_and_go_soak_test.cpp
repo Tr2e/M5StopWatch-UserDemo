@@ -79,6 +79,6 @@ int main()
             return 1;
         }
     }
-    std::cout << "128 deterministic 180-second-bound scenarios on two courses passed\n";
+    std::cout << "192 deterministic 180-second-bound scenarios on three courses passed\n";
     return 0;
 }

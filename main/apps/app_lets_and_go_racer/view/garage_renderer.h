@@ -24,7 +24,7 @@ struct GarageSurfaceCache {
     PencilOcclusion trackSurfaces{};
     GarageInspectionCache inspection{};
 };
-static_assert(sizeof(GarageSurfaceCache)<=724000u,"garage surface working-set budget");
+static_assert(sizeof(GarageSurfaceCache)<=768000u,"garage surface working-set budget");
 
 class GarageRenderer {
 public:
@@ -34,6 +34,7 @@ public:
                 uint32_t screenElapsedMs, PencilDetail detail,
                 const RacerInputStatus& inputStatus = {},const GarageViewState& view = {}, bool deviceControls = false,
                 int inspectionPercent = 100,bool reuseInspectionBackground = false,int inspectionDisplayPercent = 100);
+    void setTrackPreviewDecorations(bool enabled) { _trackPreviewDecorations=enabled; }
     void setSelectionOptimizations(bool enabled) { _selectionOptimizations=enabled; }
     int inspectionPercent() const { return _inspectionPercent; }
 
@@ -50,9 +51,10 @@ private:
     int _height = 0;
     int _inspectionPercent = 100;
     bool _selectionOptimizations = true;
+    bool _trackPreviewDecorations = false;
 };
 
-static_assert(sizeof(GarageRenderer) <= 3500u,
+static_assert(sizeof(GarageRenderer) <= 8500u,
               "garage renderer cache exceeded its reviewed resident budget");
 
 }  // namespace lets_and_go

@@ -300,6 +300,56 @@ bool validateCarRaster()
     return valid;
 }
 
+bool validateTwistedTrackDecks()
+{
+    auto& canvas=GetHAL().getCanvas();canvas.createSprite(234,233);
+    auto surfaces=std::make_unique<PencilOcclusion>();
+    bool valid=true;int cases=0,maxMissing=0;
+    // Independent reference: draw BOTH deck faces and let depth resolve them.
+    // It makes no top/bottom decision, so it catches a shared-normal regression.
+    for(auto id:{TrackId::SkyLoop,TrackId::TriCross,TrackId::GrandSpiral}) {
+        OverpassTrack road(id);PencilTrack track;track.open(road);
+        const int begin=id==TrackId::GrandSpiral ? 252 : id==TrackId::TriCross ? 88 : 0;
+        const int end=id==TrackId::GrandSpiral ? 280 : id==TrackId::TriCross ? 106 : 25;
+        for(int frame=begin;frame<=end;++frame)for(float lane:{-1.36f,0.f,1.36f}) {
+            const auto camera=makeRacerChaseCamera(road.sample(road.length()*frame/720),lane,234,233);
+            canvas.fillScreen(track_paint::floor);
+            drawPencilTrack(canvas,camera,track,PencilDetail::Low,surfaces.get(),false);
+            const auto actual=canvas.frame();
+            surfaces->count=0;surfaces->overflowed=false;
+            const auto quad=[&](TrackVec3 a,TrackVec3 b,TrackVec3 c,TrackVec3 d,uint16_t color) {
+                for(auto triangle:{std::array<TrackVec3,3>{a,b,c},std::array<TrackVec3,3>{a,c,d}}) {
+                    auto face=projectPencilSurface(camera,triangle[0],triangle[1],triangle[2],234,233);
+                    face.color=color;surfaces->append(face);
+                }
+            };
+            for(std::size_t i=0;i<track.count;++i) {
+                auto a=track.left[i],b=track.right[i],c=track.right[i+1],d=track.left[i+1];
+                const auto paint=track_paint::module(i,track.count);
+                const TrackVec3 drop{0,-track_paint::deckThickness,0},lift{0,track_paint::wallHeight,0};
+                for(auto edge:{std::array<TrackVec3,2>{a,d},std::array<TrackVec3,2>{b,c}})
+                    quad(trackAdd(edge[0],drop),trackAdd(edge[1],drop),trackAdd(edge[1],lift),trackAdd(edge[0],lift),paint.wall);
+                quad(a,b,c,d,paint.deck);
+                quad(trackAdd(a,drop),trackAdd(b,drop),trackAdd(c,drop),trackAdd(d,drop),track_paint::underside);
+            }
+            if(surfaces->overflowed)valid=false;
+            canvas.fillScreen(track_paint::floor);surfaces->paint(canvas);
+            int missing=0;
+            for(int y=80;y<225;++y)for(int x=15;x<220;++x) {
+                const auto i=y*234+x;
+                if(actual[i]==track_paint::floor && canvas.frame()[i]!=track_paint::floor)++missing;
+            }
+            // At most a single edge-rounding pixel was seen in the dense scan;
+            // the old path loses 283 pixels in one triangle at Grand Spiral 265.
+            if(missing>2) {std::cerr<<"Twisted road hole: track="<<int(id)<<" frame="<<frame<<" pixels="<<missing<<'\n';valid=false;}
+            maxMissing=std::max(maxMissing,missing);++cases;
+        }
+    }
+    canvas.createSprite(466,466);
+    std::cout<<"Twisted deck coverage: "<<cases<<" poses, max missing edge pixels="<<maxMissing<<'\n';
+    return valid;
+}
+
 bool validateTrackPaint(TrackId id = TrackId::SkyLoop)
 {
     OverpassTrack course(id);
@@ -353,7 +403,7 @@ bool validateTrackPaint(TrackId id = TrackId::SkyLoop)
         }
     }
     canvas.fillScreen(track_paint::night);map.draw(canvas);
-    for(const auto& section:map.section)for(auto p:{section.left,section.right}) {
+    for(std::size_t index=0;index<=map.count;++index)for(auto p:{map.section[index].left,map.section[index].right}) {
         const int x=p.x-TrackMiniMap::centerX,y=p.y-TrackMiniMap::centerY;
         if(x*x+y*y>(TrackMiniMap::radius-4)*(TrackMiniMap::radius-4)) {
             std::cerr << "Map point outside locator-safe radius: " << x << ',' << y << '\n';valid=false;
@@ -381,6 +431,16 @@ bool validateTrackPaint(TrackId id = TrackId::SkyLoop)
             const auto camera=makeRacerChaseCamera(frame,0,466,466);
             canvas.fillScreen(0xef3a);
             drawPencilTrack(canvas,camera,geometry,detail,&occlusion);
+            if(id==TrackId::GrandSpiral) {
+                const auto culled=canvas.frame();
+                const auto count=occlusion.count;
+                geometry.cullSegments=false;canvas.fillScreen(0xef3a);
+                drawPencilTrack(canvas,camera,geometry,detail,&occlusion);
+                geometry.cullSegments=true;
+                if(canvas.frame()!=culled || count!=occlusion.count) {
+                    std::cerr<<"Conservative cull changed visible geometry\n";valid=false;
+                }
+            }
             maxSurfaces=std::max(maxSurfaces,occlusion.count);
             if(occlusion.overflowed || occlusion.count==0 ||
                occlusion.count>PencilOcclusion::kCapacity) valid=false;
@@ -446,7 +506,7 @@ bool validateTrackPaint(TrackId id = TrackId::SkyLoop)
     occlusion.count=occlusion.surfaces.size();
     occlusion.append(face);
     if(!occlusion.overflowed || occlusion.count!=occlusion.surfaces.size()) valid=false;
-    std::cout << "Track paint: order-independent depth, dark backdrop, 96-section map, 144 poses, max occluders="
+    std::cout << "Track paint: order-independent depth, dark backdrop, active-section map, 144 poses, max occluders="
               << maxSurfaces << '\n';
     if(!valid) std::cerr << "Track paint geometry, palette or bridge occlusion regressed\n";
     return valid;
@@ -490,7 +550,7 @@ int main(int argc, char** argv)
     std::filesystem::create_directories(directory);
     captureCarStructures(directory);
     auto& canvas = GetHAL().getDisplay();
-    bool valid = validateCarRaster() && validateTrackPaint() && validateTrackPaint(TrackId::TriCross);
+    bool valid = validateTwistedTrackDecks() && validateCarRaster() && validateTrackPaint() && validateTrackPaint(TrackId::TriCross) && validateTrackPaint(TrackId::GrandSpiral);
     const auto checkText = [&] {
         for (const auto& label : canvas.texts) {
             const float halfWidth = label.value.size() * 3.0f * label.size;
@@ -824,12 +884,12 @@ int main(int argc, char** argv)
     save("track");
     garage.render(flow, selection, 0u, PencilDetail::High, {}, {}, true);
     save("device-track");
-    for(auto track:{TrackId::SkyLoop,TrackId::TriCross,TrackId::SkyLoop}) {
+    for(auto track:{TrackId::SkyLoop,TrackId::TriCross,TrackId::GrandSpiral,TrackId::SkyLoop}) {
     flow.selectTrack(track);
     for(auto detail:{PencilDetail::Low,PencilDetail::Medium,PencilDetail::High}) for (unsigned orbit = 0; orbit < 16u; ++orbit) {
         garage.render(flow, selection, orbit * 2454u, detail);
         checkText();
-        if(orbit==0 && detail==PencilDetail::High)save(track==TrackId::SkyLoop ? "track-0" : "track-1");
+        if(orbit==0 && detail==PencilDetail::High)save("track-"+std::to_string(int(track)));
         const auto& pixels=canvas.frame();
         for(int y=0;y<466;++y) for(int x=0;x<466;++x) {
             if(y>=87 && y<=89 && x>=215 && x<251)continue; // Header tricolor mark.
@@ -905,7 +965,7 @@ int main(int argc, char** argv)
     }
     // Reuse the same opened renderer across courses; stale road/minimap caches
     // would make the following image differ from a freshly opened renderer.
-    for(auto track:{TrackId::TriCross,TrackId::SkyLoop}) {
+    for(auto track:{TrackId::GrandSpiral,TrackId::TriCross,TrackId::SkyLoop}) {
         auto setup=flow.setup();setup.track=track;race.prepare(setup,0x12345678u);
         for(int sample=0;sample<96;++sample) {
             auto& state=const_cast<RaceSnapshot&>(race.snapshot());
@@ -914,6 +974,7 @@ int main(int argc, char** argv)
             const auto detail=sample%3==0 ? PencilDetail::High : sample%3==1 ? PencilDetail::Medium : PencilDetail::Low;
             renderer.render(flow,race,results,0,false,detail);checkText();
             if(track==TrackId::TriCross && sample%16==0)save("tri-race-"+std::to_string(sample));
+            if(track==TrackId::GrandSpiral && sample%4==0)save("spiral-race-"+std::to_string(sample));
         }
         renderer.render(flow,race,results,0,false,PencilDetail::High);
         const auto reused=canvas.frame();
@@ -1319,6 +1380,29 @@ int main(int argc, char** argv)
         setup.rivalMask=0;run.prepare(setup,42);
         cached.render(drive,run,results,0,false,PencilDetail::High,true);
     }
+    // Actual device quality path: half-resolution scene, native player, edge
+    // refinement, both extreme steering positions and near-clipped opponents.
+    hero.setEdgeUpscale(true);
+    for(unsigned car=0;car<kCarCount;++car) {
+        GameFlow drive;drive.useDeviceControls();drive.selectPlayerCar(CarId(car));drive.confirmPlayerCar();drive.completeCarShowcase();
+        drive.toggleRival(CarId((car+1)%kCarCount));drive.toggleRival(CarId((car+2)%kCarCount));
+        drive.confirmRivals();drive.selectTrack(TrackId::GrandSpiral);drive.confirmTrack();drive.completeGridIntro();drive.completeCountdown();
+        RaceController run;run.prepare(drive.setup(),42);
+        for(int sample=0;sample<16;++sample) {
+            auto& state=const_cast<RaceSnapshot&>(run.snapshot());
+            for(std::size_t i=0;i<state.carCount;++i) {
+                auto& c=state.cars[i];c.motion.distance=sample*run.track().length()/16;
+                c.motion.speed=12.f;c.motion.lateralOffset=c.player ? (sample%3-1)*1.3f : (i%2 ? .55f : -.55f);
+                if(!c.player)c.motion.distance+=i%2 ? .5f : sample%4==3 ? -2.2f : -.25f;
+            }
+            hero.setTrackCulling(true);hero.render(drive,run,results,0,false,PencilDetail::Low,true);
+            const auto culled=canvas.frame();
+            if(car==0)save("spiral-device-"+std::to_string(sample));
+            hero.setTrackCulling(false);hero.render(drive,run,results,0,false,PencilDetail::Low,true);
+            if(culled!=canvas.frame()) {std::cerr<<"Device-quality spiral culling mismatch\n";valid=false;}
+        }
+    }
+    std::cout<<"Grand Spiral device-quality path: 128 three-car poses, culling equality\n";
     cached.close();original.close();hero.close();wire.close();canvas.createSprite(466,466);
     std::cout << "Production renderer frames: " << directory << '\n';
     return valid ? 0 : 1;

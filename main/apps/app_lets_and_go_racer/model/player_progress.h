@@ -8,7 +8,7 @@
 
 namespace lets_and_go {
 
-inline constexpr uint8_t kPlayerProgressVersion = 2u;
+inline constexpr uint8_t kPlayerProgressVersion = 3u;
 
 struct PlayerProgress {
     uint8_t version = kPlayerProgressVersion;
@@ -28,13 +28,21 @@ inline PlayerProgress sanitizePlayerProgress(PlayerProgress progress)
 }
 
 // V1 persisted one track in an eight-byte native struct. Explicit migration
-// preserves the selected car and SKY LOOP record when adding the second track.
+// preserves the selected car and SKY LOOP record; V2 also preserves TRI CROSS.
 inline PlayerProgress decodePlayerProgress(const void* bytes, std::size_t size)
 {
     if (!bytes) return {};
     PlayerProgress progress{};
     if (size == sizeof(PlayerProgress)) {
         std::memcpy(&progress, bytes, size);
+    } else if(size==12u) {
+        struct V2 { uint8_t version; CarId lastCar; std::array<uint32_t,2> lap; };
+        static_assert(sizeof(V2)==12, "V2 NVS layout");
+        V2 legacy{};std::memcpy(&legacy,bytes,size);
+        if(legacy.version!=2)return {};
+        progress.lastCar=legacy.lastCar;
+        progress.bestLapMilliseconds[0]=legacy.lap[0];
+        progress.bestLapMilliseconds[1]=legacy.lap[1];
     } else {
         struct LegacyProgress { uint8_t version; CarId lastCar; uint32_t lap; };
         static_assert(sizeof(LegacyProgress)==8, "V1 NVS layout");

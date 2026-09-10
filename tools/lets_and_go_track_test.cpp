@@ -87,6 +87,57 @@ bool validateProjection()
     return valid;
 }
 
+bool validateGrandSpiral()
+{
+    OverpassTrack track(TrackId::GrandSpiral);
+    bool valid=check(track.length()>210 && track.length()<260,"Grand Spiral length");
+    constexpr int count=1440;
+    std::array<TrackFrame,count+1> frame{};
+    float clearance=100,maxCurvature=0,maxGrade=0;
+    for(int i=0;i<=count;++i) {
+        frame[i]=track.sample(track.length()*i/count);
+        const auto& f=frame[i];
+        valid &= check(std::isfinite(f.curvature) && std::abs(trackLength(f.tangent)-1)<.001f,"Spiral finite frame");
+        maxCurvature=std::max(maxCurvature,std::abs(f.curvature));maxGrade=std::max(maxGrade,std::abs(f.tangent.y));
+        if(i)valid &= check(trackLength(trackSubtract(f.center,frame[i-1].center))<.18f &&
+            trackDot(f.tangent,frame[i-1].tangent)>.997f,"Spiral closure/tangent discontinuity");
+    }
+    int crossings=0,cameraChecks=0;
+    for(int i=0;i<count;++i)for(int j=i+2;j<count;++j) {
+        if(std::min(j-i,count-(j-i))*track.length()/count<7.f)continue;
+        const auto a=frame[i].center,b=frame[i+1].center,c=frame[j].center,d=frame[j+1].center;
+        if(std::hypot(a.x-c.x,a.z-c.z)<3.75f)clearance=std::min(clearance,std::abs(a.y-c.y));
+        const float ux=b.x-a.x,uz=b.z-a.z,vx=d.x-c.x,vz=d.z-c.z,det=ux*vz-uz*vx;
+        if(std::abs(det)<1e-7f)continue;
+        const float t=((c.x-a.x)*vz-(c.z-a.z)*vx)/det,s=((c.x-a.x)*uz-(c.z-a.z)*ux)/det;
+        if(t>=0 && t<1 && s>=0 && s<1) {
+            ++crossings;
+            valid &= check(std::abs(a.y+(b.y-a.y)*t-c.y-(d.y-c.y)*s)>4.f,"Spiral crossing clearance");
+        }
+    }
+    // Check the entire carriageway, banked edges and both extreme follow-camera positions.
+    for(int i=0;i<count;i+=4)for(float lateral:{-1.36f,0.f,1.36f}) {
+        const auto camera=makeRacerChaseCamera(frame[i],lateral,468,466);
+        for(int j=0;j<count;++j) {
+            const int separation=std::abs(i-j);
+            if(std::min(separation,count-separation)*track.length()/count<7.f)continue;
+            const auto delta=trackSubtract(camera.position,frame[j].center);
+            if(std::abs(trackDot(delta,frame[j].lateral))>1.95f ||
+               std::abs(delta.x*frame[j].tangent.x+delta.z*frame[j].tangent.z)>.18f)continue;
+            const float roadY=frame[j].center.y+std::sin(frame[j].bankRadians)*trackDot(delta,frame[j].lateral);
+            valid &= check(camera.position.y<roadY-.35f || camera.position.y>roadY+.65f,"Camera intersects remote road/wall");
+            ++cameraChecks;
+        }
+    }
+    valid &= check(crossings==3 && clearance>3.f && cameraChecks>0,"Spiral full-width crossing separation");
+    valid &= check(maxGrade<.5f && maxCurvature*OverpassTrack::kHalfWidth<.6f,"Spiral slope/inner edge folding");
+    valid &= check(trackLength(trackSubtract(track.sample(-.1f).center,track.sample(track.length()-.1f).center))<.001f,"Spiral negative wrap");
+    track.select(TrackId::SkyLoop);valid &= check(track.length()<100,"Spiral switch left stale state");
+    std::cout<<"Grand Spiral: crossings="<<crossings<<" clearance="<<clearance<<" curvature="<<maxCurvature
+             <<" grade="<<maxGrade<<" camera_checks="<<cameraChecks<<'\n';
+    return valid;
+}
+
 bool validateTriCross()
 {
     OverpassTrack track(TrackId::TriCross);
@@ -134,5 +185,5 @@ bool validateTriCross()
 
 int main()
 {
-    return validateTrack() && validateTriCross() && validateProjection() ? 0 : 1;
+    return validateTrack() && validateTriCross() && validateGrandSpiral() && validateProjection() ? 0 : 1;
 }

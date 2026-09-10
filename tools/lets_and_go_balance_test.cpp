@@ -41,7 +41,7 @@ bool run(CarId car, uint32_t seed, int strategy, Sweep& sweep,TrackId track)
 
 int main()
 {
-    for(auto track:{TrackId::SkyLoop,TrackId::TriCross}) for (std::size_t car = 0; car < kCarCount; ++car) {
+    for(auto track:{TrackId::SkyLoop,TrackId::TriCross,TrackId::GrandSpiral}) for (std::size_t car = 0; car < kCarCount; ++car) {
         Sweep idle, boost, passing;
         for (uint32_t seed = 1u; seed <= 32u; ++seed) {
             if (!run(static_cast<CarId>(car), seed, 0, idle,track) ||

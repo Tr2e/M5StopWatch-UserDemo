@@ -1,4 +1,5 @@
 #include "overpass_track.h"
+#include "grand_spiral_data.h"
 #include "../lets_and_go_config.h"
 
 #include <algorithm>
@@ -66,6 +67,7 @@ OverpassTrack::OverpassTrack(TrackId id)
 void OverpassTrack::select(TrackId id)
 {
     _id = isValidTrack(id) ? id : TrackId::SkyLoop;
+    if (_id==TrackId::GrandSpiral) { _length=grand_spiral::kLength; return; }
     TrackVec3 previous = centerAtParameter(0.0f);
     _arcLength[0] = 0.0f;
     for (std::size_t index = 1; index <= kArcTableSegments; ++index) {
@@ -95,6 +97,21 @@ float OverpassTrack::parameterAtDistance(float distance) const
 TrackFrame OverpassTrack::sample(float distance) const
 {
     const float wrapped = wrapDistance(distance, _length);
+    if (_id==TrackId::GrandSpiral) {
+        constexpr float step=grand_spiral::kLength/(grand_spiral::kNodes.size()-1);
+        const float index=wrapped/step;
+        const auto i=std::min(std::size_t(index),grand_spiral::kNodes.size()-2);
+        const float t=std::clamp(index-float(i),0.f,1.f),t2=t*t,t3=t2*t;
+        const auto& a=grand_spiral::kNodes[i];const auto& b=grand_spiral::kNodes[i+1];
+        const auto center=trackAdd(trackAdd(trackScale(a.point,2*t3-3*t2+1),trackScale(b.point,-2*t3+3*t2)),
+            trackAdd(trackScale(a.tangent,step*(t3-2*t2+t)),trackScale(b.tangent,step*(t3-t2))));
+        const auto velocity=trackAdd(trackAdd(trackScale(a.point,(6*t2-6*t)/step),trackScale(b.point,(-6*t2+6*t)/step)),
+            trackAdd(trackScale(a.tangent,3*t2-4*t+1),trackScale(b.tangent,3*t2-2*t)));
+        const auto tangent=trackNormalize(velocity);
+        const auto lateral=trackNormalize({tangent.z,0,-tangent.x});
+        const float curvature=a.curvature+(b.curvature-a.curvature)*t;
+        return {center,tangent,lateral,kHalfWidth,curvature,std::clamp(curvature*1.8f,-.20f,.20f),wrapped};
+    }
     const float parameter = parameterAtDistance(wrapped);
     const TrackVec3 center = centerAtParameter(parameter);
     const TrackVec3 derivative = derivativeAtParameter(parameter);
@@ -133,14 +150,14 @@ TrackLayer OverpassTrack::layer(float distance) const
 {
     const float height = sample(distance).center.y;
     if (height < kLowerHeight + 0.9f) return TrackLayer::Lower;
-    const float rise = _id == TrackId::TriCross ? 2.f * kTriCrossLift : kOverpassRise;
+    const float rise = _id==TrackId::GrandSpiral ? 16.f : _id == TrackId::TriCross ? 2.f * kTriCrossLift : kOverpassRise;
     if (height > kLowerHeight + rise - 0.9f) return TrackLayer::Upper;
     return TrackLayer::Transition;
 }
 
 const char* overpassTrackName(TrackId id)
 {
-    return id == TrackId::TriCross ? "TRI CROSS 02" : "SKY LOOP 01";
+    return id==TrackId::GrandSpiral ? "GRAND SPIRAL 03" : id == TrackId::TriCross ? "TRI CROSS 02" : "SKY LOOP 01";
 }
 
 }  // namespace lets_and_go

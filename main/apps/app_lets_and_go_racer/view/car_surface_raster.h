@@ -87,7 +87,7 @@ public:
     }
     // Optional, allocated once on race open. Failure retains the original
     // candidate traversal without growing the main task's stack.
-    bool preferInternalOcclusionRows() { return _fastOcclusionRows.allocate(); }
+    bool preferInternalOcclusionRows() { _fastOcclusionCandidates.allocate(); return _fastOcclusionRows.allocate(); }
     void begin(int x,int y,int width=Width,int height=Height) {
         _x=x;_y=y;
         _width=std::clamp(width,1,Width);_height=std::clamp(height,1,Height);
@@ -221,7 +221,7 @@ public:
     void blit(LGFX_Sprite& canvas,const PencilOcclusion* occlusion=nullptr,float occlusionScale=1.f,
               bool filterRows=true,CarBlitWork* work=nullptr) const {
         const auto* depthBuffer=depthData();const auto* colorBuffer=colorData();
-        std::array<uint16_t,PencilOcclusion::kCapacity> candidates;
+        auto& candidates=_fastOcclusionCandidates.get() ? *_fastOcclusionCandidates.get() : _occlusionCandidates;
         auto* rowCandidates=_fastOcclusionRows.get();
         filterRows=filterRows && rowCandidates;
         std::size_t count=0;
@@ -320,7 +320,8 @@ private:
     const RacePaintAtlas* _paintAtlas=nullptr;
     using Pixels=std::array<uint16_t,Width*Height>;
     RenderScratch<Pixels> _fastDepth,_fastColor;
-    RenderScratch<std::array<uint16_t,PencilOcclusion::kCapacity>> _fastOcclusionRows;
+    mutable std::array<uint16_t,PencilOcclusion::kCapacity> _occlusionCandidates{};
+    RenderScratch<std::array<uint16_t,PencilOcclusion::kCapacity>> _fastOcclusionRows,_fastOcclusionCandidates;
     uint16_t* depthData() {return _fastDepth.get() ? _fastDepth.get()->data() : _depth.data();}
     const uint16_t* depthData() const {return _fastDepth.get() ? _fastDepth.get()->data() : _depth.data();}
     uint16_t* colorData() {return _fastColor.get() ? _fastColor.get()->data() : _color.data();}

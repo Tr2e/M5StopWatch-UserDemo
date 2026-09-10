@@ -1,0 +1,10 @@
+{
+  "mesh_segments": 160,
+  "max_center_chord_error": 0.04547637221884716,
+  "length": 232.5169776072142,
+  "nodes": 512,
+  "max_grade_sine": 0.4847239466255646,
+  "max_curvature": 0.27736676746551653,
+  "near_nonadjacent_center_clearance": 3.833375558716744,
+  "planar_crossings": 3
+}

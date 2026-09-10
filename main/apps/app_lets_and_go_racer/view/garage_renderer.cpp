@@ -94,7 +94,7 @@ void drawCar(LGFX_Sprite& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
 
 void drawTrackPreview(LGFX_Sprite& canvas, const PencilTrack& preview,
                       uint32_t screenElapsedMs, PencilDetail detail,PencilOcclusion& surfaces,
-                      TrackId track)
+                      TrackId track,bool decorations)
 {
     // A bounded three-quarter orbit keeps the bridge readable and the whole
     // course inside the round display, even when the selection page is idle.
@@ -107,9 +107,22 @@ void drawTrackPreview(LGFX_Sprite& canvas, const PencilTrack& preview,
                                                      {0.0f, complex ? 2.0f : 1.4f, 0.0f},
                                                      canvas.width(), canvas.height(), 0.81f);
     camera.principalY-=18;
+    if(track==TrackId::GrandSpiral) {
+        TrackVec3 low{1e6f,1e6f,1e6f},high{-1e6f,-1e6f,-1e6f};
+        for(std::size_t i=0;i<=preview.count;++i)for(auto p:{preview.left[i],preview.right[i]}) {
+            low.x=std::min(low.x,p.x);low.y=std::min(low.y,p.y);low.z=std::min(low.z,p.z);
+            high.x=std::max(high.x,p.x);high.y=std::max(high.y,p.y);high.z=std::max(high.z,p.z);
+        }
+        const auto target=trackScale(trackAdd(low,high),.5f);
+        const float radius=trackLength(trackSubtract(high,low))*.5f+1.f;
+        const float range=radius*1.8f;
+        const auto position=trackAdd(target,{std::sin(orbit)*range,range*.85f,-std::cos(orbit)*range});
+        camera=makeTrackLookAtCamera(position,target,canvas.width(),canvas.height(),.81f);
+        camera.principalY=canvas.height()*.43f;
+    }
     track_paint::backdrop(canvas,detail);
     drawPencilTrackGround(canvas, camera, preview, detail);
-    drawPencilTrack(canvas, camera, preview, detail,&surfaces);
+    drawPencilTrack(canvas, camera, preview, detail,&surfaces,decorations);
 }
 
 }  // namespace
@@ -324,12 +337,13 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
             _track.select(flow.setup().track);
             _trackPreview.open(_track);
         }
-        drawTrackPreview(canvas, _trackPreview, screenElapsedMs, detail,_surface->trackSurfaces,_track.id());
+        drawTrackPreview(canvas, _trackPreview, screenElapsedMs, detail,_surface->trackSurfaces,_track.id(),
+            _track.id()!=TrackId::GrandSpiral || _trackPreviewDecorations);
         using namespace home_theme;
         setupHeader(canvas,"03 / 03  COURSE",true,track_paint::night);
         label(canvas,overpassTrackName(_track.id()),_width/2,358,2,white,track_paint::floor);
         arrows(canvas,358);
-        label(canvas,_track.id()==TrackId::TriCross ? "2/2  3 CROSSINGS  3 LAPS" : "1/2  1 CROSSING  3 LAPS",
+        label(canvas,_track.id()==TrackId::GrandSpiral ? "3/3  SPIRAL + BRIDGES" : _track.id()==TrackId::TriCross ? "2/3  3 CROSSINGS  3 LAPS" : "1/3  1 CROSSING  3 LAPS",
               _width/2,384,1,muted,track_paint::floor);
         action(canvas,home_layout::setupNext,"START RACE");
         label(canvas,deviceControls ? "A COURSE / B START" : "L/R COURSE / BLUE GO",

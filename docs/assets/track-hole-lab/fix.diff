@@ -1,0 +1,21 @@
+--- before/pencil_scene.h
++++ after/pencil_scene.h
+@@ -462,8 +462,16 @@
+             surface(trackAdd(p,drop),trackAdd(q,drop),trackAdd(q,lift),trackAdd(p,lift),paint.wall);
+         };
+         wall(a,d);wall(b,c);
+-        if(above)surface(a,b,c,d,paint.deck);
+-        else surface(trackAdd(a,drop),trackAdd(b,drop),trackAdd(c,drop),trackAdd(d,drop),underside);
++        // A banked/ramping quad is generally twisted. Its two triangles can
++        // face opposite sides of the camera; sharing one normal opens a hole.
++        const auto deckTriangle=[&](TrackVec3 p,TrackVec3 q,TrackVec3 r) {
++            const auto normal=trackCross(trackSubtract(r,p),trackSubtract(q,p));
++            const bool top=trackDot(normal,trackSubtract(camera.position,p))>=0;
++            if(!top) {p=trackAdd(p,drop);q=trackAdd(q,drop);r=trackAdd(r,drop);}
++            auto face=projectPencilSurface(camera,p,q,r,canvas.width(),canvas.height());
++            face.color=top ? paint.deck : underside;occlusion->append(face);
++        };
++        deckTriangle(a,b,c);deckTriangle(a,c,d);
+         if(above && i==0) {
+             // A two-row chequered band with real area (the old marker was one
+             // pixel-thin line). Its rear edge is exactly the common finish line.
