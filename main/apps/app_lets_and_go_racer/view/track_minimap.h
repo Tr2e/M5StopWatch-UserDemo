@@ -44,7 +44,7 @@ struct TrackMiniMap {
             return ay==by ? a<b : ay<by;
         });
     }
-    void draw(LGFX_Sprite& canvas,int originX=0,int originY=0) const {
+    void draw(lgfx::LGFXBase& canvas,int originX=0,int originY=0) const {
         canvas.fillCircle(centerX-originX,centerY-originY,radius,track_paint::night);
         canvas.drawCircle(centerX-originX,centerY-originY,radius,track_paint::ridge);
         const auto line=[&](Point a,Point b,uint16_t color) {

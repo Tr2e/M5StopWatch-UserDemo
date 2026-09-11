@@ -1476,6 +1476,35 @@ int main(int argc, char** argv)
         }
     }
     std::cout<<"Grand Spiral device-quality path: 128 three-car poses, culling equality\n";
+    // Explicit generic targets must match the compatibility Sprite path. The
+    // race comparison also exercises row pushImage instead of raw Sprite copy.
+    LGFX_Sprite genericTarget;
+    genericTarget.createSprite(468,466);
+    GarageRenderer garageTarget;
+    GameFlow garageFlow;
+    GarageSelection garageSelection;
+    garageTarget.open(468,466);
+    garageFlow.confirmInputAvailable();garageFlow.completeCalibration(true);
+    garageTarget.render(garageFlow,garageSelection,321,PencilDetail::High);
+    const auto garageExpected=canvas.frame();
+    garageTarget.render(genericTarget,garageFlow,garageSelection,321,PencilDetail::High);
+    if(garageExpected!=genericTarget.frame()) {
+        std::cerr<<"Generic garage render target mismatch\n";valid=false;
+    }
+    GameFlow targetFlow;targetFlow.useDeviceControls();
+    targetFlow.selectPlayerCar(CarId::CycloneMagnum);targetFlow.confirmPlayerCar();
+    targetFlow.completeCarShowcase();targetFlow.confirmRivals();targetFlow.confirmTrack();
+    targetFlow.completeGridIntro();targetFlow.completeCountdown();
+    RaceController targetRace;targetRace.prepare(targetFlow.setup(),42);
+    RaceRenderer raceTarget;
+    raceTarget.open(468,466,true,true,true);raceTarget.setEdgeUpscale(true);
+    hero.render(targetFlow,targetRace,results,0,false,PencilDetail::Low,true);
+    const auto raceExpected=canvas.frame();
+    raceTarget.render(genericTarget,nullptr,targetFlow,targetRace,results,0,false,PencilDetail::Low,true);
+    if(raceExpected!=genericTarget.frame()) {
+        std::cerr<<"Generic race render target mismatch\n";valid=false;
+    }
+    garageTarget.close();raceTarget.close();
     cached.close();original.close();hero.close();wire.close();canvas.createSprite(466,466);
     std::cout << "Production renderer frames: " << directory << '\n';
     return valid ? 0 : 1;

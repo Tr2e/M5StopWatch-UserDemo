@@ -101,6 +101,11 @@ public:
     void setBulkSceneCopy(bool enabled) { _bulkSceneCopy=enabled; }
     const RaceRenderStages& stages() const { return _stages; }
     bool halfResolutionActive() const { return bool(_scene); }
+    void render(lgfx::LGFXBase& canvas, LGFX_Sprite* canvasBuffer,
+                const GameFlow& flow, const RaceController& race,
+                const ResultsSelection& results,
+                uint32_t screenElapsedMs, bool pausedForInputLoss,
+                PencilDetail detail, bool deviceControls = false);
     void render(const GameFlow& flow, const RaceController& race,
                 const ResultsSelection& results,
                 uint32_t screenElapsedMs, bool pausedForInputLoss,

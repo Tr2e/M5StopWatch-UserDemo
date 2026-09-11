@@ -218,7 +218,7 @@ public:
             cameraTriangle(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light);
         }
     }
-    void blit(LGFX_Sprite& canvas,const PencilOcclusion* occlusion=nullptr,float occlusionScale=1.f,
+    void blit(lgfx::LGFXBase& canvas,const PencilOcclusion* occlusion=nullptr,float occlusionScale=1.f,
               bool filterRows=true,CarBlitWork* work=nullptr) const {
         const auto* depthBuffer=depthData();const auto* colorBuffer=colorData();
         auto& candidates=_fastOcclusionCandidates.get() ? *_fastOcclusionCandidates.get() : _occlusionCandidates;
@@ -294,7 +294,7 @@ public:
     }
     // Expand only the car coverage, leaving the native UI/background intact.
     // Reuse the existing compact active planes; no second sprite is allocated.
-    void blitScaled(LGFX_Sprite& canvas,int x,int y,int width,int height) const {
+    void blitScaled(lgfx::LGFXBase& canvas,int x,int y,int width,int height) const {
         if(width<=0 || width>Width || height<=0 || height>Height)return;
         std::array<uint16_t,Width> row{},sourceX{};
         for(int px=0;px<width;++px)sourceX[px]=uint16_t((2*px+1)*_width/(2*width));

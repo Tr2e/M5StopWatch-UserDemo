@@ -18,7 +18,7 @@
 namespace lets_and_go {
 namespace {
 
-void drawCar(LGFX_Sprite& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
+void drawCar(lgfx::LGFXBase& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
              GarageSurfaceCache& surface,int centerX,int centerY,float scale,float yaw,
              float wheelPhase,PencilDetail,float pitch=.5713375f,bool pitTheme=false,
              int percent=100,bool inspectionPrepared=false,int displayPercent=100) {
@@ -92,7 +92,7 @@ void drawCar(LGFX_Sprite& canvas,const CarSpec& spec,const CarDisplayMesh& mesh,
 #endif
 }
 
-void drawTrackPreview(LGFX_Sprite& canvas, const PencilTrack& preview,
+void drawTrackPreview(lgfx::LGFXBase& canvas, const PencilTrack& preview,
                       uint32_t screenElapsedMs, PencilDetail detail,PencilOcclusion& surfaces,
                       TrackId track,bool decorations)
 {
@@ -165,8 +165,17 @@ void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selecti
                             const RacerInputStatus& inputStatus,const GarageViewState& view, bool deviceControls,
                             int inspectionPercent,bool reuseInspectionBackground,int inspectionDisplayPercent)
 {
+    render(GetHAL().getCanvas(),flow,selection,screenElapsedMs,detail,inputStatus,view,
+           deviceControls,inspectionPercent,reuseInspectionBackground,inspectionDisplayPercent);
+}
+
+void GarageRenderer::render(lgfx::LGFXBase& canvas,
+                            const GameFlow& flow, const GarageSelection& selection,
+                            uint32_t screenElapsedMs, PencilDetail detail,
+                            const RacerInputStatus& inputStatus,const GarageViewState& view, bool deviceControls,
+                            int inspectionPercent,bool reuseInspectionBackground,int inspectionDisplayPercent)
+{
     if (_width <= 0 || _height <= 0) return;
-    auto& canvas = GetHAL().getCanvas();
     const GameScreen screen = flow.screen();
     // Inspection is quality-first: no adaptive LOD or low-resolution paint atlas.
     if(screen==GameScreen::CarInspect)detail=PencilDetail::High;

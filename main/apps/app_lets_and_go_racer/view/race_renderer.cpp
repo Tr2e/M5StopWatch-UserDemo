@@ -27,7 +27,7 @@ constexpr uint16_t kWarning = 0xd945u;
 constexpr int kUpscaleRowPixels = 480;
 constexpr uint16_t kMapTransparent=0xf81fu;
 
-void drawPanel(LGFX_Sprite& canvas,int x,int y,int width,int height,int radius,uint16_t color)
+void drawPanel(lgfx::LGFXBase& canvas,int x,int y,int width,int height,int radius,uint16_t color)
 {
     canvas.fillRect(x+radius,y,width-2*radius,height,color);
     canvas.fillRect(x,y+radius,width,height-2*radius,color);
@@ -35,7 +35,7 @@ void drawPanel(LGFX_Sprite& canvas,int x,int y,int width,int height,int radius,u
         for(int cy : {y+radius,y+height-radius-1})canvas.fillCircle(cx,cy,radius,color);
 }
 
-void drawRaceCar(LGFX_Sprite& canvas,const TrackCamera& camera,
+void drawRaceCar(lgfx::LGFXBase& canvas,const TrackCamera& camera,
                  const OverpassTrack& track,const PencilTrack& road,const RaceCarSnapshot& car,
                  const RaceSurfaceMesh& mesh,CarSurfaceRaster<112,112>& raster,
                  const PencilOcclusion& occlusion,
@@ -143,7 +143,7 @@ void drawRaceCar(LGFX_Sprite& canvas,const TrackCamera& camera,
 #endif
 }
 
-void drawHud(LGFX_Sprite& canvas, const RaceSnapshot& race,
+void drawHud(lgfx::LGFXBase& canvas, const RaceSnapshot& race,
              const OverpassTrack& track,
              const TrackMiniMap& miniMap,LGFX_Sprite* mapImage,bool deviceControls)
 {
@@ -227,7 +227,7 @@ void formatRaceTime(float seconds, char* output, std::size_t capacity)
                   static_cast<unsigned>(remainder % 1000u));
 }
 
-void drawResults(LGFX_Sprite& canvas, const RaceSnapshot& race,
+void drawResults(lgfx::LGFXBase& canvas, const RaceSnapshot& race,
                  const ResultsSelection& selection,bool deviceControls)
 {
     using namespace home_theme;
@@ -258,7 +258,7 @@ void drawResults(LGFX_Sprite& canvas, const RaceSnapshot& race,
 
 // Fixed stroke geometry avoids font side bearings/baselines: the visible digit
 // bounds are centred on the physical display, including the narrow digit 1.
-void drawCountdown(LGFX_Sprite& canvas,uint32_t elapsed)
+void drawCountdown(lgfx::LGFXBase& canvas,uint32_t elapsed)
 {
     using namespace home_theme;
     const int cx=canvas.width()/2,cy=canvas.height()/2;
@@ -290,7 +290,7 @@ void drawCountdown(LGFX_Sprite& canvas,uint32_t elapsed)
     label(canvas,"GET READY",cx,cy+88,2);
 }
 
-void controlHelp(LGFX_Sprite& canvas,bool deviceControls,int y)
+void controlHelp(lgfx::LGFXBase& canvas,bool deviceControls,int y)
 {
     using namespace home_theme;
     drawPanel(canvas,103,y-17,260,38,8,background);
@@ -369,9 +369,18 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
                           uint32_t screenElapsedMs, bool pausedForInputLoss,
                           PencilDetail detail, bool deviceControls)
 {
+    auto& canvas=GetHAL().getCanvas();
+    render(canvas,&canvas,flow,race,results,screenElapsedMs,pausedForInputLoss,detail,deviceControls);
+}
+
+void RaceRenderer::render(lgfx::LGFXBase& canvas,LGFX_Sprite* canvasBuffer,
+                          const GameFlow& flow, const RaceController& race,
+                          const ResultsSelection& results,
+                          uint32_t screenElapsedMs, bool pausedForInputLoss,
+                          PencilDetail detail, bool deviceControls)
+{
     _stages={};
     if (_width <= 0 || _height <= 0 || !race.prepared()) return;
-    auto& canvas = GetHAL().getCanvas();
     if(!_surface) {
         home_theme::backdrop(canvas);
         canvas.setTextDatum(textdatum_t::middle_center);
@@ -439,7 +448,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         }
         _cachedTrack = race.track().id();
     }
-    auto& scene = _scene ? *_scene : canvas;
+    lgfx::LGFXBase& scene = _scene ? static_cast<lgfx::LGFXBase&>(*_scene) : canvas;
     track_paint::backdrop(scene,detail,false);
     const RaceSnapshot& snapshot = race.snapshot();
     const RaceCarSnapshot& player = snapshot.player();
@@ -469,7 +478,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
 #ifdef ESP_PLATFORM
     uint32_t playerUs=0,opponentsUs=0;
 #endif
-    const auto submit=[&](std::size_t index,LGFX_Sprite& target,const TrackCamera& view,float scale) {
+    const auto submit=[&](std::size_t index,lgfx::LGFXBase& target,const TrackCamera& view,float scale) {
         const auto& car=snapshot.cars[index];
         if(depth[index]<kTrackNearPlane || !car.active || (car.finished && !car.player))return;
         _surface->raster.setPaintAtlas(_playerQuality && car.player ? nullptr : _paintAtlas.get());
@@ -501,7 +510,9 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
         // Sprite storage is byte-swapped RGB565 on M5GFX. Preserve that type
         // so pushImage can copy complete rows without per-pixel conversion.
         using ScenePixel = SceneUpscalePixel;
-        bool direct=_bulkSceneCopy && canvas.width()==_width && canvas.height()==_height;
+        bool direct=_bulkSceneCopy && canvasBuffer &&
+            static_cast<lgfx::LGFXBase*>(canvasBuffer)==&canvas &&
+            canvas.width()==_width && canvas.height()==_height;
 #ifdef ESP_PLATFORM
         int32_t clipX,clipY,clipW,clipH;
         canvas.getClipRect(&clipX,&clipY,&clipW,&clipH);
@@ -511,9 +522,9 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
 #endif
         // Both sprites store the same RGB565 byte order. Copy opaque full rows
         // only under the native layout/clip guard; preserve pushImage fallback.
-        auto* destination=static_cast<ScenePixel*>(canvas.getBuffer());
+        auto* destination=direct ? static_cast<ScenePixel*>(canvasBuffer->getBuffer()) : nullptr;
         direct=direct && destination;
-        const auto* source = static_cast<const ScenePixel*>(scene.getBuffer());
+        const auto* source = static_cast<const ScenePixel*>(_scene->getBuffer());
         std::array<ScenePixel,kUpscaleRowPixels> row;
         auto* edges=edgeUpscaleActive() ? _edgeRow.get() : nullptr;
         if(edges) {

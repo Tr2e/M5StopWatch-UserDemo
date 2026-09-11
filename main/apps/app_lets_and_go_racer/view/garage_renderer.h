@@ -30,6 +30,11 @@ class GarageRenderer {
 public:
     void open(int width, int height);
     void close();
+    void render(lgfx::LGFXBase& canvas,
+                const GameFlow& flow, const GarageSelection& selection,
+                uint32_t screenElapsedMs, PencilDetail detail,
+                const RacerInputStatus& inputStatus = {},const GarageViewState& view = {}, bool deviceControls = false,
+                int inspectionPercent = 100,bool reuseInspectionBackground = false,int inspectionDisplayPercent = 100);
     void render(const GameFlow& flow, const GarageSelection& selection,
                 uint32_t screenElapsedMs, PencilDetail detail,
                 const RacerInputStatus& inputStatus = {},const GarageViewState& view = {}, bool deviceControls = false,

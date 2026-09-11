@@ -98,7 +98,7 @@ inline PencilSurface projectPencilSurface(const TrackCamera& camera,
     return result;
 }
 
-inline void fillPencilSurface(LGFX_Sprite& canvas, const PencilSurface& surface, uint16_t color)
+inline void fillPencilSurface(lgfx::LGFXBase& canvas, const PencilSurface& surface, uint16_t color)
 {
     for (std::size_t i = 1; i + 1u < surface.count; ++i) {
         const auto a = surface.points[0], b = surface.points[i], c = surface.points[i + 1u];
@@ -225,7 +225,7 @@ struct PencilOcclusion {
         surfaces[count++]=surface;
     }
 
-    void paint(LGFX_Sprite& canvas) {
+    void paint(lgfx::LGFXBase& canvas) {
         if(count==0)return;
         auto& rowDepth=fastRows.get() ? fastRows.get()->depth : this->rowDepth;
         auto& rowColor=fastRows.get() ? fastRows.get()->color : this->rowColor;
@@ -296,7 +296,7 @@ struct PencilOcclusion {
 #endif
     }
 
-    void drawLine(LGFX_Sprite& canvas, const TrackCamera& camera,
+    void drawLine(lgfx::LGFXBase& canvas, const TrackCamera& camera,
                   TrackVec3 from, TrackVec3 to, uint16_t color,
                   const uint16_t* candidates=nullptr,std::size_t candidateCount=0) const {
         auto ca = trackToCamera(camera, from), cb = trackToCamera(camera, to);
@@ -367,7 +367,7 @@ inline uint16_t wireShade(uint16_t color,unsigned brightness)
                     ((color&31)*brightness/256));
 }
 
-inline void backdrop(LGFX_Sprite& canvas,PencilDetail detail,bool scenery=true)
+inline void backdrop(lgfx::LGFXBase& canvas,PencilDetail detail,bool scenery=true)
 {
     canvas.fillScreen(night);
     const int horizon=canvas.height()*162/466;
@@ -387,7 +387,7 @@ inline void backdrop(LGFX_Sprite& canvas,PencilDetail detail,bool scenery=true)
 inline TrackVec3 mix(TrackVec3 a,TrackVec3 b,float t) {
     return trackAdd(a,trackScale(trackSubtract(b,a),t));
 }
-inline void line(LGFX_Sprite& canvas,const TrackCamera& camera,
+inline void line(lgfx::LGFXBase& canvas,const TrackCamera& camera,
                  TrackVec3 a,TrackVec3 b,uint16_t color) {
     auto ca=trackToCamera(camera,a),cb=trackToCamera(camera,b);
     TrackScreenPoint p{},q{};
@@ -396,7 +396,7 @@ inline void line(LGFX_Sprite& canvas,const TrackCamera& camera,
        clipTrackSegmentToViewport(p,q,canvas.width()-1,canvas.height()-1))
         canvas.drawLine(std::lround(p.x),std::lround(p.y),std::lround(q.x),std::lround(q.y),color);
 }
-inline void quad(LGFX_Sprite& canvas,const TrackCamera& camera,
+inline void quad(lgfx::LGFXBase& canvas,const TrackCamera& camera,
                  TrackVec3 a,TrackVec3 b,TrackVec3 c,TrackVec3 d,uint16_t color,
                  PencilOcclusion* occlusion=nullptr) {
     for(const auto& face : {projectPencilSurface(camera,a,b,c,canvas.width(),canvas.height()),
@@ -409,7 +409,7 @@ inline void quad(LGFX_Sprite& canvas,const TrackCamera& camera,
 
 // An overview-only ground wash and sparse bridge bents. No supports are placed
 // at the crossing itself, so the lower carriageway stays visibly unobstructed.
-inline void drawPencilTrackGround(LGFX_Sprite& canvas,const TrackCamera& camera,
+inline void drawPencilTrackGround(lgfx::LGFXBase& canvas,const TrackCamera& camera,
                                   const PencilTrack& track,PencilDetail detail)
 {
     using namespace track_paint;
@@ -462,7 +462,7 @@ inline bool pencilSegmentVisible(const TrackCamera& camera,const PencilTrack& tr
            f*p.y+(height-1-camera.principalY)*p.z >= -radius*planeScale[3];
 }
 
-inline void drawPencilTrack(LGFX_Sprite& canvas, const TrackCamera& camera,
+inline void drawPencilTrack(lgfx::LGFXBase& canvas, const TrackCamera& camera,
     const PencilTrack& track, PencilDetail detail, PencilOcclusion* occlusion,bool decorations=true,
     bool wireframe=false)
 {

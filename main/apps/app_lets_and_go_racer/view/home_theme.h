@@ -11,19 +11,19 @@ inline constexpr uint16_t background=0x1083, panel=0x18e5, line=0x39c8;
 inline constexpr uint16_t white=0xf7be, muted=0xa554, red=0xe187, blue=0x2c5f;
 inline constexpr uint16_t green=0x6e0f;
 
-inline void label(LGFX_Sprite& canvas,const char* text,int x,int y,int size,
+inline void label(lgfx::LGFXBase& canvas,const char* text,int x,int y,int size,
                   uint16_t color=white,uint16_t fill=background) {
     canvas.setTextDatum(textdatum_t::middle_center);
     canvas.setTextSize(size);canvas.setTextColor(color,fill);canvas.drawString(text,x,y);
 }
-inline void backdrop(LGFX_Sprite& canvas) {
+inline void backdrop(lgfx::LGFXBase& canvas) {
     canvas.fillScreen(background);
 }
-inline void stripes(LGFX_Sprite& canvas,int center,int y) {
+inline void stripes(lgfx::LGFXBase& canvas,int center,int y) {
     canvas.fillRect(center-48,y,44,4,red);
     canvas.fillRect(center+4,y,44,4,blue);
 }
-inline void action(LGFX_Sprite& canvas,home_layout::Rect rect,const char* title,
+inline void action(lgfx::LGFXBase& canvas,home_layout::Rect rect,const char* title,
                    const char* hint=nullptr,uint16_t fill=red) {
     canvas.fillRect(rect.x,rect.y,rect.width,rect.height,fill);
     canvas.fillTriangle(rect.x,rect.y,rect.x+10,rect.y,rect.x,rect.y+10,background);
@@ -34,7 +34,7 @@ inline void action(LGFX_Sprite& canvas,home_layout::Rect rect,const char* title,
     label(canvas,title,cx,rect.y+(hint ? 22 : rect.height/2),2,white,fill);
     if(hint)label(canvas,hint,cx,rect.y+44,1,white,fill);
 }
-inline void setupHeader(LGFX_Sprite& canvas,const char* title,bool back=true,uint16_t fill=background) {
+inline void setupHeader(lgfx::LGFXBase& canvas,const char* title,bool back=true,uint16_t fill=background) {
     label(canvas,"LET'S & GO!!",canvas.width()/2,43,2,white,fill);
     label(canvas,title,canvas.width()/2,70,1,muted,fill);
     if(back) {
@@ -42,13 +42,13 @@ inline void setupHeader(LGFX_Sprite& canvas,const char* title,bool back=true,uin
         canvas.drawLine(116,70,123,77,muted);
     }
 }
-inline void arrows(LGFX_Sprite& canvas,int y) {
+inline void arrows(lgfx::LGFXBase& canvas,int y) {
     canvas.fillCircle(123,y,20,panel);
     canvas.fillCircle(canvas.width()-123,y,20,panel);
     canvas.fillTriangle(117,y,129,y-7,129,y+7,red);
     canvas.fillTriangle(canvas.width()-117,y,canvas.width()-129,y-7,canvas.width()-129,y+7,blue);
 }
-inline void entry(LGFX_Sprite& canvas,bool calibrating,const RacerInputStatus& status) {
+inline void entry(lgfx::LGFXBase& canvas,bool calibrating,const RacerInputStatus& status) {
     backdrop(canvas);const int cx=canvas.width()/2;
     label(canvas,"RACE GARAGE",cx,46,1,muted);
     label(canvas,"LET'S & GO!!",cx,80,3);
