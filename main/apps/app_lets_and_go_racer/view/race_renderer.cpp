@@ -40,27 +40,13 @@ void drawCollisionWarning(lgfx::LGFXBase& canvas,const RacerState& motion,int wi
     if (!(motion.wallImpact > 0.05f)) return;
     using namespace home_theme;
     const bool right=motion.lateralOffset>=0.f;
-    const int inward=right ? -1 : 1;
-    const int railX=right ? width-15 : 11;
-    const int edgeX=right ? width-18 : 18;
-
-    // A compact, side-aware instrument replaces the unrelated full-screen
-    // rings. Panel underlay keeps the warning readable over either road color.
-    for(int y:{184,207,252})canvas.fillRect(railX,y,4,y==207 ? 40 : 17,panel);
-    for(int y:{186,209,254})canvas.fillRect(railX+(right ? 1 : 0),y,2,y==209 ? 36 : 13,red);
-    canvas.drawLine(edgeX,179,edgeX+inward*13,179,red);
-    canvas.drawLine(edgeX,274,edgeX+inward*13,274,red);
-    for(int cy:{215,238,261}) {
-        const int base=edgeX+inward*5,tip=edgeX+inward*20;
-        for(int offset=-2;offset<=2;++offset) {
-            canvas.drawLine(base,cy-7+offset,tip,cy+offset,panel);
-            canvas.drawLine(tip,cy+offset,base,cy+7+offset,panel);
-        }
-        canvas.drawLine(base,cy-7,tip,cy,red);
-        canvas.drawLine(tip,cy,base,cy+7,red);
-    }
-    if(motion.wallImpact>.55f)
-        canvas.fillRect(edgeX+inward*25,236,3,5,white);
+    const int cx=right ? width-34 : 34;
+    // One familiar warning symbol is enough. A dark two-pixel silhouette keeps
+    // the red triangle legible over both course colors without extra HUD noise.
+    canvas.fillTriangle(cx,190,cx-23,233,cx+23,233,panel);
+    canvas.fillTriangle(cx,193,cx-19,230,cx+19,230,red);
+    canvas.fillRect(cx-2,204,4,14,white);
+    canvas.fillRect(cx-2,222,4,4,white);
 }
 
 void drawRaceCar(lgfx::LGFXBase& canvas,const TrackCamera& camera,
