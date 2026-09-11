@@ -547,7 +547,7 @@ void captureCarStructures(const std::string& directory)
 
 bool validateRaceCarRoadContact()
 {
-    float legacyPenetration=0,newMinimumClearance=1e9f,maxSupportLift=0;
+    float legacyPenetration=0,newMinimumClearance=1e9f,maxSupportLift=0,maxAttitudeStep=0;
     std::size_t poses=0;
     for(auto id:{TrackId::SkyLoop,TrackId::TriCross,TrackId::GrandSpiral}) {
         OverpassTrack track(id);PencilTrack road;road.open(track);
@@ -586,12 +586,31 @@ bool validateRaceCarRoadContact()
                 }
                 ++poses;
             }
+        // At the fastest tuned speed a 30 FPS frame advances about 0.8 world
+        // units. The visual attitude must follow the continuous course frame
+        // instead of snapping to each 1-2 unit road triangle.
+        const int frameCount=std::max(1,int(std::ceil(track.length()/.8f)));
+        for(float lane:{-1.36f,0.f,1.36f}) for(float heading:{-.2f,0.f,.2f}) {
+            RaceCarPose previous{};bool first=true;
+            for(int frameIndex=0;frameIndex<frameCount;++frameIndex) {
+                RaceCarSnapshot car;car.active=true;
+                car.motion.distance=track.length()*frameIndex/frameCount;
+                car.motion.lateralOffset=lane;car.motion.headingOffset=heading;
+                const auto pose=makeRaceCarPose(track,road,car);
+                if(!first) {
+                    const float dot=std::clamp(trackDot(previous.up,pose.up),-1.f,1.f);
+                    maxAttitudeStep=std::max(maxAttitudeStep,std::acos(dot));
+                }
+                previous=pose;first=false;
+            }
+        }
     }
     std::cout<<"Road contact: "<<poses<<" poses, legacy penetration="<<legacyPenetration
-             <<", minimum clearance="<<newMinimumClearance<<", max support lift="<<maxSupportLift<<'\n';
+             <<", minimum clearance="<<newMinimumClearance<<", max support lift="<<maxSupportLift
+             <<", max 0.8-unit attitude step="<<maxAttitudeStep*57.2957795f<<"deg\n";
     if(newMinimumClearance<kRaceCarRoadClearance-.00002f ||
-       maxSupportLift>.10f || !std::isfinite(newMinimumClearance)) {
-        std::cerr<<"Race car entered the rendered downhill/start-line surface\n";return false;
+       maxSupportLift>.10f || maxAttitudeStep>.21f || !std::isfinite(newMinimumClearance)) {
+        std::cerr<<"Race car entered the road or snapped between rendered triangles\n";return false;
     }
     return true;
 }

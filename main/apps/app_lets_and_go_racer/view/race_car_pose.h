@@ -34,7 +34,11 @@ inline RaceCarPose makeRaceCarPose(const OverpassTrack& track,const PencilTrack&
     pose.base=trackAdd(rearRoad,trackScale(trackSubtract(frontRoad,rearRoad),axleBlend));
     const auto roadRight=trackNormalize(trackAdd(frame.lateral,
         {0,std::sin(frame.bankRadians),0}));
-    auto forward=trackNormalize(trackSubtract(frontRoad,rearRoad));
+    // Keep height and tire support fitted to the rendered triangles, but use
+    // the continuous course tangent for attitude. Deriving forward from two
+    // triangle samples made the body snap to a new face every few frames at
+    // racing speed, which read as suspension bump on an otherwise smooth road.
+    auto forward=trackNormalize(frame.tangent);
     forward=trackNormalize(trackSubtract(forward,trackScale(roadRight,trackDot(forward,roadRight))));
     pose.up=trackNormalize(trackCross(forward,roadRight));
 
