@@ -39,6 +39,8 @@ public:
     }
     unsigned physicalDisplays() const { return displayCount; }
     void resetDisplayCount() { displayCount=0; }
+    unsigned fullWidthImageWrites() const { return fullWidthWrites; }
+    unsigned fullWidthImageRows() const { return fullWidthRows; }
     void setPsram(bool) {}
     void setColorDepth(int) {}
     void* createSprite(int width, int height) {
@@ -69,6 +71,7 @@ public:
             for (int px = std::max(0, x); px < std::min(width(), x + w); ++px) pixel(px, py, color);
     }
     void pushImage(int x,int y,int w,int h,const uint16_t* colors) {
+        if(x==0 && w==width()) { ++fullWidthWrites;fullWidthRows+=h; }
         for(int row=0;row<h;++row)for(int col=0;col<w;++col)
             pixel(x+col,y+row,colors[row*w+col]);
     }
@@ -150,7 +153,7 @@ private:
     int textSize = 1;
     uint16_t foreground = 0, background = 0xffff;
     int32_t clipX=0,clipY=0,clipW=466,clipH=466;
-    unsigned writeDepth=0,displayCount=0;
+    unsigned writeDepth=0,displayCount=0,fullWidthWrites=0,fullWidthRows=0;
     bool autoDisplay=true;
 };
 namespace lgfx { using LGFXBase = ::LGFX_Device; }

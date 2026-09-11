@@ -540,14 +540,19 @@ void RaceRenderer::render(lgfx::LGFXBase& canvas,LGFX_Sprite* canvasBuffer,
                 auto* next=edges->source[(y+2)%3].data();
                 std::memcpy(next,source+std::min<int>(scene.height()-1,y+1)*scene.width(),scene.width()*sizeof(uint16_t));
                 upscaleEdgeRow(edges->source[y%3].data(),edges->source[(y+1)%3].data(),
-                    next,scene.width(),edges->upper.data(),edges->lower.data());
-                first=reinterpret_cast<const ScenePixel*>(edges->upper.data());
-                second=reinterpret_cast<const ScenePixel*>(edges->lower.data());
+                    next,scene.width(),edges->output.data(),edges->output.data()+_width);
+                first=reinterpret_cast<const ScenePixel*>(edges->output.data());
+                second=first+_width;
             } else for (int x = 0; x < scene.width(); ++x)
                 row[x*2] = row[x*2+1] = source[y*scene.width()+x];
-            if(direct) {
+            if(direct && edges) {
+                std::memcpy(destination+(y*2)*_width,first,
+                            2*_width*sizeof(ScenePixel));
+            } else if(direct) {
                 std::memcpy(destination+(y*2)*_width,first,_width*sizeof(ScenePixel));
                 std::memcpy(destination+(y*2+1)*_width,second,_width*sizeof(ScenePixel));
+            } else if(edges) {
+                canvas.pushImage(0,y*2,_width,2,first);
             } else {
                 canvas.pushImage(0,y*2,_width,1,first);
                 canvas.pushImage(0,y*2+1,_width,1,second);

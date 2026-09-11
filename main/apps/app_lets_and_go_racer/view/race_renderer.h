@@ -128,7 +128,9 @@ private:
     bool _edgeUpscale=false;
     struct EdgeRows {
         std::array<std::array<uint16_t,240>,3> source;
-        std::array<uint16_t,480> upper,lower;
+        // Both destination rows are contiguous so the display backend can
+        // submit one 2-row window instead of two 1-row windows.
+        std::array<uint16_t,960> output;
     };
     RenderScratch<EdgeRows> _edgeRow;
     bool _playerQuality=false;

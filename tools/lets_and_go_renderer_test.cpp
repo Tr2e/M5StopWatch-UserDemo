@@ -1500,9 +1500,15 @@ int main(int argc, char** argv)
     raceTarget.open(468,466,true,true,true);raceTarget.setEdgeUpscale(true);
     hero.render(targetFlow,targetRace,results,0,false,PencilDetail::Low,true);
     const auto raceExpected=canvas.frame();
+    const auto writesBefore=genericTarget.fullWidthImageWrites();
+    const auto rowsBefore=genericTarget.fullWidthImageRows();
     raceTarget.render(genericTarget,nullptr,targetFlow,targetRace,results,0,false,PencilDetail::Low,true);
     if(raceExpected!=genericTarget.frame()) {
         std::cerr<<"Generic race render target mismatch\n";valid=false;
+    }
+    if(genericTarget.fullWidthImageWrites()-writesBefore!=233u ||
+       genericTarget.fullWidthImageRows()-rowsBefore!=466u) {
+        std::cerr<<"Half-resolution rows were not submitted in pairs\n";valid=false;
     }
     targetFlow.finishRace();targetFlow.showResults();
     raceTarget.render(targetFlow,targetRace,results,0,false,PencilDetail::Low,true);
