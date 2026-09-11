@@ -258,7 +258,7 @@ void GarageRenderer::render(lgfx::LGFXBase& canvas,
 
     if (screen == GameScreen::CarSelect) {
         using namespace home_theme;
-        label(canvas,"LET'S & GO!!",_width/2,43,2);
+        label(canvas,"MINI 4WD",_width/2,43,2);
         char title[32];
         std::snprintf(title,sizeof(title),"MACHINE %02u / %02u",unsigned(visibleCar)+1,unsigned(kCarCount));
         label(canvas,title,_width/2,70,2);

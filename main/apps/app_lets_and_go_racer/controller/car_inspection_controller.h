@@ -4,10 +4,7 @@
 namespace lets_and_go {
 
 inline GarageViewState inspectionDefaultPose() {
-    GarageViewState result{};
-    result.yaw=-.65f;
-    result.pitch=.32f;
-    return result;
+    return GarageViewState{};
 }
 
 // Dedicated camera state. Browsing may move the garage cursor, but this class

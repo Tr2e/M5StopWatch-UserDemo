@@ -11,7 +11,11 @@ int main()
 {
     GarageViewController motion;motion.reset(CarId::CycloneMagnum,0);
     assert(near(motion.state(1000).wheelPhase,0));
-    const float idleYaw=motion.state(1000).yaw;
+    const auto idle=motion.state(1000);
+    const float idleYaw=idle.yaw;
+    const auto inspectionDefault=inspectionDefaultPose();
+    assert(near(idle.yaw,-.65f) && near(idle.pitch,.32f));
+    assert(near(idle.yaw,inspectionDefault.yaw) && near(idle.pitch,inspectionDefault.pitch));
     assert(near(idleYaw,motion.state(9000).yaw));
     assert(!motion.animating(1000));
     motion.changeView(1,1000);

@@ -14,7 +14,8 @@ struct PreviewDrag {
     bool active=false,changed=false;
 };
 struct GarageViewState {
-    float yaw=-.65f,pitch=.5713375f,scale=140.f,centerY=252.f;
+    // Shared front three-quarter pose for Car Select and View Car.
+    float yaw=-.65f,pitch=.32f,scale=140.f,centerY=252.f;
     float carSlide=0.f,carZoom=1.f;
     float wheelPhase=0.f;
     GarageView preset=GarageView::Front;

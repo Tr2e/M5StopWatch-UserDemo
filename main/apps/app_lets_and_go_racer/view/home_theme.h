@@ -35,7 +35,7 @@ inline void action(lgfx::LGFXBase& canvas,home_layout::Rect rect,const char* tit
     if(hint)label(canvas,hint,cx,rect.y+44,1,white,fill);
 }
 inline void setupHeader(lgfx::LGFXBase& canvas,const char* title,bool back=true,uint16_t fill=background) {
-    label(canvas,"LET'S & GO!!",canvas.width()/2,43,2,white,fill);
+    label(canvas,"MINI 4WD",canvas.width()/2,43,2,white,fill);
     label(canvas,title,canvas.width()/2,70,1,muted,fill);
     if(back) {
         canvas.drawLine(123,63,116,70,muted);
@@ -51,7 +51,7 @@ inline void arrows(lgfx::LGFXBase& canvas,int y) {
 inline void entry(lgfx::LGFXBase& canvas,bool calibrating,const RacerInputStatus& status) {
     backdrop(canvas);const int cx=canvas.width()/2;
     label(canvas,"RACE GARAGE",cx,46,1,muted);
-    label(canvas,"LET'S & GO!!",cx,80,3);
+    label(canvas,"MINI 4WD",cx,80,3);
     stripes(canvas,cx,108);
     label(canvas,calibrating ? "CENTER JOYSTICK" : "MINI 4WD",cx,151,calibrating ? 2 : 4);
     if(calibrating) {
