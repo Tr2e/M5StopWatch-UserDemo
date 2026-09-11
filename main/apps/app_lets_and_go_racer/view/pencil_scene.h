@@ -168,6 +168,40 @@ struct PencilTrack {
             bounds[i]={center,radius};
         }
     }
+    // Return the exact piecewise-triangular surface used by drawPencilTrack.
+    // Vehicle placement must follow this mesh rather than the analytic
+    // centreline, otherwise a rigid car can enter a downhill chord or the
+    // start/finish seam while the road still looks continuous.
+    TrackVec3 roadPoint(const OverpassTrack& track,float distance,float lateralOffset) const {
+        const float length=track.length();
+        float wrapped=std::fmod(distance,length);
+        if(wrapped<0)wrapped+=length;
+        std::size_t segment=0;
+        float along=0;
+        if(track.id()==TrackId::GrandSpiral) {
+            const auto upper=std::upper_bound(grand_spiral::kRenderDistances.begin(),
+                grand_spiral::kRenderDistances.end(),wrapped);
+            segment=std::min<std::size_t>(
+                std::max<std::ptrdiff_t>(0,upper-grand_spiral::kRenderDistances.begin()-1),count-1);
+            const float from=grand_spiral::kRenderDistances[segment];
+            const float span=grand_spiral::kRenderDistances[segment+1]-from;
+            along=span>.00001f ? (wrapped-from)/span : 0;
+        } else {
+            const float scaled=wrapped*count/length;
+            segment=std::min<std::size_t>(std::size_t(scaled),count-1);
+            along=scaled-segment;
+        }
+        const float across=std::clamp(.5f+.5f*lateralOffset/OverpassTrack::kHalfWidth,0.f,1.f);
+        const auto a=left[segment],b=right[segment];
+        const auto c=right[segment+1],d=left[segment+1];
+        // The road is split a-b-c and a-c-d. Interpolate the matching triangle
+        // so twisted/banked quads produce the same height as the depth planes.
+        return across>=along
+            ? trackAdd(a,trackAdd(trackScale(trackSubtract(b,a),across),
+                                  trackScale(trackSubtract(c,b),along)))
+            : trackAdd(a,trackAdd(trackScale(trackSubtract(c,d),across),
+                                  trackScale(trackSubtract(d,a),along)));
+    }
 };
 
 struct PencilOcclusion {

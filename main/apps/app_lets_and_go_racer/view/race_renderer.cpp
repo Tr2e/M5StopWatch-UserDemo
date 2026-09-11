@@ -2,6 +2,7 @@
 #include "scene_edge_upscale.h"
 
 #include "track_projection.h"
+#include "race_car_pose.h"
 #include "home_theme.h"
 #include "../controller/race_ui_layout.h"
 
@@ -34,44 +35,8 @@ void drawPanel(LGFX_Sprite& canvas,int x,int y,int width,int height,int radius,u
         for(int cy : {y+radius,y+height-radius-1})canvas.fillCircle(cx,cy,radius,color);
 }
 
-struct CarPose {
-    TrackVec3 base;
-    TrackVec3 lateral;
-    TrackVec3 forward;
-    TrackVec3 up;
-};
-
-CarPose makeCarPose(const TrackFrame& frame, const RaceCarSnapshot& car)
-{
-    const float cosine = std::cos(car.motion.headingOffset);
-    const float sine = std::sin(car.motion.headingOffset);
-    CarPose pose;
-    pose.base = trackAdd(frame.center,
-                         trackScale(frame.lateral, car.motion.lateralOffset));
-    pose.base.y += std::sin(frame.bankRadians) * car.motion.lateralOffset;
-    const TrackVec3 right = trackNormalize(trackAdd(frame.lateral,
-        {0.0f, std::sin(frame.bankRadians), 0.0f}));
-    const TrackVec3 forward = trackNormalize(trackSubtract(frame.tangent,
-        trackScale(right, trackDot(frame.tangent, right))));
-    pose.up = trackNormalize(trackCross(forward, right));
-    pose.lateral = trackAdd(trackScale(right, cosine), trackScale(forward, -sine));
-    pose.forward = trackAdd(trackScale(forward, cosine), trackScale(right, sine));
-    return pose;
-}
-
-TrackVec3 carPointToWorld(CarPoint point, const CarPose& pose)
-{
-    point=carPointInTrackBasis(point);
-    constexpr float kCarWorldScale = 0.34f;
-    TrackVec3 result = pose.base;
-    result = trackAdd(result, trackScale(pose.lateral, point.x * kCarWorldScale));
-    result = trackAdd(result, trackScale(pose.forward, point.z * kCarWorldScale));
-    result = trackAdd(result, trackScale(pose.up, 0.015f + point.y * kCarWorldScale));
-    return result;
-}
-
 void drawRaceCar(LGFX_Sprite& canvas,const TrackCamera& camera,
-                 const OverpassTrack& track,const RaceCarSnapshot& car,
+                 const OverpassTrack& track,const PencilTrack& road,const RaceCarSnapshot& car,
                  const RaceSurfaceMesh& mesh,CarSurfaceRaster<112,112>& raster,
                  const PencilOcclusion& occlusion,
                  std::array<PreparedCarPanel,RaceSurfaceMesh::kMaximumPanels+12u>& prepared,
@@ -83,12 +48,11 @@ void drawRaceCar(LGFX_Sprite& canvas,const TrackCamera& camera,
     uint64_t rasterUs=0,blitUs=0;
     unsigned tiles=0;
 #endif
-    const auto frame=track.sample(car.motion.distance);
-    const auto pose=makeCarPose(frame,car);
+    const auto pose=makeRaceCarPose(track,road,car);
     const float phase=car.motion.distance/(.34f*kModelWheelRadius);
     const float cosine=std::cos(phase),sine=std::sin(phase);
     const auto transform=[&](CarPoint p,uint8_t wheel) {
-        return trackToCamera(camera,carPointToWorld(animateCarPanelPoint(p,wheel,cosine,sine),pose));
+        return trackToCamera(camera,raceCarPointToWorld(animateCarPanelPoint(p,wheel,cosine,sine),pose));
     };
     // Adjacent panels share geometry, even where their paint/UVs differ.
     for(std::size_t i=0;i<mesh.vertexCount;++i) {
@@ -512,7 +476,7 @@ void RaceRenderer::render(const GameFlow& flow, const RaceController& race,
 #ifdef ESP_PLATFORM
         const uint64_t beginUs=esp_timer_get_time();
 #endif
-        drawRaceCar(target,view,race.track(),car,_surface->meshes[index],_surface->raster,
+        drawRaceCar(target,view,race.track(),_trackGeometry,car,_surface->meshes[index],_surface->raster,
             _surface->occlusion,_surface->preparedPanels,_surface->projectedVertices,detail,scale,_rowOcclusionFilter,carStages);
         ++submitted;
 #ifdef ESP_PLATFORM

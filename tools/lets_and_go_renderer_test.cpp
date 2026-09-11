@@ -1,5 +1,6 @@
 #include "../main/apps/app_lets_and_go_racer/view/garage_renderer.h"
 #include "../main/apps/app_lets_and_go_racer/view/race_renderer.h"
+#include "../main/apps/app_lets_and_go_racer/view/race_car_pose.h"
 #include "../main/apps/app_lets_and_go_racer/view/scene_edge_upscale.h"
 #include "../main/apps/app_lets_and_go_racer/view/garage_car_transform.h"
 #include "../main/apps/app_lets_and_go_racer/controller/car_inspection_controller.h"
@@ -544,13 +545,66 @@ void captureCarStructures(const std::string& directory)
     }
 }
 
+bool validateRaceCarRoadContact()
+{
+    float legacyPenetration=0,newMinimumClearance=1e9f,maxSupportLift=0;
+    std::size_t poses=0;
+    for(auto id:{TrackId::SkyLoop,TrackId::TriCross,TrackId::GrandSpiral}) {
+        OverpassTrack track(id);PencilTrack road;road.open(track);
+        for(int sample=0;sample<720;++sample) for(float lane:{-1.36f,0.f,1.36f})
+            for(float heading:{-.2f,0.f,.2f}) {
+                RaceCarSnapshot car;car.active=true;car.motion.distance=track.length()*sample/720;
+                car.motion.lateralOffset=lane;car.motion.headingOffset=heading;
+                const auto pose=makeRaceCarPose(track,road,car);
+                maxSupportLift=std::max(maxSupportLift,pose.supportLift);
+
+                const auto frame=track.sample(car.motion.distance);
+                auto legacyBase=trackAdd(frame.center,trackScale(frame.lateral,lane));
+                legacyBase.y+=std::sin(frame.bankRadians)*lane;
+                const auto right=trackNormalize(trackAdd(frame.lateral,{0,std::sin(frame.bankRadians),0}));
+                auto forward=trackNormalize(trackSubtract(frame.tangent,
+                    trackScale(right,trackDot(frame.tangent,right))));
+                const auto up=trackNormalize(trackCross(forward,right));
+                const float cosine=std::cos(heading),sine=std::sin(heading);
+                const auto legacyLateral=trackAdd(trackScale(right,cosine),trackScale(forward,-sine));
+                const auto legacyForward=trackAdd(trackScale(forward,cosine),trackScale(right,sine));
+
+                for(float modelX:{-.553f,.553f}) for(float modelZ:{kModelRearAxle,kModelFrontAxle}) {
+                    const float x=-modelX*kRaceCarWorldScale,z=modelZ*kRaceCarWorldScale;
+                    const float longitudinal=-x*sine+z*cosine;
+                    const float lateral=x*cosine+z*sine;
+                    const auto support=road.roadPoint(track,car.motion.distance+longitudinal,lane+lateral);
+                    auto oldContact=trackAdd(legacyBase,trackAdd(trackScale(legacyLateral,x),
+                        trackScale(legacyForward,z)));
+                    oldContact=trackAdd(oldContact,trackScale(up,kRaceCarRoadClearance));
+                    legacyPenetration=std::max(legacyPenetration,
+                        trackDot(trackSubtract(support,oldContact),up));
+
+                    const auto contact=raceCarPointToWorld({modelX,0,modelZ},pose);
+                    newMinimumClearance=std::min(newMinimumClearance,
+                        trackDot(trackSubtract(contact,support),pose.up));
+                }
+                ++poses;
+            }
+    }
+    std::cout<<"Road contact: "<<poses<<" poses, legacy penetration="<<legacyPenetration
+             <<", minimum clearance="<<newMinimumClearance<<", max support lift="<<maxSupportLift<<'\n';
+    if(newMinimumClearance<kRaceCarRoadClearance-.00002f ||
+       maxSupportLift>.10f || !std::isfinite(newMinimumClearance)) {
+        std::cerr<<"Race car entered the rendered downhill/start-line surface\n";return false;
+    }
+    return true;
+}
+
 int main(int argc, char** argv)
 {
     const std::string directory = argc > 1 ? argv[1] : "/tmp/lets-go-frames";
     std::filesystem::create_directories(directory);
     captureCarStructures(directory);
     auto& canvas = GetHAL().getDisplay();
-    bool valid = validateTwistedTrackDecks() && validateCarRaster() && validateTrackPaint() && validateTrackPaint(TrackId::TriCross) && validateTrackPaint(TrackId::GrandSpiral);
+    bool valid = validateRaceCarRoadContact() && validateTwistedTrackDecks() && validateCarRaster() &&
+                 validateTrackPaint() && validateTrackPaint(TrackId::TriCross) &&
+                 validateTrackPaint(TrackId::GrandSpiral);
     const auto checkText = [&] {
         for (const auto& label : canvas.texts) {
             const float halfWidth = label.value.size() * 3.0f * label.size;
