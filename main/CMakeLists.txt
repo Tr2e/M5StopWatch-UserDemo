@@ -11,9 +11,8 @@ file(GLOB_RECURSE MY_SRCS
 )
 
 # Keep the product firmware focused on the customized experiences. Launcher and
-# Setup remain available as required shell/system apps; the stock demo apps and
-# their private image assets stay in the repository for reference, but are not
-# compiled into the application partition.
+# Setup remain available as required shell/system apps. The denylist also keeps
+# stock demo sources out if they are reintroduced by an upstream merge.
 set(STOCK_DEMO_APP_DIRS
     app_alarm_clock
     app_badge
@@ -30,6 +29,8 @@ endforeach()
 
 set(STOCK_DEMO_IMAGE_SRCS
     alarm_icon.c
+    icon_clock.c
+    icon_edit_badge.c
     icon_fft.c
     icon_imu.c
     icon_lucky_wheel.c
@@ -40,6 +41,8 @@ set(STOCK_DEMO_IMAGE_SRCS
 foreach(STOCK_DEMO_IMAGE IN LISTS STOCK_DEMO_IMAGE_SRCS)
     list(FILTER MY_SRCS EXCLUDE REGEX "/assets/images/${STOCK_DEMO_IMAGE}$")
 endforeach()
+list(FILTER MY_SRCS EXCLUDE REGEX "/assets/images/watch_face/")
+list(FILTER MY_SRCS EXCLUDE REGEX "/assets/fonts/CommissionerMedium64.c$")
 
 set(MY_INCS
     "."
