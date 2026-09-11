@@ -167,6 +167,7 @@ public:
     // M5GFX
     LGFX_Device& getDisplay();
     LGFX_Sprite& getCanvas();
+    bool hasDisplayFrameBuffer() const;
     void updateCanvas();
     void updateCanvasRegion(int x,int y,int width,int height);
 
@@ -285,6 +286,7 @@ private:
     AudioSpectrumFrame _audio_spectrum;
     int _bl_brightness = 80;
     int _spk_volume    = 80;
+    bool _display_frame_buffer_available = false;
 
     void i2c_init();
     void i2c_detect();

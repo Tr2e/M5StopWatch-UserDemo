@@ -23,16 +23,34 @@ public:
     std::vector<Text> texts;
     int width() const { return _width; }
     int height() const { return _height; }
+    void startWrite() { ++writeDepth; }
+    void endWrite() {
+        if (writeDepth > 0 && --writeDepth == 0 && autoDisplay) ++displayCount;
+    }
+    void setAutoDisplay(bool enabled) { autoDisplay = enabled; }
+    void display() { ++displayCount; }
+    void getClipRect(int32_t* x,int32_t* y,int32_t* w,int32_t* h) const {
+        *x=clipX;*y=clipY;*w=clipW;*h=clipH;
+    }
+    void setClipRect(int32_t x,int32_t y,int32_t w,int32_t h) {
+        clipX=std::max<int32_t>(0,x);clipY=std::max<int32_t>(0,y);
+        clipW=std::max<int32_t>(0,std::min<int32_t>(_width-clipX,w));
+        clipH=std::max<int32_t>(0,std::min<int32_t>(_height-clipY,h));
+    }
+    unsigned physicalDisplays() const { return displayCount; }
+    void resetDisplayCount() { displayCount=0; }
     void setPsram(bool) {}
     void setColorDepth(int) {}
     void* createSprite(int width, int height) {
         _width=width; _height=height;
+        clipX=clipY=0;clipW=width;clipH=height;
         pixels.assign(width*height,0); return pixels.data();
     }
     void* getBuffer() { return pixels.data(); }
     void fillScreen(uint16_t color) { std::fill(pixels.begin(),pixels.end(),color); texts.clear(); }
     void pixel(int x, int y, uint16_t color) {
-        if (x >= 0 && y >= 0 && x < width() && y < height()) pixels[y * width() + x] = color;
+        if (x >= clipX && y >= clipY && x < clipX+clipW && y < clipY+clipH &&
+            x >= 0 && y >= 0 && x < width() && y < height()) pixels[y * width() + x] = color;
     }
     void drawLine(int x0, int y0, int x1, int y1, uint16_t color) {
         const int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
@@ -131,12 +149,20 @@ private:
     std::vector<uint16_t> pixels=std::vector<uint16_t>(466u*466u);
     int textSize = 1;
     uint16_t foreground = 0, background = 0xffff;
+    int32_t clipX=0,clipY=0,clipW=466,clipH=466;
+    unsigned writeDepth=0,displayCount=0;
+    bool autoDisplay=true;
 };
+namespace lgfx { using LGFXBase = ::LGFX_Device; }
 using LGFX_Sprite = LGFX_Device;
 struct HostHal {
     LGFX_Device canvas;
     LGFX_Device& getDisplay() { return canvas; }
     LGFX_Sprite& getCanvas() { return canvas; }
+    bool hasDisplayFrameBuffer() const { return displayFrameBufferAvailable; }
+    void setDisplayFrameBufferAvailable(bool available) { displayFrameBufferAvailable=available; }
     void updateCanvas() {}
+private:
+    bool displayFrameBufferAvailable=true;
 };
 inline HostHal& GetHAL() { static HostHal hal; return hal; }

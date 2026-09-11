@@ -68,10 +68,16 @@ public:
 class M5StopWatch : public M5GFX {
     lgfx::Bus_SPI _bus_instance;
     Panel_CO5300 _panel_instance;
+    bool _frame_buffer_available = false;
 
 public:
     M5StopWatch(void)
     {
+    }
+
+    bool hasFrameBuffer() const
+    {
+        return _frame_buffer_available;
     }
 
     // static constexpr int in_i2c_port                   = 0;  // I2C_NUM_0
@@ -123,7 +129,7 @@ public:
 
         if (!LGFX_Device::init_impl(use_reset, use_clear)) return false;
 
-        enableFrameBuffer(true);
+        _frame_buffer_available = enableFrameBuffer(true);
 
         _panel_instance.setBrightness(128);
 
@@ -170,7 +176,10 @@ void Hal::display_init()
     if (!_display->init()) {
         mclog::tagError(_tag, "display init failed");
         _display.reset();
+        _display_frame_buffer_available = false;
+        return;
     }
+    _display_frame_buffer_available = _display->hasFrameBuffer();
 
     mclog::tagInfo(_tag, "create full screen canvas");
     _canvas = std::make_unique<LGFX_Sprite>(_display.get());
@@ -193,6 +202,11 @@ LGFX_Device &Hal::getDisplay()
 LGFX_Sprite &Hal::getCanvas()
 {
     return *_canvas;
+}
+
+bool Hal::hasDisplayFrameBuffer() const
+{
+    return _display_frame_buffer_available;
 }
 
 void Hal::updateCanvas()

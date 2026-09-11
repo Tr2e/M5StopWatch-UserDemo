@@ -89,6 +89,10 @@ compile_run results \
 compile_run render_budget \
     "$repo_dir/tools/lets_and_go_render_budget_test.cpp"
 
+compile_run display_frame_scope \
+    -I"$repo_dir/tools/lets_and_go_host" \
+    "$repo_dir/tools/display_frame_scope_test.cpp"
+
 compile_run soak \
     "$repo_dir/tools/lets_and_go_soak_test.cpp" \
     "${race_sources[@]}"
