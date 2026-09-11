@@ -163,17 +163,19 @@ const CarDisplayMesh& GarageRenderer::showcaseMesh(CarId car, PencilDetail detai
 void GarageRenderer::render(const GameFlow& flow, const GarageSelection& selection,
                             uint32_t screenElapsedMs, PencilDetail detail,
                             const RacerInputStatus& inputStatus,const GarageViewState& view, bool deviceControls,
-                            int inspectionPercent,bool reuseInspectionBackground,int inspectionDisplayPercent)
+                            int inspectionPercent,bool reuseInspectionBackground,int inspectionDisplayPercent,
+                            bool inspectionAuto)
 {
     render(GetHAL().getCanvas(),flow,selection,screenElapsedMs,detail,inputStatus,view,
-           deviceControls,inspectionPercent,reuseInspectionBackground,inspectionDisplayPercent);
+           deviceControls,inspectionPercent,reuseInspectionBackground,inspectionDisplayPercent,inspectionAuto);
 }
 
 void GarageRenderer::render(lgfx::LGFXBase& canvas,
                             const GameFlow& flow, const GarageSelection& selection,
                             uint32_t screenElapsedMs, PencilDetail detail,
                             const RacerInputStatus& inputStatus,const GarageViewState& view, bool deviceControls,
-                            int inspectionPercent,bool reuseInspectionBackground,int inspectionDisplayPercent)
+                            int inspectionPercent,bool reuseInspectionBackground,int inspectionDisplayPercent,
+                            bool inspectionAuto)
 {
     if (_width <= 0 || _height <= 0) return;
     const GameScreen screen = flow.screen();
@@ -211,9 +213,10 @@ void GarageRenderer::render(lgfx::LGFXBase& canvas,
 
     if (screen == GameScreen::CarInspect) {
         using namespace home_theme;
+        if(inspectionAuto) {inspectionPercent=100;inspectionDisplayPercent=100;}
         if(!reuse) {
             setupHeader(canvas,"VIEW MACHINE");
-            label(canvas,"HIGH DETAIL / DRAG OR STICK",_width/2,96,1,muted);
+            label(canvas,inspectionAuto ? "HIGH DETAIL / AUTO TOUR" : "HIGH DETAIL / DRAG OR STICK",_width/2,96,1,muted);
         }
         const auto& carMesh=mesh();
 #ifdef ESP_PLATFORM
@@ -239,9 +242,12 @@ void GarageRenderer::render(lgfx::LGFXBase& canvas,
         }
 #endif
         label(canvas,spec.shortName,_width/2,376,2);
+        arrows(canvas,350);
         if(!reuse) {
-            action(canvas,home_layout::inspectReset,"RESET VIEW");
-            label(canvas,deviceControls ? "A ROTATE / B RESET" : "RED BACK / BLUE RESET",_width/2,444,1,muted);
+            action(canvas,home_layout::inspectAuto,inspectionAuto ? "AUTO ON" : "AUTO",
+                   nullptr,inspectionAuto ? blue : panel);
+            action(canvas,home_layout::inspectReset,"RESET");
+            label(canvas,deviceControls ? "A NEXT / B RESET" : "ARROWS / STICK",_width/2,444,1,muted);
         }
         return;
     }

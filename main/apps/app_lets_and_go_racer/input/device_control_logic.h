@@ -26,6 +26,7 @@ struct DeviceControlFrame {
     TouchTrace touchTrace{};
     PreviewDrag preview{};
     bool inspect=false;
+    bool autoToggle=false;
     // Result buttons are a shared menu action in either control mode. Keep
     // touch steering/mode switching separate from the external driving input.
     int resultActionFor(GameScreen screen) const {
@@ -68,6 +69,7 @@ public:
             _frame.input.pausePressed = false;
             _frame.navigation = _frame.view = 0;
             _frame.advance = false;
+            _frame.autoToggle = false;
             _frame.resultAction = -1;
         }
         _frame.input.brakeHeld = _buttonsArmed && a.pressed && !b.pressed;
@@ -148,12 +150,14 @@ public:
             result.input.pausePressed = result.input.brakeHeld = result.input.boostHeld = false;
             result.navigation = result.view = 0;
             result.advance = false;
+            result.autoToggle = false;
             result.resultAction = -1;
         }
         _frame.input.confirmPressed = _frame.input.cancelPressed = false;
         _frame.input.pausePressed = _frame.input.exitPressed = false;
         _frame.navigation = _frame.view = 0;
         _frame.advance = false;
+        _frame.autoToggle = false;
         _frame.resultAction = -1;
         _frame.touchTrace.ready=false;
         _frame.preview.changed=false;
@@ -169,6 +173,7 @@ private:
             case TouchAction::Next:_frame.navigation=1;break;
             case TouchAction::View:_frame.view=1;break;
             case TouchAction::Inspect:_frame.inspect=true;break;
+            case TouchAction::Auto:_frame.autoToggle=true;break;
             case TouchAction::Advance:_frame.advance=true;break;
             case TouchAction::Retry:case TouchAction::Garage:case TouchAction::Exit:
                 _frame.resultAction=int(action)-int(TouchAction::Retry);break;

@@ -762,6 +762,20 @@ int main(int argc, char** argv)
                !validateSelectionDirections(carSpec(id),*framingMesh))return 1;
             if(!flow.inspectCar())return 1;
             garage.render(flow,selection,1000,PencilDetail::High);
+            if(car==0) {
+                canvas.texts.clear();
+                garage.render(flow,selection,1000,PencilDetail::Low,{},GarageViewState{},true,65,false,85,true);
+                bool title=false,button=false;
+                for(const auto& text:canvas.texts) {
+                    title|=text.value=="HIGH DETAIL / AUTO TOUR";
+                    button|=text.value=="AUTO ON";
+                }
+                if(!title || !button || garage.inspectionPercent()!=100) {
+                    std::cerr<<"Inspection auto did not enforce native High presentation\n";return 1;
+                }
+                save("inspection-auto");
+            }
+            garage.render(flow,selection,1000,PencilDetail::High);
             const auto fixedUI=canvas.frame();
             const auto refresh=inspectionRefreshRegion(canvas.width());
             for(int azimuth=0;azimuth<16;++azimuth)for(int elevation=0;elevation<5;++elevation) {

@@ -24,7 +24,10 @@ int main() {
     };
     visibleTarget(GameScreen::CarSelect,home_layout::viewAction,TouchAction::View);
     visibleTarget(GameScreen::CarSelect,home_layout::inspectAction,TouchAction::Inspect);
+    visibleTarget(GameScreen::CarInspect,home_layout::inspectAuto,TouchAction::Auto);
     visibleTarget(GameScreen::CarInspect,home_layout::inspectReset,TouchAction::Confirm);
+    visibleTarget(GameScreen::CarInspect,home_layout::inspectPrevious,TouchAction::Previous);
+    visibleTarget(GameScreen::CarInspect,home_layout::inspectNext,TouchAction::Next);
     visibleTarget(GameScreen::CarSelect,home_layout::carSelect,TouchAction::Confirm);
     visibleTarget(GameScreen::RivalSelect,home_layout::rivalToggle,TouchAction::Confirm);
     visibleTarget(GameScreen::RivalSelect,home_layout::setupNext,TouchAction::Advance);
@@ -105,7 +108,10 @@ int main() {
     show(GameScreen::CarInspect);
     controls.touch(true,233,350);controls.touch(true,250,350);controls.touch(false,0,0);
     check(controls.consume(true).preview.changed,"inspection touch orbit missing");
-    check(tap(233,414).input.confirmPressed,"inspection reset missing");
+    check(tap(170,414).autoToggle,"inspection auto missing");
+    check(!controls.consume(true).autoToggle,"inspection auto replayed");
+    check(tap(298,414).input.confirmPressed,"inspection reset missing");
+    check(tap(123,350).navigation==-1 && tap(345,350).navigation==1,"inspection car arrows failed");
     check(tap(116,70).input.cancelPressed,"inspection back missing");
     // Every visible non-button area may start an inspection drag, including
     // the header, side margins, car name and space below RESET VIEW.
@@ -118,14 +124,16 @@ int main() {
         controls.touch(true,233,414);controls.touch(false,0,0);
         orbit=controls.consume(true);
         check(orbit.preview.changed && !orbit.preview.active && !orbit.input.confirmPressed &&
-              !orbit.input.cancelPressed,"inspection drag into reset activated a button");
+              !orbit.input.cancelPressed && !orbit.autoToggle && orbit.navigation==0,
+              "inspection drag into controls activated a button");
     }
-    for(const auto point : {std::pair<int,int>{116,70},{233,414},{138,414},{116,51},
+    for(const auto point : {std::pair<int,int>{116,70},{170,414},{298,414},{116,51},
                            {0,0},{467,465},{-1,233},{468,233}}) {
         controls.touch(true,point.first,point.second);
         controls.touch(true,234,230);controls.touch(false,0,0);
         const auto orbit=controls.consume(true);
-        check(!orbit.preview.changed && !orbit.input.confirmPressed && !orbit.input.cancelPressed,
+        check(!orbit.preview.changed && !orbit.input.confirmPressed && !orbit.input.cancelPressed &&
+              !orbit.autoToggle && orbit.navigation==0,
               "button allowance or off-screen start became an inspection drag");
     }
     controls.touch(true,25,233);controls.touch(true,45,233);controls.consume(true);

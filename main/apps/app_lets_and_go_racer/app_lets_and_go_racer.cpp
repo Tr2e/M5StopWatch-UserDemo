@@ -66,6 +66,7 @@ void AppLetsAndGoRacer::onOpen()
     _lastUpdateMs = GetHAL().millis();
     _garageNavigation.reset();
     _garageView.reset(_progress.lastCar,_lastUpdateMs);
+    _inspectionAuto.reset();
     _raceSeed = 0;
     _inputInvalidSinceMs = 0;
     _pausedForInputLoss = false;
@@ -105,10 +106,17 @@ void AppLetsAndGoRacer::onRunning()
     const uint64_t inputStartedUs = esp_timer_get_time();
     const uint32_t nowMs = GetHAL().millis();
     const auto screenBefore = _flow.screen();
-    const auto inspectionBefore = _inspection.state();
+    const auto inspectionBefore = _inspectionAuto.enabled() ?
+        _inspectionAuto.state(nowMs) : _inspection.state();
     auto device = _deviceInput.sample(nowMs);
     if (screenBefore==lets_and_go::GameScreen::CarInspect) {
         if (device.input.valid && device.preview.changed) {
+            if(_inspectionAuto.enabled()) {
+                _inspection.setState(_inspectionAuto.state(nowMs));
+                _inspectionAuto.stop();
+                _inspectionRender.reset();
+                _inspectionPresentation.reset();
+            }
             if (_inspection.drag(device.preview)) _renderDirty=true;
         } else if (!device.input.valid) _inspection.release();
     }
@@ -159,7 +167,7 @@ void AppLetsAndGoRacer::onRunning()
     if (screenBefore==lets_and_go::GameScreen::CarSelect && device.input.valid && device.inspect &&
         !racerInput.exitPressed && !racerInput.cancelPressed && !racerInput.pausePressed &&
         !device.input.exitPressed && _flow.inspectCar()) {
-        _inspection={};_inspectionRender.reset();_screenStartedMs=nowMs;_renderDirty=true;
+        _inspection={};_inspectionAuto.reset();_inspectionRender.reset();_screenStartedMs=nowMs;_renderDirty=true;
         racerInput={}; // Entry cannot replay a queued garage direction or confirmation.
         device={};
     } else if (screenBefore==lets_and_go::GameScreen::CarInspect && device.input.valid) {
@@ -167,9 +175,10 @@ void AppLetsAndGoRacer::onRunning()
         racerInput.confirmPressed |= device.input.confirmPressed;
         racerInput.cancelPressed |= device.input.cancelPressed;
     }
-    handleRacerInput(racerInput, nowMs, _deviceControls ? device.navigation : 0,
+    handleRacerInput(racerInput, nowMs,
+                     (_deviceControls || screenBefore==lets_and_go::GameScreen::CarInspect) ? device.navigation : 0,
                      _deviceControls ? device.view : 0, _deviceControls && device.advance,
-                     device.resultActionFor(screenBefore));
+                     device.resultActionFor(screenBefore),device.autoToggle);
     if (device.input.exitPressed) _flow.requestExit();
     _perfInputUs += esp_timer_get_time() - inputStartedUs;
     if (_flow.screen() == lets_and_go::GameScreen::ExitRequested) {
@@ -225,6 +234,7 @@ void AppLetsAndGoRacer::onRunning()
     if (_flow.screen() != screenBefore) {
         _garageView.endDrag(nowMs);
         _inspection.release();
+        if(_flow.screen()!=lets_and_go::GameScreen::CarInspect)_inspectionAuto.reset();
         _renderDirty = true;
         _deviceInput.setScreen(_flow.screen());
         if (_racerInput) {
@@ -240,18 +250,20 @@ void AppLetsAndGoRacer::onRunning()
     using lets_and_go::GameScreen;
     const auto screen = _flow.screen();
     if (screen==GameScreen::CarInspect) {
-        const auto pose=_inspection.state();
+        const auto pose=_inspectionAuto.enabled() ? _inspectionAuto.state(nowMs) : _inspection.state();
         const bool changed=screenBefore==GameScreen::CarInspect &&
             (pose.yaw!=inspectionBefore.yaw || pose.pitch!=inspectionBefore.pitch);
         const bool stickHeld=!_deviceControls && racerInput.valid && !racerInput.menuBlocked &&
             (std::abs(racerInput.steer)>.30f || std::abs(racerInput.viewAxis)>.30f);
-        if (_inspectionRender.update(nowMs,changed,_inspection.touchActive() || stickHeld)) _renderDirty=true;
+        if(_inspectionAuto.enabled())_inspectionRender.reset();
+        else if (_inspectionRender.update(nowMs,changed,_inspection.touchActive() || stickHeld)) _renderDirty=true;
     }
     // Draw once after a transition ends so a static view reaches its exact pose.
     const bool garageAnimated = _garageView.animating(nowMs) || _garageView.animating(_lastFrameMs);
     const bool animated = screen == GameScreen::CarShowcase || screen == GameScreen::TrackSelect ||
         screen == GameScreen::Racing || screen == GameScreen::Countdown || screen == GameScreen::Finish ||
-        screen == GameScreen::GridIntro || (screen == GameScreen::CarSelect && garageAnimated);
+        screen == GameScreen::GridIntro || (screen == GameScreen::CarSelect && garageAnimated) ||
+        (screen == GameScreen::CarInspect && _inspectionAuto.enabled());
     const bool statusRefresh = (screen == GameScreen::InputCheck || screen == GameScreen::InputCalibration) &&
                                nowMs - _lastFrameMs >= 250u;
     if ((_renderDirty || animated || statusRefresh) && (_lastFrameMs == 0u ||
@@ -282,12 +294,15 @@ void AppLetsAndGoRacer::onRunning()
                 lets_and_go::selectionRefreshRegion(display.width()) :
                 lets_and_go::inspectionRefreshRegion(display.width());
             const auto renderGarage=[&] {
+                const auto inspectionPose=_inspectionAuto.enabled() ? _inspectionAuto.state(nowMs) : _inspection.state();
                 _renderer.render(display,_flow,_selection,nowMs-_screenStartedMs,
                     _garageBudget.detail(),racerStatus,
-                    screen==GameScreen::CarInspect ? _inspection.state() : _garageView.state(nowMs),_deviceControls,
+                    screen==GameScreen::CarInspect ? inspectionPose : _garageView.state(nowMs),_deviceControls,
+                    screen==GameScreen::CarInspect && _inspectionAuto.enabled() ? 100 :
                     screen==GameScreen::CarInspect ? _inspectionRender.percent() :
                     screen==GameScreen::CarSelect ? _garageView.renderPercent(nowMs) : 100,
-                    partial,screen==GameScreen::CarInspect ? _inspectionRender.displayPercent() : 100);
+                    partial,screen==GameScreen::CarInspect && !_inspectionAuto.enabled() ?
+                    _inspectionRender.displayPercent() : 100,_inspectionAuto.enabled());
             };
             if (partial) {
                 app_performance::DisplayFrameScope frame(display,
@@ -302,12 +317,15 @@ void AppLetsAndGoRacer::onRunning()
                 frame.finish();
             }
         } else {
+            const auto inspectionPose=_inspectionAuto.enabled() ? _inspectionAuto.state(nowMs) : _inspection.state();
             _renderer.render(_flow, _selection, nowMs - _screenStartedMs,
                              _garageBudget.detail(), racerStatus,
-                             screen==GameScreen::CarInspect ? _inspection.state() : _garageView.state(nowMs), _deviceControls,
+                             screen==GameScreen::CarInspect ? inspectionPose : _garageView.state(nowMs), _deviceControls,
+                             screen==GameScreen::CarInspect && _inspectionAuto.enabled() ? 100 :
                              screen==GameScreen::CarInspect ? _inspectionRender.percent() :
                              screen==GameScreen::CarSelect ? _garageView.renderPercent(nowMs) : 100,
-                             partial,screen==GameScreen::CarInspect ? _inspectionRender.displayPercent() : 100);
+                             partial,screen==GameScreen::CarInspect && !_inspectionAuto.enabled() ?
+                             _inspectionRender.displayPercent() : 100,_inspectionAuto.enabled());
             drawFinishedUs = esp_timer_get_time();
             if(partial) {
                 const auto region=screen==GameScreen::CarSelect ?
@@ -355,8 +373,8 @@ void AppLetsAndGoRacer::onRunning()
             lets_and_go::pencilDetailLabel(screen==GameScreen::CarInspect ? lets_and_go::PencilDetail::High :
                 usesRaceRenderer(screen) ? _raceBudget.detail() : _garageBudget.detail()));
         if (screen==GameScreen::CarInspect) {
-            mclog::tagInfo("InspectionPerf","car={} interacting={} last_scale_pct={} requested_scale_pct={} requested_display_pct={}",
-                lets_and_go::carSpec(_selection.playerCursor()).shortName,_inspectionRender.interacting(),
+            mclog::tagInfo("InspectionPerf","car={} interacting={} auto={} last_scale_pct={} requested_scale_pct={} requested_display_pct={}",
+                lets_and_go::carSpec(_selection.playerCursor()).shortName,_inspectionRender.interacting(),_inspectionAuto.enabled(),
                 _renderer.inspectionPercent(),_inspectionRender.percent(),_inspectionRender.displayPercent());
             const auto recent=_inspectionFrames.summary();
             if(_perfFrames && recent.count)
@@ -378,7 +396,7 @@ void AppLetsAndGoRacer::onRunning()
 
 void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
                                          uint32_t nowMs, int deviceNavigation, int deviceView, bool deviceAdvance,
-                                         int deviceResult)
+                                         int deviceResult,bool deviceAutoToggle)
 {
     using lets_and_go::GameScreen;
     if (input.exitPressed) {
@@ -388,11 +406,30 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
     const GameScreen before = _flow.screen();
     if (before==GameScreen::CarInspect) {
         if (input.cancelPressed || input.pausePressed) {
+            _inspectionAuto.reset();
             _flow.back();_screenStartedMs=nowMs;_renderDirty=true;
+        } else if(deviceAutoToggle) {
+            if(_inspectionAuto.enabled()) {
+                _inspection.setState(_inspectionAuto.state(nowMs));
+                _inspectionAuto.stop();
+            } else _inspectionAuto.start(nowMs,_inspection.state());
+            _inspectionRender.reset();_inspectionPresentation.reset();_inspectionFrames.reset();_renderDirty=true;
+        } else if(deviceNavigation ||
+                  (_inspectionAuto.enabled() && !_deviceControls && input.navigationStep)) {
+            const auto pose=_inspectionAuto.enabled() ? _inspectionAuto.state(nowMs) : _inspection.state();
+            const int carStep=deviceNavigation ? deviceNavigation : input.navigationStep;
+            _selection.movePlayer(carStep);
+            if(_inspectionAuto.enabled())_inspectionAuto.start(nowMs,pose);
+            _inspectionPresentation.reset();_inspectionFrames.reset();_renderDirty=true;
         } else if (input.confirmPressed) {
-            _inspection.reset();_renderDirty=true;
-        } else if ((_deviceControls || input.valid) && _inspection.turn(_deviceControls ? deviceNavigation : input.navigationStep,
-                                    _deviceControls ? deviceView : input.viewStep)) {
+            _inspectionAuto.reset();_inspection.reset();_inspectionRender.reset();
+            _inspectionPresentation.reset();_renderDirty=true;
+        } else if ((_deviceControls || input.valid) && (input.navigationStep || input.viewStep || deviceView)) {
+            if(_inspectionAuto.enabled()) {
+                _inspection.setState(_inspectionAuto.state(nowMs));
+                _inspectionAuto.stop();_inspectionRender.reset();_inspectionPresentation.reset();
+            }
+            if(_inspection.turn(input.navigationStep,_deviceControls ? deviceView : input.viewStep))
             _renderDirty=true;
         }
         return;
@@ -597,6 +634,7 @@ void AppLetsAndGoRacer::onClose()
     _menuAxis.reset();
     _renderer.close();
     _garageNavigation.reset();
+    _inspectionAuto.reset();
     _raceRenderer.close();
     _flow.reset();
     _selection.reset();

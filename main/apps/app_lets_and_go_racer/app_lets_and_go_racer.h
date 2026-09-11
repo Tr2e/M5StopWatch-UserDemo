@@ -28,7 +28,7 @@ public:
 private:
     void handleRacerInput(const lets_and_go::RacerInput& input, uint32_t nowMs,
                           int deviceNavigation = 0, int deviceView = 0, bool deviceAdvance = false,
-                          int deviceResult = -1);
+                          int deviceResult = -1,bool deviceAutoToggle = false);
     void prepareRace(uint32_t nowMs);
     void persistSelectedCar();
     void updateHaptics(const lets_and_go::RacerInput& input, uint32_t nowMs);
@@ -46,6 +46,7 @@ private:
     lets_and_go::GarageMenuNavigation _garageNavigation;
     lets_and_go::GarageViewController _garageView;
     lets_and_go::CarInspectionController _inspection;
+    lets_and_go::InspectionAutoController _inspectionAuto;
     lets_and_go::InspectionRenderPolicy _inspectionRender;
     lets_and_go::InspectionPresentation _inspectionPresentation;
     lets_and_go::InspectionFrameWindow _inspectionFrames, _raceFrames;

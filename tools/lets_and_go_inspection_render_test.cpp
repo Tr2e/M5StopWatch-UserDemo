@@ -97,5 +97,21 @@ int main() {
     assert(quality.percent()==65 && !quality.update(48,false,false));
     assert(quality.update(149,false,false) && quality.percent()==65 && quality.displayPercent()>85);
     assert(quality.update(569,false,false) && quality.percent()==100);
+    InspectionAutoController tour;
+    GarageViewState origin{};origin.yaw=1.1f;origin.pitch=.22f;
+    assert(!tour.enabled());tour.start(1000,origin);assert(tour.enabled());
+    assert(std::abs(tour.state(1000).yaw-origin.yaw)<.0001f);
+    const auto front=tour.state(1000+InspectionAutoController::kEntryMs);
+    assert(std::abs(front.yaw+.65f)<.0001f && std::abs(front.pitch-.5713375f)<.0001f);
+    const auto side=tour.state(1000+InspectionAutoController::kEntryMs+8000);
+    assert(std::abs(side.yaw+1.5707963f)<.0001f && std::abs(side.pitch-.34f)<.0001f);
+    // A completed tour loops the camera only; car changes remain user-driven.
+    const auto looped=tour.state(1000+InspectionAutoController::kEntryMs+
+                                 InspectionAutoController::kTourMs);
+    assert(std::abs(looped.yaw+.65f)<.0001f && std::abs(looped.pitch-.5713375f)<.0001f);
+    tour.stop();assert(!tour.enabled());
+    tour.start(UINT32_MAX-1000,origin);
+    const auto wrapped=tour.state(InspectionAutoController::kEntryMs+31000-1001);
+    assert(std::isfinite(wrapped.yaw) && std::isfinite(wrapped.pitch));
     std::cout<<"Inspection render: compact touch/stick, eased recovery, re-grab, slow-frame flick, cancellation and rollover passed\n";
 }

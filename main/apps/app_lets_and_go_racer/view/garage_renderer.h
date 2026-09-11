@@ -34,11 +34,13 @@ public:
                 const GameFlow& flow, const GarageSelection& selection,
                 uint32_t screenElapsedMs, PencilDetail detail,
                 const RacerInputStatus& inputStatus = {},const GarageViewState& view = {}, bool deviceControls = false,
-                int inspectionPercent = 100,bool reuseInspectionBackground = false,int inspectionDisplayPercent = 100);
+                int inspectionPercent = 100,bool reuseInspectionBackground = false,int inspectionDisplayPercent = 100,
+                bool inspectionAuto = false);
     void render(const GameFlow& flow, const GarageSelection& selection,
                 uint32_t screenElapsedMs, PencilDetail detail,
                 const RacerInputStatus& inputStatus = {},const GarageViewState& view = {}, bool deviceControls = false,
-                int inspectionPercent = 100,bool reuseInspectionBackground = false,int inspectionDisplayPercent = 100);
+                int inspectionPercent = 100,bool reuseInspectionBackground = false,int inspectionDisplayPercent = 100,
+                bool inspectionAuto = false);
     void setTrackPreviewDecorations(bool enabled) { _trackPreviewDecorations=enabled; }
     void setSelectionOptimizations(bool enabled) { _selectionOptimizations=enabled; }
     int inspectionPercent() const { return _inspectionPercent; }

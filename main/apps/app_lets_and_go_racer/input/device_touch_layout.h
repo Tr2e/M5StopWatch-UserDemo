@@ -3,7 +3,7 @@
 #include "../controller/race_ui_layout.h"
 
 namespace lets_and_go {
-enum class TouchAction { None,Confirm,Back,Previous,Next,View,Advance,Retry,Garage,Exit,Resume,Inspect };
+enum class TouchAction { None,Confirm,Back,Previous,Next,View,Advance,Retry,Garage,Exit,Resume,Inspect,Auto };
 inline const char* touchActionLabel(TouchAction action) {
     switch(action) {
         case TouchAction::Confirm:return "confirm";
@@ -17,6 +17,7 @@ inline const char* touchActionLabel(TouchAction action) {
         case TouchAction::Exit:return "exit";
         case TouchAction::Resume:return "resume";
         case TouchAction::Inspect:return "inspect";
+        case TouchAction::Auto:return "auto";
         default:return "none";
     }
 }
@@ -36,7 +37,10 @@ inline TouchAction menuTouchTargetPass(GameScreen screen,int x,int y,bool expand
         return hit(Rect{100,185,266,81}) ? TouchAction::Resume : TouchAction::None;
     if(screen==GameScreen::CarInspect) {
         if(hit(setupBack))return TouchAction::Back;
+        if(hit(inspectAuto))return TouchAction::Auto;
         if(hit(inspectReset))return TouchAction::Confirm;
+        if(hit(inspectPrevious))return TouchAction::Previous;
+        if(hit(inspectNext))return TouchAction::Next;
         return TouchAction::None;
     }
     if(screen!=GameScreen::CarSelect && screen!=GameScreen::RivalSelect && screen!=GameScreen::TrackSelect)
