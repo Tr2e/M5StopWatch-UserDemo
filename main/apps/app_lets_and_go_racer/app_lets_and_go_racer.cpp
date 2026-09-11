@@ -261,7 +261,15 @@ void AppLetsAndGoRacer::onRunning()
         const bool raceView = usesRaceRenderer(_flow.screen());
         const bool partial = _inspectionPresentation.partial(screen,_selection.playerCursor());
         uint64_t drawFinishedUs = 0;
-        if (raceView) {
+        if (raceView && _directFrameBuffer && screen==GameScreen::Results) {
+            auto& display=GetHAL().getDisplay();
+            app_performance::DisplayFrameScope frame(display);
+            _raceRenderer.render(display,nullptr,_flow,_race,_resultsSelection,
+                                 nowMs-_screenStartedMs,_pausedForInputLoss,
+                                 _raceBudget.detail(),_deviceControls);
+            drawFinishedUs = esp_timer_get_time();
+            frame.finish();
+        } else if (raceView) {
             _raceRenderer.render(_flow, _race, _resultsSelection,
                                  nowMs - _screenStartedMs,
                                  _pausedForInputLoss, _raceBudget.detail(), _deviceControls);

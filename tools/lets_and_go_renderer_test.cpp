@@ -1504,6 +1504,13 @@ int main(int argc, char** argv)
     if(raceExpected!=genericTarget.frame()) {
         std::cerr<<"Generic race render target mismatch\n";valid=false;
     }
+    targetFlow.finishRace();targetFlow.showResults();
+    raceTarget.render(targetFlow,targetRace,results,0,false,PencilDetail::Low,true);
+    const auto resultsExpected=canvas.frame();
+    raceTarget.render(genericTarget,nullptr,targetFlow,targetRace,results,0,false,PencilDetail::Low,true);
+    if(resultsExpected!=genericTarget.frame()) {
+        std::cerr<<"Generic results render target mismatch\n";valid=false;
+    }
     garageTarget.close();raceTarget.close();
     cached.close();original.close();hero.close();wire.close();canvas.createSprite(466,466);
     std::cout << "Production renderer frames: " << directory << '\n';
