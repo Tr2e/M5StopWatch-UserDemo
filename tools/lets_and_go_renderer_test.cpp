@@ -764,7 +764,7 @@ int main(int argc, char** argv)
             garage.render(flow,selection,1000,PencilDetail::High);
             if(car==0) {
                 canvas.texts.clear();
-                garage.render(flow,selection,1000,PencilDetail::Low,{},GarageViewState{},true,65,false,85,true);
+                garage.render(flow,selection,1000,PencilDetail::Low,{},inspectionDefaultPose(),true,65,false,85,true);
                 bool title=false,button=false;
                 for(const auto& text:canvas.texts) {
                     title|=text.value=="HIGH DETAIL / AUTO TOUR";

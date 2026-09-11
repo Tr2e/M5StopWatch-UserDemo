@@ -420,10 +420,8 @@ void AppLetsAndGoRacer::handleRacerInput(const lets_and_go::RacerInput& input,
             _inspectionRender.reset();_inspectionPresentation.reset();_inspectionFrames.reset();_renderDirty=true;
         } else if(deviceNavigation ||
                   (_inspectionAuto.enabled() && !_deviceControls && input.navigationStep)) {
-            const auto pose=_inspectionAuto.enabled() ? _inspectionAuto.state(nowMs) : _inspection.state();
             const int carStep=deviceNavigation ? deviceNavigation : input.navigationStep;
             _selection.movePlayer(carStep);
-            if(_inspectionAuto.enabled())_inspectionAuto.start(nowMs,pose);
             _inspectionPresentation.reset();_inspectionFrames.reset();_renderDirty=true;
         } else if (input.confirmPressed) {
             _inspectionAuto.reset();_inspection.reset();_inspectionRender.reset();

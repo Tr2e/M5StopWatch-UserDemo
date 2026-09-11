@@ -6,6 +6,12 @@
 #include <iostream>
 using namespace lets_and_go;
 int main() {
+    const auto inspectionDefault=inspectionDefaultPose();
+    assert(std::abs(inspectionDefault.yaw+.65f)<.0001f);
+    assert(std::abs(inspectionDefault.pitch-.32f)<.0001f);
+    CarInspectionController initialCamera;
+    assert(std::abs(initialCamera.state().yaw-inspectionDefault.yaw)<.0001f);
+    assert(std::abs(initialCamera.state().pitch-inspectionDefault.pitch)<.0001f);
     InspectionFrameWindow frames;
     assert(frames.summary().count==0);
     for(unsigned i=1;i<=20;++i)frames.record(CarId::CycloneMagnum,77,i*100,10);
@@ -103,17 +109,19 @@ int main() {
     assert(!tour.enabled());tour.start(1000,origin);assert(tour.enabled());
     assert(std::abs(tour.state(1000).yaw-origin.yaw)<.0001f);
     const auto front=tour.state(1000+InspectionAutoController::kEntryMs);
-    assert(std::abs(front.yaw+.65f)<.0001f && std::abs(front.pitch-.57f)<.0001f);
+    assert(std::abs(front.yaw-inspectionDefault.yaw)<.0001f &&
+           std::abs(front.pitch-inspectionDefault.pitch)<.0001f);
     const auto quarter=tour.state(1000+InspectionAutoController::kEntryMs+
                                   InspectionAutoController::kTourMs/4);
     assert(std::abs(std::remainder(quarter.yaw-front.yaw,6.2831853f)+1.5707963f)<.0001f);
-    assert(std::abs(quarter.pitch-.79f)<.0001f);
+    assert(std::abs(quarter.pitch-inspectionDefault.pitch)<.0001f);
     // The camera must keep moving through the full cycle; there are no
     // keyframe holds that can look like an endpoint on the device.
     auto previous=front;
     for(uint32_t elapsed=250;elapsed<InspectionAutoController::kTourMs;elapsed+=250) {
         const auto current=tour.state(1000+InspectionAutoController::kEntryMs+elapsed);
         assert(std::abs(std::remainder(current.yaw-previous.yaw,6.2831853f))>.001f);
+        assert(std::abs(current.pitch-inspectionDefault.pitch)<.0001f);
         previous=current;
     }
     // A completed orbit loops the camera only; car changes remain user-driven.

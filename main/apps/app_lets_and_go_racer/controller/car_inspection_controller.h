@@ -3,12 +3,19 @@
 
 namespace lets_and_go {
 
+inline GarageViewState inspectionDefaultPose() {
+    GarageViewState result{};
+    result.yaw=-.65f;
+    result.pitch=.32f;
+    return result;
+}
+
 // Dedicated camera state. Browsing may move the garage cursor, but this class
 // never commits the chosen car or changes the garage preset. Touch owns the
 // camera until release; joystick steps remain buffered during slow frames.
 class CarInspectionController {
 public:
-    void reset() { _pose={};_touch=false; }
+    void reset() { _pose=inspectionDefaultPose();_touch=false; }
     void setState(const GarageViewState& pose) {
         _pose=pose;_touch=false;
     }
@@ -42,7 +49,7 @@ private:
         _pose.yaw=yaw;_pose.pitch=pitch;
         return changed;
     }
-    GarageViewState _pose{};
+    GarageViewState _pose=inspectionDefaultPose();
     uint32_t _gesture=0;
     int _lastDx=0,_lastDy=0;
     bool _touch=false;
@@ -50,8 +57,9 @@ private:
 
 // Time-based endless showroom orbit. Rendering may be slower than the nominal
 // frame interval, so the camera is sampled from monotonic time and never queues
-// old poses. Every camera component is periodic, with matching position and
-// velocity at the loop seam; there are no endpoint holds or restarts.
+// old poses. The camera clock is independent of the selected model, so changing
+// cars preserves azimuth and angular velocity. The orbit is periodic, with
+// matching position and velocity at the seam and no endpoint holds or restarts.
 class InspectionAutoController {
 public:
     static constexpr uint32_t kEntryMs=1200;
@@ -81,11 +89,8 @@ private:
     static GarageViewState orbitState(float phase) {
         constexpr float tau=6.2831853f;
         const float wave=phase*tau;
-        GarageViewState result{};
+        GarageViewState result=inspectionDefaultPose();
         result.yaw=std::remainder(-.65f-wave,tau);
-        result.pitch=.57f+.22f*std::sin(wave);
-        result.scale=136.f+4.f*std::cos(wave);
-        result.centerY=248.f+4.f*std::cos(wave);
         result.carSlide=0;result.carZoom=1;result.wheelPhase=0;
         return result;
     }
