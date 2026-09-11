@@ -9,6 +9,8 @@ inline constexpr uint32_t kShowcaseDurationMs = 1500u;
 inline constexpr uint32_t kGridIntroDurationMs = 1300u;
 inline constexpr uint32_t kCountdownDurationMs = 3000u;
 inline constexpr uint32_t kFinishDurationMs = 1200u;
+// Keep the legacy canvas backend build-selectable for same-device A/B checks.
+inline constexpr bool kDirectFramebuffer = true;
 
 inline constexpr float kCourseRadius = 12.0f;
 inline constexpr float kCourseBaseHeight = 0.35f;

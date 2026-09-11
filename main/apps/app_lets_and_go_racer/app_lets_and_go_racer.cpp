@@ -81,7 +81,8 @@ void AppLetsAndGoRacer::onOpen()
     _screenStartedMs = _lastUpdateMs;
     GetHAL().stopLvglUpdate();
     auto& display = GetHAL().getDisplay();
-    _directFrameBuffer = GetHAL().hasDisplayFrameBuffer();
+    _directFrameBuffer = lets_and_go::tuning::kDirectFramebuffer &&
+                         GetHAL().hasDisplayFrameBuffer();
     _renderer.open(display.width(), display.height());
     _raceRenderer.open(display.width(), display.height(), true, true, true, false);
     _raceRenderer.setEdgeUpscale(true);
@@ -261,7 +262,7 @@ void AppLetsAndGoRacer::onRunning()
         const bool raceView = usesRaceRenderer(_flow.screen());
         const bool partial = _inspectionPresentation.partial(screen,_selection.playerCursor());
         uint64_t drawFinishedUs = 0;
-        if (raceView && _directFrameBuffer && screen==GameScreen::Results) {
+        if (raceView && _directFrameBuffer) {
             auto& display=GetHAL().getDisplay();
             app_performance::DisplayFrameScope frame(display);
             _raceRenderer.render(display,nullptr,_flow,_race,_resultsSelection,
