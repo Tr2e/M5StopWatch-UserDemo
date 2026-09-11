@@ -1,4 +1,4 @@
-#include "../main/apps/app_lets_and_go_racer/audio/chip_synth.h"
+#include "../runtime/chip_synth.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>

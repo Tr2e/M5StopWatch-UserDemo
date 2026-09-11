@@ -13,8 +13,6 @@
 #include "view/inspection_frame_window.h"
 #include "view/race_renderer.h"
 #include "model/race_progress_store.h"
-#include "audio/racer_audio.h"
-
 #include "input/device_control_source.h"
 #include <memory>
 #include <mooncake.h>
@@ -33,8 +31,7 @@ private:
                           int deviceResult = -1);
     void prepareRace(uint32_t nowMs);
     void persistSelectedCar();
-    void updateFeedback(const lets_and_go::RacerInput& input, uint32_t nowMs);
-    void playSound(lets_and_go::SoundCue cue);
+    void updateHaptics(const lets_and_go::RacerInput& input, uint32_t nowMs);
     void vibrateFeedback(uint8_t strength, uint16_t durationMs);
 
     lets_and_go::DeviceControlSource _deviceInput;
@@ -43,7 +40,6 @@ private:
     bool _renderDirty = true;
     uint32_t _perfStartedMs = 0, _perfFrames = 0, _perfPeakUs = 0;
     uint64_t _perfDrawUs = 0, _perfPresentUs = 0, _perfInputUs = 0;
-    std::unique_ptr<lets_and_go::RacerAudio> _audio;
     std::unique_ptr<lets_and_go::RacerInputProvider> _racerInput;
     lets_and_go::MenuAxisRepeater _menuAxis;
     lets_and_go::GarageMenuNavigation _garageNavigation;
@@ -72,9 +68,7 @@ private:
     uint8_t _feedbackCountdown = 255u;
     uint8_t _feedbackLap = 0u;
     bool _feedbackBoost = false;
-    bool _feedbackBrake = false;
     bool _feedbackWallActive = false;
-    bool _feedbackSfxEnabled = true;
     bool _feedbackVibrateEnabled = true;
     bool _pausedForInputLoss = false;
 };

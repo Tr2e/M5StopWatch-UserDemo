@@ -1,5 +1,7 @@
 # R20：8-bit BGM 与操作音效
 
+> 归档状态（2026-09-11）：本文记录 R20 当时的实现。赛车 App 当前已移除运行时音频，源码和测试保存在 [`docs/assets/lets-and-go-audio-archive`](assets/lets-and-go-audio-archive/README.md)，不参与固件构建；文中的生产路径和默认测试命令仅适用于清理前版本。
+
 新增原创芯片音乐和程序合成音效，不使用动画原声或外部音频下载。不改变赛车、赛道、物理和三圈玩法。
 
 ## 声音设计
@@ -50,10 +52,10 @@ ESP-IDF 构建通过，镜像 `0x4a3490`，分区余量 `0x4cb70`（6%）。试�
 
 ```sh
 SANITIZE=1 bash tools/test_lets_and_go.sh
-c++ -std=c++17 -O1 tools/lets_and_go_audio_test.cpp main/apps/app_lets_and_go_racer/audio/chip_synth.cpp -o /tmp/lets-go-audio-test
+c++ -std=c++17 -O1 docs/assets/lets-and-go-audio-archive/tests/lets_and_go_audio_test.cpp docs/assets/lets-and-go-audio-archive/runtime/chip_synth.cpp -o /tmp/lets-go-audio-test
 /tmp/lets-go-audio-test /tmp/lets-go-audio-preview.wav
 source ../esp-idf/export.sh
 idf.py reconfigure build
 ```
 
-音符、节奏、音色、音效时长与优先级集中在 `main/apps/app_lets_and_go_racer/audio/chip_synth.cpp`。
+音符、节奏、音色、音效时长与优先级保存在 `docs/assets/lets-and-go-audio-archive/runtime/chip_synth.cpp`。

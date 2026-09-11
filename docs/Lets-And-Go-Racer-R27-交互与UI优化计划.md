@@ -1,5 +1,7 @@
 # R27：交互与 UI 优化计划
 
+> 音频状态更新（2026-09-11）：本文第 2 节保留 R27 当时的性能实验记录。赛车 App 现已完全移除 BGM 与音效运行路径，归档见 [`docs/assets/lets-and-go-audio-archive`](assets/lets-and-go-audio-archive/README.md)。
+
 状态：进行中，启动入口、开赛准备、比赛 HUD、倒计时与结算首轮已实现。用户已明确将交互与 UI 提升为最高优先级；R26 作为已验证的代码基线固定。
 
 ## 当前基线

@@ -28,7 +28,6 @@ inline constexpr uint8_t kFramesToRecoverMedium = 120u;
 inline constexpr uint8_t kFramesToRecoverHigh = 150u;
 
 struct FeedbackCue {
-    // Audio is authored in audio/chip_synth.cpp; these are haptics only.
     uint8_t vibrationStrength;
     uint16_t vibrationDurationMs;
 };

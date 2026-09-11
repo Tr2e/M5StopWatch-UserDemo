@@ -1,4 +1,4 @@
-#include "../main/apps/app_lets_and_go_racer/audio/racer_audio.h"
+#include "../runtime/racer_audio.h"
 #include <hal/hal.h>
 #include <atomic>
 #include <cassert>

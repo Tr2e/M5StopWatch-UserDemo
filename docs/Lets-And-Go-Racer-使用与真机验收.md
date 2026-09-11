@@ -54,9 +54,9 @@ R27 新 UI 仍支持这套外设操作。对手页用 X 找到 READY，再短按
 
 建议依次记录：选车正面静止视角、侧面转轮、后/顶静止视角、两条赛道预览、三车比赛、暂停、结算、退出重入。切页后至少停留 5 秒再取样。主机基准运行 `bash tools/benchmark_lets_and_go.sh /tmp/racer-benchmark`，仅用于比较同机算法开销，不能换算为设备 FPS。
 
-## 音乐与音效
+## 音频与振动
 
-R20 新增原创 8-bit BGM 与 14 类音效。车库、比赛、最后一圈、结算使用不同编曲／节奏，暂停停伴奏，恢复接续，退出释放音频。BGM／音效共同遵守进入 App 时读取的系统 SFX 开关与扬声器音量，振动开关独立。见 [R20 实现与试听](Lets-And-Go-Racer-R20-8bit音乐与音效.md)。当前增加音频波形与并发生命周期回归，总计 30 套。
+赛车 App 当前不创建音频流，也不播放 BGM、菜单提示音或比赛音效。R20 的原创合成器、生命周期封装和测试已移至 [音频资产归档](assets/lets-and-go-audio-archive/README.md)，不参与默认固件和回归测试。倒计时、GO、Boost、碰撞、最后一圈与冲线的振动反馈保留，并继续遵守系统振动开关。
 
 ## 集中调参
 
@@ -66,7 +66,7 @@ R20 新增原创 8-bit BGM 与 14 类音效。车库、比赛、最后一圈、�
 - 赛道基础高度、半径和 3.8 m 立交抬升。
 - 首版 AI 效率与随机波动（R13 已验证四款车均可通过增压与避让翻盘）。
 - High/Medium/Low 自动细节降级和恢复阈值。
-- 倒计时、GO、Boost、撞墙、最后一圈与冲线的振动参数；音乐／音效参数在 `audio/chip_synth.cpp`。
+- 倒计时、GO、Boost、撞墙、最后一圈与冲线的振动参数。
 
 赛车动力学在 `model/racer_model.cpp`，AI 在 `model/rival_ai.cpp`，摇杆死区与硬件滤波沿用 `app_vector_canyon_fighter/input` 的共享驱动。修改这些参数后必须重新运行 `tools/test_lets_and_go.sh` 和 ESP-IDF 构建。
 
