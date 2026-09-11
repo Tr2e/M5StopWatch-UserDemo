@@ -844,7 +844,7 @@ int main(int argc, char** argv)
                 save("drag-"+std::to_string(azimuth));
             }
             motion.endDrag(2000);
-            for(uint32_t elapsed:{0u,50u,100u,175u,250u,350u}) {
+            for(uint32_t elapsed:{0u,75u,150u,260u,390u,520u}) {
                 const auto pose=motion.state(2000+elapsed);
                 TrackCamera camera{};camera.principalX=233;
                 camera.principalY=std::lround(pose.centerY);camera.focalLength=pose.scale*5.8f;
@@ -869,7 +869,7 @@ int main(int argc, char** argv)
             const uint32_t start=transition*1000;
             if(transition)motion.changeView(transition<=4 ? 1 : -1,start);
             const unsigned preset=unsigned(motion.state(start).preset);
-            for(uint32_t elapsed:{0u,50u,100u,175u,250u,350u}) {
+            for(uint32_t elapsed:{0u,75u,150u,260u,390u,520u}) {
                 const auto pose=motion.state(start+elapsed);
                 garage.render(flow,selection,elapsed,quality,{},pose);checkText();
                 TrackCamera camera{};camera.principalX=233+std::lround(pose.carSlide);
@@ -898,16 +898,16 @@ int main(int argc, char** argv)
                 if(car==0 && transition==1 && quality==PencilDetail::High)
                     save("turn-"+std::to_string(elapsed));
             }
-            garage.render(flow,selection,500,quality,{},motion.state(start+500));
+            garage.render(flow,selection,600,quality,{},motion.state(start+600));
             const auto first=canvas.frame();
             if(quality==PencilDetail::High && transition<4)save("view-"+std::to_string(car)+"-"+std::to_string(preset));
-            garage.render(flow,selection,680,quality,{},motion.state(start+680));
+            garage.render(flow,selection,780,quality,{},motion.state(start+780));
             const bool moves=first!=canvas.frame();
             // Neo's official smooth caps/dishes have no spokes; their perfectly
             // rotationally symmetric surface has no visible phase difference.
             const bool hasSpokes=id!=CarId::NeoTridaggerZmc && id!=CarId::BeakSpider;
             if(moves!=(preset==1 && hasSpokes) ||
-               (preset!=1 && motion.state(start+500).wheelPhase!=motion.state(start+680).wheelPhase)) {
+               (preset!=1 && motion.state(start+600).wheelPhase!=motion.state(start+780).wheelPhase)) {
                 std::cerr << "Garage wheels must move ONLY in side view\n";valid=false;
             }
         }

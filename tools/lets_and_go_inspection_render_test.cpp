@@ -44,16 +44,16 @@ int main() {
     preview.drag({1,30,20,true,true},10);
     assert(preview.renderPercent(10)==65 && preview.renderPercent(1000)==65);
     preview.endDrag(1000);
-    assert(preview.renderPercent(1349)==85 && preview.renderPercent(1350)==100);
-    preview.changeView(1,1400);
-    assert(preview.renderPercent(1500)==85 && preview.renderPercent(2000)==100);
+    assert(preview.renderPercent(1519)==65 && preview.renderPercent(1520)==100);
+    preview.changeView(1,1600);
+    assert(preview.renderPercent(1800)==65 && preview.renderPercent(2200)==100);
     assert(preview.animating(2000)); // Native SIDE wheel rotation.
-    preview.selectCar(CarId::HurricaneSonic,2100);
-    assert(preview.renderPercent(2200)==85 && preview.renderPercent(3000)==100);
+    preview.selectCar(CarId::HurricaneSonic,2300);
+    assert(preview.renderPercent(2500)==65 && preview.renderPercent(3000)==100);
     preview.drag({2,10,10,true,true},3100);preview.endDrag(3200);
     preview.drag({3,5,5,true,true},3210);assert(preview.renderPercent(3220)==65);
     preview.reset(car,UINT32_MAX-100);preview.changeView(1,UINT32_MAX-100);
-    assert(preview.renderPercent(248)==85 && preview.renderPercent(249)==100);
+    assert(preview.renderPercent(418)==65 && preview.renderPercent(419)==100);
     CarInspectionController camera;
     InspectionRenderPolicy quality;
     assert(quality.percent()==100 && quality.displayPercent()==100);
@@ -65,35 +65,37 @@ int main() {
     assert(!quality.update(500,false,true)); // Held touch does not bounce in size.
     assert(!camera.drag({1,20,20,false,true}));
     assert(!quality.update(700,false,false));
-    assert(!quality.update(849,false,false));
-    assert(quality.update(850,false,false) && quality.percent()==82 && quality.displayPercent()==93);
-    assert(!quality.update(999,false,false));
-    assert(quality.update(1000,false,false) && quality.percent()==100 && quality.displayPercent()==100);
-    assert(!quality.update(1100,false,false));
+    assert(!quality.update(799,false,false));
+    assert(quality.update(900,false,false) && quality.percent()==65 && quality.displayPercent()>85);
+    const int recoveringDisplay=quality.displayPercent();
+    assert(quality.update(1100,false,false) && quality.percent()==65 &&
+           quality.displayPercent()>recoveringDisplay && quality.displayPercent()<100);
+    assert(quality.update(1320,false,false) && quality.percent()==100 && quality.displayPercent()==100);
+    assert(!quality.update(1400,false,false));
     // A slow frame can deliver a whole short gesture, then skip the intermediate.
     assert(camera.drag({2,0,20,false,true}));
-    assert(quality.update(1200,true,false));
-    assert(quality.update(1700,false,false) && quality.percent()==100);
+    assert(quality.update(1500,true,false));
+    assert(quality.update(2200,false,false) && quality.percent()==100);
     // A held joystick remains compact throughout its repeat delay and at a limit.
-    quality.update(1800,true,true);
-    for(uint32_t time=1810;time<2600;time+=10)
+    quality.update(2300,true,true);
+    for(uint32_t time=2310;time<3100;time+=10)
         assert(!quality.update(time,false,true) && quality.percent()==65);
-    assert(!quality.update(2600,false,false));
-    assert(quality.update(2750,false,false) && quality.percent()==82);
-    // Touching again during recovery cancels enlargement even before movement.
-    assert(quality.update(2760,false,true) && quality.percent()==65);
-    assert(!quality.update(3000,false,true));
     assert(!quality.update(3100,false,false));
-    assert(quality.update(3250,false,false) && quality.percent()==82);
-    assert(quality.update(3260,true,false) && quality.percent()==65);
-    assert(quality.update(3560,false,false) && quality.percent()==100);
-    camera.drag({3,10,10,true,true});quality.update(4000,true,true);
-    camera.release();quality.update(4100,false,camera.touchActive());
-    assert(quality.update(4400,false,false) && quality.percent()==100);
+    assert(quality.update(3300,false,false) && quality.percent()==65 && quality.displayPercent()>85);
+    // Touching again during recovery cancels enlargement even before movement.
+    assert(quality.update(3310,false,true) && quality.percent()==65);
+    assert(!quality.update(3500,false,true));
+    assert(!quality.update(3600,false,false));
+    assert(quality.update(3800,false,false) && quality.percent()==65 && quality.displayPercent()>85);
+    assert(quality.update(3810,true,false) && quality.percent()==65);
+    assert(quality.update(4430,false,false) && quality.percent()==100);
+    camera.drag({3,10,10,true,true});quality.update(4500,true,true);
+    camera.release();quality.update(4600,false,camera.touchActive());
+    assert(quality.update(5220,false,false) && quality.percent()==100);
     quality.reset();
     quality.update(UINT32_MAX-50,true,false);
-    assert(quality.percent()==65 && !quality.update(98,false,false));
-    assert(quality.update(99,false,false) && quality.percent()==82);
-    assert(quality.update(249,false,false) && quality.percent()==100);
-    std::cout<<"Inspection render: compact touch/stick, staged recovery, re-grab, slow-frame flick, cancellation and rollover passed\n";
+    assert(quality.percent()==65 && !quality.update(48,false,false));
+    assert(quality.update(149,false,false) && quality.percent()==65 && quality.displayPercent()>85);
+    assert(quality.update(569,false,false) && quality.percent()==100);
+    std::cout<<"Inspection render: compact touch/stick, eased recovery, re-grab, slow-frame flick, cancellation and rollover passed\n";
 }

@@ -32,7 +32,10 @@ inline const char* garageViewLabel(GarageView view) {
 // screenElapsedMs. Retarget from the current pose, not the previous preset.
 class GarageViewController {
 public:
-    static constexpr uint32_t kTransitionMs=350;
+    // A native garage frame can take around 100 ms on target. The former
+    // 350 ms return therefore exposed only two or three intermediate poses.
+    // Give the eased orbit enough time to present a useful motion sequence.
+    static constexpr uint32_t kTransitionMs=520;
     void reset(CarId car,uint32_t nowMs) {
         _from=_to={};_view=GarageView::Front;_car=car;
         _viewStarted=nowMs;_carStarted=nowMs;_viewMoving=false;_carMoving=false;
@@ -85,7 +88,9 @@ public:
         // on the final transition frame, including after a long rendering stall.
         const bool moving=(_viewMoving && nowMs-_viewStarted<kTransitionMs) ||
                           (_carMoving && nowMs-_carStarted<kTransitionMs);
-        return moving ? 85 : 100;
+        // Reuse the already accepted drag sampling while the camera moves.
+        // Static endpoints still redraw at exact native sampling.
+        return moving ? 65 : 100;
     }
     void endDrag(uint32_t nowMs) {
         if (!_dragging) return;

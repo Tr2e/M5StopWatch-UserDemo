@@ -16,24 +16,24 @@ int main()
     assert(!motion.animating(1000));
     motion.changeView(1,1000);
     assert(motion.state(1000).preset==GarageView::Side && near(motion.state(1000).yaw,idleYaw));
-    assert(near(motion.state(1349).wheelPhase,0));
-    assert(near(motion.state(1350).yaw,-1.5707963f));
-    assert(!near(motion.state(1500).wheelPhase,motion.state(1600).wheelPhase));
-    const auto side=motion.state(1600);
-    motion.selectCar(CarId::HurricaneSonic,1600);
-    assert(motion.state(1600).preset==GarageView::Side);
-    assert(near(motion.state(1600).yaw,side.yaw) && motion.state(1600).carZoom<1);
-    assert(near(motion.state(1950).carZoom,1) && near(motion.state(1950).carSlide,0));
-    const auto frozen=motion.state(2000).wheelPhase;
-    motion.changeView(1,2000);
-    assert(near(motion.state(2350).wheelPhase,frozen) && near(motion.state(9000).wheelPhase,frozen));
-    motion.changeView(1,2400);motion.changeView(1,2800);
-    assert(motion.state(3150).preset==GarageView::Front);
-    assert(motion.animating(3149) && !motion.animating(3150));
-    assert(near(motion.state(3150).yaw,motion.state(9000).yaw));
-    motion.selectCar(CarId::CycloneMagnum,3200);
-    assert(motion.animating(3200));
-    assert(!motion.animating(3550));
+    assert(near(motion.state(1519).wheelPhase,0));
+    assert(near(motion.state(1520).yaw,-1.5707963f));
+    assert(!near(motion.state(1530).wheelPhase,motion.state(1600).wheelPhase));
+    const auto side=motion.state(1800);
+    motion.selectCar(CarId::HurricaneSonic,1800);
+    assert(motion.state(1800).preset==GarageView::Side);
+    assert(near(motion.state(1800).yaw,side.yaw) && motion.state(1800).carZoom<1);
+    assert(near(motion.state(2320).carZoom,1) && near(motion.state(2320).carSlide,0));
+    const auto frozen=motion.state(2400).wheelPhase;
+    motion.changeView(1,2400);
+    assert(near(motion.state(2920).wheelPhase,frozen) && near(motion.state(9000).wheelPhase,frozen));
+    motion.changeView(1,3000);motion.changeView(1,3600);
+    assert(motion.state(4120).preset==GarageView::Front);
+    assert(motion.animating(4119) && !motion.animating(4120));
+    assert(near(motion.state(4120).yaw,motion.state(9000).yaw));
+    motion.selectCar(CarId::CycloneMagnum,4200);
+    assert(motion.animating(4200));
+    assert(!motion.animating(4720));
     // Rapid direction changes preserve the actual intermediate pose.
     motion.changeView(-1,3300);
     const auto middle=motion.state(3475);
@@ -43,14 +43,14 @@ int main()
     assert(near(middle.pitch,retarget.pitch) && near(middle.scale,retarget.scale));
     motion.reset(CarId::CycloneMagnum,UINT32_MAX-200);
     motion.changeView(1,UINT32_MAX-200);
-    assert(near(motion.state(149).yaw,-1.5707963f));
-    assert(near(motion.state(149).wheelPhase,0) && motion.state(249).wheelPhase>0);
+    assert(near(motion.state(319).yaw,-1.5707963f));
+    assert(near(motion.state(319).wheelPhase,0) && motion.state(419).wheelPhase>0);
 
     // At 3-30 FPS, including stalls, repeated spokes must never resolve to a
     // backwards step. Repeated reads within one frame must be side-effect free.
     for(uint32_t interval : {33u,100u,167u,200u,333u,400u,2000u}) {
         motion.reset(CarId::CycloneMagnum,0);motion.changeView(1,0);
-        uint32_t time=350;
+        uint32_t time=GarageViewController::kTransitionMs;
         motion.presented(time);
         for(int frame=0;frame<100;++frame) {
             const float previous=motion.state(time).wheelPhase;
@@ -68,29 +68,29 @@ int main()
 
     for(int preset=0;preset<4;++preset) {
         motion.reset(CarId::CycloneMagnum,0);
-        for(int i=0;i<preset;++i)motion.changeView(1,i*500);
-        const auto home=motion.state(2000);
-        motion.drag({1,200,1000,true,true},2000);
-        assert(motion.dragging() && near(motion.state(2000).pitch,1.5707963f));
-        motion.drag({1,200,999,true,true},2010);
-        assert(motion.state(2010).pitch<1.5707963f);
-        motion.drag({1,400,-1000,true,true},2100);
-        const auto held=motion.state(2100);
+        for(int i=0;i<preset;++i)motion.changeView(1,i*700);
+        const auto home=motion.state(3000);
+        motion.drag({1,200,1000,true,true},3000);
+        assert(motion.dragging() && near(motion.state(3000).pitch,1.5707963f));
+        motion.drag({1,200,999,true,true},3010);
+        assert(motion.state(3010).pitch<1.5707963f);
+        motion.drag({1,400,-1000,true,true},3100);
+        const auto held=motion.state(3100);
         assert(near(held.pitch,.12f));
         auto reversed=motion;
-        reversed.drag({1,400,-999,true,true},2110);
-        assert(reversed.state(2110).pitch>.12f);
-        assert(near(held.wheelPhase,motion.state(2500).wheelPhase));
-        motion.drag({1,400,-1000,false,true},2600);
-        const auto released=motion.state(2600);
+        reversed.drag({1,400,-999,true,true},3110);
+        assert(reversed.state(3110).pitch>.12f);
+        assert(near(held.wheelPhase,motion.state(3500).wheelPhase));
+        motion.drag({1,400,-1000,false,true},3600);
+        const auto released=motion.state(3600);
         assert(!motion.dragging() && near(held.yaw,released.yaw));
         assert(near(held.scale,released.scale));
-        const auto restored=motion.state(2950);
+        const auto restored=motion.state(4120);
         assert(near(std::remainder(restored.yaw-home.yaw,6.2831853f),0));
         assert(near(restored.pitch,home.pitch) && near(restored.scale,home.scale));
-        motion.drag({2,-100,10,true,true},3000);
-        motion.changeView(1,3100);
-        motion.drag({2,200,10,true,true},3200);
+        motion.drag({2,-100,10,true,true},4200);
+        motion.changeView(1,4300);
+        motion.drag({2,200,10,true,true},4400);
         assert(!motion.dragging());
     }
 
@@ -159,6 +159,6 @@ int main()
     step=nav.update(.95f,.7f,880);assert(step.car==0 && step.view==1);
     nav.update(std::numeric_limits<float>::quiet_NaN(),0,900);
     step=nav.update(-1,0,920);assert(step.car==-1 && step.view==0);
-    std::cout << "Garage view: four presets, 350ms easing, retarget continuity, retained view, side-only wheels, axis lock, rollover; state="
+    std::cout << "Garage view: four presets, 520ms easing, retarget continuity, retained view, side-only wheels, axis lock, rollover; state="
               << sizeof(GarageViewController) << " bytes\n";
 }
