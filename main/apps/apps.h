@@ -6,6 +6,7 @@
 #pragma once
 #include "app_launcher/app_launcher.h"
 #include "app_setup/app_setup.h"
+#include "app_lucky_wheel/app_lucky_wheel.h"
 #include "app_typhoon/app_typhoon.h"
 #include "app_grokbot_lab/app_grokbot_lab.h"
 #include "app_ruview/app_ruview.h"

@@ -20,7 +20,9 @@ LV_IMG_DECLARE(icon_glow_field);
 LV_IMG_DECLARE(icon_vector_run);
 LV_IMG_DECLARE(icon_lets_and_go);
 LV_IMG_DECLARE(icon_badge);
+LV_IMG_DECLARE(icon_lucky_wheel);
 LV_IMG_DECLARE(icon_typhoon);
 
+LV_IMG_DECLARE(lucky_wheel_pointer);
 LV_IMG_DECLARE(go_home_guide);
 LV_IMG_DECLARE(icon_bat_lightning);

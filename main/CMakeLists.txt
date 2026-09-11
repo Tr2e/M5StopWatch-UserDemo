@@ -18,7 +18,6 @@ set(STOCK_DEMO_APP_DIRS
     app_badge
     app_fft
     app_imu
-    app_lucky_wheel
     app_stopwatch
     app_template
     app_watch_face
@@ -33,10 +32,8 @@ set(STOCK_DEMO_IMAGE_SRCS
     icon_edit_badge.c
     icon_fft.c
     icon_imu.c
-    icon_lucky_wheel.c
     icon_stopwatch.c
     icon_watch_face.c
-    lucky_wheel_pointer.c
 )
 foreach(STOCK_DEMO_IMAGE IN LISTS STOCK_DEMO_IMAGE_SRCS)
     list(FILTER MY_SRCS EXCLUDE REGEX "/assets/images/${STOCK_DEMO_IMAGE}$")
