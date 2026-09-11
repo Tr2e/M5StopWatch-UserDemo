@@ -83,10 +83,12 @@ def rect(box: tuple[int, int, int, int], fill: tuple[int, int, int]) -> None:
     draw.rounded_rectangle(tuple(value * SCALE for value in box), radius=5 * SCALE, fill=fill)
 
 
-rect((14, 57, 100, 143), (218, 38, 47))
-rect((100, 57, 186, 143), (26, 72, 154))
-draw.polygon([(x * SCALE, y * SCALE) for x, y in star(57, 100, 34, 14)], fill=(255, 255, 255))
-diamond(143, 100, 68, 68)
+rect((8, 54, 100, 146), (218, 38, 47))
+rect((100, 54, 192, 146), (26, 72, 154))
+draw.polygon([(x * SCALE, y * SCALE) for x, y in star(54, 100, 36, 15)], fill=(255, 255, 255))
+# Align the diamond's longest shoulder line with the star's widest arm line;
+# matching only the outer bounds makes the diamond look perceptually too high.
+diamond(146, 105, 64, 65)
 
 source = canvas.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
 png_path = IMAGE_DIR / "icon_lets_and_go.png"

@@ -53,14 +53,14 @@ inline void entry(lgfx::LGFXBase& canvas,bool calibrating,const RacerInputStatus
     label(canvas,"RACE GARAGE",cx,46,1,muted);
     label(canvas,"MINI 4WD",cx,80,3);
     stripes(canvas,cx,108);
-    label(canvas,calibrating ? "CENTER JOYSTICK" : "MINI 4WD",cx,151,calibrating ? 2 : 4);
     if(calibrating) {
+        label(canvas,"CENTER JOYSTICK",cx,151,2);
         const float progress=std::isfinite(status.calibrationProgress) ?
             std::clamp(status.calibrationProgress,0.f,1.f) : 0.f;
         canvas.fillRect(cx-100,179,200,8,line);
         canvas.fillRect(cx-100,179,int(200*progress),8,blue);
         label(canvas,"KEEP STILL TO CALIBRATE",cx,201,1,muted);
-    } else label(canvas,"CHOOSE YOUR CONTROLS",cx,187,1,muted);
+    } else label(canvas,"CHOOSE CONTROLS",cx,166,2,muted);
     action(canvas,home_layout::deviceAction,"PLAY ON DEVICE","B / TAP TO ENTER");
     canvas.fillRect(cx-139,294,278,85,panel);
     label(canvas,"EXTERNAL CONTROLS",cx,307,1,muted,panel);
