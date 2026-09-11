@@ -99,6 +99,7 @@ public:
     bool edgeUpscaleActive() const { return _edgeUpscale && _edgeRow.get(); }
     void setRowOcclusionFilter(bool enabled) { _rowOcclusionFilter=enabled; }
     void setBulkSceneCopy(bool enabled) { _bulkSceneCopy=enabled; }
+    void setIncrementalCarRaster(bool enabled) { _incrementalCarRaster=enabled; }
     const RaceRenderStages& stages() const { return _stages; }
     bool halfResolutionActive() const { return bool(_scene); }
     void render(lgfx::LGFXBase& canvas, LGFX_Sprite* canvasBuffer,
@@ -125,6 +126,7 @@ private:
     RaceRenderStages _stages{};
     bool _rowOcclusionFilter=true;
     bool _bulkSceneCopy=true;
+    bool _incrementalCarRaster=true;
     bool _edgeUpscale=false;
     struct EdgeRows {
         std::array<std::array<uint16_t,240>,3> source;

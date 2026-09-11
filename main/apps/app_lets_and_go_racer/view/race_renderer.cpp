@@ -448,6 +448,7 @@ void RaceRenderer::render(lgfx::LGFXBase& canvas,LGFX_Sprite* canvasBuffer,
 #endif
     }
     _surface->raster.setPaintAtlas(_paintAtlas.get());
+    _surface->raster.setIncrementalInterpolation(_incrementalCarRaster);
     if (flow.screen() == GameScreen::Results) {
         drawResults(canvas,race.snapshot(),results,deviceControls);
         return;

@@ -82,6 +82,7 @@ template<int Width,int Height> class CarSurfaceRaster {
 public:
     static constexpr int kWidth=Width,kHeight=Height;
     void setPaintAtlas(const RacePaintAtlas* atlas) { _paintAtlas=atlas; }
+    void setIncrementalInterpolation(bool enabled) { _incrementalInterpolation=enabled; }
     unsigned preferInternalMemory() {
         return unsigned(_fastDepth.allocate())+unsigned(_fastColor.allocate());
     }
@@ -95,6 +96,14 @@ public:
     }
     void triangle(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
+        if(_incrementalInterpolation)
+            triangleImpl<true>(a,b,c,color,paint,light);
+        else
+            triangleImpl<false>(a,b,c,color,paint,light);
+    }
+private:
+    template<bool Incremental> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
+                  uint16_t color,CarPaint paint,uint8_t light) {
         auto* depthBuffer=depthData();auto* colorBuffer=colorData();
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
         if(!std::isfinite(det) || std::abs(det)<.001f)return;
@@ -105,6 +114,11 @@ public:
         if(left>right || top>bottom)return;
         const int x0=int(left),x1=int(right),y0=int(top),y1=int(bottom);
         const float inverse=1/det;
+        float sStep=0,tStep=0;
+        if constexpr(Incremental) {
+            sStep=(c.y-a.y)*inverse;
+            tStep=-(b.y-a.y)*inverse;
+        }
         // Xtensa otherwise repeats __divsf3 for each shaded pigment. Lighting
         // is constant for the triangle; retain the exact original quotient.
         const float lightFactor=light==255 ? 1.f : light/255.f;
@@ -143,10 +157,23 @@ public:
                 first=int(std::max(float(x0),rasterFloor(rowLeft)-2.f));
                 last=int(std::min(float(x1),rasterCeil(rowRight)+2.f));
             }
+            const float py=y+.5f-a.y;
+            float incrementalS=0,incrementalT=0;
+            if constexpr(Incremental) {
+                const float firstPx=first+.5f-a.x;
+                incrementalS=(firstPx*(c.y-a.y)-py*(c.x-a.x))*inverse;
+                incrementalT=((b.x-a.x)*py-(b.y-a.y)*firstPx)*inverse;
+            }
             for(int x=first;x<=last;++x) {
-            const float px=x+.5f-a.x,py=y+.5f-a.y;
-            const float s=(px*(c.y-a.y)-py*(c.x-a.x))*inverse;
-            const float t=((b.x-a.x)*py-(b.y-a.y)*px)*inverse;
+            float s,t;
+            if constexpr(Incremental) {
+                s=incrementalS;t=incrementalT;
+                incrementalS+=sStep;incrementalT+=tStep;
+            } else {
+                const float px=x+.5f-a.x;
+                s=(px*(c.y-a.y)-py*(c.x-a.x))*inverse;
+                t=((b.x-a.x)*py-(b.y-a.y)*px)*inverse;
+            }
             if(s<-.00001f || t<-.00001f || s+t>1.00001f)continue;
             const float depth=a.depth+s*(b.depth-a.depth)+t*(c.depth-a.depth);
             if(!(depth>0) || !std::isfinite(depth))continue;
@@ -166,6 +193,7 @@ public:
             }
         }
     }
+public:
     void cameraTriangle(const TrackCamera& camera,CarSurfaceVertex a,CarSurfaceVertex b,
                         CarSurfaceVertex c,uint16_t color,CarPaint paint,uint8_t light) {
         const std::array<CarSurfaceVertex,3> input{{a,b,c}};
@@ -318,6 +346,7 @@ public:
     uint16_t depthAt(int x,int y) const {return depthData()[std::size_t(y)*_width+x];}
 private:
     const RacePaintAtlas* _paintAtlas=nullptr;
+    bool _incrementalInterpolation=false;
     using Pixels=std::array<uint16_t,Width*Height>;
     RenderScratch<Pixels> _fastDepth,_fastColor;
     mutable std::array<uint16_t,PencilOcclusion::kCapacity> _occlusionCandidates{};

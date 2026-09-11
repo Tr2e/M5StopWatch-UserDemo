@@ -1418,6 +1418,7 @@ int main(int argc, char** argv)
             if(sample==0)save("material-original-"+std::to_string(car));
             cached.render(drive,run,results,0,false,detail,true);
             if(sample==0)save("material-race-"+std::to_string(car));
+            hero.setIncrementalCarRaster(false);
             hero.render(drive,run,results,0,false,detail,true);
             if(sample==0)save("player-quality-"+std::to_string(car));
             for(int y=79;y<=165;++y)for(int x=311;x<=397;++x)
@@ -1426,6 +1427,10 @@ int main(int argc, char** argv)
                     std::cerr<<"Cached minimap pixel mismatch\n";valid=false;
                 }
             const auto solidFrame=canvas.frame();
+            hero.setIncrementalCarRaster(true);
+            hero.render(drive,run,results,0,false,detail,true);
+            if(solidFrame!=canvas.frame()) {std::cerr<<"Incremental car raster mismatch\n";valid=false;}
+            hero.setIncrementalCarRaster(false);
             if(sample==0)save("edge-"+std::to_string(car)+"-nearest");
             hero.setEdgeUpscale(true);
             if(!hero.edgeUpscaleActive()) {std::cerr<<"Edge row allocation failed on host\n";valid=false;}
@@ -1501,12 +1506,16 @@ int main(int argc, char** argv)
             }
             hero.setTrackCulling(true);hero.render(drive,run,results,0,false,PencilDetail::Low,true);
             const auto culled=canvas.frame();
+            hero.setIncrementalCarRaster(true);
+            hero.render(drive,run,results,0,false,PencilDetail::Low,true);
+            if(culled!=canvas.frame()) {std::cerr<<"Device-quality incremental car raster mismatch\n";valid=false;}
+            hero.setIncrementalCarRaster(false);
             if(car==0)save("spiral-device-"+std::to_string(sample));
             hero.setTrackCulling(false);hero.render(drive,run,results,0,false,PencilDetail::Low,true);
             if(culled!=canvas.frame()) {std::cerr<<"Device-quality spiral culling mismatch\n";valid=false;}
         }
     }
-    std::cout<<"Grand Spiral device-quality path: 128 three-car poses, culling equality\n";
+    std::cout<<"Grand Spiral device-quality path: 128 three-car poses, culling/raster equality\n";
     // Explicit generic targets must match the compatibility Sprite path. The
     // race comparison also exercises row pushImage instead of raw Sprite copy.
     LGFX_Sprite genericTarget;

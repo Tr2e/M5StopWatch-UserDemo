@@ -1,0 +1,1705 @@
+{
+  "paired_frames": 576,
+  "crc_mismatches": 0,
+  "modes": [
+    {
+      "frames": 576,
+      "mean_us": {
+        "total": 163836.23,
+        "draw": 132352.47,
+        "present": 31483.76,
+        "track_us": 16903.14,
+        "prepare": 23507.99,
+        "raster": 48667.72,
+        "blit": 10523.78,
+        "player": 38506.13,
+        "opponents": 46052.37,
+        "upscale": 20209.58,
+        "hud": 3623.99
+      },
+      "median_us": {
+        "total": 164000.0,
+        "draw": 132493.5,
+        "present": 31458.0,
+        "track_us": 14385.0,
+        "prepare": 24810.0,
+        "raster": 51206.0,
+        "blit": 10067.0,
+        "player": 38335.5,
+        "opponents": 49379.5,
+        "upscale": 20197.0,
+        "hud": 3335.0
+      },
+      "p95_total_us": 193336
+    },
+    {
+      "frames": 576,
+      "mean_us": {
+        "total": 155942.57,
+        "draw": 124463.49,
+        "present": 31479.08,
+        "track_us": 16947.93,
+        "prepare": 23509.84,
+        "raster": 40501.92,
+        "blit": 10519.64,
+        "player": 34789.1,
+        "opponents": 41594.98,
+        "upscale": 20216.37,
+        "hud": 3682.98
+      },
+      "median_us": {
+        "total": 154948.5,
+        "draw": 123465.5,
+        "present": 31457.0,
+        "track_us": 14597.0,
+        "prepare": 24806.0,
+        "raster": 42660.0,
+        "blit": 10077.0,
+        "player": 34537.0,
+        "opponents": 44298.0,
+        "upscale": 20197.0,
+        "hud": 3338.0
+      },
+      "p95_total_us": 184859
+    }
+  ],
+  "raster_saved_us": 8165.8,
+  "raster_saved_percent": 16.779,
+  "draw_saved_us": 7888.98,
+  "draw_saved_percent": 5.961,
+  "groups_faster": 24,
+  "groups": [
+    {
+      "car": 0,
+      "track": 0,
+      "raster_saved_us": 7197.08,
+      "raster_saved_percent": 16.124,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 157451.58,
+            "draw": 125987.67,
+            "present": 31463.92,
+            "track_us": 16792.46,
+            "prepare": 21734.75,
+            "raster": 44635.46,
+            "blit": 10181.46,
+            "player": 35879.88,
+            "opponents": 42456.29,
+            "upscale": 20198.04,
+            "hud": 3692.29
+          },
+          "median_us": {
+            "total": 157364.5,
+            "draw": 125773.0,
+            "present": 31457.0,
+            "track_us": 14281.5,
+            "prepare": 23320.0,
+            "raster": 48027.5,
+            "blit": 9901.0,
+            "player": 35322.0,
+            "opponents": 47110.5,
+            "upscale": 20196.0,
+            "hud": 3317.0
+          },
+          "p95_total_us": 186164
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 150317.54,
+            "draw": 118845.79,
+            "present": 31471.75,
+            "track_us": 16820.33,
+            "prepare": 21738.96,
+            "raster": 37438.38,
+            "blit": 10202.79,
+            "player": 32629.38,
+            "opponents": 38533.88,
+            "upscale": 20206.33,
+            "hud": 3689.12
+          },
+          "median_us": {
+            "total": 149210.5,
+            "draw": 117745.0,
+            "present": 31466.5,
+            "track_us": 14272.0,
+            "prepare": 23330.0,
+            "raster": 40263.5,
+            "blit": 9897.5,
+            "player": 32266.5,
+            "opponents": 42284.0,
+            "upscale": 20198.5,
+            "hud": 3314.0
+          },
+          "p95_total_us": 170918
+        }
+      ]
+    },
+    {
+      "car": 0,
+      "track": 1,
+      "raster_saved_us": 7335.79,
+      "raster_saved_percent": 16.273,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159716.46,
+            "draw": 128225.79,
+            "present": 31490.67,
+            "track_us": 16593.5,
+            "prepare": 22165.08,
+            "raster": 45080,
+            "blit": 10959.38,
+            "player": 36647.29,
+            "opponents": 43107.04,
+            "upscale": 20216.08,
+            "hud": 3904.12
+          },
+          "median_us": {
+            "total": 159108.5,
+            "draw": 127634.0,
+            "present": 31464.0,
+            "track_us": 15934.0,
+            "prepare": 23451.0,
+            "raster": 47328.5,
+            "blit": 10480.0,
+            "player": 37895.0,
+            "opponents": 46500.5,
+            "upscale": 20195.0,
+            "hud": 3363.0
+          },
+          "p95_total_us": 195377
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 151234.08,
+            "draw": 119771.96,
+            "present": 31462.12,
+            "track_us": 16318.08,
+            "prepare": 22161.71,
+            "raster": 37744.21,
+            "blit": 10957.08,
+            "player": 33275.96,
+            "opponents": 39173.79,
+            "upscale": 20220.62,
+            "hud": 3744.42
+          },
+          "median_us": {
+            "total": 150435.5,
+            "draw": 118978.0,
+            "present": 31464.5,
+            "track_us": 15229.0,
+            "prepare": 23472.5,
+            "raster": 39445.0,
+            "blit": 10444.5,
+            "player": 34165.0,
+            "opponents": 41669.0,
+            "upscale": 20197.5,
+            "hud": 3376.5
+          },
+          "p95_total_us": 175114
+        }
+      ]
+    },
+    {
+      "car": 0,
+      "track": 2,
+      "raster_saved_us": 7466.5,
+      "raster_saved_percent": 16.205,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159047.21,
+            "draw": 127546.5,
+            "present": 31500.71,
+            "track_us": 17388.21,
+            "prepare": 22110.42,
+            "raster": 46076.5,
+            "blit": 9810.92,
+            "player": 35684.75,
+            "opponents": 43862.92,
+            "upscale": 20205.21,
+            "hud": 3604.5
+          },
+          "median_us": {
+            "total": 159108.5,
+            "draw": 127653.5,
+            "present": 31452.5,
+            "track_us": 14999.5,
+            "prepare": 23436.5,
+            "raster": 47597.5,
+            "blit": 9315.5,
+            "player": 35020.0,
+            "opponents": 46322.0,
+            "upscale": 20199.0,
+            "hud": 3211.5
+          },
+          "p95_total_us": 180449
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 151649.29,
+            "draw": 120169.12,
+            "present": 31480.17,
+            "track_us": 17387.79,
+            "prepare": 22165.33,
+            "raster": 38610,
+            "blit": 9808.17,
+            "player": 32361.58,
+            "opponents": 39807.12,
+            "upscale": 20210.04,
+            "hud": 3601.46
+          },
+          "median_us": {
+            "total": 150609.5,
+            "draw": 119172.0,
+            "present": 31448.5,
+            "track_us": 12813.0,
+            "prepare": 23455.0,
+            "raster": 39940.5,
+            "blit": 9352.0,
+            "player": 31635.5,
+            "opponents": 42474.5,
+            "upscale": 20195.5,
+            "hud": 3222.0
+          },
+          "p95_total_us": 174303
+        }
+      ]
+    },
+    {
+      "car": 1,
+      "track": 0,
+      "raster_saved_us": 8225.71,
+      "raster_saved_percent": 17.036,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 163284.88,
+            "draw": 131818.96,
+            "present": 31465.92,
+            "track_us": 16833.25,
+            "prepare": 22996.83,
+            "raster": 48283.04,
+            "blit": 10494.5,
+            "player": 36318.83,
+            "opponents": 47816.38,
+            "upscale": 20201.67,
+            "hud": 3696.67
+          },
+          "median_us": {
+            "total": 164249.5,
+            "draw": 132784.5,
+            "present": 31457.5,
+            "track_us": 14238.0,
+            "prepare": 25092.5,
+            "raster": 53106.5,
+            "blit": 10247.0,
+            "player": 35716.5,
+            "opponents": 53400.5,
+            "upscale": 20189.5,
+            "hud": 3338.0
+          },
+          "p95_total_us": 195492
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156134.25,
+            "draw": 124674.92,
+            "present": 31459.33,
+            "track_us": 17101.54,
+            "prepare": 22963.29,
+            "raster": 40057.33,
+            "blit": 10467.33,
+            "player": 32895.21,
+            "opponents": 42905.75,
+            "upscale": 20227.21,
+            "hud": 3875.67
+          },
+          "median_us": {
+            "total": 156071.0,
+            "draw": 124603.5,
+            "present": 31455.5,
+            "track_us": 14591.5,
+            "prepare": 25085.0,
+            "raster": 43758.0,
+            "blit": 10266.5,
+            "player": 32437.0,
+            "opponents": 47643.0,
+            "upscale": 20198.5,
+            "hud": 3334.0
+          },
+          "p95_total_us": 180108
+        }
+      ]
+    },
+    {
+      "car": 1,
+      "track": 1,
+      "raster_saved_us": 8376.88,
+      "raster_saved_percent": 17.161,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 164239.88,
+            "draw": 132736.12,
+            "present": 31503.75,
+            "track_us": 16293.46,
+            "prepare": 23451.58,
+            "raster": 48813.67,
+            "blit": 11267.29,
+            "player": 37119.21,
+            "opponents": 48400.58,
+            "upscale": 20232.71,
+            "hud": 3653.42
+          },
+          "median_us": {
+            "total": 162313.0,
+            "draw": 130864.0,
+            "present": 31470.0,
+            "track_us": 15932.0,
+            "prepare": 25216.0,
+            "raster": 52345.0,
+            "blit": 10779.0,
+            "player": 38280.0,
+            "opponents": 52925.5,
+            "upscale": 20195.5,
+            "hud": 3387.0
+          },
+          "p95_total_us": 197609
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156930.58,
+            "draw": 125469.54,
+            "present": 31461.04,
+            "track_us": 16592.29,
+            "prepare": 23448.38,
+            "raster": 40436.79,
+            "blit": 11273.12,
+            "player": 33585.12,
+            "opponents": 43548.17,
+            "upscale": 20228.25,
+            "hud": 3747.83
+          },
+          "median_us": {
+            "total": 156762.0,
+            "draw": 125296.5,
+            "present": 31462.5,
+            "track_us": 15238.5,
+            "prepare": 25203.5,
+            "raster": 43167.0,
+            "blit": 10813.5,
+            "player": 34439.0,
+            "opponents": 47470.5,
+            "upscale": 20195.5,
+            "hud": 3380.5
+          },
+          "p95_total_us": 193318
+        }
+      ]
+    },
+    {
+      "car": 1,
+      "track": 2,
+      "raster_saved_us": 8536.8,
+      "raster_saved_percent": 17.053,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 165786.25,
+            "draw": 134324.46,
+            "present": 31461.79,
+            "track_us": 17694.12,
+            "prepare": 23468.5,
+            "raster": 50059.42,
+            "blit": 10038.96,
+            "player": 36041.75,
+            "opponents": 49460.96,
+            "upscale": 20216.83,
+            "hud": 3378.25
+          },
+          "median_us": {
+            "total": 164799.0,
+            "draw": 133357.5,
+            "present": 31439.0,
+            "track_us": 13257.0,
+            "prepare": 25213.0,
+            "raster": 52395.0,
+            "blit": 9607.5,
+            "player": 35430.0,
+            "opponents": 53095.5,
+            "upscale": 20196.5,
+            "hud": 3224.0
+          },
+          "p95_total_us": 210444
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156267.79,
+            "draw": 124822.67,
+            "present": 31445.12,
+            "track_us": 17382.42,
+            "prepare": 23510.75,
+            "raster": 41522.62,
+            "blit": 10037.25,
+            "player": 32774.67,
+            "opponents": 44326.58,
+            "upscale": 20216.08,
+            "hud": 3328.67
+          },
+          "median_us": {
+            "total": 156409.0,
+            "draw": 124960.5,
+            "present": 31441.5,
+            "track_us": 15009.5,
+            "prepare": 25230.0,
+            "raster": 43552.0,
+            "blit": 9532.5,
+            "player": 31899.0,
+            "opponents": 46946.0,
+            "upscale": 20196.5,
+            "hud": 3216.0
+          },
+          "p95_total_us": 176282
+        }
+      ]
+    },
+    {
+      "car": 2,
+      "track": 0,
+      "raster_saved_us": 7662.25,
+      "raster_saved_percent": 16.151,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 161517.25,
+            "draw": 130046.17,
+            "present": 31471.08,
+            "track_us": 16796.62,
+            "prepare": 23022.04,
+            "raster": 47441.17,
+            "blit": 10336.38,
+            "player": 35761.08,
+            "opponents": 46893.88,
+            "upscale": 20203.42,
+            "hud": 3432.33
+          },
+          "median_us": {
+            "total": 161086.5,
+            "draw": 129633.0,
+            "present": 31461.0,
+            "track_us": 14251.5,
+            "prepare": 24652.5,
+            "raster": 50929.0,
+            "blit": 10044.5,
+            "player": 35118.0,
+            "opponents": 51172.5,
+            "upscale": 20196.0,
+            "hud": 3312.0
+          },
+          "p95_total_us": 194685
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 153918.38,
+            "draw": 122415.29,
+            "present": 31503.08,
+            "track_us": 16820.5,
+            "prepare": 23032.12,
+            "raster": 39778.92,
+            "blit": 10318.54,
+            "player": 32426.58,
+            "opponents": 42559.67,
+            "upscale": 20196.88,
+            "hud": 3440.12
+          },
+          "median_us": {
+            "total": 153317.5,
+            "draw": 121834.0,
+            "present": 31457.0,
+            "track_us": 14279.5,
+            "prepare": 24635.5,
+            "raster": 42653.5,
+            "blit": 10025.0,
+            "player": 32065.5,
+            "opponents": 45991.0,
+            "upscale": 20194.5,
+            "hud": 3335.0
+          },
+          "p95_total_us": 177071
+        }
+      ]
+    },
+    {
+      "car": 2,
+      "track": 1,
+      "raster_saved_us": 7792.84,
+      "raster_saved_percent": 16.276,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 163568.21,
+            "draw": 132116.21,
+            "present": 31452,
+            "track_us": 16602.88,
+            "prepare": 23393.92,
+            "raster": 47878.46,
+            "blit": 11129.5,
+            "player": 36464.5,
+            "opponents": 47585.54,
+            "upscale": 20197.79,
+            "hud": 3488.75
+          },
+          "median_us": {
+            "total": 163142.5,
+            "draw": 131701.5,
+            "present": 31456.5,
+            "track_us": 15597.0,
+            "prepare": 24742.0,
+            "raster": 50147.5,
+            "blit": 10621.5,
+            "player": 37619.5,
+            "opponents": 50757.0,
+            "upscale": 20198.5,
+            "hud": 3392.5
+          },
+          "p95_total_us": 202117
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 154707.67,
+            "draw": 123238.96,
+            "present": 31468.71,
+            "track_us": 16290.17,
+            "prepare": 23385.29,
+            "raster": 40085.62,
+            "blit": 11118.21,
+            "player": 33075.42,
+            "opponents": 43108.96,
+            "upscale": 20227.75,
+            "hud": 3519.71
+          },
+          "median_us": {
+            "total": 156421.0,
+            "draw": 124957.0,
+            "present": 31467.5,
+            "track_us": 15249.5,
+            "prepare": 24758.5,
+            "raster": 41802.5,
+            "blit": 10601.0,
+            "player": 34061.5,
+            "opponents": 45865.0,
+            "upscale": 20197.5,
+            "hud": 3381.5
+          },
+          "p95_total_us": 169906
+        }
+      ]
+    },
+    {
+      "car": 2,
+      "track": 2,
+      "raster_saved_us": 7888.21,
+      "raster_saved_percent": 16.137,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 164133.38,
+            "draw": 132647.12,
+            "present": 31486.25,
+            "track_us": 17710.17,
+            "prepare": 23348.17,
+            "raster": 48882.67,
+            "blit": 9905.33,
+            "player": 35438.96,
+            "opponents": 48340.62,
+            "upscale": 20236.33,
+            "hud": 3386.54
+          },
+          "median_us": {
+            "total": 162564.0,
+            "draw": 131132.0,
+            "present": 31450.0,
+            "track_us": 13264.0,
+            "prepare": 24718.0,
+            "raster": 50574.5,
+            "blit": 9550.5,
+            "player": 34713.5,
+            "opponents": 50938.5,
+            "upscale": 20195.0,
+            "hud": 3233.0
+          },
+          "p95_total_us": 203846
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 155100.25,
+            "draw": 123609.75,
+            "present": 31490.5,
+            "track_us": 17410.58,
+            "prepare": 23382.62,
+            "raster": 40994.46,
+            "blit": 9891.21,
+            "player": 32146.62,
+            "opponents": 43714.12,
+            "upscale": 20200.42,
+            "hud": 3337.62
+          },
+          "median_us": {
+            "total": 153691.5,
+            "draw": 122129.5,
+            "present": 31450.0,
+            "track_us": 14997.5,
+            "prepare": 24747.5,
+            "raster": 42415.5,
+            "blit": 9510.5,
+            "player": 31459.5,
+            "opponents": 45942.0,
+            "upscale": 20199.0,
+            "hud": 3241.0
+          },
+          "p95_total_us": 173854
+        }
+      ]
+    },
+    {
+      "car": 3,
+      "track": 0,
+      "raster_saved_us": 8317.75,
+      "raster_saved_percent": 16.957,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 162751.62,
+            "draw": 131241.88,
+            "present": 31509.75,
+            "track_us": 16809.25,
+            "prepare": 23073.17,
+            "raster": 49053.33,
+            "blit": 10649.38,
+            "player": 42487.75,
+            "opponents": 42069,
+            "upscale": 20208.17,
+            "hud": 3428.46
+          },
+          "median_us": {
+            "total": 163287.0,
+            "draw": 131822.0,
+            "present": 31467.0,
+            "track_us": 14325.0,
+            "prepare": 24655.5,
+            "raster": 52483.5,
+            "blit": 10277.0,
+            "player": 42089.0,
+            "opponents": 46433.5,
+            "upscale": 20197.0,
+            "hud": 3320.5
+          },
+          "p95_total_us": 185180
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 156077.83,
+            "draw": 124598.04,
+            "present": 31479.79,
+            "track_us": 16808.54,
+            "prepare": 23086.12,
+            "raster": 40735.58,
+            "blit": 10679.88,
+            "player": 38341.5,
+            "opponents": 37985.08,
+            "upscale": 20229.38,
+            "hud": 3565.79
+          },
+          "median_us": {
+            "total": 155635.0,
+            "draw": 124045.0,
+            "present": 31456.5,
+            "track_us": 14276.5,
+            "prepare": 24662.5,
+            "raster": 43584.5,
+            "blit": 10283.0,
+            "player": 37929.0,
+            "opponents": 41472.5,
+            "upscale": 20198.5,
+            "hud": 3341.0
+          },
+          "p95_total_us": 179914
+        }
+      ]
+    },
+    {
+      "car": 3,
+      "track": 1,
+      "raster_saved_us": 8556.46,
+      "raster_saved_percent": 17.228,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 163784.62,
+            "draw": 132300.88,
+            "present": 31483.75,
+            "track_us": 16018.04,
+            "prepare": 23441.12,
+            "raster": 49667.42,
+            "blit": 11444.17,
+            "player": 43423.17,
+            "opponents": 42727.96,
+            "upscale": 20208.5,
+            "hud": 3588.83
+          },
+          "median_us": {
+            "total": 166362.0,
+            "draw": 134882.5,
+            "present": 31469.0,
+            "track_us": 14634.0,
+            "prepare": 24738.0,
+            "raster": 51872.0,
+            "blit": 10883.0,
+            "player": 44935.0,
+            "opponents": 46332.5,
+            "upscale": 20200.0,
+            "hud": 3366.5
+          },
+          "p95_total_us": 181793
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 158767.62,
+            "draw": 127262.88,
+            "present": 31504.75,
+            "track_us": 16905.67,
+            "prepare": 23482.25,
+            "raster": 41110.96,
+            "blit": 11448.29,
+            "player": 39025.42,
+            "opponents": 38546.21,
+            "upscale": 20208.79,
+            "hud": 4097.46
+          },
+          "median_us": {
+            "total": 152446.5,
+            "draw": 120990.0,
+            "present": 31469.5,
+            "track_us": 17814.0,
+            "prepare": 24756.5,
+            "raster": 42882.5,
+            "blit": 10868.0,
+            "player": 40157.0,
+            "opponents": 41127.5,
+            "upscale": 20196.0,
+            "hud": 3384.0
+          },
+          "p95_total_us": 191554
+        }
+      ]
+    },
+    {
+      "car": 3,
+      "track": 2,
+      "raster_saved_us": 8474.66,
+      "raster_saved_percent": 16.859,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 165085.08,
+            "draw": 133574.33,
+            "present": 31510.75,
+            "track_us": 17403.79,
+            "prepare": 23452.12,
+            "raster": 50268.54,
+            "blit": 10213.54,
+            "player": 42232.38,
+            "opponents": 43280.79,
+            "upscale": 20242.67,
+            "hud": 3590.46
+          },
+          "median_us": {
+            "total": 166348.0,
+            "draw": 134588.5,
+            "present": 31456.5,
+            "track_us": 13479.5,
+            "prepare": 24765.0,
+            "raster": 51776.0,
+            "blit": 9707.5,
+            "player": 41380.0,
+            "opponents": 45689.0,
+            "upscale": 20207.0,
+            "hud": 3200.0
+          },
+          "p95_total_us": 183639
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 157720.04,
+            "draw": 126271,
+            "present": 31449.04,
+            "track_us": 17701.04,
+            "prepare": 23464.96,
+            "raster": 41793.88,
+            "blit": 10224.88,
+            "player": 38049.21,
+            "opponents": 38967.21,
+            "upscale": 20215.33,
+            "hud": 3789.71
+          },
+          "median_us": {
+            "total": 155352.5,
+            "draw": 123916.0,
+            "present": 31442.5,
+            "track_us": 13257.5,
+            "prepare": 24764.5,
+            "raster": 43136.5,
+            "blit": 9692.0,
+            "player": 37264.5,
+            "opponents": 41061.5,
+            "upscale": 20201.0,
+            "hud": 3221.0
+          },
+          "p95_total_us": 184522
+        }
+      ]
+    },
+    {
+      "car": 4,
+      "track": 0,
+      "raster_saved_us": 8214.5,
+      "raster_saved_percent": 17.201,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 162569.33,
+            "draw": 131104.54,
+            "present": 31464.79,
+            "track_us": 16845.17,
+            "prepare": 22898.88,
+            "raster": 47756.54,
+            "blit": 10407.54,
+            "player": 36780.75,
+            "opponents": 46610.67,
+            "upscale": 20195.25,
+            "hud": 3712.54
+          },
+          "median_us": {
+            "total": 163667.5,
+            "draw": 132203.0,
+            "present": 31467.5,
+            "track_us": 14456.0,
+            "prepare": 25049.5,
+            "raster": 51746.0,
+            "blit": 10094.0,
+            "player": 36671.5,
+            "opponents": 52121.5,
+            "upscale": 20195.5,
+            "hud": 3308.0
+          },
+          "p95_total_us": 191458
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 155615.62,
+            "draw": 124122.88,
+            "present": 31492.75,
+            "track_us": 17096.29,
+            "prepare": 22923.46,
+            "raster": 39542.04,
+            "blit": 10390.58,
+            "player": 33353.38,
+            "opponents": 41931.75,
+            "upscale": 20211.62,
+            "hud": 3874.58
+          },
+          "median_us": {
+            "total": 155877.5,
+            "draw": 124407.0,
+            "present": 31455.0,
+            "track_us": 15180.5,
+            "prepare": 25079.0,
+            "raster": 42977.0,
+            "blit": 10038.0,
+            "player": 32814.0,
+            "opponents": 46145.0,
+            "upscale": 20195.5,
+            "hud": 3329.5
+          },
+          "p95_total_us": 175186
+        }
+      ]
+    },
+    {
+      "car": 4,
+      "track": 1,
+      "raster_saved_us": 8412.58,
+      "raster_saved_percent": 17.415,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 163765.17,
+            "draw": 132284.12,
+            "present": 31481.04,
+            "track_us": 16326.79,
+            "prepare": 23447.46,
+            "raster": 48306.46,
+            "blit": 11194.38,
+            "player": 37545.12,
+            "opponents": 47439.54,
+            "upscale": 20199.04,
+            "hud": 3738.08
+          },
+          "median_us": {
+            "total": 165640.0,
+            "draw": 133920.5,
+            "present": 31466.5,
+            "track_us": 14966.5,
+            "prepare": 25224.0,
+            "raster": 51424.5,
+            "blit": 10705.0,
+            "player": 38818.5,
+            "opponents": 51699.0,
+            "upscale": 20200.5,
+            "hud": 3360.0
+          },
+          "p95_total_us": 182854
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 155333.71,
+            "draw": 123821.04,
+            "present": 31512.67,
+            "track_us": 16315.83,
+            "prepare": 23392.38,
+            "raster": 39893.88,
+            "blit": 11209.21,
+            "player": 33872,
+            "opponents": 42659.46,
+            "upscale": 20199.25,
+            "hud": 3748.42
+          },
+          "median_us": {
+            "total": 157732.0,
+            "draw": 126277.5,
+            "present": 31466.0,
+            "track_us": 15248.5,
+            "prepare": 25176.5,
+            "raster": 42403.5,
+            "blit": 10695.0,
+            "player": 34917.0,
+            "opponents": 46418.5,
+            "upscale": 20198.5,
+            "hud": 3389.0
+          },
+          "p95_total_us": 170246
+        }
+      ]
+    },
+    {
+      "car": 4,
+      "track": 2,
+      "raster_saved_us": 8626.55,
+      "raster_saved_percent": 17.394,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 164575,
+            "draw": 133086.54,
+            "present": 31488.46,
+            "track_us": 17415.62,
+            "prepare": 23382.42,
+            "raster": 49595.17,
+            "blit": 10001.04,
+            "player": 36609.71,
+            "opponents": 48440.25,
+            "upscale": 20217.83,
+            "hud": 3591.75
+          },
+          "median_us": {
+            "total": 163246.0,
+            "draw": 131502.0,
+            "present": 31444.0,
+            "track_us": 13273.0,
+            "prepare": 25188.5,
+            "raster": 51344.0,
+            "blit": 9553.5,
+            "player": 35750.0,
+            "opponents": 51481.5,
+            "upscale": 20197.0,
+            "hud": 3210.0
+          },
+          "p95_total_us": 195707
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 155907.04,
+            "draw": 124431.12,
+            "present": 31475.92,
+            "track_us": 17393.62,
+            "prepare": 23416,
+            "raster": 40968.62,
+            "blit": 9982.88,
+            "player": 33045.21,
+            "opponents": 43351.88,
+            "upscale": 20226.33,
+            "hud": 3608.83
+          },
+          "median_us": {
+            "total": 155169.0,
+            "draw": 123635.0,
+            "present": 31448.5,
+            "track_us": 13289.0,
+            "prepare": 25220.0,
+            "raster": 42669.5,
+            "blit": 9514.5,
+            "player": 32297.5,
+            "opponents": 46215.5,
+            "upscale": 20200.5,
+            "hud": 3220.5
+          },
+          "p95_total_us": 174806
+        }
+      ]
+    },
+    {
+      "car": 5,
+      "track": 0,
+      "raster_saved_us": 8221.71,
+      "raster_saved_percent": 16.548,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 165169.62,
+            "draw": 133711.08,
+            "present": 31458.54,
+            "track_us": 16784.79,
+            "prepare": 23942.08,
+            "raster": 49683.75,
+            "blit": 10320.46,
+            "player": 36515.12,
+            "opponents": 49575.54,
+            "upscale": 20195.83,
+            "hud": 3700.04
+          },
+          "median_us": {
+            "total": 165981.5,
+            "draw": 134533.5,
+            "present": 31456.0,
+            "track_us": 14344.0,
+            "prepare": 25739.5,
+            "raster": 53664.0,
+            "blit": 9990.5,
+            "player": 35884.5,
+            "opponents": 54483.0,
+            "upscale": 20197.5,
+            "hud": 3321.5
+          },
+          "p95_total_us": 187281
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 158037.54,
+            "draw": 126569.33,
+            "present": 31468.21,
+            "track_us": 17097.83,
+            "prepare": 23834.29,
+            "raster": 41462.04,
+            "blit": 10312.62,
+            "player": 32826.46,
+            "opponents": 44872.25,
+            "upscale": 20240.67,
+            "hud": 3880.75
+          },
+          "median_us": {
+            "total": 157180.0,
+            "draw": 125590.0,
+            "present": 31453.0,
+            "track_us": 15178.5,
+            "prepare": 25720.0,
+            "raster": 44711.5,
+            "blit": 9995.5,
+            "player": 32525.5,
+            "opponents": 48846.5,
+            "upscale": 20201.0,
+            "hud": 3327.0
+          },
+          "p95_total_us": 184507
+        }
+      ]
+    },
+    {
+      "car": 5,
+      "track": 1,
+      "raster_saved_us": 8482.42,
+      "raster_saved_percent": 16.914,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 166131.75,
+            "draw": 134609.29,
+            "present": 31522.46,
+            "track_us": 16302,
+            "prepare": 24265.92,
+            "raster": 50150.96,
+            "blit": 11090.42,
+            "player": 37166.08,
+            "opponents": 50137.96,
+            "upscale": 20222.42,
+            "hud": 3734.75
+          },
+          "median_us": {
+            "total": 170224.0,
+            "draw": 138770.0,
+            "present": 31462.0,
+            "track_us": 15247.5,
+            "prepare": 25834.5,
+            "raster": 52824.0,
+            "blit": 10663.0,
+            "player": 38365.5,
+            "opponents": 54129.5,
+            "upscale": 20197.0,
+            "hud": 3373.0
+          },
+          "p95_total_us": 186345
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 158827.79,
+            "draw": 127356.21,
+            "present": 31471.58,
+            "track_us": 16595.04,
+            "prepare": 24269.5,
+            "raster": 41668.54,
+            "blit": 11089.96,
+            "player": 33466.83,
+            "opponents": 45408.21,
+            "upscale": 20209.12,
+            "hud": 3914.46
+          },
+          "median_us": {
+            "total": 157058.0,
+            "draw": 125580.0,
+            "present": 31461.0,
+            "track_us": 16054.5,
+            "prepare": 25845.0,
+            "raster": 43842.0,
+            "blit": 10671.5,
+            "player": 34520.0,
+            "opponents": 49063.0,
+            "upscale": 20196.0,
+            "hud": 3372.0
+          },
+          "p95_total_us": 200682
+        }
+      ]
+    },
+    {
+      "car": 5,
+      "track": 2,
+      "raster_saved_us": 8494.91,
+      "raster_saved_percent": 16.626,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 166617.58,
+            "draw": 135106.71,
+            "present": 31510.88,
+            "track_us": 17424.42,
+            "prepare": 24283.04,
+            "raster": 51094.08,
+            "blit": 9903.42,
+            "player": 36072.54,
+            "opponents": 51002.33,
+            "upscale": 20196.42,
+            "hud": 3611.92
+          },
+          "median_us": {
+            "total": 167643.0,
+            "draw": 136206.5,
+            "present": 31450.0,
+            "track_us": 13491.5,
+            "prepare": 25834.0,
+            "raster": 52974.0,
+            "blit": 9527.0,
+            "player": 35241.0,
+            "opponents": 53924.5,
+            "upscale": 20198.0,
+            "hud": 3223.5
+          },
+          "p95_total_us": 189520
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 158077,
+            "draw": 126577.12,
+            "present": 31499.88,
+            "track_us": 17401.21,
+            "prepare": 24246.67,
+            "raster": 42599.17,
+            "blit": 9874.88,
+            "player": 32569.21,
+            "opponents": 45993.79,
+            "upscale": 20195.5,
+            "hud": 3609.83
+          },
+          "median_us": {
+            "total": 156412.5,
+            "draw": 124988.0,
+            "present": 31448.5,
+            "track_us": 12808.5,
+            "prepare": 25821.0,
+            "raster": 44251.0,
+            "blit": 9566.0,
+            "player": 31822.0,
+            "opponents": 48640.0,
+            "upscale": 20196.0,
+            "hud": 3224.5
+          },
+          "p95_total_us": 185566
+        }
+      ]
+    },
+    {
+      "car": 6,
+      "track": 0,
+      "raster_saved_us": 8550.3,
+      "raster_saved_percent": 16.822,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 167708.62,
+            "draw": 136229.54,
+            "present": 31479.08,
+            "track_us": 16792.92,
+            "prepare": 25163.88,
+            "raster": 50827.42,
+            "blit": 10460.17,
+            "player": 43549.88,
+            "opponents": 45031.62,
+            "upscale": 20198.75,
+            "hud": 3694
+          },
+          "median_us": {
+            "total": 168495.0,
+            "draw": 137013.5,
+            "present": 31464.0,
+            "track_us": 14501.5,
+            "prepare": 26992.5,
+            "raster": 54636.0,
+            "blit": 10137.0,
+            "player": 43353.0,
+            "opponents": 49923.0,
+            "upscale": 20199.0,
+            "hud": 3304.5
+          },
+          "p95_total_us": 195220
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 159030.5,
+            "draw": 127554.5,
+            "present": 31476,
+            "track_us": 16790.79,
+            "prepare": 25124.08,
+            "raster": 42277.12,
+            "blit": 10417.25,
+            "player": 39329.25,
+            "opponents": 40581.17,
+            "upscale": 20213.96,
+            "hud": 3701.67
+          },
+          "median_us": {
+            "total": 157562.5,
+            "draw": 126091.5,
+            "present": 31460.5,
+            "track_us": 14249.0,
+            "prepare": 26980.5,
+            "raster": 45524.5,
+            "blit": 10098.0,
+            "player": 38758.0,
+            "opponents": 44655.0,
+            "upscale": 20197.0,
+            "hud": 3319.5
+          },
+          "p95_total_us": 195469
+        }
+      ]
+    },
+    {
+      "car": 6,
+      "track": 1,
+      "raster_saved_us": 8740.08,
+      "raster_saved_percent": 17.03,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 168731.83,
+            "draw": 137259.21,
+            "present": 31472.62,
+            "track_us": 16292.46,
+            "prepare": 25568.62,
+            "raster": 51321.04,
+            "blit": 11238.38,
+            "player": 44328.79,
+            "opponents": 45649.75,
+            "upscale": 20221.58,
+            "hud": 3740.38
+          },
+          "median_us": {
+            "total": 169752.0,
+            "draw": 138277.5,
+            "present": 31468.5,
+            "track_us": 15943.5,
+            "prepare": 27131.0,
+            "raster": 54042.5,
+            "blit": 10717.0,
+            "player": 45723.5,
+            "opponents": 49639.0,
+            "upscale": 20198.0,
+            "hud": 3367.0
+          },
+          "p95_total_us": 192738
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 161138.25,
+            "draw": 129641.38,
+            "present": 31496.88,
+            "track_us": 16577.38,
+            "prepare": 25567.79,
+            "raster": 42580.96,
+            "blit": 11230.46,
+            "player": 39930.96,
+            "opponents": 41248,
+            "upscale": 20222.58,
+            "hud": 3912.21
+          },
+          "median_us": {
+            "total": 159592.0,
+            "draw": 128117.0,
+            "present": 31469.0,
+            "track_us": 15627.5,
+            "prepare": 27108.5,
+            "raster": 44743.5,
+            "blit": 10748.0,
+            "player": 40869.0,
+            "opponents": 44283.5,
+            "upscale": 20201.5,
+            "hud": 3351.0
+          },
+          "p95_total_us": 195055
+        }
+      ]
+    },
+    {
+      "car": 6,
+      "track": 2,
+      "raster_saved_us": 8971.59,
+      "raster_saved_percent": 17.121,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 170512,
+            "draw": 139037.25,
+            "present": 31474.75,
+            "track_us": 17704,
+            "prepare": 25539.58,
+            "raster": 52399.71,
+            "blit": 10017,
+            "player": 43248.29,
+            "opponents": 46546,
+            "upscale": 20197.83,
+            "hud": 3791.25
+          },
+          "median_us": {
+            "total": 168869.5,
+            "draw": 137422.5,
+            "present": 31449.0,
+            "track_us": 13267.5,
+            "prepare": 27106.0,
+            "raster": 54403.0,
+            "blit": 9578.0,
+            "player": 42471.5,
+            "opponents": 49571.5,
+            "upscale": 20192.0,
+            "hud": 3224.0
+          },
+          "p95_total_us": 201073
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 160381.08,
+            "draw": 128917.58,
+            "present": 31463.5,
+            "track_us": 17404.08,
+            "prepare": 25587.5,
+            "raster": 43428.12,
+            "blit": 10024.25,
+            "player": 38983.79,
+            "opponents": 41843.96,
+            "upscale": 20236.96,
+            "hud": 3617
+          },
+          "median_us": {
+            "total": 159165.5,
+            "draw": 127726.5,
+            "present": 31441.5,
+            "track_us": 14986.0,
+            "prepare": 27149.5,
+            "raster": 45220.5,
+            "blit": 9603.5,
+            "player": 38276.0,
+            "opponents": 44298.0,
+            "upscale": 20198.0,
+            "hud": 3232.5
+          },
+          "p95_total_us": 179231
+        }
+      ]
+    },
+    {
+      "car": 7,
+      "track": 0,
+      "raster_saved_us": 7694.54,
+      "raster_saved_percent": 16.573,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 162121.29,
+            "draw": 130620.42,
+            "present": 31500.88,
+            "track_us": 17133.25,
+            "prepare": 23096.92,
+            "raster": 46428.62,
+            "blit": 10370,
+            "player": 39481.38,
+            "opponents": 42414.92,
+            "upscale": 20194.21,
+            "hud": 3734.12
+          },
+          "median_us": {
+            "total": 163210.0,
+            "draw": 131662.5,
+            "present": 31463.5,
+            "track_us": 14791.5,
+            "prepare": 24820.0,
+            "raster": 49887.5,
+            "blit": 10060.5,
+            "player": 39053.5,
+            "opponents": 46871.0,
+            "upscale": 20196.5,
+            "hud": 3315.5
+          },
+          "p95_total_us": 182187
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 153348.54,
+            "draw": 121842.79,
+            "present": 31505.75,
+            "track_us": 16811.17,
+            "prepare": 23073.04,
+            "raster": 38734.08,
+            "blit": 10361.54,
+            "player": 35500.79,
+            "opponents": 38618.29,
+            "upscale": 20239.71,
+            "hud": 3695.29
+          },
+          "median_us": {
+            "total": 151197.0,
+            "draw": 119739.5,
+            "present": 31459.0,
+            "track_us": 14602.5,
+            "prepare": 24781.0,
+            "raster": 41583.5,
+            "blit": 10097.0,
+            "player": 35145.0,
+            "opponents": 42053.0,
+            "upscale": 20192.5,
+            "hud": 3313.5
+          },
+          "p95_total_us": 181124
+        }
+      ]
+    },
+    {
+      "car": 7,
+      "track": 1,
+      "raster_saved_us": 7852.0,
+      "raster_saved_percent": 16.745,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 161767.5,
+            "draw": 130294.25,
+            "present": 31473.25,
+            "track_us": 16298,
+            "prepare": 23492.5,
+            "raster": 46892.08,
+            "blit": 11165.75,
+            "player": 40209.83,
+            "opponents": 43024.42,
+            "upscale": 20224.58,
+            "hud": 3484.58
+          },
+          "median_us": {
+            "total": 164441.0,
+            "draw": 132958.5,
+            "present": 31466.5,
+            "track_us": 14640.0,
+            "prepare": 24930.0,
+            "raster": 49099.5,
+            "blit": 10611.5,
+            "player": 41529.5,
+            "opponents": 46419.5,
+            "upscale": 20196.0,
+            "hud": 3379.5
+          },
+          "p95_total_us": 180428
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 153893.88,
+            "draw": 122398.88,
+            "present": 31495,
+            "track_us": 16312.29,
+            "prepare": 23488.29,
+            "raster": 39040.08,
+            "blit": 11166.42,
+            "player": 36173.46,
+            "opponents": 39199.83,
+            "upscale": 20197.5,
+            "hud": 3483.17
+          },
+          "median_us": {
+            "total": 152347.5,
+            "draw": 120592.5,
+            "present": 31468.0,
+            "track_us": 15951.5,
+            "prepare": 24908.0,
+            "raster": 40832.5,
+            "blit": 10642.0,
+            "player": 37061.5,
+            "opponents": 41707.0,
+            "upscale": 20196.0,
+            "hud": 3380.5
+          },
+          "p95_total_us": 175468
+        }
+      ]
+    },
+    {
+      "car": 7,
+      "track": 2,
+      "raster_saved_us": 7887.16,
+      "raster_saved_percent": 16.629,
+      "modes": [
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 162033.42,
+            "draw": 130550.21,
+            "present": 31483.21,
+            "track_us": 17420.21,
+            "prepare": 23452.75,
+            "raster": 47429.83,
+            "blit": 9971.38,
+            "player": 39140.17,
+            "opponents": 43381.96,
+            "upscale": 20198.75,
+            "hud": 3597.67
+          },
+          "median_us": {
+            "total": 160390.0,
+            "draw": 128966.0,
+            "present": 31442.0,
+            "track_us": 13264.0,
+            "prepare": 24897.0,
+            "raster": 49427.5,
+            "blit": 9552.0,
+            "player": 38352.0,
+            "opponents": 46696.0,
+            "upscale": 20200.0,
+            "hud": 3223.0
+          },
+          "p95_total_us": 192592
+        },
+        {
+          "frames": 24,
+          "mean_us": {
+            "total": 154205.29,
+            "draw": 122740.92,
+            "present": 31464.38,
+            "track_us": 17415.79,
+            "prepare": 23491.46,
+            "raster": 39542.67,
+            "blit": 9984.58,
+            "player": 35300.42,
+            "opponents": 39394.42,
+            "upscale": 20212.67,
+            "hud": 3607.83
+          },
+          "median_us": {
+            "total": 152823.0,
+            "draw": 121371.0,
+            "present": 31445.5,
+            "track_us": 13287.5,
+            "prepare": 24895.5,
+            "raster": 41317.0,
+            "blit": 9570.5,
+            "player": 34519.0,
+            "opponents": 42366.0,
+            "upscale": 20194.5,
+            "hud": 3222.5
+          },
+          "p95_total_us": 172571
+        }
+      ]
+    }
+  ]
+}
