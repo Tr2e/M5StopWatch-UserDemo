@@ -35,6 +35,34 @@ void drawPanel(lgfx::LGFXBase& canvas,int x,int y,int width,int height,int radiu
         for(int cy : {y+radius,y+height-radius-1})canvas.fillCircle(cx,cy,radius,color);
 }
 
+void drawCollisionWarning(lgfx::LGFXBase& canvas,const RacerState& motion,int width)
+{
+    if (!(motion.wallImpact > 0.05f)) return;
+    using namespace home_theme;
+    const bool right=motion.lateralOffset>=0.f;
+    const int inward=right ? -1 : 1;
+    const int railX=right ? width-15 : 11;
+    const int edgeX=right ? width-18 : 18;
+
+    // A compact, side-aware instrument replaces the unrelated full-screen
+    // rings. Panel underlay keeps the warning readable over either road color.
+    for(int y:{184,207,252})canvas.fillRect(railX,y,4,y==207 ? 40 : 17,panel);
+    for(int y:{186,209,254})canvas.fillRect(railX+(right ? 1 : 0),y,2,y==209 ? 36 : 13,red);
+    canvas.drawLine(edgeX,179,edgeX+inward*13,179,red);
+    canvas.drawLine(edgeX,274,edgeX+inward*13,274,red);
+    for(int cy:{215,238,261}) {
+        const int base=edgeX+inward*5,tip=edgeX+inward*20;
+        for(int offset=-2;offset<=2;++offset) {
+            canvas.drawLine(base,cy-7+offset,tip,cy+offset,panel);
+            canvas.drawLine(tip,cy+offset,base,cy+7+offset,panel);
+        }
+        canvas.drawLine(base,cy-7,tip,cy,red);
+        canvas.drawLine(tip,cy,base,cy+7,red);
+    }
+    if(motion.wallImpact>.55f)
+        canvas.fillRect(edgeX+inward*25,236,3,5,white);
+}
+
 void drawRaceCar(lgfx::LGFXBase& canvas,const TrackCamera& camera,
                  const OverpassTrack& track,const PencilTrack& road,const RaceCarSnapshot& car,
                  const RaceSurfaceMesh& mesh,CarSurfaceRaster<112,112>& raster,
@@ -583,10 +611,7 @@ void RaceRenderer::render(lgfx::LGFXBase& canvas,LGFX_Sprite* canvasBuffer,
 #endif
 
     canvas.setTextDatum(textdatum_t::middle_center);
-    if (player.motion.wallImpact > 0.05f) {
-        canvas.drawCircle(_width / 2, _height / 2, 194, kWarning);
-        canvas.drawCircle(_width / 2 + 2, _height / 2 - 1, 188, kWarning);
-    }
+    drawCollisionWarning(canvas,player.motion,_width);
 #ifdef ESP_PLATFORM
     const uint64_t hudStartedUs=esp_timer_get_time();
 #endif

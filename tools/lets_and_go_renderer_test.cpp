@@ -1249,6 +1249,34 @@ int main(int argc, char** argv)
             }
             save("ui-racing-native-"+std::to_string(car));
         }
+        // Wall contact uses a compact marker on the impacted side. It must not
+        // alter the centre driving view or reintroduce a full-screen ring.
+        auto& warningState=const_cast<RaceSnapshot&>(hudRace.snapshot());
+        auto& warningCar=warningState.cars[warningState.playerIndex];
+        for(float lateral:{-1.f,1.f}) {
+            warningCar.motion.lateralOffset=lateral;
+            warningCar.motion.wallImpact=0;
+            hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);
+            const auto cleanWarning=canvas.frame();
+            warningCar.motion.wallImpact=1;
+            hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);
+            const auto& warned=canvas.frame();
+            int changed=0,left=468,right=-1,top=466,bottom=-1;
+            for(int y=0;y<466;++y)for(int x=0;x<468;++x) {
+                if(warned[y*468+x]==cleanWarning[y*468+x])continue;
+                ++changed;left=std::min(left,x);right=std::max(right,x);
+                top=std::min(top,y);bottom=std::max(bottom,y);
+            }
+            const bool expectedLeft=lateral<0;
+            if(changed<80 || top<175 || bottom>282 ||
+               (expectedLeft ? right>48 : left<420)) {
+                std::cerr<<"Collision warning escaped impacted edge: lateral="<<lateral
+                         <<" changed="<<changed<<" bounds="<<left<<','<<top<<".."<<right<<','<<bottom<<'\n';
+                valid=false;
+            }
+            save(expectedLeft ? "ui-wall-warning-left" : "ui-wall-warning-right");
+        }
+        warningCar.motion.wallImpact=0;
         hudFlow.togglePause();
         hud.render(hudFlow,hudRace,actions,0,false,PencilDetail::Low,true);save("ui-paused-native");
         hudFlow.togglePause();hudFlow.finishRace();
