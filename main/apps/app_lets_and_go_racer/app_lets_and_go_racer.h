@@ -37,6 +37,7 @@ private:
     lets_and_go::DeviceControlSource _deviceInput;
     bool _deviceControls = false;
     bool _externalPower = false;
+    bool _directFrameBuffer = false;
     bool _renderDirty = true;
     uint32_t _perfStartedMs = 0, _perfFrames = 0, _perfPeakUs = 0;
     uint64_t _perfDrawUs = 0, _perfPresentUs = 0, _perfInputUs = 0;
