@@ -22,7 +22,7 @@ bool usesRaceRenderer(lets_and_go::GameScreen screen)
 
 AppLetsAndGoRacer::AppLetsAndGoRacer()
 {
-    setAppInfo().name = "Let's & Go!!";
+    setAppInfo().name = "Mini 4WD";
     setAppInfo().icon = (void*)&icon_lets_and_go;
 }
 

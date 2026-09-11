@@ -33,7 +33,7 @@ void HardwareRacerInputProvider::open()
     if (created != pdPASS) {
         _sampling.store(false, std::memory_order_release);
         _samplingExited.store(true, std::memory_order_release);
-        mclog::tagError("Let's & Go!!", "input task unavailable; using frame polling");
+        mclog::tagError("Mini 4WD", "input task unavailable; using frame polling");
     }
 }
 

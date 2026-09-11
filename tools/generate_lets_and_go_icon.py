@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generate the private Let's & Go!! TAMIYA twin-star launcher asset."""
+"""Generate the private Mini 4WD star-and-diamond launcher asset."""
 
 from __future__ import annotations
 
 import math
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +22,47 @@ def star(cx: float, cy: float, outer: float, inner: float) -> list[tuple[float, 
         radius = outer if index % 2 == 0 else inner
         points.append((cx + math.cos(angle) * radius, cy + math.sin(angle) * radius))
     return points
+
+
+def diamond(cx: float, cy: float, width: float, height: float) -> None:
+    """Draw the faceted white diamond used by the classic blue AULDEY mark."""
+    left = cx - width / 2.0
+    right = cx + width / 2.0
+    top = cy - height / 2.0
+    shoulder = top + height * 0.25
+    bottom = cy + height / 2.0
+    top_left = left + width * 0.14
+    top_right = right - width * 0.14
+    crown_left = left + width * 0.34
+    crown_right = right - width * 0.34
+
+    white = (255, 255, 255)
+    stroke = (26, 72, 154)
+    polygon = [
+        (top_left, top), (top_right, top), (right, shoulder),
+        (cx, bottom), (left, shoulder),
+    ]
+    scaled = [(round(x * SCALE), round(y * SCALE)) for x, y in polygon]
+    draw.polygon(scaled, fill=white)
+
+    lines = [
+        ((top_left, top), (crown_left, shoulder)),
+        ((crown_left, shoulder), (cx, top)),
+        ((cx, top), (crown_right, shoulder)),
+        ((crown_right, shoulder), (top_right, top)),
+        ((left, shoulder), (right, shoulder)),
+        ((crown_left, shoulder), (cx, bottom)),
+        ((cx, top), (cx, bottom)),
+        ((crown_right, shoulder), (cx, bottom)),
+    ]
+    for start, end in lines:
+        draw.line(
+            (round(start[0] * SCALE), round(start[1] * SCALE),
+             round(end[0] * SCALE), round(end[1] * SCALE)),
+            fill=stroke,
+            width=2 * SCALE,
+            joint="curve",
+        )
 
 
 def rgb565(red: int, green: int, blue: int) -> int:
@@ -42,16 +83,10 @@ def rect(box: tuple[int, int, int, int], fill: tuple[int, int, int]) -> None:
     draw.rounded_rectangle(tuple(value * SCALE for value in box), radius=5 * SCALE, fill=fill)
 
 
-rect((14, 41, 100, 127), (218, 38, 47))
-rect((100, 41, 186, 127), (26, 72, 154))
-draw.polygon([(x * SCALE, y * SCALE) for x, y in star(57, 84, 34, 14)], fill=(255, 255, 255))
-draw.polygon([(x * SCALE, y * SCALE) for x, y in star(143, 84, 34, 14)], fill=(255, 255, 255))
-
-font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 31 * SCALE)
-label = "TAMIYA"
-left, top, right, bottom = draw.textbbox((0, 0), label, font=font)
-draw.text(((SIZE * SCALE - (right - left)) / 2, 138 * SCALE), label,
-          font=font, fill=(238, 241, 247), stroke_width=0)
+rect((14, 57, 100, 143), (218, 38, 47))
+rect((100, 57, 186, 143), (26, 72, 154))
+draw.polygon([(x * SCALE, y * SCALE) for x, y in star(57, 100, 34, 14)], fill=(255, 255, 255))
+diamond(143, 100, 68, 68)
 
 source = canvas.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
 png_path = IMAGE_DIR / "icon_lets_and_go.png"
