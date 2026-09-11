@@ -298,7 +298,8 @@ void AppLetsAndGoRacer::onRunning()
                 _renderer.render(display,_flow,_selection,nowMs-_screenStartedMs,
                     _garageBudget.detail(),racerStatus,
                     screen==GameScreen::CarInspect ? inspectionPose : _garageView.state(nowMs),_deviceControls,
-                    screen==GameScreen::CarInspect && _inspectionAuto.enabled() ? 100 :
+                    screen==GameScreen::CarInspect && _inspectionAuto.enabled() ?
+                    lets_and_go::tuning::kInspectionAutoRenderPercent :
                     screen==GameScreen::CarInspect ? _inspectionRender.percent() :
                     screen==GameScreen::CarSelect ? _garageView.renderPercent(nowMs) : 100,
                     partial,screen==GameScreen::CarInspect && !_inspectionAuto.enabled() ?
@@ -321,7 +322,8 @@ void AppLetsAndGoRacer::onRunning()
             _renderer.render(_flow, _selection, nowMs - _screenStartedMs,
                              _garageBudget.detail(), racerStatus,
                              screen==GameScreen::CarInspect ? inspectionPose : _garageView.state(nowMs), _deviceControls,
-                             screen==GameScreen::CarInspect && _inspectionAuto.enabled() ? 100 :
+                             screen==GameScreen::CarInspect && _inspectionAuto.enabled() ?
+                             lets_and_go::tuning::kInspectionAutoRenderPercent :
                              screen==GameScreen::CarInspect ? _inspectionRender.percent() :
                              screen==GameScreen::CarSelect ? _garageView.renderPercent(nowMs) : 100,
                              partial,screen==GameScreen::CarInspect && !_inspectionAuto.enabled() ?
@@ -375,7 +377,9 @@ void AppLetsAndGoRacer::onRunning()
         if (screen==GameScreen::CarInspect) {
             mclog::tagInfo("InspectionPerf","car={} interacting={} auto={} last_scale_pct={} requested_scale_pct={} requested_display_pct={}",
                 lets_and_go::carSpec(_selection.playerCursor()).shortName,_inspectionRender.interacting(),_inspectionAuto.enabled(),
-                _renderer.inspectionPercent(),_inspectionRender.percent(),_inspectionRender.displayPercent());
+                _renderer.inspectionPercent(),_inspectionAuto.enabled() ?
+                lets_and_go::tuning::kInspectionAutoRenderPercent : _inspectionRender.percent(),
+                _inspectionAuto.enabled() ? 100 : _inspectionRender.displayPercent());
             const auto recent=_inspectionFrames.summary();
             if(_perfFrames && recent.count)
                 mclog::tagInfo("InspectionFrames","window=last64 car={} scale_pct={} n={} draw_us={} present_us={} p95_us={} max_us={}",

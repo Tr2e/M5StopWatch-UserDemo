@@ -98,6 +98,7 @@ int main() {
     assert(quality.update(149,false,false) && quality.percent()==65 && quality.displayPercent()>85);
     assert(quality.update(569,false,false) && quality.percent()==100);
     InspectionAutoController tour;
+    static_assert(InspectionAutoController::kTourMs==20000);
     GarageViewState origin{};origin.yaw=1.1f;origin.pitch=.22f;
     assert(!tour.enabled());tour.start(1000,origin);assert(tour.enabled());
     assert(std::abs(tour.state(1000).yaw-origin.yaw)<.0001f);

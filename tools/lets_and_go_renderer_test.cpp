@@ -770,8 +770,8 @@ int main(int argc, char** argv)
                     title|=text.value=="HIGH DETAIL / AUTO TOUR";
                     button|=text.value=="AUTO ON";
                 }
-                if(!title || !button || garage.inspectionPercent()!=100) {
-                    std::cerr<<"Inspection auto did not enforce native High presentation\n";return 1;
+                if(!title || !button || garage.inspectionPercent()!=90) {
+                    std::cerr<<"Inspection auto did not enforce high-detail 90% presentation\n";return 1;
                 }
                 save("inspection-auto");
             }

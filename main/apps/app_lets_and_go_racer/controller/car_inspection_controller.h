@@ -55,7 +55,7 @@ private:
 class InspectionAutoController {
 public:
     static constexpr uint32_t kEntryMs=1200;
-    static constexpr uint32_t kTourMs=30000;
+    static constexpr uint32_t kTourMs=20000;
 
     void reset() { *this={}; }
     bool enabled() const { return _enabled; }

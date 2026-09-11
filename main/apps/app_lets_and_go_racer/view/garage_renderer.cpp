@@ -1,4 +1,5 @@
 #include "garage_renderer.h"
+#include "../lets_and_go_config.h"
 #include "track_projection.h"
 #include "garage_car_transform.h"
 #include "home_theme.h"
@@ -213,7 +214,10 @@ void GarageRenderer::render(lgfx::LGFXBase& canvas,
 
     if (screen == GameScreen::CarInspect) {
         using namespace home_theme;
-        if(inspectionAuto) {inspectionPercent=100;inspectionDisplayPercent=100;}
+        if(inspectionAuto) {
+            inspectionPercent=tuning::kInspectionAutoRenderPercent;
+            inspectionDisplayPercent=100;
+        }
         if(!reuse) {
             setupHeader(canvas,"VIEW MACHINE");
             label(canvas,inspectionAuto ? "HIGH DETAIL / AUTO TOUR" : "HIGH DETAIL / DRAG OR STICK",_width/2,96,1,muted);
@@ -223,7 +227,7 @@ void GarageRenderer::render(lgfx::LGFXBase& canvas,
         const uint64_t fitStartedUs=esp_timer_get_time();
 #endif
         const float scale=_surface->inspection.fit(spec,carMesh,view.yaw,view.pitch);
-        _inspectionPercent=inspectionPercent==65 ? 65 : inspectionPercent==82 ? 82 : inspectionPercent==77 ? 77 : inspectionPercent==80 ? 80 : inspectionPercent==85 ? 85 :
+        _inspectionPercent=inspectionPercent==65 ? 65 : inspectionPercent==82 ? 82 : inspectionPercent==77 ? 77 : inspectionPercent==80 ? 80 : inspectionPercent==85 ? 85 : inspectionPercent==90 ? 90 :
             inspectionPercent==50 ? 50 : inspectionPercent==75 ? 75 : 100;
 #ifdef ESP_PLATFORM
         const uint64_t fitFinishedUs=esp_timer_get_time();

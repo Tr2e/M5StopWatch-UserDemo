@@ -5,6 +5,7 @@
 namespace lets_and_go::tuning {
 
 inline constexpr uint32_t kFrameIntervalMs = 33u;
+inline constexpr int kInspectionAutoRenderPercent = 90;
 inline constexpr uint32_t kShowcaseDurationMs = 1500u;
 inline constexpr uint32_t kGridIntroDurationMs = 1300u;
 inline constexpr uint32_t kCountdownDurationMs = 3000u;
