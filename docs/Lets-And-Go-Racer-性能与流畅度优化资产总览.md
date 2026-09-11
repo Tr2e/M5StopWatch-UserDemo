@@ -31,6 +31,29 @@
 
 车库、选车和 View Car 使用另一条高细节路径：共享车型几何缓存，根据交互状态选择内部绘制比例，在连续同页时只刷新包含车辆、阴影和动画轨迹的区域；静止时按需渲染，不持续空刷。
 
+### 2.1 技术路径定义：Hybrid Solid Raster
+
+如果 Vector Run 的技术选型定义为 **Wireframe Rendering（线框投影渲染）**，Let's & Go Racer 的技术路径统一定义为：
+
+> **Hybrid Solid Raster：实体网格软件光栅 + 分层混合分辨率合成**
+
+两者都使用 CPU 直接生成显示 framebuffer，但构图基础、深度表达和画质预算不同：
+
+| 维度 | Vector Run | Let's & Go Racer |
+| --- | --- | --- |
+| 基本图元 | 线段、轮廓和骨架 | 三角形实体表面 |
+| 空间表达 | 用线构成抽象矢量空间 | 用实体表面构成微缩赛车场 |
+| 车辆表现 | 线框投影 | 同源 3D 实体网格与车轮动画 |
+| 深度处理 | 投影顺序和线段层级 | 逆深度缓冲、逐像素自遮挡和赛道遮挡 |
+| 材质表现 | 线条颜色 | RGB565 程序涂装、透视校正 UV 和面光照 |
+| 分辨率策略 | 以全局矢量绘制为主 | 半分辨率赛道／远车 + 原生玩家车／HUD |
+| 合成方式 | 线条直接写入目标 | 颜色／深度 tile、Scale2x 和原生层叠加 |
+| 最终输出 | 显示 framebuffer 直绘 | 显示 framebuffer 分层直绘 |
+
+这里的“Hybrid”同时指三种组合：半分辨率与原生分辨率组合、场景层与车辆／HUD 层组合、程序材质与有界缓存组合。“Solid Raster”表示它不是 2D 赛车 Sprite，也不是依赖 GPU 的传统 3D 引擎，而是为 ESP32-S3 定制的轻量 CPU 实体软渲染管线。
+
+对外描述可使用一句话：**Vector Run 用线构成空间；Let's & Go Racer 用实体表面构成微缩赛车场。**
+
 当前关键实现入口：
 
 - 帧调度、统计与显示目标：[`app_lets_and_go_racer.cpp`](../main/apps/app_lets_and_go_racer/app_lets_and_go_racer.cpp)
