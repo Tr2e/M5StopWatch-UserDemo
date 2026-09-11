@@ -102,13 +102,29 @@ int main() {
     assert(!tour.enabled());tour.start(1000,origin);assert(tour.enabled());
     assert(std::abs(tour.state(1000).yaw-origin.yaw)<.0001f);
     const auto front=tour.state(1000+InspectionAutoController::kEntryMs);
-    assert(std::abs(front.yaw+.65f)<.0001f && std::abs(front.pitch-.5713375f)<.0001f);
-    const auto side=tour.state(1000+InspectionAutoController::kEntryMs+8000);
-    assert(std::abs(side.yaw+1.5707963f)<.0001f && std::abs(side.pitch-.34f)<.0001f);
-    // A completed tour loops the camera only; car changes remain user-driven.
+    assert(std::abs(front.yaw+.65f)<.0001f && std::abs(front.pitch-.57f)<.0001f);
+    const auto quarter=tour.state(1000+InspectionAutoController::kEntryMs+
+                                  InspectionAutoController::kTourMs/4);
+    assert(std::abs(std::remainder(quarter.yaw-front.yaw,6.2831853f)+1.5707963f)<.0001f);
+    assert(std::abs(quarter.pitch-.79f)<.0001f);
+    // The camera must keep moving through the full cycle; there are no
+    // keyframe holds that can look like an endpoint on the device.
+    auto previous=front;
+    for(uint32_t elapsed=250;elapsed<InspectionAutoController::kTourMs;elapsed+=250) {
+        const auto current=tour.state(1000+InspectionAutoController::kEntryMs+elapsed);
+        assert(std::abs(std::remainder(current.yaw-previous.yaw,6.2831853f))>.001f);
+        previous=current;
+    }
+    // A completed orbit loops the camera only; car changes remain user-driven.
     const auto looped=tour.state(1000+InspectionAutoController::kEntryMs+
                                  InspectionAutoController::kTourMs);
-    assert(std::abs(looped.yaw+.65f)<.0001f && std::abs(looped.pitch-.5713375f)<.0001f);
+    assert(std::abs(looped.yaw-front.yaw)<.0001f && std::abs(looped.pitch-front.pitch)<.0001f);
+    const auto seamBefore=tour.state(1000+InspectionAutoController::kEntryMs+
+                                     InspectionAutoController::kTourMs-1);
+    const auto seamAfter=tour.state(1000+InspectionAutoController::kEntryMs+
+                                    InspectionAutoController::kTourMs+1);
+    assert(std::abs(std::remainder(seamAfter.yaw-seamBefore.yaw,6.2831853f))<.001f);
+    assert(std::abs(seamAfter.pitch-seamBefore.pitch)<.001f);
     tour.stop();assert(!tour.enabled());
     tour.start(UINT32_MAX-1000,origin);
     const auto wrapped=tour.state(InspectionAutoController::kEntryMs+31000-1001);

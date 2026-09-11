@@ -1,8 +1,6 @@
 #pragma once
 #include "garage_view_controller.h"
 
-#include <array>
-
 namespace lets_and_go {
 
 // Dedicated camera state. Browsing may move the garage cursor, but this class
@@ -50,10 +48,10 @@ private:
     bool _touch=false;
 };
 
-// Time-based showroom tour. Rendering may be slower than the nominal frame
-// interval, so the camera is sampled from monotonic time and never queues old
-// poses. The unwrapped keyframe yaw completes one full orbit without a visual
-// jump when the next car is selected.
+// Time-based endless showroom orbit. Rendering may be slower than the nominal
+// frame interval, so the camera is sampled from monotonic time and never queues
+// old poses. Every camera component is periodic, with matching position and
+// velocity at the loop seam; there are no endpoint holds or restarts.
 class InspectionAutoController {
 public:
     static constexpr uint32_t kEntryMs=1200;
@@ -68,7 +66,7 @@ public:
     GarageViewState state(uint32_t nowMs) const {
         if(!_enabled)return _origin;
         const uint32_t age=nowMs-_startedMs;
-        const auto front=keyframes()[0].view;
+        const auto front=orbitState(0.f);
         if(age<kEntryMs) {
             const float t=float(age)/float(kEntryMs);
             const float ease=t*t*(3.f-2.f*t);
@@ -77,36 +75,19 @@ public:
             return interpolate(_origin,target,ease);
         }
         const uint32_t tourAge=(age-kEntryMs)%kTourMs;
-        const auto& frames=keyframes();
-        for(std::size_t i=1;i<frames.size();++i) {
-            if(tourAge>frames[i].atMs)continue;
-            const auto& from=frames[i-1];const auto& to=frames[i];
-            const float span=float(to.atMs-from.atMs);
-            const float t=span>0.f ? float(tourAge-from.atMs)/span : 1.f;
-            const float ease=t*t*(3.f-2.f*t);
-            auto result=interpolate(from.view,to.view,ease);
-            result.yaw=std::remainder(result.yaw,6.2831853f);
-            return result;
-        }
-        return front;
+        return orbitState(float(tourAge)/float(kTourMs));
     }
 private:
-    struct Keyframe { uint32_t atMs;GarageViewState view; };
-    static GarageViewState pose(float yaw,float pitch) {
-        GarageViewState result{};result.yaw=yaw;result.pitch=pitch;return result;
-    }
-    static const std::array<Keyframe,8>& keyframes() {
-        static const std::array<Keyframe,8> value{{
-            {0,pose(-.65f,.5713375f)},
-            {3000,pose(-.65f,.5713375f)},
-            {8000,pose(-1.5707963f,.34f)},
-            {10500,pose(-1.5707963f,.34f)},
-            {15500,pose(-3.1415926f,.50f)},
-            {18000,pose(-3.1415926f,.50f)},
-            {25000,pose(-4.7123890f,.95f)},
-            {30000,pose(-6.9331853f,.5713375f)},
-        }};
-        return value;
+    static GarageViewState orbitState(float phase) {
+        constexpr float tau=6.2831853f;
+        const float wave=phase*tau;
+        GarageViewState result{};
+        result.yaw=std::remainder(-.65f-wave,tau);
+        result.pitch=.57f+.22f*std::sin(wave);
+        result.scale=136.f+4.f*std::cos(wave);
+        result.centerY=248.f+4.f*std::cos(wave);
+        result.carSlide=0;result.carZoom=1;result.wheelPhase=0;
+        return result;
     }
     static GarageViewState interpolate(const GarageViewState& from,
                                         const GarageViewState& to,float t) {
