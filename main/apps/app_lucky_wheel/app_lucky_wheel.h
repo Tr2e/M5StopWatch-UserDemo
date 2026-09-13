@@ -5,6 +5,7 @@
  */
 #pragma once
 #include "view/view.h"
+#include "input/external_input.h"
 #include <apps/common/key_manager/key_manager.h>
 #include <mooncake.h>
 #include <memory>
@@ -25,6 +26,8 @@ public:
 
 private:
     std::unique_ptr<input::KeyManager> _key_manager;
+    std::unique_ptr<lucky_wheel::ExternalInput> _external_input;
     std::unique_ptr<view::SelectionView> _selection_view;
     std::unique_ptr<view::WheelView> _wheel_view;
+    bool _external_power = false;
 };

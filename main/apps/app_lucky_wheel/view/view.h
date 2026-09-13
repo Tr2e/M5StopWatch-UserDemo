@@ -5,6 +5,7 @@
  */
 #pragma once
 #include <memory>
+#include <string>
 #include <vector>
 #include <smooth_lvgl.hpp>
 #include <uitk/short_namespace.hpp>
@@ -21,6 +22,9 @@ class SelectionView {
 public:
     void init(lv_obj_t* parent);
     int selectedOptionCount() const;
+    void moveSelection(int steps);
+    void confirm();
+    void setControllerStatus(const char* status);
     bool isConfirmed() const
     {
         return _is_confirmed;
@@ -33,10 +37,12 @@ public:
 private:
     std::unique_ptr<uitk::lvgl_cpp::Container> _panel;
     std::unique_ptr<uitk::lvgl_cpp::Label> _title_label;
+    std::unique_ptr<uitk::lvgl_cpp::Label> _controller_status_label;
     std::unique_ptr<uitk::lvgl_cpp::Roller> _selector;
     std::unique_ptr<uitk::lvgl_cpp::Button> _ok_button;
     bool _is_confirmed          = false;
     int _confirmed_option_count = 1;
+    std::string _controller_status;
 };
 
 class WheelView {

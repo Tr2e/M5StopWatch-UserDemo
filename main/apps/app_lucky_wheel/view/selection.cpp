@@ -5,6 +5,7 @@
  */
 #include "view.h"
 #include <assets/assets.h>
+#include <algorithm>
 
 using namespace view;
 using namespace uitk::lvgl_cpp;
@@ -40,10 +41,16 @@ void SelectionView::init(lv_obj_t* parent)
     _panel->removeFlag(LV_OBJ_FLAG_SCROLLABLE);
 
     _title_label = std::make_unique<Label>(_panel->get());
-    _title_label->align(LV_ALIGN_TOP_MID, 0, 75);
+    _title_label->align(LV_ALIGN_TOP_MID, 0, 48);
     _title_label->setText("Number of Options");
     _title_label->setTextFont(&MontserratSemiBold26);
     _title_label->setTextColor(lv_color_hex(_title_color));
+
+    _controller_status_label = std::make_unique<Label>(_panel->get());
+    _controller_status_label->align(LV_ALIGN_TOP_MID, 0, 89);
+    _controller_status_label->setTextFont(&MontserratSemiBold26);
+    _controller_status_label->setTextColor(lv_color_hex(0xB8B8B8));
+    setControllerStatus("Joystick: connecting");
 
     _selector = std::make_unique<Roller>(_panel->get());
     _selector->align(LV_ALIGN_CENTER, 0, -13);
@@ -77,10 +84,27 @@ void SelectionView::init(lv_obj_t* parent)
     _ok_button->label().setTextFont(&lv_font_montserrat_28);
     _ok_button->label().setTextColor(lv_color_hex(_ok_text_color));
     _ok_button->label().align(LV_ALIGN_CENTER, 0, 0);
-    _ok_button->onClick().connect([this]() {
-        _confirmed_option_count = selectedOptionCount();
-        _is_confirmed           = true;
-    });
+    _ok_button->onClick().connect([this]() { confirm(); });
+}
+
+void SelectionView::moveSelection(int steps)
+{
+    if (_selector == nullptr || steps == 0) return;
+    const int selected = std::clamp(static_cast<int>(_selector->getSelected()) + steps, 0, 16);
+    _selector->setSelected(selected, LV_ANIM_OFF);
+}
+
+void SelectionView::confirm()
+{
+    _confirmed_option_count = selectedOptionCount();
+    _is_confirmed = true;
+}
+
+void SelectionView::setControllerStatus(const char* status)
+{
+    if (_controller_status_label == nullptr || _controller_status == status) return;
+    _controller_status = status;
+    _controller_status_label->setText(status);
 }
 
 int SelectionView::selectedOptionCount() const
