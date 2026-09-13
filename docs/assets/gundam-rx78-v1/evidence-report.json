@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/Users/tree/Documents/stopwatch/docs/assets/gundam-rx78-v1",
+  "baseline_root": null,
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "rx78-2-hguc-191",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "rx78-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "41397acfc773547e5d4c9ef1628668dca3d1bfd5193ab42082ca5459dd1df81c"
+        },
+        {
+          "view": "front",
+          "file": "rx78-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "90dcd53b3ca874beb500e4ddb63ce840cf62d89ade2b445ba1eed180acaae755"
+        },
+        {
+          "view": "rear",
+          "file": "rx78-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "895c0c59c397d5f3b15f5dc4f10ffce024c29de41dfc363b3462bafed5d1a985"
+        },
+        {
+          "view": "side",
+          "file": "rx78-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a895b4354f999a776f6cae7946349e25c7078a078da0c460e1dbea02d07a03b3"
+        },
+        {
+          "view": "other-side",
+          "file": "rx78-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0d97f52e8ca6414adae524a8cbbccdd0ff5991f5f8b8fbca0f66f463746d4a4f"
+        },
+        {
+          "view": "top",
+          "file": "rx78-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c7e4825a765779e318988fba49621abec1af559b7581ad40be8a09dd48dcce30"
+        },
+        {
+          "view": "unarmed",
+          "file": "rx78-unarmed.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b542e7aeea5c611b85334b7afbb017387a6148357031cad75ee7e45fba5d8a5e"
+        },
+        {
+          "view": "drag",
+          "file": "rx78-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7da86f43f6c06905ffac11ee04a1fa448731a28f8c24bb76e9177749c6bcca80"
+        },
+        {
+          "view": "gray",
+          "file": "rx78-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "30047c168708aa42342c4e231314b3dc0c7b0f2064ee1b96ea0785a75df97c37"
+        },
+        {
+          "view": "head",
+          "file": "rx78-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c743a1c5e36e44f9e26773d372960faaa250441994b1c0627e4bba46f34b31d2"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

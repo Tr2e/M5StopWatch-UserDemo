@@ -37,6 +37,7 @@ extern "C" void app_main(void)
     GetMooncake().installApp(std::make_unique<AppGlowField>());
     GetMooncake().installApp(std::make_unique<AppVectorCanyonFighter>());
     GetMooncake().installApp(std::make_unique<AppLetsAndGoRacer>());
+    GetMooncake().installApp(std::make_unique<AppGundamMuseum>());
     GetMooncake().installApp(std::make_unique<AppRuView>());
     GetMooncake().installApp(std::make_unique<AppLuckyWheel>());
     GetMooncake().installApp(std::make_unique<AppSetup>());

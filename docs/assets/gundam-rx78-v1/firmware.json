@@ -1,0 +1,22 @@
+{
+  "date": "2026-09-13",
+  "branch": "feat/gundam-museum",
+  "base_commit": "6b9512f",
+  "binary_bytes": 3925872,
+  "binary_sha256": "e5e5ec97e0429d936c679a02cf6882ed4a9305be0706339f8ad54544a01c0aac",
+  "app_partition_bytes": 5177344,
+  "free_bytes": 1251472,
+  "build_result": "passed",
+  "flashed": false,
+  "device_fps_validated": false,
+  "note": "Includes pre-existing uncommitted Mini 4WD home artwork in the current workspace build.",
+  "model_source_sha256": {
+    "main/apps/app_gundam_museum/app_gundam_museum.h": "7585f9c2f909f615f1c117c4fedc912b8801086bde48e9f4caf99b3712378bdd",
+    "main/apps/app_gundam_museum/controller/museum_controller.h": "1de40a10aa75d7daa9656dd4099050c7c020cf11b66c266e52a11be57f0edabf",
+    "main/apps/app_gundam_museum/model/rx78.h": "3d7e58a46c3046a646ced807a18aa714ea79e8337427a84efe851293c53bffb8",
+    "main/apps/app_gundam_museum/view/museum_renderer.h": "e23e02fc501802c5af99a24bcd3b00213d24dcf3fd8f3ce79d82f2f92934140c",
+    "main/apps/app_gundam_museum/app_gundam_museum.cpp": "69482408074b49df4e2f98c3d3f679e99d0496531e7b24e5aa3aa393c137cc0e",
+    "main/apps/app_gundam_museum/model/rx78.cpp": "e684502837c9316c026572122dae4b17a22d7df8bd42d3d59d0067183bf14001",
+    "main/apps/app_gundam_museum/view/museum_renderer.cpp": "bd5ae5a5652b7982fba20ee58c904670657414fefb914904ed2a8b03edb6eaf5"
+  }
+}

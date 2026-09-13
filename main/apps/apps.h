@@ -13,3 +13,4 @@
 #include "app_glow_field/app_glow_field.h"
 #include "app_vector_canyon_fighter/app_vector_canyon_fighter.h"
 #include "app_lets_and_go_racer/app_lets_and_go_racer.h"
+#include "app_gundam_museum/app_gundam_museum.h"
