@@ -1,0 +1,297 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/Users/tree/Documents/stopwatch/docs/assets/gundam-rx78-v5",
+  "baseline_root": null,
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "rx78-2-hguc-191",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "rx78-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3bb9f8e3959f371f0c3c26e7f0a3a408878856be1b184f9e0a9f76d773b56233"
+        },
+        {
+          "view": "front",
+          "file": "rx78-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8dcf90bf782b0857c094cba4631bf1d38a0817f050005af0315f8b4a19a2dcc2"
+        },
+        {
+          "view": "rear",
+          "file": "rx78-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8120b62729dbc793cedd8876e23d203985b9feba751ce2f06db814125b003455"
+        },
+        {
+          "view": "side",
+          "file": "rx78-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "64aae65fd36ddd727c06d7ef215eafa728b82c94e1d84a9e3f48788dd5324651"
+        },
+        {
+          "view": "other-side",
+          "file": "rx78-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "efe82848a0b8a471e429d4739b6fb54b525b695f837c48ba3463d42446962c8b"
+        },
+        {
+          "view": "top",
+          "file": "rx78-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9cd8a11108c2c5b10a5aa5ecfe2ad234488963b82c61838feaffd8cbc68297f5"
+        },
+        {
+          "view": "unarmed",
+          "file": "rx78-unarmed.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f553aa336ace414cae1690b90392d8eb8923d1de55746ba75a25fcb411d5fc29"
+        },
+        {
+          "view": "drag",
+          "file": "rx78-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "26740ae4e551657b343fd735f5ca76ae9fc128d70e59ad373c16a7191007df4f"
+        },
+        {
+          "view": "gray",
+          "file": "rx78-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6744a35c0b8c036299b981325ab81f32f684583fdcb36bbced8ec9aeda4c53a8"
+        },
+        {
+          "view": "head",
+          "file": "rx78-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "67e07857c7cdd8be4ae33d84186a0fbc4aba919eca53d6b10007fd7afce701c5"
+        },
+        {
+          "view": "study-arm",
+          "file": "study-arm.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "c150be847710ba1c3894182b393872fe266251e2f6698a33baab9eee5ee032b3"
+        },
+        {
+          "view": "study-chest",
+          "file": "study-chest.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "8037a344441f6a3d620fa2ae0df6a9dd4d0f69949581d778cec15a714c1aae70"
+        },
+        {
+          "view": "study-face-front",
+          "file": "study-face-front.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "03b67f57aa679362526502e19522a12d681e01fe8422bc1b757d36b519559694"
+        },
+        {
+          "view": "study-face-quarter",
+          "file": "study-face-quarter.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "b4d4eea472b5ced6810e68a26c95e93448f74e8bd39c8ae8c4f2cd9797e954fc"
+        },
+        {
+          "view": "study-face-side",
+          "file": "study-face-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "ad280313f51065e584e6d2415b76c5b324d4c5e3072398fa21b5ee368af59394"
+        },
+        {
+          "view": "study-front",
+          "file": "study-front.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "3c969fcb21c0834aebb5cb5e500fd40be6d0880b6e2659b7b44989b1d9f5f064"
+        },
+        {
+          "view": "study-gray",
+          "file": "study-gray.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "374f83e6fa88066d459bd97bb8f6b05bd1fc54d94bba5b5a39f99fd083cd373e"
+        },
+        {
+          "view": "study-head-front",
+          "file": "study-head-front.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "c3bdfe55c8955b8598da23b3d0f73ed36a8ad82db6cb383643e9f48cf0998e65"
+        },
+        {
+          "view": "study-head-side",
+          "file": "study-head-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "9ba21dc2d132d695fb4681913f8593c97751f47c4f094251e59207555019f50f"
+        },
+        {
+          "view": "study-head",
+          "file": "study-head.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "0360bcdc11af58089c1cfcca63c864a725c79b63c2cbeb27c60a109179520879"
+        },
+        {
+          "view": "study-leg-side",
+          "file": "study-leg-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "2178bc4dd8671c7af836839ff33bcf772c592ce0dded2033301ab828510f8177"
+        },
+        {
+          "view": "study-leg",
+          "file": "study-leg.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "bc06030ecd71472d56613cd2ecdf31d5de773b434c0c3a50c81913aa189a74ee"
+        },
+        {
+          "view": "study-other-side",
+          "file": "study-other-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "2ee231e231a63586223717393ca72260f56866d9227f2afa029b60c59dd0b2cd"
+        },
+        {
+          "view": "study-rear-equipped",
+          "file": "study-rear-equipped.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "c63c9da0f379463af5ee12cffdc107838da64c532f38910f6864c597bcc9ce59"
+        },
+        {
+          "view": "study-rear",
+          "file": "study-rear.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "5959c69939d87567ee32bdcb198368dc327467cbf02e76097ef70a936f350c7e"
+        },
+        {
+          "view": "study-rifle",
+          "file": "study-rifle.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "093b462cfd382a9686b27b5b0817ff1f5195eaac1315b2186a6db32402f49cc0"
+        },
+        {
+          "view": "study-saber",
+          "file": "study-saber.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "45d27a5c7436e0c6209f2c8cfcb80ce9814877cd58389c6fe8855ae0e1a9bd15"
+        },
+        {
+          "view": "study-salute",
+          "file": "study-salute.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "12d1fea38ad76c356e099bab1d0c5cace115a5e2b2e00f3920bbf6716122b23b"
+        },
+        {
+          "view": "study-shield",
+          "file": "study-shield.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "71d2f1e182a128ed155b96bf0fead887eeac8ba5f7046381b6ba50cbfca84283"
+        },
+        {
+          "view": "study-side",
+          "file": "study-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "da3dbd0194b8a9b8dae0799e4533ff014e942ec049e17bbc01915d001f83a32e"
+        },
+        {
+          "view": "study-standing",
+          "file": "study-standing.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "fa12e3b83e2c62f94797d9ad03e6074b3669ea48f8d34cd2594bf8e36d26c398"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

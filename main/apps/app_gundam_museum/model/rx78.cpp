@@ -25,7 +25,9 @@ public:
     Point transform(Point p) const {
         if(elbowBend || elbowRoll){p.y+=.346f;p=rotate(p,elbowRoll,elbowBend,0);p.y-=.346f;}
         p=rotate(p,angle,tilt,turn);p={origin.x+p.x,origin.y+p.y,origin.z+p.z};
-        if(part==Part::Head)p.y=2.705f+(p.y-2.74f)*.84f;
+        // Keep the crown at the exhibit's established height. The front
+        // reference has a shorter helmet/face below it and more neck clearance.
+        if(part==Part::Head)p.y=3.0452f+(p.y-3.145f)*.79f;
         if(legSide){
             // Whole limb rotates about the hip, including joint and ankle guard.
             // A slight toe-out and splay give the kit its planted display stance.
@@ -212,14 +214,20 @@ public:
         // B19: four short vents and the larger bottom recess. Tile the front
         // around five openings; inset floors and walls replace painted bars.
         const auto p=[&](float u,float t,float depth=0){
-            const float x=(.093f+.032f*t)*(1-u)+(.15f+.02f*t)*u;
-            const float y=(2.756f+.233f*t)*(1-u)+(2.775f+.209f*t)*u;
-            const float z=.108f+.11588f*(y-2.756f)-1.30f*(x-.093f-.13734f*(y-2.756f));
+            const float x=(.121f+.008f*t)*(1-u)+.171f*u;
+            const float y=(2.756f+.229f*t)*(1-u)+(2.775f+.220f*t)*u;
+            const float z=.102f+.12f*(y-2.756f)-(x-.121f);
             return Point{side*x,y,z-depth};
         };
         constexpr float us[]={0,.22f,.76f,1};
         constexpr float ts[]={0,.055f,.175f,.275f,.33f,.455f,.51f,.635f,.69f,.815f,.87f,1};
         for(int t=0;t<11;++t)for(int u=0;u<3;++u){
+            // The two uninterrupted border strips are planar. Emit each
+            // once rather than slicing it at every vent edge.
+            if(u!=1){
+                if(t==0)face(p(us[u],0),p(us[u+1],0),p(us[u+1],1),p(us[u],1),ivory,{side,0,1});
+                continue;
+            }
             const bool hole=u==1 && t>0 && t<10 && t%2==1;
             const float depth=hole?.009f:0;
             face(p(us[u],ts[t],depth),p(us[u+1],ts[t],depth),
@@ -232,11 +240,11 @@ public:
                      {center.x-(a.x+c.x)*.5f,center.y-(a.y+c.y)*.5f,0});
             }
         }
-        face(p(0,0,.016f),p(1,0,.016f),p(1,1,.016f),p(0,1,.016f),ivory,{-side,0,-1});
+        face(p(0,0,.120f),p(1,0,.120f),p(1,1,.120f),p(0,1,.120f),ivory,{-side,0,-1});
         const Point corners[]={p(0,0),p(1,0),p(1,1),p(0,1)};
         const auto center=p(.5f,.5f);
         for(int i=0;i<4;++i){auto a=corners[i],c=corners[(i+1)%4];
-            face(a,{a.x,a.y,a.z-.016f},{c.x,c.y,c.z-.016f},c,ivory,
+            face(a,{a.x,a.y,a.z-.120f},{c.x,c.y,c.z-.120f},c,ivory,
                  {(a.x+c.x)*.5f-center.x,(a.y+c.y)*.5f-center.y,0});
         }
     }
@@ -428,43 +436,61 @@ void head(Builder& b){
     b.rounded({{3.008f,0,-.065f,.163f,.153f},{3.057f,0,-.066f,.15f,.146f},
                {3.10f,0,-.071f,.124f,.124f},{3.13f,0,-.075f,.082f,.086f},
                {3.145f,0,-.077f,.035f,.04f}},ivory,16);
-    // Face cavity is kept inside the cheek armour; no protruding rectangular visor.
-    b.box(0,2.905f,.075f,.21f,.163f,.025f,dark);
+    // HGUC 191 face proportions come from the frontal kit close-up. The
+    // mask occupies about 0.39 of the helmet width, independently of the
+    // wider eye aperture. White cheek pillars frame its tapered lower edge.
+    b.box(0,2.902f,.075f,.205f,.185f,.025f,black);
     for(float v:{-1.f,1.f}){
-        // Sloped brow and inset yellow eye. Upper eyelid rises toward the temple.
-        b.patch({v*.009f,2.963f,.137f},{v*.112f,2.975f,.123f},{v*.134f,3.015f,.078f},{v*.028f,3.002f,.107f},white,{0,0,1});
-        b.patch({v*.019f,2.959f,.140f},{v*.103f,2.977f,.127f},{v*.086f,2.95f,.136f},{v*.038f,2.948f,.148f},eye,{0,0,1});
+        b.patch({v*.006f,2.983f,0.187000f},{v*.113f,2.982f,0.156000f},
+                {v*.141f,3.026f,0.079000f},{v*.027f,3.024f,0.138000f},white,{0,0,1});
+        // A3 red eye surround is a broad W below separate black sockets.
+        b.patch({0,2.945f,0.135000f},{v*.106f,2.973f,0.104000f},
+                {v*.087f,2.904f,0.125000f},{0,2.922f,0.166000f},red,{0,0,1});
+        b.patch({v*.016f,2.973f,0.153000f},{v*.100f,2.974f,0.126000f},
+                {v*.091f,2.935f,0.139000f},{v*.037f,2.931f,0.166000f},black,{0,0,1});
+        b.patch({v*.027f,2.968f,0.159000f},{v*.073f,2.969f,0.139000f},
+                {v*.069f,2.952f,0.152000f},{v*.046f,2.951f,0.168000f},eye,{0,0,1});
         b.cheek(v);
-        // Vulcans sit at the forehead temples, facing forward, not at the ears.
+        b.plate({{v*.076f,2.756f,.132f},{v*.121f,2.769f,.10725f},
+                 {v*.130f,2.904f,.1023f},{v*.077f,2.883f,.13145f}},.014f,ivory);
+        b.plate({{v*.077f,2.883f,.13145f},{v*.130f,2.904f,.1023f},
+                 {v*.132f,2.984f,.1012f},{v*.108f,2.972f,.1144f}},.014f,ivory);
         b.tube({v*.143f,3.032f,.04f},{v*.143f,3.032f,.072f},.015f,yellow,8);
         b.tube({v*.143f,3.032f,.0725f},{v*.143f,3.032f,.074f},.007f,dark,8);
-    }
-    // A short red strip lies below the eyes. The mask is a broad vertical
-    // folded plate, with two horizontal chevron vents (not a pointed muzzle).
-    for(float v:{-1.f,1.f}){
-        b.patch({v*.01f,2.934f,.143f},{v*.102f,2.948f,.113f},{v*.097f,2.913f,.117f},{0,2.901f,.153f},red,{0,0,1});
-        b.patch({0,2.934f,.155f},{v*.084f,2.923f,.122f},{v*.057f,2.79f,.125f},{0,2.791f,.153f},white,{0,0,1});
-        b.patch({v*.084f,2.923f,.122f},{v*.106f,2.939f,.110f},{v*.105f,2.784f,.094f},{v*.057f,2.79f,.125f},ivory,{v,0,1});
+        // B25 is a narrow folded mask, tapering around the long red chin.
+        b.patch({0,2.924f,0.159000f},{v*.063f,2.904f,0.123000f},
+                {v*.059f,2.837f,0.122000f},{0,2.846f,0.159000f},white,{0,0,1});
+        b.patch({0,2.846f,0.159000f},{v*.059f,2.837f,0.122000f},
+                {v*.037f,2.791f,0.115000f},{0,2.786f,0.147000f},white,{0,0,1});
+        b.patch({v*.063f,2.904f,0.123000f},{v*.070f,2.906f,0.100000f},
+                {v*.067f,2.824f,0.094000f},{v*.059f,2.837f,0.122000f},ivory,{v,0,1});
+        b.patch({v*.059f,2.837f,0.122000f},{v*.067f,2.824f,0.094000f},
+                {v*.037f,2.791f,0.094000f},{v*.037f,2.791f,0.115000f},ivory,{v,-1,1});
         for(int k=0;k<2;++k){
-            const float y=2.874f-k*.022f;
-            b.patch({0,y,.157f},{v*.035f,y-.009f,.143f},{v*.035f,y-.017f,.143f},{0,y-.008f,.157f},frame,{0,0,1});
+            const float y=2.884f-k*.017f;
+            b.patch({0,y,0.161000f},{v*.021f,y-.007f,0.149000f},
+                    {v*.021f,y-.011f,0.149000f},{0,y-.004f,0.161000f},frame,{0,0,1});
         }
     }
-    b.armor({{2.747f,0,.095f,.027f,.028f},{2.793f,0,.130f,.031f,.031f},{2.814f,0,.126f,.036f,.022f}},red);
-    b.armor({{3.011f,0,.09f,.036f,.026f},{3.123f,0,.025f,.036f,.075f},{3.156f,0,-.046f,.03f,.042f}},white);
-    b.armor({{3.003f,0,.132f,.026f,.028f},{3.049f,0,.12f,.04f,.028f},{3.089f,0,.093f,.032f,.024f}},red);
+    b.triangle({-.022f,2.984f,.188f},{.022f,2.984f,.188f},{0,2.982f,.197f},white,{0,0,1});
+    b.armor({{2.748f,0,.113f,.020f,.023f},{2.776f,0,.150f,.022f,.026f},
+             {2.823f,0,.142f,.022f,.021f},{2.837f,0,.129f,.015f,.014f}},red);
+    b.armor({{3.011f,0,.12f,.036f,.026f},{3.196f,0,.055f,.036f,.075f},
+             {3.218f,0,0.f,.030f,.066f}},white);
+    b.armor({{2.991f,0,.179f,.002f,.015f},{3.057f,0,.160f,.041f,.028f},
+             {3.132f,0,.118f,.030f,.025f}},red);
     // Front and rear main-camera windows follow the crest, not the dome.
-    b.patch({-.024f,3.110f,.112f},{.024f,3.110f,.112f},
-            {.021f,3.146f,.061f},{-.021f,3.146f,.061f},ivory,{0,0,1});
-    b.patch({-.017f,3.116f,.105f},{.017f,3.116f,.105f},
-            {.015f,3.139f,.073f},{-.015f,3.139f,.073f},0x6c92,{0,0,1});
+    b.patch({-.024f,3.142f,0.140000f},{.024f,3.142f,0.140000f},
+            {.021f,3.189f,0.137000f},{-.021f,3.189f,0.137000f},ivory,{0,0,1});
+    b.patch({-.017f,3.149f,0.141000f},{.017f,3.149f,0.141000f},
+            {.015f,3.182f,0.139000f},{-.015f,3.182f,0.139000f},0x6c92,{0,0,1});
     b.patch({-.023f,3.105f,-.194f},{.023f,3.105f,-.194f},
             {.021f,3.136f,-.167f},{-.021f,3.136f,-.167f},ivory,{0,0,-1});
     b.patch({-.016f,3.112f,-.189f},{.016f,3.112f,-.189f},
             {.015f,3.130f,-.173f},{-.015f,3.130f,-.173f},0x6c92,{0,0,-1});
     for(float v:{-1.f,1.f}){
-        const Point a{v*.032f,3.056f,.133f},e{v*.032f,3.090f,.132f};
-        const Point c{v*.207f,3.185f,.082f},d{v*.183f,3.137f,.091f};
+        const Point a{v*.032f,3.056f,.163f},e{v*.032f,3.090f,.162f};
+        const Point c{v*.245f,3.250f,.076f},d{v*.220f,3.201f,.087f};
         const Point ar{a.x,a.y,a.z-.014f},er{e.x,e.y,e.z-.014f};
         const Point cr{c.x,c.y,c.z-.014f},dr{d.x,d.y,d.z-.014f};
         b.face(a,e,c,d,ivory,{0,0,1});b.face(ar,dr,cr,er,ivory,{0,0,-1});

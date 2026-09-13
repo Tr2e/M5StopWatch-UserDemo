@@ -1,0 +1,84 @@
+{
+  "kit": "2015 HGUC 191 RX-78-2 Revive",
+  "source_page": "https://schizophonic9.com/re3/hguc_rx78.html",
+  "reference_use": "Unpainted close-ups for proportions; official product photos for colours.",
+  "fit": {
+    "crop_xyxy": [
+      0,
+      0,
+      500,
+      349
+    ],
+    "resized_pixels": [
+      750,
+      524
+    ],
+    "offset_xy": [
+      -57,
+      42
+    ],
+    "model_pixels": [
+      640,
+      640
+    ],
+    "limitation": "Approximate width registration; camera/lens and pose are not calibrated."
+  },
+  "sources": [
+    {
+      "url": "https://schizophonic9.com/re3/hguc_rx78021.jpg",
+      "pixels": [
+        500,
+        666
+      ],
+      "sha256": "1cec6054c318e0108cbf28fcd2d84eca9c0a56b4614fcea1f4c7ee4e21dbddba"
+    },
+    {
+      "url": "https://schizophonic9.com/re3/hguc_rx78022.jpg",
+      "pixels": [
+        500,
+        667
+      ],
+      "sha256": "31c1c70372e9eaa5feb695f9c07a2f8cee3c4b91de40353a81a5ab1ea778cd13"
+    },
+    {
+      "url": "https://schizophonic9.com/re3/hguc_rx78004.jpg",
+      "pixels": [
+        500,
+        375
+      ],
+      "sha256": "1edfccb9e6f60f5ddb9e8bc02e31a3651c5a9a6af5bee9311475fab975773164"
+    }
+  ],
+  "models": [
+    {
+      "revision": "1b2fc26",
+      "view": "face-front",
+      "sha256": "6f2b1e89552965eba79d0839edfeb94721e8ebe2b6d3fe359f2a04bcf259a4be"
+    },
+    {
+      "revision": "1b2fc26",
+      "view": "face-quarter",
+      "sha256": "807e635c4b55bcb30c0fb94df2c4817926bc200048e0becd5622b922fcacd789"
+    },
+    {
+      "revision": "1b2fc26",
+      "view": "face-side",
+      "sha256": "ad28293dfe1c21987eca60b556f701471d1f1a2d2d81fbb8ac693c42e12845ce"
+    },
+    {
+      "revision": "R5",
+      "view": "face-front",
+      "sha256": "9205e0be6b226cfc3b31fa3116b5a7eca7a144463e7643965a97ad91fb87d48d"
+    },
+    {
+      "revision": "R5",
+      "view": "face-quarter",
+      "sha256": "a49a7e16012da3f4d5ef9ee05254b87e8c417850676f7761125a760004ce173e"
+    },
+    {
+      "revision": "R5",
+      "view": "face-side",
+      "sha256": "e40ef241257b3e6e788c44e30026ca9e6a5675895810d927192dbba713950987"
+    }
+  ]
+}

@@ -33,6 +33,9 @@ int main(int argc,char** argv){
         {"arm",-.40f,.025f,2.13f,390,Pose::Display,false,false,-.60f,Part::Shoulders,Part::Hands,-1},
         {"leg",-.40f,.025f,.94f,305,Pose::Display,false,false,.49f,Part::Feet,Part::Thighs,1},
         {"leg-side",1.57079633f,.025f,.94f,305,Pose::Display,false,false,.49f,Part::Feet,Part::Thighs,1},
+        {"face-front",0,0,2.94f,1050,Pose::Salute,false,false,0,Part::Head},
+        {"face-quarter",-.90f,.035f,2.94f,1050,Pose::Salute,false,false,0,Part::Head},
+        {"face-side",-1.57079633f,0,2.94f,1050,Pose::Salute,false,false,0,Part::Head},
     };
     for(const auto& s:shots){
         buildRx78(*mesh,{s.equipment,false,s.gray,s.pose});assert(!mesh->overflowed);
