@@ -1,0 +1,102 @@
+{
+  "kit": "HGUC 191 RX-78-2 (2015 Revive)",
+  "parts_authority": "https://manual.bandai-hobby.net/pdf/1004.pdf",
+  "photographer_page": "https://www.dalong.net/reviews/hg/h191/h191_i_e.htm",
+  "method": "Unassembled reference / assembled authored geometry. No pose matching or similarity score.",
+  "sources": [
+    {
+      "id": "r01",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_r01.jpg",
+      "pixels": [
+        900,
+        689
+      ],
+      "sha256": "23496d852554e6c01e8c579ea9a6052ae8c0650e5e0c9324180ac0da87cfac45"
+    },
+    {
+      "id": "r02",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_r02.jpg",
+      "pixels": [
+        900,
+        604
+      ],
+      "sha256": "17237e216bbdf1f2adbf19e945515c2b23101137c5813299518659beb6438137"
+    },
+    {
+      "id": "r03",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_r03.jpg",
+      "pixels": [
+        900,
+        597
+      ],
+      "sha256": "3e7f3ac34be46690dd1c4f0cce55252f377a024bb207710e5f93e620ea0430b1"
+    },
+    {
+      "id": "j_head",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_j_head.jpg",
+      "pixels": [
+        578,
+        400
+      ],
+      "sha256": "35d56e4d5fc25ef054679d5e373a24594500e6e1e0b35b346db6b5d49498a779"
+    },
+    {
+      "id": "j_arm",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_j_arm.jpg",
+      "pixels": [
+        494,
+        500
+      ],
+      "sha256": "d3d1bf8b628740dd3780d354ff7e139aa8a56952fa39cfea3c54cd6e98797318"
+    },
+    {
+      "id": "j_leg",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_j_leg.jpg",
+      "pixels": [
+        585,
+        550
+      ],
+      "sha256": "e8d5e4b7eb0344f637a71dee07e3e7b2a4acb64bfe1cc529621cd99826a38db0"
+    },
+    {
+      "id": "j_body",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_j_body.jpg",
+      "pixels": [
+        647,
+        500
+      ],
+      "sha256": "aa4610d372d6ff3eb7115c160b2ba4c85a8f1c284b8acfe8e2901bfbe62a45ee"
+    },
+    {
+      "id": "j_gun",
+      "url": "https://www.dalong.net/reviews/hg/h191/p/h191_j_gun.jpg",
+      "pixels": [
+        850,
+        491
+      ],
+      "sha256": "cd36f7ed985a47f4da5e4137c2ab8c5b49fb076e84cc47a8dde017311ccfab89"
+    }
+  ],
+  "comparisons": [
+    {
+      "reference": "j_head",
+      "study": "head",
+      "study_sha256": "905e2135be3fc14825d5149e59a621809f67b1ae3740184e18f5ee31b61ff497"
+    },
+    {
+      "reference": "j_arm",
+      "study": "arm",
+      "study_sha256": "c3778c3a5d05050fdd0a37c6060d56770769a579bc4064c5f6c81396775c8340"
+    },
+    {
+      "reference": "j_leg",
+      "study": "leg-side",
+      "study_sha256": "7bb8f7078c1270b0f2eb0148442e1a43645715641ecf40ed2f260b502058dadf"
+    },
+    {
+      "reference": "j_body",
+      "study": "chest",
+      "study_sha256": "3970dc83dd466c344207e4d5e3e87c0ea38ffc683b5eee7e216e456a6d298c01"
+    }
+  ]
+}

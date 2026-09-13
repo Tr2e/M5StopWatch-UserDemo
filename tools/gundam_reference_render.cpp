@@ -12,7 +12,8 @@ int main(int argc,char** argv){
     auto mesh=std::make_unique<Mesh>();
     auto raster=std::make_unique<lets_and_go::CarSurfaceRaster<640,640>>();
     LGFX_Sprite canvas;canvas.createSprite(640,640);
-    struct Shot{const char* name;float yaw,pitch,pivot,scale;Pose pose;bool equipment,gray;float centerX=0;Part only=Part::Count;};
+    struct Shot{const char* name;float yaw,pitch,pivot,scale;Pose pose;bool equipment,gray;
+        float centerX=0;Part only=Part::Count,through=Part::Count;int limb=0;};
     const Shot shots[]={
         {"standing",-.40f,.025f,1.65f,159,Pose::Display,true,false},
         {"front",0,.025f,1.61f,174,Pose::Display,false,false},
@@ -29,6 +30,9 @@ int main(int argc,char** argv){
         {"rifle",-.40f,.025f,1.43f,345,Pose::Display,true,false,-.82f,Part::Rifle},
         {"shield",-.40f,.025f,2.02f,265,Pose::Display,true,false,.84f,Part::Shield},
         {"chest",-.40f,.025f,2.32f,650,Pose::Display,false,false},
+        {"arm",-.40f,.025f,2.13f,390,Pose::Display,false,false,-.60f,Part::Shoulders,Part::Hands,-1},
+        {"leg",-.40f,.025f,.94f,305,Pose::Display,false,false,.49f,Part::Feet,Part::Thighs,1},
+        {"leg-side",1.57079633f,.025f,.94f,305,Pose::Display,false,false,.49f,Part::Feet,Part::Thighs,1},
     };
     for(const auto& s:shots){
         buildRx78(*mesh,{s.equipment,false,s.gray,s.pose});assert(!mesh->overflowed);
@@ -39,7 +43,11 @@ int main(int argc,char** argv){
         lets_and_go::TrackCamera camera{};camera.principalX=320;camera.principalY=320;camera.focalLength=s.scale*7;
         canvas.fillScreen(0x1083);raster->begin(0,0);
         for(int pass=0;pass<2;++pass)for(size_t i=0;i<mesh->count;++i){
-            if(s.only!=Part::Count && mesh->parts[i]!=s.only)continue;
+            if(s.only!=Part::Count && (mesh->parts[i]<s.only || mesh->parts[i]>(s.through==Part::Count?s.only:s.through)))continue;
+            if(s.limb){
+                float x=0;for(auto p:mesh->panels[i].point)x+=p.x;
+                if(x*s.limb<=0)continue;
+            }
             const float facing=dot(mesh->normals[i],subtract(eye,mesh->panels[i].point[0]));
             if((pass==0)!=(facing<=0))continue;
             if(!mesh->twoSided[i] && facing<-.035f)continue;

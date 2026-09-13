@@ -1,0 +1,4 @@
+working_bytes=710712 panels=4028 omitted=32 submitted=2092 culled=1936
+first_cull_case 0 1 0.1 23 pixels=2
+cases=2592 cull_pixel_diff=251 buried_pixel_diff=0 coverage_diff=142 interior_diff=0 max_diff=6 partial_diff=0 culled_ratio=0.479766
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

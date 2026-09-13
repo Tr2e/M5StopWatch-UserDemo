@@ -1,0 +1,51 @@
+{
+  "comparison": "visual review; not a pixel-error metric",
+  "product_page": "https://www.bandaispirits.co.jp/products/search/detail.php?grp_id=5325&prd_id=4543112967169000",
+  "views": [
+    {
+      "view": "standing",
+      "reference_url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000098610_1.jpg",
+      "reference_sha256": "6d0dd51cb143932bf4060c851d97fdeb3d239cf09f80d60a41eef071b69241d9",
+      "reference_original_size": [
+        560,
+        560
+      ],
+      "reference_resize_factor": 1.1428571428571428,
+      "study_sha256": "989c309ff19dcb57f7f0b46a808fa60e551c16cdab76c4d0f4f7f395a574dd38",
+      "study_size": [
+        640,
+        640
+      ]
+    },
+    {
+      "view": "salute",
+      "reference_url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000098610_2.jpg",
+      "reference_sha256": "91f2413e87c3c70c308e1065fd859aea091a4ba5f07a751b08d1e67c1e4d057a",
+      "reference_original_size": [
+        560,
+        560
+      ],
+      "reference_resize_factor": 1.1428571428571428,
+      "study_sha256": "ab34ca210c8848646e114779ac74fd9599f0104a156ccacd16021ddce8cfdb83",
+      "study_size": [
+        640,
+        640
+      ]
+    },
+    {
+      "view": "saber",
+      "reference_url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000098610_3.jpg",
+      "reference_sha256": "ebd0adf78da3d8afd356718021f6a7d0823cc83ff5fa835779a668c7e5a597c0",
+      "reference_original_size": [
+        560,
+        560
+      ],
+      "reference_resize_factor": 1.1428571428571428,
+      "study_sha256": "b17e56bb7dbe8c9decef9c1f2acc534cac82ec369e1aeb7b7c0152ab8b6a9dcd",
+      "study_size": [
+        640,
+        640
+      ]
+    }
+  ]
+}

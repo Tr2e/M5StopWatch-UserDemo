@@ -1,0 +1,153 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {
+      "id": "rx78-2-hguc-191",
+      "required_views": [
+        "equipped",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "unarmed",
+        "drag",
+        "gray",
+        "head",
+        "study-arm",
+        "study-chest",
+        "study-front",
+        "study-gray",
+        "study-head-front",
+        "study-head-side",
+        "study-head",
+        "study-leg-side",
+        "study-leg",
+        "study-other-side",
+        "study-rear-equipped",
+        "study-rear",
+        "study-rifle",
+        "study-saber",
+        "study-salute",
+        "study-shield",
+        "study-side",
+        "study-standing"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "rx78-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "rx78-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "rx78-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "rx78-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "rx78-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "rx78-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "rx78-unarmed.png"
+        },
+        {
+          "view": "drag",
+          "file": "rx78-drag.png"
+        },
+        {
+          "view": "gray",
+          "file": "rx78-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "rx78-head.png"
+        },
+        {
+          "view": "study-arm",
+          "file": "study-arm.png"
+        },
+        {
+          "view": "study-chest",
+          "file": "study-chest.png"
+        },
+        {
+          "view": "study-front",
+          "file": "study-front.png"
+        },
+        {
+          "view": "study-gray",
+          "file": "study-gray.png"
+        },
+        {
+          "view": "study-head-front",
+          "file": "study-head-front.png"
+        },
+        {
+          "view": "study-head-side",
+          "file": "study-head-side.png"
+        },
+        {
+          "view": "study-head",
+          "file": "study-head.png"
+        },
+        {
+          "view": "study-leg-side",
+          "file": "study-leg-side.png"
+        },
+        {
+          "view": "study-leg",
+          "file": "study-leg.png"
+        },
+        {
+          "view": "study-other-side",
+          "file": "study-other-side.png"
+        },
+        {
+          "view": "study-rear-equipped",
+          "file": "study-rear-equipped.png"
+        },
+        {
+          "view": "study-rear",
+          "file": "study-rear.png"
+        },
+        {
+          "view": "study-rifle",
+          "file": "study-rifle.png"
+        },
+        {
+          "view": "study-saber",
+          "file": "study-saber.png"
+        },
+        {
+          "view": "study-salute",
+          "file": "study-salute.png"
+        },
+        {
+          "view": "study-shield",
+          "file": "study-shield.png"
+        },
+        {
+          "view": "study-side",
+          "file": "study-side.png"
+        },
+        {
+          "view": "study-standing",
+          "file": "study-standing.png"
+        }
+      ]
+    }
+  ]
+}

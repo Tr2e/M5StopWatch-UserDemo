@@ -91,7 +91,7 @@ public:
         face({l,b,k},{r,b,k},{r,b,f},{l,b,f},color,{0,-1,0},buriedBottom);
     }
     // Eight-sided chamfered armour. Each ring is planar and convex.
-    void armor(std::initializer_list<Ring> rings,uint16_t color,bool buriedTop=false,bool buriedBottom=false,bool openFront=false,bool openBottom=false){
+    void armor(std::initializer_list<Ring> rings,uint16_t color,bool buriedTop=false,bool buriedBottom=false,bool openFront=false,bool openBottom=false,bool recessedFront=false){
         const auto first=out.count;
         const auto point=[](Ring r,int i){
             constexpr float x[]={-.72f,.72f,1,1,.72f,-.72f,-1,-1};
@@ -103,6 +103,23 @@ public:
             for(int i=0;i<8;++i){auto p=point(a,i),q=point(a,(i+1)%8);
                 if(openFront && (i==0 || i==1 || i==7))continue;
                 const Point outward{(p.x+q.x)/2-a.x,0,(p.z+q.z)/2-a.z};
+                if(recessedFront && i==0 && it-rings.begin()<=2){
+                    // A6 cockpit: two recessed panels in the lower tongue.
+                    // Replace the front surface, so the recess is not covered.
+                    const Point corners[]={p,q,point(b,1),point(b,0)};
+                    const auto sample=[&](float u,float v){
+                        const float x=(p.x*(1-u)+q.x*u)*(1-v)+(point(b,0).x*(1-u)+point(b,1).x*u)*v;
+                        return Point{x,a.y*(1-v)+b.y*v,(a.z+a.d)*(1-v)+(b.z+b.d)*v};};
+                    const Point inset[]={sample(.13f,.10f),sample(.87f,.10f),sample(.87f,.90f),sample(.13f,.90f)};
+                    for(int k=0;k<4;++k){auto r=inset[k],s=inset[(k+1)%4];
+                        face(corners[k],corners[(k+1)%4],s,r,color,{0,0,1});
+                        face(r,s,{s.x,s.y,s.z-.009f},{r.x,r.y,r.z-.009f},color,
+                             {-(r.x+s.x)*.5f,(a.y+b.y-r.y-s.y)*.5f,0});
+                    }
+                    const auto back=[](Point r){r.z-=.009f;return r;};
+                    face(back(inset[0]),back(inset[1]),back(inset[2]),back(inset[3]),0x3397,{0,0,1});
+                    continue;
+                }
                 face(p,q,point(b,(i+1)%8),point(b,i),color,outward);
             }
         }
@@ -140,11 +157,87 @@ public:
         Point center{};
         for(auto p:outline){center.x+=p.x;center.y+=p.y;center.z+=p.z;}
         center.x/=outline.size();center.y/=outline.size();center.z/=outline.size();
+        // Pair adjacent fan triangles where they share a plane. face() still
+        // splits folded quads, preserving the authored surface and winding.
+        for(size_t i=0;i<outline.size();i+=2){
+            auto a=*(outline.begin()+i),b=*(outline.begin()+(i+1)%outline.size());
+            auto c=i+1<outline.size()?*(outline.begin()+(i+2)%outline.size()):b;
+            face(center,a,b,c,color,{0,0,1});
+            face({center.x,center.y,center.z-thickness},{a.x,a.y,a.z-thickness},
+                 {b.x,b.y,b.z-thickness},{c.x,c.y,c.z-thickness},color,{0,0,-1});
+        }
         for(size_t i=0;i<outline.size();++i){auto a=*(outline.begin()+i),b=*(outline.begin()+(i+1)%outline.size());
             Point ar{a.x,a.y,a.z-thickness},br{b.x,b.y,b.z-thickness};
-            face(center,a,b,b,color,{0,0,1});
-            face({center.x,center.y,center.z-thickness},ar,br,br,color,{0,0,-1});
             face(a,ar,br,b,color,{(a.x+b.x)/2-center.x,(a.y+b.y)/2-center.y,0});
+        }
+    }
+    void shoulder(float side){
+        // B13 carries the depth; B14 is the inset front cover. The cover is
+        // planar, with a narrow bevel instead of a triangulated bulging face.
+        const Point rim[]={{-.139f,-.108f,.125f},{.074f,-.055f,.125f},
+            {.15f,.005f,.125f},{.171f,.204f,.125f},{.143f,.232f,.125f},
+            {-.118f,.215f,.125f},{-.147f,.185f,.125f}};
+        const Point center{.004f,.065f,.125f};
+        const auto p=[&](int i,float scale,float z){const auto r=rim[i%7];
+            return Point{side*(center.x+(r.x-center.x)*scale),center.y+(r.y-center.y)*scale,z};};
+        for(int i=0;i<7;++i){
+            const auto a=p(i,1,.106f),c=p(i+1,1,.106f);
+            face(a,c,p(i+1,.88f,.145f),p(i,.88f,.145f),ivory,{0,0,1});
+            face(a,p(i,1,-.162f),p(i+1,1,-.162f),c,ivory,
+                 {a.x-side*center.x,a.y-center.y,0});
+            face({side*center.x,center.y,.145f},p(i,.88f,.145f),p(i+1,.88f,.145f),p(i+1,.88f,.145f),white,{0,0,1});
+            face({side*center.x,center.y,-.162f},p(i,1,-.162f),p(i+1,1,-.162f),p(i+1,1,-.162f),ivory,{0,0,-1});
+        }
+    }
+    void ankleGuard(){
+        // B30/B31: an open-backed U, with a real inner surface around B29.
+        // The rear ends meet the side hinge discs; no cap fills the ankle gap.
+        constexpr float x[]={-.165f,-.165f,-.12f,.12f,.165f,.165f};
+        constexpr float z[]={-.07f,.105f,.19f,.19f,.105f,-.07f};
+        constexpr float ix[]={-.137f,-.137f,-.109f,.109f,.137f,.137f};
+        constexpr float iz[]={-.07f,.092f,.159f,.159f,.092f,-.07f};
+        const auto p=[&](int i,bool inner,bool top){return Point{
+            (inner?ix[i]:x[i])*(top?1.f:1.06f),top?.346f:.228f,
+            (inner?iz[i]:z[i])+(top?0:.018f)};};
+        for(int i=0;i<5;++i){
+            const Point n{(x[i]+x[i+1])*.5f,0,(z[i]+z[i+1])*.5f+.05f};
+            face(p(i,false,false),p(i+1,false,false),p(i+1,false,true),p(i,false,true),white,n);
+            face(p(i,true,true),p(i+1,true,true),p(i+1,true,false),p(i,true,false),ivory,{-n.x,0,-n.z});
+            face(p(i,false,true),p(i+1,false,true),p(i+1,true,true),p(i,true,true),ivory,{0,1,0});
+            face(p(i,true,false),p(i+1,true,false),p(i+1,false,false),p(i,false,false),ivory,{0,-1,0});
+        }
+        for(int i:{0,5})face(p(i,false,false),p(i,false,true),p(i,true,true),p(i,true,false),ivory,{0,0,-1});
+    }
+    void cheek(float side){
+        // B19: four short vents and the larger bottom recess. Tile the front
+        // around five openings; inset floors and walls replace painted bars.
+        const auto p=[&](float u,float t,float depth=0){
+            const float x=(.093f+.032f*t)*(1-u)+(.15f+.02f*t)*u;
+            const float y=(2.756f+.233f*t)*(1-u)+(2.775f+.209f*t)*u;
+            const float z=.108f+.11588f*(y-2.756f)-1.30f*(x-.093f-.13734f*(y-2.756f));
+            return Point{side*x,y,z-depth};
+        };
+        constexpr float us[]={0,.22f,.76f,1};
+        constexpr float ts[]={0,.055f,.175f,.275f,.33f,.455f,.51f,.635f,.69f,.815f,.87f,1};
+        for(int t=0;t<11;++t)for(int u=0;u<3;++u){
+            const bool hole=u==1 && t>0 && t<10 && t%2==1;
+            const float depth=hole?.009f:0;
+            face(p(us[u],ts[t],depth),p(us[u+1],ts[t],depth),
+                 p(us[u+1],ts[t+1],depth),p(us[u],ts[t+1],depth),hole?dark:ivory,{side,0,1});
+            if(!hole)continue;
+            const Point corners[]={p(us[u],ts[t]),p(us[u+1],ts[t]),p(us[u+1],ts[t+1]),p(us[u],ts[t+1])};
+            const auto center=p((us[u]+us[u+1])*.5f,(ts[t]+ts[t+1])*.5f);
+            for(int i=0;i<4;++i){auto a=corners[i],c=corners[(i+1)%4];
+                face(a,c,{c.x,c.y,c.z-depth},{a.x,a.y,a.z-depth},ivory,
+                     {center.x-(a.x+c.x)*.5f,center.y-(a.y+c.y)*.5f,0});
+            }
+        }
+        face(p(0,0,.016f),p(1,0,.016f),p(1,1,.016f),p(0,1,.016f),ivory,{-side,0,-1});
+        const Point corners[]={p(0,0),p(1,0),p(1,1),p(0,1)};
+        const auto center=p(.5f,.5f);
+        for(int i=0;i<4;++i){auto a=corners[i],c=corners[(i+1)%4];
+            face(a,{a.x,a.y,a.z-.016f},{c.x,c.y,c.z-.016f},c,ivory,
+                 {(a.x+c.x)*.5f-center.x,(a.y+c.y)*.5f-center.y,0});
         }
     }
     void sole(){
@@ -175,7 +268,7 @@ public:
             face({r,.025f,front},{l,.025f,front},{l,.06f,front},{r,.06f,front},red,{0,0,-1});
         }
     }
-    void tube(Point a,Point b,float radius,uint16_t color,int segments=8,bool buriedEnds=false){
+    void tube(Point a,Point b,float radius,uint16_t color,int segments=8,bool buriedEnds=false,bool buriedStart=false){
         Point axis=subtract(b,a);float length=std::sqrt(dot(axis,axis));
         axis={axis.x/length,axis.y/length,axis.z/length};
         Point u=cross(axis,std::abs(axis.y)<.9f?Point{0,1,0}:Point{1,0,0});
@@ -186,7 +279,7 @@ public:
             auto x=p(a,i,radius),y=p(a,i+1,radius);
             face(x,y,p(b,i+1,radius),p(b,i,radius),color,subtract(x,a));
             if(i%2==0){
-                face(a,x,y,p(a,i+2,radius),color,{-axis.x,-axis.y,-axis.z},buriedEnds);
+                face(a,x,y,p(a,i+2,radius),color,{-axis.x,-axis.y,-axis.z},buriedEnds || buriedStart);
                 face(b,p(b,i,radius),p(b,i+1,radius),p(b,i+2,radius),color,axis,buriedEnds);
             }
         }
@@ -214,11 +307,14 @@ void legs(Builder& b){
         b.at(Part::Feet,{x,0,.035f});
         b.armor({{.025f,0,.075f,.175f,.365f},{.105f,0,.075f,.18f,.365f},{.185f,0,.025f,.155f,.315f}},red,false,false,false,true);
         b.sole();
-        b.armor({{.176f,0,-.025f,.154f,.224f},{.245f,0,-.09f,.132f,.19f},{.29f,0,-.10f,.115f,.14f}},ivory);
+        b.armor({{.185f,0,-.032f,.144f,.218f},{.245f,0,-.09f,.132f,.19f},{.29f,0,-.10f,.115f,.14f}},ivory);
         b.at(Part::Shins,{x,0,0});
-        b.tube({0,.22f,-.06f},{0,.40f,-.06f},.08f,frame,8,true);
+        b.tube({0,.22f,-.06f},{0,.47f,-.06f},.08f,frame,8,true);
+        // C22/C23 remains visible between the shin opening and ankle guard.
+        b.box(0,.391f,.014f,.10f,.064f,.025f,dark);
+        for(float v:{-1.f,1.f})b.box(v*.031f,.391f,.036f,.016f,.042f,.022f,frame);
         // The calf swells below the knee, then contracts into a narrow ankle.
-        b.rounded({{.31f,0,.017f,.130f,.175f},{.43f,0,-.02f,.112f,.13f},
+        b.rounded({{.425f,0,-.035f,.130f,.15f},{.49f,0,-.035f,.112f,.13f},
                    {.57f,0,-.043f,.119f,.163f},{.70f,0,-.05f,.174f,.216f},{.80f,0,-.065f,.19f,.225f},
                    {.95f,0,-.065f,.17f,.21f},{1.055f,0,-.035f,.115f,.14f}},ivory);
         // Calf shell and continuous knee-to-shin plate are separate pieces.
@@ -228,20 +324,27 @@ void legs(Builder& b){
             b.tube({v*.121f,.574f,-.043f},{v*.114f,.435f,-.02f},.0022f,frame,4);
             b.tube({v*.11f,.30f,-.06f},{v*.164f,.30f,-.06f},.076f,ivory,8);
             b.tube({v*.1645f,.30f,-.06f},{v*.167f,.30f,-.06f},.046f,frame,8);
+            b.patch({v*.168f,.267f,-.087f},{v*.168f,.327f,-.027f},
+                    {v*.168f,.336f,-.036f},{v*.168f,.276f,-.096f},ivory,{v,0,0});
         }
-        b.armor({{.215f,0,.087f,.162f,.105f},{.345f,0,.06f,.15f,.11f}},white);
+        b.ankleGuard();
         b.at(Part::Knees,{x,0,0});
         b.tube({-.135f,1.105f,-.045f},{.135f,1.105f,-.045f},.105f,frame,10);
         for(float v:{-1.f,1.f}){
             b.tube({v*.132f,1.105f,-.045f},{v*.144f,1.105f,-.045f},.101f,ivory,12);
             b.tube({v*.1445f,1.105f,-.045f},{v*.146f,1.105f,-.045f},.064f,frame,12);
+            b.patch({v*.147f,1.059f,-.081f},{v*.147f,1.141f,.001f},
+                    {v*.147f,1.151f,-.009f},{v*.147f,1.069f,-.091f},ivory,{v,0,0});
         }
-        b.armor({{.65f,0,.15f,.042f,.017f},{.80f,0,.16f,.102f,.055f},
+        // B24 is one long front shell, including the flared lower shin.
+        b.armor({{.425f,0,.133f,.13f,.027f},{.54f,0,.112f,.088f,.025f},
+                 {.65f,0,.15f,.042f,.017f},{.80f,0,.16f,.102f,.055f},
                  {1.055f,0,.13f,.127f,.079f},{1.22f,0,.084f,.095f,.053f}},white);
         b.patch({-.015f,1.142f,.151f},{.015f,1.142f,.151f},{.015f,1.178f,.141f},{-.015f,1.178f,.141f},frame,{0,0,1});
         b.at(Part::Thighs,{x,0,0});
         b.armor({{1.19f,0,-.03f,.105f,.12f},{1.34f,0,-.015f,.137f,.153f},{1.69f,0,-.025f,.145f,.151f}},ivory);
-        b.tube({0,1.63f,-.025f},{0,1.84f,-.025f},.08f,frame,8);
+        // The lower hip-stem cap is enclosed by B22 in every authored pose.
+        b.tube({0,1.63f,-.025f},{0,1.84f,-.025f},.08f,frame,8,false,true);
     }
     b.legSide=0;
 }
@@ -251,7 +354,7 @@ void body(Builder& b){
     b.box(0,1.81f,-.035f,.44f,.23f,.31f,frame);
     b.armor({{1.89f,0,0,.315f,.20f},{2.03f,0,-.005f,.275f,.185f}},ivory);
     for(float v:{-1.f,1.f}){
-        // B4/B5 front skirts: chamfered lower corners, a sloping front, and
+        // B5 front skirts: chamfered lower corners, a sloping front, and
         // a separate projecting central codpiece instead of one apron.
         b.plate({{v*.078f,1.66f,.303f},{v*.285f,1.68f,.300f},
                  {v*.335f,1.745f,.286f},{v*.287f,1.978f,.220f},
@@ -283,7 +386,7 @@ void body(Builder& b){
     // profile. Overlay planes crossing the old shell caused a serrated seam.
     b.armor({{2.04f,0,.158f,.063f,.05f},{2.17f,0,.18f,.080f,.055f},
              {2.325f,0,.20f,.096f,.06f},{2.332f,0,.259f,.104f,.061f},
-             {2.435f,0,.239f,.109f,.061f},{2.50f,0,.206f,.112f,.054f}},blue);
+             {2.435f,0,.239f,.109f,.061f},{2.50f,0,.206f,.112f,.054f}},blue,false,false,false,false,true);
     // The yellow throat guard descends into the chest, forming a deep U.
     // A flat horizontal collar loses one of this kit's strongest identifiers.
     b.plate({{-.127f,2.565f,.275f},{.127f,2.565f,.275f},
@@ -320,6 +423,8 @@ void head(Builder& b){
     // Rear helmet shell leaves an actual opening for the inset face.
     b.rounded({{2.752f,0,-.067f,.153f,.12f},{2.86f,0,-.067f,.174f,.153f},
                {2.96f,0,-.065f,.173f,.16f},{3.008f,0,-.065f,.163f,.153f}},ivory,16,true);
+    // Preserve the aperture ceiling at this join: its grazing pixels remain
+    // visible at high-pitch head-study angles in the production raster.
     b.rounded({{3.008f,0,-.065f,.163f,.153f},{3.057f,0,-.066f,.15f,.146f},
                {3.10f,0,-.071f,.124f,.124f},{3.13f,0,-.075f,.082f,.086f},
                {3.145f,0,-.077f,.035f,.04f}},ivory,16);
@@ -329,16 +434,7 @@ void head(Builder& b){
         // Sloped brow and inset yellow eye. Upper eyelid rises toward the temple.
         b.patch({v*.009f,2.963f,.137f},{v*.112f,2.975f,.123f},{v*.134f,3.015f,.078f},{v*.028f,3.002f,.107f},white,{0,0,1});
         b.patch({v*.019f,2.959f,.140f},{v*.103f,2.977f,.127f},{v*.086f,2.95f,.136f},{v*.038f,2.948f,.148f},eye,{0,0,1});
-        // Four recessed-looking slots follow the cheek plane up to eye level.
-        b.plate({{v*.093f,2.756f,.108f},{v*.150f,2.775f,.035f},
-                 {v*.17f,2.984f,.062f},{v*.125f,2.989f,.135f}},.016f,ivory);
-        for(int k=0;k<4;++k){
-            const float y=2.804f+k*.044f;
-            const float xi=.093f+(y-2.756f)*.13734f,zi=.108f+(y-2.756f)*.11588f;
-            const float xo=.15f+(y-2.775f)*.095694f,zo=.035f+(y-2.775f)*.129187f;
-            b.patch({v*(xi+.013f),y,zi-.012f},{v*(xo-.016f),y,zo+.028f},
-                    {v*(xo-.01485f),y+.012f,zo+.02955f},{v*(xi+.01465f),y+.012f,zi-.01061f},dark,{v,0,1});
-        }
+        b.cheek(v);
         // Vulcans sit at the forehead temples, facing forward, not at the ears.
         b.tube({v*.143f,3.032f,.04f},{v*.143f,3.032f,.072f},.015f,yellow,8);
         b.tube({v*.143f,3.032f,.0725f},{v*.143f,3.032f,.074f},.007f,dark,8);
@@ -357,7 +453,15 @@ void head(Builder& b){
     b.armor({{2.747f,0,.095f,.027f,.028f},{2.793f,0,.130f,.031f,.031f},{2.814f,0,.126f,.036f,.022f}},red);
     b.armor({{3.011f,0,.09f,.036f,.026f},{3.123f,0,.025f,.036f,.075f},{3.156f,0,-.046f,.03f,.042f}},white);
     b.armor({{3.003f,0,.132f,.026f,.028f},{3.049f,0,.12f,.04f,.028f},{3.089f,0,.093f,.032f,.024f}},red);
-    b.box(0,3.126f,-.139f,.047f,.032f,.013f,red);
+    // Front and rear main-camera windows follow the crest, not the dome.
+    b.patch({-.024f,3.110f,.112f},{.024f,3.110f,.112f},
+            {.021f,3.146f,.061f},{-.021f,3.146f,.061f},ivory,{0,0,1});
+    b.patch({-.017f,3.116f,.105f},{.017f,3.116f,.105f},
+            {.015f,3.139f,.073f},{-.015f,3.139f,.073f},0x6c92,{0,0,1});
+    b.patch({-.023f,3.105f,-.194f},{.023f,3.105f,-.194f},
+            {.021f,3.136f,-.167f},{-.021f,3.136f,-.167f},ivory,{0,0,-1});
+    b.patch({-.016f,3.112f,-.189f},{.016f,3.112f,-.189f},
+            {.015f,3.130f,-.173f},{-.015f,3.130f,-.173f},0x6c92,{0,0,-1});
     for(float v:{-1.f,1.f}){
         const Point a{v*.032f,3.056f,.133f},e{v*.032f,3.090f,.132f};
         const Point c{v*.207f,3.185f,.082f},d{v*.183f,3.137f,.091f};
@@ -375,24 +479,26 @@ void arms(Builder& b){
         const float roll=salute?(v>0?2.18f:-.95f):saber?(v>0?1.02f:-2.12f):v*.16f;
         b.at(Part::Shoulders,{v*.485f,2.52f,-.025f},salute?(v>0?1.0f:-.12f):saber?v*.5f:0);
         b.tube({-v*.17f,0,0},{v*.10f,0,0},.093f,frame,10);
-        // HGUC shoulder front is a tall asymmetric pentagon, rising outward.
-        b.plate({{-v*.12f,-.125f,.143f},{v*.108f,-.05f,.18f},{v*.183f,.23f,.118f},
-                 {v*.112f,.255f,.092f},{-v*.125f,.19f,.11f}},.25f,ivory);
-        b.plate({{-v*.105f,-.096f,.152f},{v*.089f,-.029f,.188f},{v*.157f,.213f,.13f},
-                 {v*.104f,.23f,.11f},{-v*.11f,.177f,.122f}},.009f,white);
+        b.shoulder(v);
         b.at(Part::Arms,{v*.513f,2.43f,-.01f},roll);
         b.tilt=salute?-.13f:saber?-.04f:0;
+        b.tube({0,-.10f,0},{0,.09f,0},.069f,frame,8,false,true);
         b.armor({{-.295f,0,0,.10f,.111f},{-.055f,0,0,.113f,.12f}},ivory);
-        b.tube({-.117f,-.346f,0},{.117f,-.346f,0},.093f,frame,12);
+        b.tube({-.117f,-.346f,0},{.117f,-.346f,0},.093f,frame,8);
         for(float q:{-1.f,1.f}){
             b.tube({q*.116f,-.346f,0},{q*.125f,-.346f,0},.083f,ivory,10);
             b.tube({q*.1255f,-.346f,0},{q*.127f,-.346f,0},.056f,frame,10);
+            b.patch({q*.128f,-.384f,-.029f},{q*.128f,-.317f,.038f},
+                    {q*.128f,-.308f,.029f},{q*.128f,-.375f,-.038f},ivory,{q,0,0});
         }
         b.elbowBend=salute?-.1f:saber?-.07f:-.25f;
         b.elbowRoll=salute?(v>0?2.04f:-.15f):0;
+        // B15/B16 front cover stops below the exposed elbow mechanism.
         b.armor({{-.757f,0,.012f,.102f,.104f},{-.69f,0,.013f,.111f,.113f},
                  {-.48f,0,.003f,.137f,.133f},{-.407f,0,0,.105f,.099f}},ivory);
-        b.plate({{-.079f,-.71f,.128f},{.079f,-.71f,.128f},{.098f,-.472f,.145f},{-.098f,-.472f,.145f}},.012f,white);
+        b.plate({{-.073f,-.707f,.128f},{.073f,-.707f,.128f},{.093f,-.667f,.131f},
+                 {.109f,-.488f,.144425f},{.08f,-.451f,.1472f},{-.08f,-.451f,.1472f},
+                 {-.109f,-.488f,.144425f},{-.093f,-.667f,.131f}},.012f,white);
         b.tube({0,-.825f,.01f},{0,-.716f,.01f},.063f,frame,8);
         b.part=Part::Hands;
         b.armor({{-.916f,0,.029f,.09f,.074f},{-.802f,0,.015f,.10f,.085f}},frame);
@@ -406,7 +512,7 @@ void arms(Builder& b){
             b.tube({-.087f,-.831f,.06f},{-.15f,-.89f,.077f},.026f,frame,8);
         }else{
             for(int k=0;k<4;++k)b.armor({{-.923f,-.069f+k*.046f,.092f,.019f,.018f},
-                {-.862f,-.069f+k*.046f,.094f,.021f,.021f},{-.837f,-.069f+k*.046f,.079f,.019f,.02f}},frame);
+                {-.837f,-.069f+k*.046f,.079f,.019f,.02f}},frame);
             b.tube({-v*.084f,-.829f,.056f},{-v*.108f,-.886f,.085f},.031f,frame,8);
         }
         if(saber && v>0){
