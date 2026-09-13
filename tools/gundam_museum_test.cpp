@@ -67,8 +67,8 @@ int main(int argc,char** argv){
     view.detail=true;renderer.render(canvas,view);save("rx78-head");
     unsigned cases=0;std::size_t cullDiff=0,buriedDiff=0,totalCull=0,totalFaces=0,coverageDiff=0,interiorDiff=0,maxDiff=0;
     std::size_t partialDiff=0;
-    for(int percent:{65,90,100})for(bool equipment:{false,true})for(bool detail:{false,true})for(float pitch:{-.20f,.10f,.70f})for(int i=0;i<24;++i){
-        view={float(i)*6.2831853f/24,pitch,equipment,detail,false};
+    for(Pose pose:{Pose::Display,Pose::Salute,Pose::Saber})for(int percent:{65,90,100})for(bool equipment:{false,true})for(bool detail:{false,true})for(float pitch:{-.20f,.10f,.70f})for(int i=0;i<24;++i){
+        view={float(i)*6.2831853f/24,pitch,equipment,detail,false,pose};
         renderer.render(canvas,view,percent,false,false,false);const auto reference=canvas.frame();
         renderer.render(canvas,view,percent);totalCull+=renderer.stats().culled;totalFaces+=renderer.stats().total;
         const auto optimized=canvas.frame();

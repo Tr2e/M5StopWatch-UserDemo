@@ -27,8 +27,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(partial)canvas.fillRect(40,100,canvas.width()-80,288,background);
     else canvas.fillScreen(background);
     if(!_surface){label(canvas,"MODEL MEMORY UNAVAILABLE",canvas.width()/2,220,1);return;}
-    if(!_cached || _equipment!=view.equipment || _gray!=gray || _buried!=keepBuried){
-        buildRx78(_surface->mesh,{view.equipment,keepBuried,gray});
+    if(!_cached || _equipment!=view.equipment || _gray!=gray || _buried!=keepBuried || _pose!=view.pose){
+        buildRx78(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
+        _pose=view.pose;
         _equipment=view.equipment;_gray=gray;_buried=keepBuried;_cached=true;
     }
     if(!partial){

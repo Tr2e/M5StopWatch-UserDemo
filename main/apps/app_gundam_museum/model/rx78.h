@@ -5,9 +5,11 @@
 
 namespace gundam_museum {
 using Point=lets_and_go::CarPoint;
-enum class Part : uint8_t { Feet,Shins,Knees,Thighs,Waist,Torso,Head,Shoulders,Arms,Hands,Backpack,Sabers,Rifle,Shield,Count };
+enum class Part : uint8_t { Feet,Shins,Knees,Thighs,Waist,Torso,Head,Shoulders,Arms,Hands,Backpack,Sabers,Rifle,Shield,Bazooka,Count };
+// Reference articulation is generated from the same authored asset.
+enum class Pose : uint8_t { Display, Salute, Saber };
 struct Mesh {
-    static constexpr std::size_t capacity=2048;
+    static constexpr std::size_t capacity=4096;
     std::array<lets_and_go::CarPanel,capacity> panels{};
     std::array<Point,capacity> normals{};
     std::array<Part,capacity> parts{};
@@ -15,9 +17,9 @@ struct Mesh {
     std::size_t count=0,buriedOmitted=0;
     bool overflowed=false;
 };
-struct BuildOptions { bool equipment=true; bool keepBuriedFaces=false; bool gray=false; };
+struct BuildOptions { bool equipment=true; bool keepBuriedFaces=false; bool gray=false; Pose pose=Pose::Display; };
 // HGUC 191 (2015), manual 1004. Authored proportions, not measured CAD.
-// +Y up, +Z front, +X the model's left. Feet rest at Y=0.
+// +Y up, +Z front, +X the model's left. Nominal sole Y=.025 before articulation.
 void buildRx78(Mesh& mesh,BuildOptions options={});
 inline Point subtract(Point a,Point b){return {a.x-b.x,a.y-b.y,a.z-b.z};}
 inline Point cross(Point a,Point b){return {a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x};}
