@@ -1,0 +1,8 @@
+working_bytes=710712 panels=3654 omitted=8 submitted=2738 culled=916
+sd_nu contacts unintended=0 shield_peg=8 bazooka_peg=4 inter_funnel=0
+sd_nu negative rifle_offset_unintended=38
+sd_nu helmet_body_ratio=2.71379 depth_width=0.979249
+sd_nu face mask_z=0.451833 brow_z=0.555008 blade_width_ratio=0.354481 blade_depth_ratio=0.464193 sole_area=0.410982,0.410982
+first_cull_case 0 0 -0.2 1 pixels=4
+cases=864 cull_pixel_diff=20 buried_pixel_diff=0 coverage_diff=9 interior_diff=0 max_diff=4 partial_diff=0 culled_ratio=0.144194
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

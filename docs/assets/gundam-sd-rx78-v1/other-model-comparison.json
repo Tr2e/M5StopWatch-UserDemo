@@ -1,0 +1,32 @@
+{
+  "nu": {
+    "baseline": "gundam-nu-v2",
+    "changed_pixels": {
+      "nu-drag": 0,
+      "nu-equipped": 0,
+      "nu-front": 0,
+      "nu-gray": 0,
+      "nu-head": 0,
+      "nu-other-side": 0,
+      "nu-rear": 0,
+      "nu-side": 0,
+      "nu-top": 0,
+      "nu-unarmed": 0
+    }
+  },
+  "strike": {
+    "baseline": "gundam-strike-v1",
+    "changed_pixels": {
+      "strike-drag": 0,
+      "strike-equipped": 0,
+      "strike-front": 0,
+      "strike-gray": 0,
+      "strike-head": 0,
+      "strike-other-side": 0,
+      "strike-rear": 0,
+      "strike-side": 0,
+      "strike-top": 0,
+      "strike-unarmed": 0
+    }
+  }
+}

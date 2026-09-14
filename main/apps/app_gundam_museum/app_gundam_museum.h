@@ -14,6 +14,6 @@ private:
     gundam_museum::MuseumRenderer _renderer;
     gundam_museum::MuseumController _controller;
     lets_and_go::DeviceControlSource _input;
-    bool _direct=false,_presented=false,_lastAuto=false;
+    bool _direct=false,_presented=false;
     uint32_t _lastLog=0;
 };

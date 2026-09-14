@@ -1,0 +1,8 @@
+{
+  "branch": "feat/gundam-museum",
+  "base_commit": "1dfa778944df40e5bd4ef0f6e7aeb0f22fc20cce",
+  "working_tree": "contains pre-existing work; see source-hashes.json for exact delivered assets",
+  "host": "SANITIZE=1 bash tools/test_gundam_museum.sh /private/tmp/sd-strike-delivery strike",
+  "studies": "bash tools/render_gundam_reference.sh /private/tmp/sd-strike-delivery-studies strike",
+  "build": "source /Users/tree/esp-idf/export.sh && idf.py -DEXTRA_COMPONENT_DIRS=/Users/tree/Documents/stopwatch/M5StopWatch-UserDemo-ruview/components reconfigure build"
+}

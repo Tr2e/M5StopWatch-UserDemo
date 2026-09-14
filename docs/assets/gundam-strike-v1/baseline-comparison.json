@@ -1,0 +1,86 @@
+{
+  "rx78": [
+    {
+      "view": "rx78-unarmed",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-top",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-other-side",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-rear",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-equipped",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-head",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-side",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-drag",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-front",
+      "changed_pixels": 0
+    },
+    {
+      "view": "rx78-gray",
+      "changed_pixels": 0
+    }
+  ],
+  "nu": [
+    {
+      "view": "nu-gray",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-side",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-drag",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-front",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-rear",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-other-side",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-equipped",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-head",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-top",
+      "changed_pixels": 0
+    },
+    {
+      "view": "nu-unarmed",
+      "changed_pixels": 0
+    }
+  ]
+}

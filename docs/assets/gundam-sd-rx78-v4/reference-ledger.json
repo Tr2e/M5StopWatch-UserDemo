@@ -1,0 +1,77 @@
+{
+  "authority": "User frontal baseline controls proportions; same-configuration official images/manual plus multiview assembly photos control inferred depth and attachments. User supplementary real photo is problem report only.",
+  "references": [
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/cs01_02.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01_02.jpg",
+      "role": "same SD frame equipped front oblique",
+      "viewed": true,
+      "sha256": "5e5b3bb95c072513649c6641f6ff7203c6e71fb0c721d395294b34cda20e49b2",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/cs01_03.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01_03.jpg",
+      "role": "same SD frame equipped rear oblique",
+      "viewed": true,
+      "sha256": "2fd7634d763748c518b82e183332c68709b57e62a56a1e565b462158192ef387",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/cs01_04.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01_04.jpg",
+      "role": "armor disassembly and chest shell depth",
+      "viewed": true,
+      "sha256": "30acccf79b0e71a41a02e5859b6c7ae7728638a122c0dccd121e73080aafffa7",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/cs01_07.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01_07.jpg",
+      "role": "rifle and shield front",
+      "viewed": true,
+      "sha256": "65c7f0f37f87512016c1a34519fcb3dd6d89d0b82f7e0cbf730c64801b7aeb2d",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/cs01_08.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01_08.jpg",
+      "role": "shield rear bracket",
+      "viewed": true,
+      "sha256": "edee1d224f459146e91d37f26256c5de2622371dabca288ff573ba2052811cac",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/manual-1.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01m_0001.jpg",
+      "role": "Bandai manual equipment assembly B16/B17/B19",
+      "viewed": true,
+      "sha256": "cc6abf5f32eb18a887a76c92e7e4160600961df0f59e98ee58587fe7d84c29f0",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/manual-2.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01m_0002.jpg",
+      "role": "Bandai manual head and waist",
+      "viewed": true,
+      "sha256": "1617fd01446a158235444de48d8737a9cc97a10921777ce498d782d4249006a5",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/manual-3.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01m_0003.jpg",
+      "role": "Bandai manual torso inner frame",
+      "viewed": true,
+      "sha256": "3ee66920c4518e1a55de22b144ab63ac5e05317b3982473e118363026a2fbcf1",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    },
+    {
+      "file": "hardware/reference/gundam-sd-rx78-v4-structure/manual-4.jpg",
+      "url": "https://www.dalong.net/reviews/sd/cs01/p/cs01m_0004.jpg",
+      "role": "Bandai manual chest B8/B21 and arm/fist assembly",
+      "viewed": true,
+      "sha256": "1fef79e648ab56f7ca4ae218561a15b2de76ca82f7bfa812817e2ff1ab42eb81",
+      "dimension_status": "Photo proportions and simplified manual structure, not measured CAD"
+    }
+  ]
+}

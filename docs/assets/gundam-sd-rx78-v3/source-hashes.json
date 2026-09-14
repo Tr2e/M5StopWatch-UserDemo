@@ -1,0 +1,9 @@
+{
+  "main/apps/app_gundam_museum/model/rx78.cpp": "8a0df86f40735333b4f06b43c2ecaa8cf9e5a0f5fde58d04bbfc4a1965090f30",
+  "main/apps/app_gundam_museum/model/nu_gundam.cpp": "40e131e2de8c5b49e7d41af636d2fb25840a664263a39fb2797cacc49b760b52",
+  "main/apps/app_gundam_museum/model/strike_gundam.cpp": "4fb6b45b81655da71f62de8ebfe07cf64e33ffab920c1d632073231d56b0c1f1",
+  "main/apps/app_gundam_museum/view/museum_renderer.cpp": "d134015eb731ff96f14e41dd2263fb67f93d4d8fd84c6f899333e2f9a11e905d",
+  "tools/gundam_reference_render.cpp": "2d7577b85f85988f76365a357c095c1cd03b52012ec3bc3b9a15badeea5295da",
+  "tools/sd_rx78_geometry_test.h": "ef4d572e97f20909c74a007ae22113e8f2d00eac6667746babbfb13b4950afdc",
+  "tools/gundam_museum_test.cpp": "36c5ed4a06a8ba0c9c2f296c2d44a1d39b79c8ba9d9a6509bc4a2eea7f1695ff"
+}

@@ -1,0 +1,13 @@
+working_bytes=1024312 panels=3806 omitted=10 submitted=2750 culled=1056
+sd_strike chest_vent_mirror_error=0
+sd_strike negative vent_height_error=0.035
+sd_strike contacts unintended=0 shield_peg=8 aile_peg=8 inter_aile=0 palm_armor=0 wing_roots=40 saber_peg=40
+sd_strike negative rifle_offset_unintended=76
+sd_strike rifle_floor=0.627183
+sd_strike helmet_body_ratio=2.86697 depth_width=0.97396
+sd_strike face mask_z=0.459 brow_z=0.542567 blade_width_ratio=0.346483 blade_depth_ratio=0.504963 sole_area=0.433399,0.433399
+sd_strike negative pod_overlap=170
+first_cull_case 0 0 -0.2 1 pixels=2
+cases=864 cull_pixel_diff=34 buried_pixel_diff=0 coverage_diff=6 interior_diff=0 max_diff=2 partial_diff=0 culled_ratio=0.156123
+full_exhibit circle_edge=0 viewport_edge=0
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

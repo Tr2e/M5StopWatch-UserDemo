@@ -1,0 +1,8 @@
+{
+  "built": true,
+  "flashed": false,
+  "bytes": 3996672,
+  "binary": "build/StopWatch-UserDemo.bin",
+  "sha256": "34f5ec245b72688aa3eb443a13986cc5e118bfa642bbe8f6ee320e4d33f206cb",
+  "elf_sha256": "665c5ae4288a152d2123e7f487d1ba3001504f18ff22791af89c078694e5f893"
+}

@@ -1,0 +1,1 @@
+External screen input: presentation, release, same-mode transitions, slow frames, results, axis loss, pause and exit passed

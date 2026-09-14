@@ -1,0 +1,5 @@
+working_bytes=710712 panels=3066 omitted=12 submitted=2008 culled=1058
+sd_geometry heads=2.70561 head_shoulder=0.632993 sole_y=0.025,0.025 contact_area=0.342006,0.342006 mask_z=0.431839 brow_z=0.493276 tip_faces=4,4
+first_cull_case 0 0 -0.2 16 pixels=1
+cases=864 cull_pixel_diff=46 buried_pixel_diff=0 coverage_diff=8 interior_diff=0 max_diff=4 partial_diff=0 culled_ratio=0.20515
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

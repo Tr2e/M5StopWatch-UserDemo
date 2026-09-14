@@ -1,0 +1,9 @@
+{
+  "main/apps/app_gundam_museum/model/nu_gundam.cpp": "44a27d3bccf9e9141934eb9057671c9508a06bc213940017d81b6d85fc94d0d5",
+  "main/apps/app_gundam_museum/model/nu_gundam.h": "4ba09f0ace9bf09ea250c11ebea6390b4e2508b77a3d8f7fa3f835b043605f29",
+  "main/apps/app_gundam_museum/view/museum_renderer.cpp": "48b3b29b4553ce41b6a00f9187e97029b8a780b8d87a42276e52b7ec67ecf54d",
+  "tools/gundam_museum_test.cpp": "15b04cbc90602f66f01f70d97dfe886b565b5433a35769bc0093f6b9276e6d66",
+  "tools/sd_nu_geometry_test.h": "2aa259db3c368891dc276bbc9b927e85a586f76eb85c8bbbe976a492181be458",
+  "tools/gundam_reference_render.cpp": "399136c2811dea8f7a4669a15d16615cb4085d0ad5dd76f34a24ddf4b51a00d9",
+  "tools/package_gundam_evidence.py": "0ac07ab59bea9dfbeb6972663cf26b458d17616e8b492e134274a4e785458b6a"
+}

@@ -1,0 +1,119 @@
+{
+  "method": "Manual frontal projected pixel landmarks; 3–5px uncertainty (shoulders 8–12px). Not physical 3D measurements. Reference uniform scale/translation only; model pixels untouched.",
+  "landmarks": {
+    "crown_y": 62,
+    "sole_y": 605,
+    "center_x": 320,
+    "head": [
+      234,
+      62,
+      405,
+      266
+    ],
+    "shoulders": [
+      138,
+      225,
+      498,
+      320
+    ],
+    "chest": [
+      232,
+      262,
+      407,
+      374
+    ],
+    "left_foot": [
+      146,
+      555,
+      309,
+      605
+    ],
+    "eyes": [
+      272,
+      174,
+      368,
+      201
+    ],
+    "chin": [
+      311,
+      235,
+      330,
+      266
+    ],
+    "vfin": [
+      154,
+      44,
+      486,
+      164
+    ]
+  },
+  "reference_scale": 1.0055555555555555,
+  "reference_translation": [
+    -96.30000000000001,
+    -37.55
+  ],
+  "metrics": [
+    {
+      "part": "head",
+      "dimension": "width",
+      "value": 0.3149171270718232,
+      "target_band": [
+        0.31,
+        0.33
+      ],
+      "within_band": true
+    },
+    {
+      "part": "head",
+      "dimension": "height",
+      "value": 0.3756906077348066,
+      "target_band": [
+        0.365,
+        0.385
+      ],
+      "within_band": true
+    },
+    {
+      "part": "shoulders",
+      "dimension": "width",
+      "value": 0.6629834254143646,
+      "target_band": [
+        0.64,
+        0.68
+      ],
+      "within_band": true
+    },
+    {
+      "part": "chest",
+      "dimension": "width",
+      "value": 0.32228360957642727,
+      "target_band": [
+        0.31,
+        0.33
+      ],
+      "within_band": true
+    },
+    {
+      "part": "chest",
+      "dimension": "height",
+      "value": 0.20626151012891344,
+      "target_band": [
+        0.2,
+        0.22
+      ],
+      "within_band": true
+    },
+    {
+      "part": "left_foot",
+      "dimension": "width",
+      "value": 0.3001841620626151,
+      "target_band": [
+        0.3,
+        0.32
+      ],
+      "within_band": true
+    }
+  ],
+  "source_sha256": "4b37c7b2bff5262891384a69955b7f8d4563f1e58276186a57bb1ffecd4f13a6",
+  "scope": "Self-check only; user appearance acceptance pending"
+}

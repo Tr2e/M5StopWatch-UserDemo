@@ -1,0 +1,9 @@
+{
+  "unchanged_since_v3": {
+    "main/apps/app_gundam_museum/model/nu_gundam.cpp": true,
+    "main/apps/app_gundam_museum/model/strike_gundam.cpp": true,
+    "main/apps/app_gundam_museum/view/museum_renderer.cpp": true
+  },
+  "head_native_pixels_equal_v3": true,
+  "verification": "Same head geometry hash and native head pixels. No shared production renderer or Nu/Strike geometry change."
+}

@@ -1,0 +1,14 @@
+I (890) esp_psram: Found 8MB PSRAM device
+I (1331) esp_psram: SPI SRAM memory test OK
+I (1361) app_init: ELF file SHA256:  5b33ee61e...
+E (1469) i2c.master: this port has not been initialized, please initialize it first
+I (1594) M5PM1_I2C: M5PM1 initialized at address 0x6E (I2C: 100000 Hz)
+I (1732) M5IOE1_I2C: M5IOE1 initialized at address 0x4F (I2C: 400000 Hz)
+[1789396484329] [info] [HAL-Display] display init
+[1789396484564] [info] [HAL-Display] create full screen canvas
+[1789396484578] [info] [HAL-Display] brightness loaded from settings: 40
+[1789396484579] [info] [HAL-Display] touchpad init
+[1789396484653] [info] [HAL-Display] lvgl init
+[1789396485197] [info] [Launcher] on create
+[1789396485199] [info] [Launcher] on open
+E (3721) i2c.master: this port has not been initialized, please initialize it first

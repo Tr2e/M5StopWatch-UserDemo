@@ -1,0 +1,27 @@
+{
+  "model": "HGUC #086 RX-93 Nu Gundam",
+  "git_base": "1dfa778",
+  "working_tree": "Includes uncommitted Nu exhibit and existing unrelated working tree changes; binary is not reproducible from git_base alone.",
+  "binary_bytes": 3971088,
+  "binary_sha256": "64f9f51e4bd2fa22924ab02c49c231078b8de053b9d91eca42e7bdec5b5a4c50",
+  "date": "2026-09-13",
+  "build_passed": true,
+  "flashed": false,
+  "device_fps_measured": false,
+  "user_visual_acceptance": "pending",
+  "panels_equipped": 3352,
+  "mesh_capacity": 4096,
+  "working_bytes": 710712,
+  "build_command": "source /Users/tree/esp-idf/export.sh && idf.py -DEXTRA_COMPONENT_DIRS=/Users/tree/Documents/stopwatch/M5StopWatch-UserDemo-ruview/components reconfigure build",
+  "source_sha256": {
+    "main/apps/app_gundam_museum/app_gundam_museum.cpp": "5d8d75cbf7f9a4cea5101bed3376716f58997587113984bbdcfe1103bc448a53",
+    "main/apps/app_gundam_museum/app_gundam_museum.h": "c3ec31231963d674b52ba03bf1549214f5b7fc450cc929ed4595dc15d2d9bc7f",
+    "main/apps/app_gundam_museum/controller/museum_controller.h": "6b937394fd815e8098b614924eb565bbea6b9360207ff0a03723746a2c530fc5",
+    "main/apps/app_gundam_museum/model/nu_gundam.h": "3c631413c0853d84da456d2dd0a0b5b9a57d03312d558d23bcd11fc2fcb9e61f",
+    "main/apps/app_gundam_museum/model/nu_gundam.cpp": "3cebd2c311426e927922b12951df3eaf2b6288d025d21e028cf1b62a70b46781",
+    "main/apps/app_gundam_museum/model/rx78.cpp": "eb141508249c2a0079a4c1efbbe150740dd5b3ca1ab88c220db259795d61f237",
+    "main/apps/app_gundam_museum/model/rx78.h": "dea69b98f81c23fb74c5f101d64a41cf93f2e6522cd21729b40192d1ae6a83c0",
+    "main/apps/app_gundam_museum/view/museum_renderer.cpp": "0787238dc451885fbf0e402407cfbf5b5b8fe53c59fb36a31fd069557415a639",
+    "main/apps/app_gundam_museum/view/museum_renderer.h": "a737ae6ee4efda4af752ae5927d7afae06eee6e2416dc23bee3d6bb404e946c9"
+  }
+}

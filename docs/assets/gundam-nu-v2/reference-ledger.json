@@ -1,0 +1,62 @@
+{
+  "date": "2026-09-13",
+  "sources": [
+    {
+      "file": "847.pdf",
+      "url": "https://manual.bandai-hobby.net/pdf/847.pdf",
+      "use": "Exact standard HGUC086 manual; pages 1 and 2 inspected",
+      "sha256": "1330b2a06efe498326af7c828155ebf5c054d9c13961e362ae1b194c5d2b38df"
+    },
+    {
+      "file": "gft1.jpg",
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000189256_1.jpg",
+      "use": "Official GFT front quarter; geometry cross-check only",
+      "sha256": "7dd72827b4c2c5fe2edd52ddb7af10336226792f8e91ab9cae3c61669a189134",
+      "pixels": [
+        560,
+        560
+      ]
+    },
+    {
+      "file": "gft2.jpg",
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000189256_2.jpg",
+      "use": "Official GFT rear quarter; geometry cross-check only",
+      "sha256": "cd498e305ac50cbc86cc69faccb8250f83ff71e50ef4ea1d91f7b8b50b1e929e",
+      "pixels": [
+        560,
+        560
+      ]
+    },
+    {
+      "file": "gft3.jpg",
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000189256_3.jpg",
+      "use": "Box art inspected, excluded from proportion calibration",
+      "sha256": "961959885d4865d0a4f8ce3ad2f81bf43f51562fe51571f12be95d46c41df56f",
+      "pixels": [
+        560,
+        560
+      ]
+    },
+    {
+      "file": "coated1.jpg",
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000092213_1.jpg",
+      "use": "Official coated HGUC front; geometry only",
+      "sha256": "bd8a72de8807b8bdc4b2a36c9fe00a357015e7919f2f66122ddf57f09ee91691",
+      "pixels": [
+        560,
+        560
+      ]
+    },
+    {
+      "file": "coated2.jpg",
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000092213_2.jpg",
+      "use": "Official coated HGUC rear; geometry only",
+      "sha256": "81af8c8ef2b078da9c5f3e8e090c5b1a8d3a4393064a44fa12080f8b79d89c4d",
+      "pixels": [
+        560,
+        560
+      ]
+    }
+  ],
+  "earlier_same_kit_photos": "../gundam-nu-v1/reference-ledger.json"
+}

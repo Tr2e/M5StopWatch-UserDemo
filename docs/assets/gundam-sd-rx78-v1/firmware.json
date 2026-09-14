@@ -1,0 +1,17 @@
+{
+  "model": "SD EX-STANDARD 001 RX-78-2",
+  "date": "2026-09-14",
+  "path": "/Users/tree/Documents/stopwatch/build/StopWatch-UserDemo.bin",
+  "size": 4000160,
+  "sha256": "0cfa2265ae66ca9e1e2f14a4c954b0b9e1f44a96190a4735644718c72be338e5",
+  "partition_size": 5177344,
+  "free_bytes": 1177184,
+  "flashed": true,
+  "build_log": "build.log",
+  "note": "Built from current dirty workspace including existing unrelated changes; no device FPS measured.",
+  "flash_port": "/dev/cu.usbmodem83401",
+  "device_mac": "44:1b:f6:c1:8a:00",
+  "flash_time": "2026-09-14T00:42:22.247810+08:00",
+  "flash_verified": true,
+  "startup": "PSRAM memory test OK; Launcher opened; visual acceptance pending"
+}

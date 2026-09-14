@@ -1,0 +1,9 @@
+sizeof CarPanel=60 mesh=122896 surface=763184 renderer=7128
+MAGNUM panels=1192 nondegenerate_triangles=2096 unique_vertices=1553 solid_panels=1049 overflow=0
+SONIC panels=1225 nondegenerate_triangles=2162 unique_vertices=1594 solid_panels=1089 overflow=0
+TRIDAGGER panels=1171 nondegenerate_triangles=2078 unique_vertices=1409 solid_panels=1026 overflow=0
+BROCKEN panels=1361 nondegenerate_triangles=2458 unique_vertices=1906 solid_panels=1204 overflow=0
+COBRA panels=1239 nondegenerate_triangles=2164 unique_vertices=1557 solid_panels=1147 overflow=0
+SPIDER panels=1171 nondegenerate_triangles=2102 unique_vertices=1366 solid_panels=1069 overflow=0
+STINGER panels=1565 nondegenerate_triangles=2794 unique_vertices=2095 solid_panels=1503 overflow=0
+DIOSPADA panels=1335 nondegenerate_triangles=2358 unique_vertices=1704 solid_panels=1275 overflow=0

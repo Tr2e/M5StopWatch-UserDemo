@@ -108,8 +108,8 @@ public:
             _startX=x;_startY=y;
             _candidate=menuTouchTarget(_screen,x,y);
             _gestureCanceled=!_touchArmed || !_presented;
-            _orbitGesture=(_screen==GameScreen::CarSelect || _screen==GameScreen::CarInspect) && !_gestureCanceled &&
-                (_screen==GameScreen::CarInspect ? touchOnDisplay(x,y) : home_layout::carOrbit.contains(x,y)) &&
+            _orbitGesture=(_screen==GameScreen::CarSelect || _screen==GameScreen::CarInspect || _screen==GameScreen::MuseumInspect) && !_gestureCanceled &&
+                (_screen!=GameScreen::CarSelect ? touchOnDisplay(x,y) : home_layout::carOrbit.contains(x,y)) &&
                 _candidate==TouchAction::None;
             if (_orbitGesture) {
                 ++_orbitId;

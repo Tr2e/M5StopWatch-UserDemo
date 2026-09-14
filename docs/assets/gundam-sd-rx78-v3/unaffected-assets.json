@@ -1,0 +1,8 @@
+{
+  "unchanged_since_v1": {
+    "main/apps/app_gundam_museum/model/nu_gundam.cpp": true,
+    "main/apps/app_gundam_museum/model/strike_gundam.cpp": true,
+    "main/apps/app_gundam_museum/view/museum_renderer.cpp": true
+  },
+  "verification": "Reused v1 Nu and Strike results; no shared production changes in this revision."
+}

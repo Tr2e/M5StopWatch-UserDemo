@@ -1,0 +1,726 @@
+{
+  "schema": 1,
+  "models": [
+    {
+      "id": "rx78",
+      "required_views": [
+        "equipped"
+      ],
+      "frames": [
+        {
+          "view": "drag",
+          "file": "rx78/rx78-drag.png"
+        },
+        {
+          "view": "equipped",
+          "file": "rx78/rx78-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "rx78/rx78-front.png"
+        },
+        {
+          "view": "gray",
+          "file": "rx78/rx78-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "rx78/rx78-head.png"
+        },
+        {
+          "view": "other-side",
+          "file": "rx78/rx78-other-side.png"
+        },
+        {
+          "view": "rear",
+          "file": "rx78/rx78-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "rx78/rx78-side.png"
+        },
+        {
+          "view": "top",
+          "file": "rx78/rx78-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "rx78/rx78-unarmed.png"
+        },
+        {
+          "view": "tour-0",
+          "file": "rx78/tour-0.png"
+        },
+        {
+          "view": "tour-1",
+          "file": "rx78/tour-1.png"
+        },
+        {
+          "view": "tour-10",
+          "file": "rx78/tour-10.png"
+        },
+        {
+          "view": "tour-11",
+          "file": "rx78/tour-11.png"
+        },
+        {
+          "view": "tour-12",
+          "file": "rx78/tour-12.png"
+        },
+        {
+          "view": "tour-13",
+          "file": "rx78/tour-13.png"
+        },
+        {
+          "view": "tour-14",
+          "file": "rx78/tour-14.png"
+        },
+        {
+          "view": "tour-15",
+          "file": "rx78/tour-15.png"
+        },
+        {
+          "view": "tour-16",
+          "file": "rx78/tour-16.png"
+        },
+        {
+          "view": "tour-17",
+          "file": "rx78/tour-17.png"
+        },
+        {
+          "view": "tour-18",
+          "file": "rx78/tour-18.png"
+        },
+        {
+          "view": "tour-19",
+          "file": "rx78/tour-19.png"
+        },
+        {
+          "view": "tour-2",
+          "file": "rx78/tour-2.png"
+        },
+        {
+          "view": "tour-20",
+          "file": "rx78/tour-20.png"
+        },
+        {
+          "view": "tour-21",
+          "file": "rx78/tour-21.png"
+        },
+        {
+          "view": "tour-22",
+          "file": "rx78/tour-22.png"
+        },
+        {
+          "view": "tour-23",
+          "file": "rx78/tour-23.png"
+        },
+        {
+          "view": "tour-24",
+          "file": "rx78/tour-24.png"
+        },
+        {
+          "view": "tour-25",
+          "file": "rx78/tour-25.png"
+        },
+        {
+          "view": "tour-26",
+          "file": "rx78/tour-26.png"
+        },
+        {
+          "view": "tour-27",
+          "file": "rx78/tour-27.png"
+        },
+        {
+          "view": "tour-28",
+          "file": "rx78/tour-28.png"
+        },
+        {
+          "view": "tour-29",
+          "file": "rx78/tour-29.png"
+        },
+        {
+          "view": "tour-3",
+          "file": "rx78/tour-3.png"
+        },
+        {
+          "view": "tour-30",
+          "file": "rx78/tour-30.png"
+        },
+        {
+          "view": "tour-31",
+          "file": "rx78/tour-31.png"
+        },
+        {
+          "view": "tour-32",
+          "file": "rx78/tour-32.png"
+        },
+        {
+          "view": "tour-33",
+          "file": "rx78/tour-33.png"
+        },
+        {
+          "view": "tour-34",
+          "file": "rx78/tour-34.png"
+        },
+        {
+          "view": "tour-35",
+          "file": "rx78/tour-35.png"
+        },
+        {
+          "view": "tour-36",
+          "file": "rx78/tour-36.png"
+        },
+        {
+          "view": "tour-37",
+          "file": "rx78/tour-37.png"
+        },
+        {
+          "view": "tour-38",
+          "file": "rx78/tour-38.png"
+        },
+        {
+          "view": "tour-39",
+          "file": "rx78/tour-39.png"
+        },
+        {
+          "view": "tour-4",
+          "file": "rx78/tour-4.png"
+        },
+        {
+          "view": "tour-40",
+          "file": "rx78/tour-40.png"
+        },
+        {
+          "view": "tour-41",
+          "file": "rx78/tour-41.png"
+        },
+        {
+          "view": "tour-42",
+          "file": "rx78/tour-42.png"
+        },
+        {
+          "view": "tour-43",
+          "file": "rx78/tour-43.png"
+        },
+        {
+          "view": "tour-44",
+          "file": "rx78/tour-44.png"
+        },
+        {
+          "view": "tour-45",
+          "file": "rx78/tour-45.png"
+        },
+        {
+          "view": "tour-46",
+          "file": "rx78/tour-46.png"
+        },
+        {
+          "view": "tour-47",
+          "file": "rx78/tour-47.png"
+        },
+        {
+          "view": "tour-5",
+          "file": "rx78/tour-5.png"
+        },
+        {
+          "view": "tour-6",
+          "file": "rx78/tour-6.png"
+        },
+        {
+          "view": "tour-7",
+          "file": "rx78/tour-7.png"
+        },
+        {
+          "view": "tour-8",
+          "file": "rx78/tour-8.png"
+        },
+        {
+          "view": "tour-9",
+          "file": "rx78/tour-9.png"
+        }
+      ]
+    },
+    {
+      "id": "nu",
+      "required_views": [
+        "equipped"
+      ],
+      "frames": [
+        {
+          "view": "drag",
+          "file": "nu/nu-drag.png"
+        },
+        {
+          "view": "equipped",
+          "file": "nu/nu-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "nu/nu-front.png"
+        },
+        {
+          "view": "gray",
+          "file": "nu/nu-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "nu/nu-head.png"
+        },
+        {
+          "view": "other-side",
+          "file": "nu/nu-other-side.png"
+        },
+        {
+          "view": "rear",
+          "file": "nu/nu-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "nu/nu-side.png"
+        },
+        {
+          "view": "top",
+          "file": "nu/nu-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "nu/nu-unarmed.png"
+        },
+        {
+          "view": "tour-0",
+          "file": "nu/tour-0.png"
+        },
+        {
+          "view": "tour-1",
+          "file": "nu/tour-1.png"
+        },
+        {
+          "view": "tour-10",
+          "file": "nu/tour-10.png"
+        },
+        {
+          "view": "tour-11",
+          "file": "nu/tour-11.png"
+        },
+        {
+          "view": "tour-12",
+          "file": "nu/tour-12.png"
+        },
+        {
+          "view": "tour-13",
+          "file": "nu/tour-13.png"
+        },
+        {
+          "view": "tour-14",
+          "file": "nu/tour-14.png"
+        },
+        {
+          "view": "tour-15",
+          "file": "nu/tour-15.png"
+        },
+        {
+          "view": "tour-16",
+          "file": "nu/tour-16.png"
+        },
+        {
+          "view": "tour-17",
+          "file": "nu/tour-17.png"
+        },
+        {
+          "view": "tour-18",
+          "file": "nu/tour-18.png"
+        },
+        {
+          "view": "tour-19",
+          "file": "nu/tour-19.png"
+        },
+        {
+          "view": "tour-2",
+          "file": "nu/tour-2.png"
+        },
+        {
+          "view": "tour-20",
+          "file": "nu/tour-20.png"
+        },
+        {
+          "view": "tour-21",
+          "file": "nu/tour-21.png"
+        },
+        {
+          "view": "tour-22",
+          "file": "nu/tour-22.png"
+        },
+        {
+          "view": "tour-23",
+          "file": "nu/tour-23.png"
+        },
+        {
+          "view": "tour-24",
+          "file": "nu/tour-24.png"
+        },
+        {
+          "view": "tour-25",
+          "file": "nu/tour-25.png"
+        },
+        {
+          "view": "tour-26",
+          "file": "nu/tour-26.png"
+        },
+        {
+          "view": "tour-27",
+          "file": "nu/tour-27.png"
+        },
+        {
+          "view": "tour-28",
+          "file": "nu/tour-28.png"
+        },
+        {
+          "view": "tour-29",
+          "file": "nu/tour-29.png"
+        },
+        {
+          "view": "tour-3",
+          "file": "nu/tour-3.png"
+        },
+        {
+          "view": "tour-30",
+          "file": "nu/tour-30.png"
+        },
+        {
+          "view": "tour-31",
+          "file": "nu/tour-31.png"
+        },
+        {
+          "view": "tour-32",
+          "file": "nu/tour-32.png"
+        },
+        {
+          "view": "tour-33",
+          "file": "nu/tour-33.png"
+        },
+        {
+          "view": "tour-34",
+          "file": "nu/tour-34.png"
+        },
+        {
+          "view": "tour-35",
+          "file": "nu/tour-35.png"
+        },
+        {
+          "view": "tour-36",
+          "file": "nu/tour-36.png"
+        },
+        {
+          "view": "tour-37",
+          "file": "nu/tour-37.png"
+        },
+        {
+          "view": "tour-38",
+          "file": "nu/tour-38.png"
+        },
+        {
+          "view": "tour-39",
+          "file": "nu/tour-39.png"
+        },
+        {
+          "view": "tour-4",
+          "file": "nu/tour-4.png"
+        },
+        {
+          "view": "tour-40",
+          "file": "nu/tour-40.png"
+        },
+        {
+          "view": "tour-41",
+          "file": "nu/tour-41.png"
+        },
+        {
+          "view": "tour-42",
+          "file": "nu/tour-42.png"
+        },
+        {
+          "view": "tour-43",
+          "file": "nu/tour-43.png"
+        },
+        {
+          "view": "tour-44",
+          "file": "nu/tour-44.png"
+        },
+        {
+          "view": "tour-45",
+          "file": "nu/tour-45.png"
+        },
+        {
+          "view": "tour-46",
+          "file": "nu/tour-46.png"
+        },
+        {
+          "view": "tour-47",
+          "file": "nu/tour-47.png"
+        },
+        {
+          "view": "tour-5",
+          "file": "nu/tour-5.png"
+        },
+        {
+          "view": "tour-6",
+          "file": "nu/tour-6.png"
+        },
+        {
+          "view": "tour-7",
+          "file": "nu/tour-7.png"
+        },
+        {
+          "view": "tour-8",
+          "file": "nu/tour-8.png"
+        },
+        {
+          "view": "tour-9",
+          "file": "nu/tour-9.png"
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "required_views": [
+        "equipped"
+      ],
+      "frames": [
+        {
+          "view": "drag",
+          "file": "strike/strike-drag.png"
+        },
+        {
+          "view": "equipped",
+          "file": "strike/strike-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "strike/strike-front.png"
+        },
+        {
+          "view": "gray",
+          "file": "strike/strike-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "strike/strike-head.png"
+        },
+        {
+          "view": "other-side",
+          "file": "strike/strike-other-side.png"
+        },
+        {
+          "view": "rear",
+          "file": "strike/strike-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "strike/strike-side.png"
+        },
+        {
+          "view": "top",
+          "file": "strike/strike-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "strike/strike-unarmed.png"
+        },
+        {
+          "view": "tour-0",
+          "file": "strike/tour-0.png"
+        },
+        {
+          "view": "tour-1",
+          "file": "strike/tour-1.png"
+        },
+        {
+          "view": "tour-10",
+          "file": "strike/tour-10.png"
+        },
+        {
+          "view": "tour-11",
+          "file": "strike/tour-11.png"
+        },
+        {
+          "view": "tour-12",
+          "file": "strike/tour-12.png"
+        },
+        {
+          "view": "tour-13",
+          "file": "strike/tour-13.png"
+        },
+        {
+          "view": "tour-14",
+          "file": "strike/tour-14.png"
+        },
+        {
+          "view": "tour-15",
+          "file": "strike/tour-15.png"
+        },
+        {
+          "view": "tour-16",
+          "file": "strike/tour-16.png"
+        },
+        {
+          "view": "tour-17",
+          "file": "strike/tour-17.png"
+        },
+        {
+          "view": "tour-18",
+          "file": "strike/tour-18.png"
+        },
+        {
+          "view": "tour-19",
+          "file": "strike/tour-19.png"
+        },
+        {
+          "view": "tour-2",
+          "file": "strike/tour-2.png"
+        },
+        {
+          "view": "tour-20",
+          "file": "strike/tour-20.png"
+        },
+        {
+          "view": "tour-21",
+          "file": "strike/tour-21.png"
+        },
+        {
+          "view": "tour-22",
+          "file": "strike/tour-22.png"
+        },
+        {
+          "view": "tour-23",
+          "file": "strike/tour-23.png"
+        },
+        {
+          "view": "tour-24",
+          "file": "strike/tour-24.png"
+        },
+        {
+          "view": "tour-25",
+          "file": "strike/tour-25.png"
+        },
+        {
+          "view": "tour-26",
+          "file": "strike/tour-26.png"
+        },
+        {
+          "view": "tour-27",
+          "file": "strike/tour-27.png"
+        },
+        {
+          "view": "tour-28",
+          "file": "strike/tour-28.png"
+        },
+        {
+          "view": "tour-29",
+          "file": "strike/tour-29.png"
+        },
+        {
+          "view": "tour-3",
+          "file": "strike/tour-3.png"
+        },
+        {
+          "view": "tour-30",
+          "file": "strike/tour-30.png"
+        },
+        {
+          "view": "tour-31",
+          "file": "strike/tour-31.png"
+        },
+        {
+          "view": "tour-32",
+          "file": "strike/tour-32.png"
+        },
+        {
+          "view": "tour-33",
+          "file": "strike/tour-33.png"
+        },
+        {
+          "view": "tour-34",
+          "file": "strike/tour-34.png"
+        },
+        {
+          "view": "tour-35",
+          "file": "strike/tour-35.png"
+        },
+        {
+          "view": "tour-36",
+          "file": "strike/tour-36.png"
+        },
+        {
+          "view": "tour-37",
+          "file": "strike/tour-37.png"
+        },
+        {
+          "view": "tour-38",
+          "file": "strike/tour-38.png"
+        },
+        {
+          "view": "tour-39",
+          "file": "strike/tour-39.png"
+        },
+        {
+          "view": "tour-4",
+          "file": "strike/tour-4.png"
+        },
+        {
+          "view": "tour-40",
+          "file": "strike/tour-40.png"
+        },
+        {
+          "view": "tour-41",
+          "file": "strike/tour-41.png"
+        },
+        {
+          "view": "tour-42",
+          "file": "strike/tour-42.png"
+        },
+        {
+          "view": "tour-43",
+          "file": "strike/tour-43.png"
+        },
+        {
+          "view": "tour-44",
+          "file": "strike/tour-44.png"
+        },
+        {
+          "view": "tour-45",
+          "file": "strike/tour-45.png"
+        },
+        {
+          "view": "tour-46",
+          "file": "strike/tour-46.png"
+        },
+        {
+          "view": "tour-47",
+          "file": "strike/tour-47.png"
+        },
+        {
+          "view": "tour-5",
+          "file": "strike/tour-5.png"
+        },
+        {
+          "view": "tour-6",
+          "file": "strike/tour-6.png"
+        },
+        {
+          "view": "tour-7",
+          "file": "strike/tour-7.png"
+        },
+        {
+          "view": "tour-8",
+          "file": "strike/tour-8.png"
+        },
+        {
+          "view": "tour-9",
+          "file": "strike/tour-9.png"
+        }
+      ]
+    }
+  ],
+  "identity_view": "equipped"
+}

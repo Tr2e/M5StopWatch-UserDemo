@@ -8,6 +8,7 @@ struct View {
     float yaw=-.40f,pitch=.10f;
     bool equipment=true,detail=false,automatic=false;
     Pose pose=Pose::Display;
+    ModelId model=ModelId::Rx78;
 };
 struct RenderStats {std::size_t total=0,culled=0,submitted=0,offscreen=0;};
 class MuseumRenderer {
@@ -23,11 +24,12 @@ public:
 private:
     struct Surface {
         Mesh mesh;
-        lets_and_go::CarSurfaceRaster<352,288> raster;
+        lets_and_go::CarSurfaceRaster<424,424> raster;
     };
     std::unique_ptr<Surface> _surface;
     RenderStats _stats{};
     bool _cached=false,_equipment=false,_gray=false,_buried=false;
     Pose _pose=Pose::Display;
+    ModelId _model=ModelId::Rx78;
 };
 } // namespace gundam_museum

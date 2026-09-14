@@ -1,0 +1,7 @@
+I (836) boot: Loaded app from partition at offset 0x20000
+I (890) esp_psram: Found 8MB PSRAM device
+I (1332) esp_psram: SPI SRAM memory test OK
+I (1352) app_init: App version:      1dfa778-dirty
+I (1361) app_init: ELF file SHA256:  cc9bd7d08...
+[1789320065198] [info] [Launcher] on open
+[1789320065209] [info] [LauncherView] init

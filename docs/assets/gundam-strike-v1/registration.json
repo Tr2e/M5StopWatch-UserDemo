@@ -1,0 +1,160 @@
+{
+  "limitation": "Uniform reference registration; camera/pose differences remain. No similarity score.",
+  "rows": [
+    {
+      "label": "face-front",
+      "reference": "/private/tmp/strike-reference/hgce_strike012.jpg",
+      "previous": "/private/tmp/strike-internal-r0/study-face-front.ppm",
+      "current": "/private/tmp/strike-head-r7/study-face-front.ppm",
+      "crop": [
+        0,
+        0,
+        500,
+        400
+      ],
+      "scale": 1.33,
+      "offset": [
+        -17,
+        65
+      ],
+      "files": {
+        "reference": {
+          "path": "/private/tmp/strike-reference/hgce_strike012.jpg",
+          "sha256": "22605aa5e3a2e693587b98c2b9b1549295d86d57e78131bbfaa6095a06ace5e5"
+        },
+        "previous": {
+          "path": "/private/tmp/strike-internal-r0/study-face-front.ppm",
+          "sha256": "a2398c3251d607b23076019c20001c9ffed95ff6b19cca4900744a4120b722a4"
+        },
+        "current": {
+          "path": "/private/tmp/strike-head-r7/study-face-front.ppm",
+          "sha256": "341914425398710eb3f99e06fd00872f191c58ef2d642726a516f11e0c6aa1f4"
+        }
+      }
+    },
+    {
+      "label": "face-quarter",
+      "reference": "/private/tmp/strike-reference/hgce_strike011.jpg",
+      "previous": "/private/tmp/strike-internal-r0/study-face-quarter.ppm",
+      "current": "/private/tmp/strike-head-r7/study-face-quarter.ppm",
+      "crop": [
+        0,
+        0,
+        500,
+        435
+      ],
+      "scale": 1.0,
+      "offset": [
+        85,
+        70
+      ],
+      "files": {
+        "reference": {
+          "path": "/private/tmp/strike-reference/hgce_strike011.jpg",
+          "sha256": "3c97032ce45d564ca7f705bd45d1252ec899c89719c6527d033eb6ebf0488e91"
+        },
+        "previous": {
+          "path": "/private/tmp/strike-internal-r0/study-face-quarter.ppm",
+          "sha256": "ef6c0fd106a31db2b600843ff317a02ac350e549d0bf114029b2a34c3350d617"
+        },
+        "current": {
+          "path": "/private/tmp/strike-head-r7/study-face-quarter.ppm",
+          "sha256": "91dff245a7ca46c4930a498090e030cf21fce2c78d6157d7b1ca76ab3966c7d8"
+        }
+      }
+    },
+    {
+      "label": "side silhouette; shoulder hides lower jaw",
+      "reference": "/private/tmp/strike-reference/hgce_strike028.jpg",
+      "previous": "/private/tmp/strike-internal-r0/study-face-side.ppm",
+      "current": "/private/tmp/strike-head-r7/study-face-side.ppm",
+      "crop": [
+        302,
+        59,
+        402,
+        168
+      ],
+      "scale": 3.4,
+      "offset": [
+        115,
+        145
+      ],
+      "files": {
+        "reference": {
+          "path": "/private/tmp/strike-reference/hgce_strike028.jpg",
+          "sha256": "119e1382d651f5b97d173bbc4c207df64e01c5764d408435a3980c87395ac22e"
+        },
+        "previous": {
+          "path": "/private/tmp/strike-internal-r0/study-face-side.ppm",
+          "sha256": "45973f886cff9dfaafd2dae1e0b5234146454626108ae67db5ad729b880aab27"
+        },
+        "current": {
+          "path": "/private/tmp/strike-head-r7/study-face-side.ppm",
+          "sha256": "2217bbc8077d9e390642c8530726cc3d7af308a2688594e077a4bb1216653d44"
+        }
+      }
+    },
+    {
+      "label": "gray",
+      "reference": "/private/tmp/strike-reference/hgce_strike006.jpg",
+      "previous": "/private/tmp/strike-internal-r0/study-gray.ppm",
+      "current": "/private/tmp/strike-head-r7/study-gray.ppm",
+      "crop": [
+        0,
+        0,
+        500,
+        667
+      ],
+      "scale": 0.87,
+      "offset": [
+        80,
+        27
+      ],
+      "files": {
+        "reference": {
+          "path": "/private/tmp/strike-reference/hgce_strike006.jpg",
+          "sha256": "0ba97e6c055d35c8c2865322533f800d0d785438253d74337f7e58dc107c7161"
+        },
+        "previous": {
+          "path": "/private/tmp/strike-internal-r0/study-gray.ppm",
+          "sha256": "52cbd463d56e685773f2421e9bc6b58250e8aa0489aa45ea1a440f3db4ae560d"
+        },
+        "current": {
+          "path": "/private/tmp/strike-head-r7/study-gray.ppm",
+          "sha256": "11130215508b32ad9962c1090157d09d6ccefdca9b5343692e3559be62200761"
+        }
+      }
+    },
+    {
+      "label": "standing",
+      "reference": "/private/tmp/strike-reference/1000086814_1.jpg",
+      "previous": "/private/tmp/strike-internal-r0/study-standing.ppm",
+      "current": "/private/tmp/strike-head-r7/study-standing.ppm",
+      "crop": [
+        0,
+        0,
+        560,
+        560
+      ],
+      "scale": 1.27,
+      "offset": [
+        -35,
+        -35
+      ],
+      "files": {
+        "reference": {
+          "path": "/private/tmp/strike-reference/1000086814_1.jpg",
+          "sha256": "c79710ffbe22ee0beab9fc28cc87fa343f30b7873aa2fb8ab2cdcb812adf2c82"
+        },
+        "previous": {
+          "path": "/private/tmp/strike-internal-r0/study-standing.ppm",
+          "sha256": "b27eae2829d7c6eb1131ad8164636f6d814a65029c4701c2a2514bc0330cc000"
+        },
+        "current": {
+          "path": "/private/tmp/strike-head-r7/study-standing.ppm",
+          "sha256": "e2591d78700fa915bcc8a2b12f89f80ce49f841f99413c9b0937132872e8babe"
+        }
+      }
+    }
+  ]
+}

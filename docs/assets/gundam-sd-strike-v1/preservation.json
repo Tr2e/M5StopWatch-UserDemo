@@ -1,0 +1,34 @@
+{
+  "source_hashes": {
+    "main/apps/app_gundam_museum/model/rx78.cpp": {
+      "sha256": "6a77c7702712fabf2c2176ccac276981306439eb322f1b36827479db240474df",
+      "unchanged": true
+    },
+    "main/apps/app_gundam_museum/model/nu_gundam.cpp": {
+      "sha256": "44a27d3bccf9e9141934eb9057671c9508a06bc213940017d81b6d85fc94d0d5",
+      "unchanged": true
+    },
+    "main/apps/app_gundam_museum/controller/museum_controller.h": {
+      "sha256": "f07a1b8f0779a82129a720724c593264d3743adc06ea545910f689164d7c8a3b",
+      "unchanged": true
+    },
+    "main/assets/images/icon_gundam_museum.c": {
+      "sha256": "6193d40270ab9b392e408ead8766eb6d4d9788be89159b49f6ab73b10dc5d865",
+      "unchanged": true
+    }
+  },
+  "pixel_regressions": {
+    "rx78": {
+      "frames": 58,
+      "different_pixels": 0,
+      "baseline": "/private/tmp/sd-nu-regression-rx78",
+      "current": "/private/tmp/sd-strike-regression-rx78"
+    },
+    "nu": {
+      "frames": 58,
+      "different_pixels": 0,
+      "baseline": "/private/tmp/sd-nu-final-checked",
+      "current": "/private/tmp/sd-strike-regression-nu"
+    }
+  }
+}

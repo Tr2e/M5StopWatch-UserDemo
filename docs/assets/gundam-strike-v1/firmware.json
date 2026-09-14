@@ -1,0 +1,15 @@
+{
+  "file": "build/StopWatch-UserDemo.bin",
+  "bytes": 4012256,
+  "sha256": "fbef7c6b35b5eab46eb622b6bc997feb40a4e0c27ad89913953d1d7cb5feccb4",
+  "project_version": "1dfa778-dirty",
+  "branch": "feat/gundam-museum",
+  "commit": "1dfa778",
+  "dirty": true,
+  "app_partition_bytes": 5177344,
+  "free_bytes": 1165088,
+  "build_log": "build.log",
+  "flashed": false,
+  "model_source_sha256": "4fb6b45b81655da71f62de8ebfe07cf64e33ffab920c1d632073231d56b0c1f1",
+  "command": "source /Users/tree/esp-idf/export.sh && idf.py -DEXTRA_COMPONENT_DIRS=/Users/tree/Documents/stopwatch/M5StopWatch-UserDemo-ruview/components reconfigure build"
+}

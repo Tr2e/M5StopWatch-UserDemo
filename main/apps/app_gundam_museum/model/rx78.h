@@ -5,8 +5,9 @@
 
 namespace gundam_museum {
 using Point=lets_and_go::CarPoint;
-enum class Part : uint8_t { Feet,Shins,Knees,Thighs,Waist,Torso,Head,Shoulders,Arms,Hands,Backpack,Sabers,Rifle,Shield,Bazooka,Count };
-// Reference articulation is generated from the same authored asset.
+enum class Part : uint8_t { Feet,Shins,Knees,Thighs,Waist,Torso,Head,Shoulders,Arms,Hands,Backpack,Sabers,Rifle,Shield,Bazooka,Funnels,Aile,Count };
+enum class ModelId : uint8_t { Rx78, NuGundam, StrikeGundam };
+// Legacy pose IDs are retained; current SD RX-78, Nu and Strike use Display.
 enum class Pose : uint8_t { Display, Salute, Saber };
 struct Mesh {
     static constexpr std::size_t capacity=4096;
@@ -18,7 +19,8 @@ struct Mesh {
     bool overflowed=false;
 };
 struct BuildOptions { bool equipment=true; bool keepBuriedFaces=false; bool gray=false; Pose pose=Pose::Display; };
-// HGUC 191 (2015), manual 1004. Authored proportions, not measured CAD.
+// User-baseline SD RX-78-2, SDCS structure references and user-specified pose.
+// Authored proportions, not measured CAD.
 // +Y up, +Z front, +X the model's left. Nominal sole Y=.025 before articulation.
 void buildRx78(Mesh& mesh,BuildOptions options={});
 inline Point subtract(Point a,Point b){return {a.x-b.x,a.y-b.y,a.z-b.z};}

@@ -1,0 +1,12 @@
+{
+  "model": "SD RX78 user photo v3",
+  "bytes": 4000560,
+  "sha256": "fabf02a7ccc9553ca080fc8bb0f42f09eabd6bdebb2b6adef97d23d264d66df8",
+  "flashed": true,
+  "device_port": "/dev/cu.usbmodem83401",
+  "device_mac": "44:1b:f6:c1:8a:00",
+  "user_visual_acceptance": "pending",
+  "flash_hash_verified": true,
+  "startup_verified": true,
+  "monitor_released": true
+}

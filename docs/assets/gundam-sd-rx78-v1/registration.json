@@ -1,0 +1,129 @@
+{
+  "limitation": "Uniform reference registration; camera/pose differences remain. No similarity score.",
+  "rows": [
+    {
+      "label": "SDEX 001 official standing",
+      "reference": "/private/tmp/sd-rx78-reference/1000105891_1.jpg",
+      "crop": [
+        0,
+        0,
+        560,
+        560
+      ],
+      "scale": 1.27,
+      "offset": [
+        -40,
+        -10
+      ],
+      "previous": "/private/tmp/sd-rx78-g3/same-camera/study-standing.ppm",
+      "current": "/private/tmp/sd-rx78-r2/studies/study-standing.ppm",
+      "files": {
+        "reference": {
+          "path": "/private/tmp/sd-rx78-reference/1000105891_1.jpg",
+          "sha256": "1360a4e8ac722e3519ba90d84360f4adc403678f40835f23eb60d57fff7b18c9"
+        },
+        "previous": {
+          "path": "/private/tmp/sd-rx78-g3/same-camera/study-standing.ppm",
+          "sha256": "49681ef5292fb42cc766f212809221e59be261ddca74a6b48b250c83bf14cd5c"
+        },
+        "current": {
+          "path": "/private/tmp/sd-rx78-r2/studies/study-standing.ppm",
+          "sha256": "8350222ffaa132e691d9dfa60b20ed1f618414ff9d0f7d8117e1ec5db8605866"
+        }
+      }
+    },
+    {
+      "label": "SDEX 001 finished head",
+      "reference": "/private/tmp/sd-rx78-reference/e01_02.jpg",
+      "crop": [
+        235,
+        7,
+        433,
+        220
+      ],
+      "scale": 1.75,
+      "offset": [
+        145,
+        110
+      ],
+      "previous": "/private/tmp/sd-rx78-g3/same-camera/study-face-front.ppm",
+      "current": "/private/tmp/sd-rx78-r2/studies/study-face-front.ppm",
+      "files": {
+        "reference": {
+          "path": "/private/tmp/sd-rx78-reference/e01_02.jpg",
+          "sha256": "50066aca6085ecb51581b66763156c8131c73328dd4270dab140e87faba68c10"
+        },
+        "previous": {
+          "path": "/private/tmp/sd-rx78-g3/same-camera/study-face-front.ppm",
+          "sha256": "6b9d950a18551000362fa35a8c851980f1d2eb9a4d6d8e87bd2e1a88de672c6a"
+        },
+        "current": {
+          "path": "/private/tmp/sd-rx78-r2/studies/study-face-front.ppm",
+          "sha256": "efa1cd9a687ab4d24853c8280acb94fc439e0739a0342f2289d85aec6e2a3d43"
+        }
+      }
+    },
+    {
+      "label": "SDEX 001 three-quarter head",
+      "reference": "/private/tmp/sd-rx78-reference/e01_04.jpg",
+      "crop": [
+        100,
+        0,
+        340,
+        240
+      ],
+      "scale": 1.65,
+      "offset": [
+        130,
+        110
+      ],
+      "previous": "/private/tmp/sd-rx78-g3/same-camera/study-face-quarter.ppm",
+      "current": "/private/tmp/sd-rx78-r2/studies/study-face-quarter.ppm",
+      "files": {
+        "reference": {
+          "path": "/private/tmp/sd-rx78-reference/e01_04.jpg",
+          "sha256": "73057092713eed1b368500d8180e0470dd5bdf97691e42673054b2f8258e73d8"
+        },
+        "previous": {
+          "path": "/private/tmp/sd-rx78-g3/same-camera/study-face-quarter.ppm",
+          "sha256": "ab8354bda003e95ef7497a22fbfb02565ad1f40f35d25396f23c201541ee5440"
+        },
+        "current": {
+          "path": "/private/tmp/sd-rx78-r2/studies/study-face-quarter.ppm",
+          "sha256": "11b6ca2e4eac9fd701981622b99f5c246fe30bf230e5f9f2743520c98d0066f9"
+        }
+      }
+    },
+    {
+      "label": "SDEX 001 rear",
+      "reference": "/private/tmp/sd-rx78-reference/e01_03.jpg",
+      "crop": [
+        0,
+        0,
+        600,
+        600
+      ],
+      "scale": 1.0,
+      "offset": [
+        15,
+        10
+      ],
+      "previous": "/private/tmp/sd-rx78-g3/same-camera/study-rear.ppm",
+      "current": "/private/tmp/sd-rx78-r2/studies/study-rear.ppm",
+      "files": {
+        "reference": {
+          "path": "/private/tmp/sd-rx78-reference/e01_03.jpg",
+          "sha256": "fa52a71fe9707925d6bdac8c4ea73314466a3ce5db3bb0d4199b0d0854f9f089"
+        },
+        "previous": {
+          "path": "/private/tmp/sd-rx78-g3/same-camera/study-rear.ppm",
+          "sha256": "3493c6f280cd3fed9d61584fb8db00d6ae47c2d5a29da1bbcce3adf4f3058996"
+        },
+        "current": {
+          "path": "/private/tmp/sd-rx78-r2/studies/study-rear.ppm",
+          "sha256": "1a012540ad0e48c1b5d659ac7e84a376c3a5ef9bcc4b60d9e8fcb453f1f04000"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+I (833) boot: Loaded app from partition at offset 0x20000
+I (1328) esp_psram: SPI SRAM memory test OK
+I (1348) app_init: App version:      1dfa778-dirty
+I (1357) app_init: ELF file SHA256:  fe085bbd6...
+[1789311904197] [info] [Launcher] on create
+[1789311904199] [info] [Launcher] on open
+[1789311904210] [info] [LauncherView] init

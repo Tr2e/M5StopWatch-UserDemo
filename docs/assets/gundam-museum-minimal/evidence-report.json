@@ -1,0 +1,1594 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/Users/tree/Documents/stopwatch/docs/assets/gundam-museum-minimal",
+  "baseline_root": null,
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "rx78",
+      "frames": [
+        {
+          "view": "drag",
+          "file": "rx78/rx78-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "231035a0ea4d380c2c04470d7d0378f2b90dacaad5cb9af43c6fd52b1bba6006"
+        },
+        {
+          "view": "equipped",
+          "file": "rx78/rx78-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a84a87e5b1b2bda4382a3df8e95a8d2f3a8b835efc63314e9325f674ab7bd3d9"
+        },
+        {
+          "view": "front",
+          "file": "rx78/rx78-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "787931eab9f2ea7cb3fbedb09412722580f167a70b8cbed7a7f7b0c94f907d9c"
+        },
+        {
+          "view": "gray",
+          "file": "rx78/rx78-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c679f6970d5a2a1019634294ddafd47339adfabe4c72522e40d3f8a4cb9ad43d"
+        },
+        {
+          "view": "head",
+          "file": "rx78/rx78-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "db0fe43b53d6de878cfa1a8d1683dea3c52e8290d7aaca2598af5aeff4797707"
+        },
+        {
+          "view": "other-side",
+          "file": "rx78/rx78-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4ee4e122c72a9092b15bf181bfd2e03504883125648dba091f52374256f8dc6d"
+        },
+        {
+          "view": "rear",
+          "file": "rx78/rx78-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "93256f707d641a9cf703bfb412c1fd1ccacbfb540655af8f951ae9528bb559fa"
+        },
+        {
+          "view": "side",
+          "file": "rx78/rx78-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "54c3f904c7e5337acc40fe0ff7314e612b228ab89ad3fa18d031f14b9d099a5e"
+        },
+        {
+          "view": "top",
+          "file": "rx78/rx78-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9efd658ab5b68254da21fba4f310af3cbfbe648635a0c851afc5d5b8a1cb04d9"
+        },
+        {
+          "view": "unarmed",
+          "file": "rx78/rx78-unarmed.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f266b0a6457fc3d85e3a47ba284c362a7434f21edfb990d10a96a6f5b3fb046c"
+        },
+        {
+          "view": "tour-0",
+          "file": "rx78/tour-0.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a84a87e5b1b2bda4382a3df8e95a8d2f3a8b835efc63314e9325f674ab7bd3d9"
+        },
+        {
+          "view": "tour-1",
+          "file": "rx78/tour-1.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "686d146886afe74d4902e237346d93d31175051e3e14beb6dc059028cc103f7a"
+        },
+        {
+          "view": "tour-10",
+          "file": "rx78/tour-10.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "22b3048e03fd19dea59d4ff39890b617a43d1b8654436d3d98d3771ec5c2f70f"
+        },
+        {
+          "view": "tour-11",
+          "file": "rx78/tour-11.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "66fe7160c467c4c5dd4e92fc5ae0eca4967edbab65c59d12e0688a50a884fbe4"
+        },
+        {
+          "view": "tour-12",
+          "file": "rx78/tour-12.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f2c6fe22c9529013ba6a3c2638f8585a31702ed985ba763da5cc941c47785846"
+        },
+        {
+          "view": "tour-13",
+          "file": "rx78/tour-13.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "381c1e9b23758e2a738f0274c43a2f9b209174592aa92ea8ec456faf227f08e1"
+        },
+        {
+          "view": "tour-14",
+          "file": "rx78/tour-14.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "34c961e601bd4f93890a7ce2a69df802e9c9c4fabba55df869147831d24f1722"
+        },
+        {
+          "view": "tour-15",
+          "file": "rx78/tour-15.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4dad88b5d308518368ed296fd6fed4035973673b1f4d8ca84e6e68a858ec4d81"
+        },
+        {
+          "view": "tour-16",
+          "file": "rx78/tour-16.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b54a0b180be553d31dfd99848ffcbb649ad16c7628906c628546fcb3721c93b2"
+        },
+        {
+          "view": "tour-17",
+          "file": "rx78/tour-17.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "de4bef68c0bab0c3676b1790505003870649d17379b1363f65497a2f697bd13e"
+        },
+        {
+          "view": "tour-18",
+          "file": "rx78/tour-18.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4b5d6f12b3acb62a24031cc406ae17500516b9e23df77bb5e9811ae3f1d19a8f"
+        },
+        {
+          "view": "tour-19",
+          "file": "rx78/tour-19.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c26262c6fa7b8d12ada38459b4d31437ed010fd69fe6a75c3aa6ef15ceb88975"
+        },
+        {
+          "view": "tour-2",
+          "file": "rx78/tour-2.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "576e03e28e314b7f686ca78da39755df89060dd52fe43ded96a132b334ab247c"
+        },
+        {
+          "view": "tour-20",
+          "file": "rx78/tour-20.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d22b6f4de05624eb85b87d53f3ec8fb5e633225037db76a76f9c8acda2d46fef"
+        },
+        {
+          "view": "tour-21",
+          "file": "rx78/tour-21.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "061343d0e975a1704ef9e11c68dd4d27efda8335d759d3e182b57a5782b6052f"
+        },
+        {
+          "view": "tour-22",
+          "file": "rx78/tour-22.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "960ff2721e68bd7e4b9b4fc639ec72ef11925647d5b9d4e811d665dac8e39869"
+        },
+        {
+          "view": "tour-23",
+          "file": "rx78/tour-23.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "78731db98e5674e9c399ab7bd41408a509f6f0cca4d354b6bb51dea9e936696f"
+        },
+        {
+          "view": "tour-24",
+          "file": "rx78/tour-24.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4713dc6c157d52482a7f775605a6cf97754dae47ad42139e22957cbc0fc13763"
+        },
+        {
+          "view": "tour-25",
+          "file": "rx78/tour-25.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "034202e8844cc9ff94b3bfc6947062e9e64faab2b46ad57806538a383815c440"
+        },
+        {
+          "view": "tour-26",
+          "file": "rx78/tour-26.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6f90ea8f43d34140a56430767e263f7b4826ef9515d26c542c8a0c5025822759"
+        },
+        {
+          "view": "tour-27",
+          "file": "rx78/tour-27.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "67b203cbb0ed1916d387540d5c58459f31a317d5177687f71c387216c69c4900"
+        },
+        {
+          "view": "tour-28",
+          "file": "rx78/tour-28.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7c97c09914c8faefc590c3999900aed142f0d0983d7d126d9a004490bb9675a8"
+        },
+        {
+          "view": "tour-29",
+          "file": "rx78/tour-29.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ef6aa739efb240ba6fb13af6a54e811cc87313875411624d3a27a54441102ac9"
+        },
+        {
+          "view": "tour-3",
+          "file": "rx78/tour-3.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "65acdb78081726bfb7ed7df8dce80ca1800629fea4d789295033e893950700e8"
+        },
+        {
+          "view": "tour-30",
+          "file": "rx78/tour-30.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b01cc4fa0a0766b552e79871cb0a9de5e33d964f6b5714ed496a5b85d9ddb14b"
+        },
+        {
+          "view": "tour-31",
+          "file": "rx78/tour-31.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f6acc2d2abf242b84b96033ce5c6993c9a80cd17bdc1266e425d240bf9d3912e"
+        },
+        {
+          "view": "tour-32",
+          "file": "rx78/tour-32.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "5c87af02f805c3bfb9a8fd54b41a86ca3ba9f97c640c180092adc33b8b5561d4"
+        },
+        {
+          "view": "tour-33",
+          "file": "rx78/tour-33.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "2555def48186b1d346a36bcca6cbf04540615fcd0a13ddc55684875c8e853458"
+        },
+        {
+          "view": "tour-34",
+          "file": "rx78/tour-34.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9cc6662eec172894983b5a83b5322cefef5f49a5b1a769f3a69a8964bfe4558c"
+        },
+        {
+          "view": "tour-35",
+          "file": "rx78/tour-35.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "04cfe95c275228f86bcfcac05594a137bb0e43ea4cf2d322f3e33eb8c08a0276"
+        },
+        {
+          "view": "tour-36",
+          "file": "rx78/tour-36.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "2758531462a9dd3d2380ba2ca931fa00f952f5a6161ab9a30a44ea9a14025013"
+        },
+        {
+          "view": "tour-37",
+          "file": "rx78/tour-37.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8432c24c638f08c1af3e39fef76408fad848d2375a8f85acdff42e0080c78a02"
+        },
+        {
+          "view": "tour-38",
+          "file": "rx78/tour-38.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3754b593e33cca55f7eaa8d9809e5c4424a2a4d07902ed1cf81affa773bf4551"
+        },
+        {
+          "view": "tour-39",
+          "file": "rx78/tour-39.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b53ddc92b45969ca06f2a2091be21ec3814ca828dadeb14fa0a5eba069b7b533"
+        },
+        {
+          "view": "tour-4",
+          "file": "rx78/tour-4.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3b3ff71d3d54723a47aebe7423ad25d5a661836a2c971d4700f6d023ebcb0f45"
+        },
+        {
+          "view": "tour-40",
+          "file": "rx78/tour-40.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ea006ca2061348d0f4e8d320baae9b800c0f2b147ab1a463d3405ca372b7fd83"
+        },
+        {
+          "view": "tour-41",
+          "file": "rx78/tour-41.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "dd8083c762813f15f87ee55139634856280db28275fce33fe7d515cc6ba98c9a"
+        },
+        {
+          "view": "tour-42",
+          "file": "rx78/tour-42.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ad7e48f08a83328737b9f50581b77b1261efcd9ad4a19bf028cb62043684f7ff"
+        },
+        {
+          "view": "tour-43",
+          "file": "rx78/tour-43.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "eb32ea8567d79084282956438ed1b94b74a926558bfc528fa98a693ce45fd1fe"
+        },
+        {
+          "view": "tour-44",
+          "file": "rx78/tour-44.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "34bdc7116e1e3e70ca58c47f25842ef377ce2efbeb076e962778a18db98c758a"
+        },
+        {
+          "view": "tour-45",
+          "file": "rx78/tour-45.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9e1734803dc5e5564c867a7631230af1fda17d941a3506bc3a073b76b039c0cd"
+        },
+        {
+          "view": "tour-46",
+          "file": "rx78/tour-46.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c54c47c5d10f0ac24c8b32f29b0f349337f293add411d5ad45df0873aada26e5"
+        },
+        {
+          "view": "tour-47",
+          "file": "rx78/tour-47.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "34d05e15270cc5fb120efa2a41342e35e266286e73e628d2bfcbb425ca97dbe4"
+        },
+        {
+          "view": "tour-5",
+          "file": "rx78/tour-5.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "716242b0751a2cd513497a93d3f4bc3f34dd5b50a2383dbc4d5efb418199cf20"
+        },
+        {
+          "view": "tour-6",
+          "file": "rx78/tour-6.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "46a48cef7c3503311585160d06675335314127aca8f46f3ba3af7bd2a141d509"
+        },
+        {
+          "view": "tour-7",
+          "file": "rx78/tour-7.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c4204c20d04d20a515642429f3b0f50a1bbc36dcce73f4f5bbd910894792c98b"
+        },
+        {
+          "view": "tour-8",
+          "file": "rx78/tour-8.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "41fd2f201872d2616c91178e80138534ba53a8f1ab68ef5fe74a5c61304a6489"
+        },
+        {
+          "view": "tour-9",
+          "file": "rx78/tour-9.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "14af5e47b22cce522dacd0cb897bb816bb5ed98d473f0a5d40ca6284d50dfe0b"
+        }
+      ]
+    },
+    {
+      "id": "nu",
+      "frames": [
+        {
+          "view": "drag",
+          "file": "nu/nu-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0e37c9b7909cbc7bf898395a3317b74604e171d47b236d2fff653b196c5ece6d"
+        },
+        {
+          "view": "equipped",
+          "file": "nu/nu-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "482fffb3da8149572cfe847a9adca0500924007639e6598b4a8c5bd45389a2a9"
+        },
+        {
+          "view": "front",
+          "file": "nu/nu-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9a1b8272881e2995db3885f90609ec50824f58881fdb8d4b734e52de9ec808b2"
+        },
+        {
+          "view": "gray",
+          "file": "nu/nu-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "5b4da011220ce900f04015cc7bf92c69d66fdc370c074280b25f4cf15d6a57cd"
+        },
+        {
+          "view": "head",
+          "file": "nu/nu-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "95adea91a4829ccb522d4fb5a679beb16de16c2f751a40a89f5ab1cd29d7121e"
+        },
+        {
+          "view": "other-side",
+          "file": "nu/nu-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "fc6b8e2ec2390f21d874dd9b244746686b91bb22bacd60ff34b962d2d86ea37e"
+        },
+        {
+          "view": "rear",
+          "file": "nu/nu-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "1894061b3d32cb847c270cafcac3c2617da27471f6b1c46c1ca9cda80aa77a2a"
+        },
+        {
+          "view": "side",
+          "file": "nu/nu-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d58db3e215b2cfd6a937772d9451bafce682dca14d76cbeaa770e5c2b6c0b636"
+        },
+        {
+          "view": "top",
+          "file": "nu/nu-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3956812884d5751a8e8f14443125891755a97365da2bfe870333b04eb48e8ed2"
+        },
+        {
+          "view": "unarmed",
+          "file": "nu/nu-unarmed.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d8e6aec95c2701934b8697d7eedf9538943051762416fabc0c1c9784b964facd"
+        },
+        {
+          "view": "tour-0",
+          "file": "nu/tour-0.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "482fffb3da8149572cfe847a9adca0500924007639e6598b4a8c5bd45389a2a9"
+        },
+        {
+          "view": "tour-1",
+          "file": "nu/tour-1.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "27a47fcb3c30e4b534ca31bac459ce7801042ff9e0c188409c56dd14d87364b9"
+        },
+        {
+          "view": "tour-10",
+          "file": "nu/tour-10.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c5c16f121a064e87d9615dd1c3781b9f6e2a38e9fa982f3221a73c2a4162467d"
+        },
+        {
+          "view": "tour-11",
+          "file": "nu/tour-11.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "21a209bc7ec063efa5af4fb551378d09ae8e29566356fff596fd9c346fdaac2c"
+        },
+        {
+          "view": "tour-12",
+          "file": "nu/tour-12.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9c4850c7227dbe60a30b9bd91d80d91cc3bc364c821d53596a8137b54babda75"
+        },
+        {
+          "view": "tour-13",
+          "file": "nu/tour-13.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "13a4bc966a6ab16e4b03e1d529d5a5e8b37e5060e402790c01e697c8b59b74cb"
+        },
+        {
+          "view": "tour-14",
+          "file": "nu/tour-14.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "dea403e426ffb1f4674852dedc070f290bb78c88a89b8596aa30ff2662e05976"
+        },
+        {
+          "view": "tour-15",
+          "file": "nu/tour-15.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "aa8cd13b2bfcebcf548143313e1dc4a43d97c4d4764d8003a184b1c383ff3ea6"
+        },
+        {
+          "view": "tour-16",
+          "file": "nu/tour-16.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8b257db73800258eb4fb7f4bb03f278d164568c45a8759870fb4eeb997bfe718"
+        },
+        {
+          "view": "tour-17",
+          "file": "nu/tour-17.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a1e45fccdb8aff63ea3822b6f1cc9d6ab6f442f764ed8944da817388b19e2ec8"
+        },
+        {
+          "view": "tour-18",
+          "file": "nu/tour-18.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c4b85e824a4fef446bda152594287a5c63881c02a7c1342746c4e01565b3607e"
+        },
+        {
+          "view": "tour-19",
+          "file": "nu/tour-19.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6540e21a380d87b1dcc822bf8174f9b8cd005fc49d8188ff730c9352345baf13"
+        },
+        {
+          "view": "tour-2",
+          "file": "nu/tour-2.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "10aee4ac601d900962b0477da3f99f66642239536bdcf1bbfa048ffb6c76e97c"
+        },
+        {
+          "view": "tour-20",
+          "file": "nu/tour-20.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "db62c78feb925de960053d66b6b63b7e8b3d73adedba859dc2c3a3327d923b98"
+        },
+        {
+          "view": "tour-21",
+          "file": "nu/tour-21.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "681fbcddd08064fccb7ce7b4adfb73d4478ca5cb24b7371398794e26abbb3f66"
+        },
+        {
+          "view": "tour-22",
+          "file": "nu/tour-22.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "40f03d720a3fbd64df020ab42b8baede32eec7d29c1594078df1a1ea63da93b9"
+        },
+        {
+          "view": "tour-23",
+          "file": "nu/tour-23.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "5502a06273a0226bb51fc9aeaf7560cdc5a54644dbf285ec380ee6574ba70414"
+        },
+        {
+          "view": "tour-24",
+          "file": "nu/tour-24.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "adf3c4419db0fff685cb4c31e77ae99a5f88ed0e665e4464f18ee4ef7800b36a"
+        },
+        {
+          "view": "tour-25",
+          "file": "nu/tour-25.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3c45f54b0312f3f96b743b08c8915879331b4b64ae33f7032b8988927bbb9d69"
+        },
+        {
+          "view": "tour-26",
+          "file": "nu/tour-26.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b14cf0473b2f7b3d43dc6148aa2cc2b547301e2d837b9536637f1452a5a2fab3"
+        },
+        {
+          "view": "tour-27",
+          "file": "nu/tour-27.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "99411fc00ec4715e2103249d69f2ad6e3f8abfd298b02a6f9105cfd2d92c1dfd"
+        },
+        {
+          "view": "tour-28",
+          "file": "nu/tour-28.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0c31283cf4de61e988eb62568df9961b99797c7f2b0b0fc97bf158f84009a17f"
+        },
+        {
+          "view": "tour-29",
+          "file": "nu/tour-29.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "00f23a4be438c7bc943e6749693413162a836aad9368b2e70edd26f4ceda147e"
+        },
+        {
+          "view": "tour-3",
+          "file": "nu/tour-3.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8d5f3afaa9a8a629022e796eb3350499d7663e53f8291d1a1d73a920f1f97ab5"
+        },
+        {
+          "view": "tour-30",
+          "file": "nu/tour-30.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "89e6a998402cd77ce7016ea00896598fea635eb094658234d0e0d35ab654fdaa"
+        },
+        {
+          "view": "tour-31",
+          "file": "nu/tour-31.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "de821829a96dd35e743b330d733a39a0e1b5d90f96885ddb917377fb89a6cf78"
+        },
+        {
+          "view": "tour-32",
+          "file": "nu/tour-32.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "32c10be36d6d79c9ac47acccb32965b08229aebdf217e6c15a7df57a698bc990"
+        },
+        {
+          "view": "tour-33",
+          "file": "nu/tour-33.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "14010a806c32386927d6fd2368d1d2f8c26fe74eb9ab4eb9e2c5757e7b6b861b"
+        },
+        {
+          "view": "tour-34",
+          "file": "nu/tour-34.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6ef10ba6d2e3f1cce40598e55fedc8d10e35a0ad25b2ecbd308e257f11b01224"
+        },
+        {
+          "view": "tour-35",
+          "file": "nu/tour-35.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "cec098a6a1cb297e83a364c3e9844eee52309dda7495bf9e7722cd1c839dd7a2"
+        },
+        {
+          "view": "tour-36",
+          "file": "nu/tour-36.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "61e3f49b95bcb11537df4f29ccdbb16fafc109cdf3d0cbdb960d7db2e846ffba"
+        },
+        {
+          "view": "tour-37",
+          "file": "nu/tour-37.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f3a2fa9c1b586edd8553d12d64308e8cbf8965397c33b26cdce75d0cf3b7bdea"
+        },
+        {
+          "view": "tour-38",
+          "file": "nu/tour-38.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "dfe89fb077b94666a2ca3313f9eee2f48621526e8727dfc242cb233966c1e611"
+        },
+        {
+          "view": "tour-39",
+          "file": "nu/tour-39.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "73ac1cb83cba9ad9058628c8560aa1517c39e670e6080f51669b80c3fea4a52a"
+        },
+        {
+          "view": "tour-4",
+          "file": "nu/tour-4.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "fe4d42c5bcdee3474aa58b3d103a917c70f47a302e7d1324868e924d4eb9c5f1"
+        },
+        {
+          "view": "tour-40",
+          "file": "nu/tour-40.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9c3d28f278331a3eb88c9366eaf040d3a51e9954ff888eddbc29e9ef8e071cdb"
+        },
+        {
+          "view": "tour-41",
+          "file": "nu/tour-41.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "84007052fc6f680312d56941b3f4b1ca51d6ad64b21eea49a0791eb500f4e36f"
+        },
+        {
+          "view": "tour-42",
+          "file": "nu/tour-42.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6be7526d66c65c52195646d4d8248e001fb0246e514714a5b86ee6147a2799ed"
+        },
+        {
+          "view": "tour-43",
+          "file": "nu/tour-43.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "24fae27e03ec8b55da079b8d2ad8ac1b3ae5b4b622085ae8ce27260a0ee32505"
+        },
+        {
+          "view": "tour-44",
+          "file": "nu/tour-44.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "71a14296472eec2ab55c2a4f816b52fedadd91bf5ceeaa3543b34943353600e6"
+        },
+        {
+          "view": "tour-45",
+          "file": "nu/tour-45.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "bc5994f0eb82a588b96ea11a15243eeca7b13361749afe1e9c1263ea13fdaad7"
+        },
+        {
+          "view": "tour-46",
+          "file": "nu/tour-46.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8f427c4296c084a803d1a66c9f461323f60603b0dd7a43ae66e7f7cf5b4747b6"
+        },
+        {
+          "view": "tour-47",
+          "file": "nu/tour-47.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7fc63b12fa819076e22304e5c8dca9366bee8a1a0870bd42625d69ca7fbc3187"
+        },
+        {
+          "view": "tour-5",
+          "file": "nu/tour-5.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f59d4eb28848acf29bb4693a2de3865e2487aa72bd9a97f2a8102ddc4992e21f"
+        },
+        {
+          "view": "tour-6",
+          "file": "nu/tour-6.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ed7417241bb9db54b38045d3459f2919f8e931bc65c402c84d96d8454548458a"
+        },
+        {
+          "view": "tour-7",
+          "file": "nu/tour-7.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "368c6c073092b1a9638382b4cb5448e03a410ee333275a54c7e792578e61eaec"
+        },
+        {
+          "view": "tour-8",
+          "file": "nu/tour-8.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9918ea8ebfa6e777aba01bce556737e1d2893969688769721f5b0f6cd88ae879"
+        },
+        {
+          "view": "tour-9",
+          "file": "nu/tour-9.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8c28a71c4e3d65bd2b4266c9b61176d6846affa4c0d4833aa221eef87af17762"
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "frames": [
+        {
+          "view": "drag",
+          "file": "strike/strike-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "eb4b83470c16d85ba79b49f98921ab050c9b1af74c108b9c22bfea7dd7ddde28"
+        },
+        {
+          "view": "equipped",
+          "file": "strike/strike-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c8f35261f394ba6170a8fa3e4f4f61671d3dce8e890ee6889bb6da8831d00948"
+        },
+        {
+          "view": "front",
+          "file": "strike/strike-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0de64f0552750ed856803feccee1b805bc650d78266718f2632b21c3fa6be2a7"
+        },
+        {
+          "view": "gray",
+          "file": "strike/strike-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0dd3061afdfe284bd3f8a703b98bbd35872ee243242522b611505a26d277e558"
+        },
+        {
+          "view": "head",
+          "file": "strike/strike-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "04d72e84b0960c2635ed4583540fab1a93b8d6f367aba5c853b401ee0e69edd6"
+        },
+        {
+          "view": "other-side",
+          "file": "strike/strike-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "e807cc137a85717237541809939ad88a9a12e79d7f430e2241ff0c209b6b9867"
+        },
+        {
+          "view": "rear",
+          "file": "strike/strike-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "1a9256c50e70d0abaf182083e26ed08cf575b73c0fe77e2a269ff4bc6fd71014"
+        },
+        {
+          "view": "side",
+          "file": "strike/strike-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "852d49c45c6d244979a3530094563f75136bc03406820f68505fbdf74c8f2aca"
+        },
+        {
+          "view": "top",
+          "file": "strike/strike-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6d403f79655d38b5063aec56a0d83b18d773c153bb0ce4dc32e10c0f0a3aed73"
+        },
+        {
+          "view": "unarmed",
+          "file": "strike/strike-unarmed.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0b3d4e5a9d411c15da6a47e9e555420a910eeddf1ae2f78a1da5e52d79c8a8d9"
+        },
+        {
+          "view": "tour-0",
+          "file": "strike/tour-0.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c8f35261f394ba6170a8fa3e4f4f61671d3dce8e890ee6889bb6da8831d00948"
+        },
+        {
+          "view": "tour-1",
+          "file": "strike/tour-1.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "638a81f3ece7a96668b034e8ff12ea09d8caea7b7b9e74f4cd2cfa531e5b6631"
+        },
+        {
+          "view": "tour-10",
+          "file": "strike/tour-10.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "1a427b2b792ed3ec6c03224076ebecc02f3f47644ded4e11b6f2255c737c960c"
+        },
+        {
+          "view": "tour-11",
+          "file": "strike/tour-11.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b64d6aeb79ce796f929ee8488fe635d9bacd464e5449a2ad79993d02198dd541"
+        },
+        {
+          "view": "tour-12",
+          "file": "strike/tour-12.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6727b306ff9db0dcada504db5e309563e43921550bdb0a53ddcb07800a82fd4e"
+        },
+        {
+          "view": "tour-13",
+          "file": "strike/tour-13.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "215231d75a4bf526a59f784828daa272abb36b593a204021b7be6817651c6cea"
+        },
+        {
+          "view": "tour-14",
+          "file": "strike/tour-14.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "43281203252f4bfafb2bba0d5f54b761cb0e3afe15d5c3e538be7dc5863b9e85"
+        },
+        {
+          "view": "tour-15",
+          "file": "strike/tour-15.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "668ba9a25b21d806fd7c7eaddef5f79bd3da9b3e1690bb5936be2b2772673f31"
+        },
+        {
+          "view": "tour-16",
+          "file": "strike/tour-16.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "e2aae01e65820a8959d1886a55b32b2bbad4ab46dbde0c1c8d4ab11caf8f489c"
+        },
+        {
+          "view": "tour-17",
+          "file": "strike/tour-17.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "065a032d94d553fa51f87b3f01373a8d707ed7728c0e8484b8de1f0ec182ea4c"
+        },
+        {
+          "view": "tour-18",
+          "file": "strike/tour-18.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b5a4b5291c5823199e23abf30bd5278a76975e8e00cfba4849169eaa8fb531c8"
+        },
+        {
+          "view": "tour-19",
+          "file": "strike/tour-19.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "37666441112e638a608338a877477ec86bc3ea7ab18467ea21d9097f649b32ea"
+        },
+        {
+          "view": "tour-2",
+          "file": "strike/tour-2.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "41755fd9a8786f61e1bebe012c0e19a161bde836612135e079c7f105d544998d"
+        },
+        {
+          "view": "tour-20",
+          "file": "strike/tour-20.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "03abb66b60355a3da626f4f124ff3849538612df4ceeccd7b0949fe46f488123"
+        },
+        {
+          "view": "tour-21",
+          "file": "strike/tour-21.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "24c67d2e164406ff5fffd92f2371fc4bcccdf161af3a5f184b7cfa85af4f270b"
+        },
+        {
+          "view": "tour-22",
+          "file": "strike/tour-22.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f80128199ee7925d694087b2dd1bb806663f8382dee677c01300b13eab4dbd1d"
+        },
+        {
+          "view": "tour-23",
+          "file": "strike/tour-23.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "38ecfec7def3f170b669912c9182a94b3222c69e11a049424485b3eef2bb2aca"
+        },
+        {
+          "view": "tour-24",
+          "file": "strike/tour-24.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "979f3007da42378aeb367a4cf63782b3287d9341a8eb458c28c8e2e931ba43aa"
+        },
+        {
+          "view": "tour-25",
+          "file": "strike/tour-25.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "090e7583601df9830d4f8d2c7b44b0bd830639173ff7e00360440e6a84781b83"
+        },
+        {
+          "view": "tour-26",
+          "file": "strike/tour-26.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "61b6906cdb25cc6274fc76e75d1bb56f85f27d453d2ea6fc1d6ab5fa273e0836"
+        },
+        {
+          "view": "tour-27",
+          "file": "strike/tour-27.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "5a0d3a5e3389ec489eec171de893289c6abfa30f97c52577b562f53f8c37caa3"
+        },
+        {
+          "view": "tour-28",
+          "file": "strike/tour-28.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "41f4db41c63cd337b6c83160c0c8ee63aab343ec03a9c58781bdb4af1d2a8f4e"
+        },
+        {
+          "view": "tour-29",
+          "file": "strike/tour-29.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3b5ea0350c5179c6b3c70cc1881cf071d05dc2fe2c20d522b17f389abf36a5d6"
+        },
+        {
+          "view": "tour-3",
+          "file": "strike/tour-3.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "03187a4b4042fe444a0b49fccf372739129bbe370f978c264859e6cabab40d01"
+        },
+        {
+          "view": "tour-30",
+          "file": "strike/tour-30.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "fc6aa224d5713485fd9ed6426ddb263a40af58e6cd812ddabe3ef9be85dae6cb"
+        },
+        {
+          "view": "tour-31",
+          "file": "strike/tour-31.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "bac43893b2f9c3dae642a4cf436c64d46326961bc132f7997394a7a2d0507096"
+        },
+        {
+          "view": "tour-32",
+          "file": "strike/tour-32.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "45b33e622dbab57a1a7781a4ea9607048ac1ad89943f451cd530c93a83bcd8b5"
+        },
+        {
+          "view": "tour-33",
+          "file": "strike/tour-33.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "229e746fb7f632f146272a5b01b52fb1c981bbcf7919bef4bb026d890443c78c"
+        },
+        {
+          "view": "tour-34",
+          "file": "strike/tour-34.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "494f2d4d2b85ca9a4e92c020ab15ce29e2408279aecda2079845eac2b1e5711d"
+        },
+        {
+          "view": "tour-35",
+          "file": "strike/tour-35.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6b630eeeb7ba5f4ebf13952901c4e44f1fc880602bd38e64b455810a0fc2cc12"
+        },
+        {
+          "view": "tour-36",
+          "file": "strike/tour-36.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6a216f2bae8e2f2bc6b471b0221cb1a8393bd5b12d1b65427f3dbb0d0f8ecc92"
+        },
+        {
+          "view": "tour-37",
+          "file": "strike/tour-37.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "2faa1879629b98096fa246281cb5a4a86e9c50dd8c30a086d183fc516ddd6905"
+        },
+        {
+          "view": "tour-38",
+          "file": "strike/tour-38.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "260f4070aa01215f93e5fe230a1345a55ccdcd67c9aa7307551607485ad858d6"
+        },
+        {
+          "view": "tour-39",
+          "file": "strike/tour-39.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c8f9a21506875728d7e20d3859809a3a816265e2495ef6219a0a59ab991a4449"
+        },
+        {
+          "view": "tour-4",
+          "file": "strike/tour-4.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "45e97a20863183cd1794022922ec88551af39a9f378fdd5fc1da5c10c5af9205"
+        },
+        {
+          "view": "tour-40",
+          "file": "strike/tour-40.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "70a925572ad97ccb48400f70caa10495c9cc0998efca61845f9a92080ecfcc4d"
+        },
+        {
+          "view": "tour-41",
+          "file": "strike/tour-41.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4f93951b9dd5e8507ed4b5ea2e5ac3c639cce2581ba850825bfb7875bb7e8d94"
+        },
+        {
+          "view": "tour-42",
+          "file": "strike/tour-42.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "e3faeeb76741533f4971848b57ba6ca0d7c86164ea74b65cd8b670e9074ac142"
+        },
+        {
+          "view": "tour-43",
+          "file": "strike/tour-43.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "98940512af1db42abbaf3e262cf9f7d697bfa6191bb461756b38bfad0fbafd01"
+        },
+        {
+          "view": "tour-44",
+          "file": "strike/tour-44.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9167e63c6ac9b3e5bb17e61e383977c9a3b55bced34f4438bd6b31e445596032"
+        },
+        {
+          "view": "tour-45",
+          "file": "strike/tour-45.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9e1f0f6dcd67665c812dfdf803c495854f97ea59872868cc99152061fe64626e"
+        },
+        {
+          "view": "tour-46",
+          "file": "strike/tour-46.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "da46c9e9ba0b242d6c54fb729225c6ab78562d96dc3ddeda624d76f746eedbcc"
+        },
+        {
+          "view": "tour-47",
+          "file": "strike/tour-47.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7b2a0db7c5546394fa34699c8496ab65ebc22450e59478573bbadb37db023e79"
+        },
+        {
+          "view": "tour-5",
+          "file": "strike/tour-5.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "16097ff0c87f015ab7eb809e674c0376ffb75c259809d5bdff20d9bfb07dd65e"
+        },
+        {
+          "view": "tour-6",
+          "file": "strike/tour-6.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "32ef047137b209b186fe6d2a6ce532c3b258e61b7787da8ed56e69a96e82b058"
+        },
+        {
+          "view": "tour-7",
+          "file": "strike/tour-7.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "cebcaf552f647a5527287cf101dee761204c91be6ad58f1df5fe7f7a845c0365"
+        },
+        {
+          "view": "tour-8",
+          "file": "strike/tour-8.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "52ff54a06dcd2540e89e31e93577bb6193582fb8814a3017c72664106c985a0c"
+        },
+        {
+          "view": "tour-9",
+          "file": "strike/tour-9.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f7e4ece8e4c342077ba897ead2bd67341a2bd014cd4fc01a2028d974550bc760"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

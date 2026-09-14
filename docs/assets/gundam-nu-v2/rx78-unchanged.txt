@@ -1,0 +1,2 @@
+RX-78 model source equals accepted HEAD 1dfa778. No shared renderer/camera/input edits in R2. Prior R1 integration regression remains applicable; not rerun in R2.
+SHA256 eb141508249c2a0079a4c1efbbe150740dd5b3ca1ab88c220db259795d61f237

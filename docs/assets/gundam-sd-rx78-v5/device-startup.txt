@@ -1,0 +1,15 @@
+Selected startup lines after v5 flashing (not a screen capture):
+I (836) boot: Loaded app from partition at offset 0x20000
+I (1332) esp_psram: SPI SRAM memory test OK
+I (1347) app_init: Project name:     StopWatch-UserDemo
+I (1352) app_init: App version:      1dfa778-dirty
+I (1356) app_init: Compile time:     Sep 13 2026 20:27:21
+I (1361) app_init: ELF file SHA256:  07d8fb60f...
+I (1366) app_init: ESP-IDF:          v5.5.4
+[1789324064033] [info] [HAL-Display] display init
+[1789324064268] [info] [HAL-Display] create full screen canvas
+[1789324064282] [info] [HAL-Display] touchpad init
+[1789324065196] [info] [Launcher] on create
+[1789324065197] [info] [Launcher] on open
+[1789324065208] [info] [LauncherView] init
+[1789324065488] [info] [Mini 4WD] on create

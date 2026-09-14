@@ -218,6 +218,7 @@ const char* gameScreenLabel(GameScreen screen)
         case GameScreen::InputCalibration: return "CALIBRATION";
         case GameScreen::CarSelect: return "SELECT MACHINE";
         case GameScreen::CarInspect: return "VIEW MACHINE";
+        case GameScreen::MuseumInspect: return "MUSEUM";
         case GameScreen::CarShowcase: return "MACHINE READY";
         case GameScreen::RivalSelect: return "SELECT RIVALS";
         case GameScreen::TrackSelect: return "SELECT COURSE";

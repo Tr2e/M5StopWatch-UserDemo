@@ -1,0 +1,13 @@
+{
+  "main/apps/app_gundam_museum/model/rx78.cpp": "6a77c7702712fabf2c2176ccac276981306439eb322f1b36827479db240474df",
+  "main/apps/app_gundam_museum/model/nu_gundam.cpp": "44a27d3bccf9e9141934eb9057671c9508a06bc213940017d81b6d85fc94d0d5",
+  "main/apps/app_gundam_museum/model/strike_gundam.cpp": "67a86932885f6da91ae25fe045d09ec8c59006355058f3a13bc9b7b9a7aa4ee3",
+  "main/apps/app_gundam_museum/model/strike_gundam.h": "c8d572bfc4d0376248f70e55a9dfb852d5a92ae0596a3a6c61560b5a0bf1e188",
+  "main/apps/app_gundam_museum/view/museum_renderer.cpp": "3d634a35da6edea17e1ad79a73020c72e2be95247758d072e8aa4f1f44d76138",
+  "main/apps/app_gundam_museum/controller/museum_controller.h": "f07a1b8f0779a82129a720724c593264d3743adc06ea545910f689164d7c8a3b",
+  "main/assets/images/icon_gundam_museum.c": "6193d40270ab9b392e408ead8766eb6d4d9788be89159b49f6ab73b10dc5d865",
+  "tools/gundam_museum_test.cpp": "71bdb72c7975ff1370eca10e4ce5e42a97d99c7c176bc444bbabac4d840357b8",
+  "tools/sd_strike_geometry_test.h": "c2add488ffa57818979510c373b9ef50e0676e720c96f01baaaf8e3c3edb2ddf",
+  "tools/gundam_reference_render.cpp": "279f76bb7803948e6cc64a91e17160b76a815b13e38a81f511c08bdfcf84931c",
+  "skills/reference-model-workshop/references/pipeline.md": "01e5e192fe29abbbfac381ed260ec26c5c1e82fdfe1fee32cfc53d9e913efe71"
+}

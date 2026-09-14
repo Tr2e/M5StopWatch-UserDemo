@@ -1,0 +1,399 @@
+#include "nu_gundam.h"
+#include "../../app_lets_and_go_racer/model/car_mesh_builder.h"
+#include <algorithm>
+#include <cmath>
+#include <initializer_list>
+
+namespace gundam_museum {
+namespace {
+constexpr float pi=3.14159265359f;
+constexpr uint16_t white=0xef7d,ivory=0xdedb,navy=0x2168,frame=0x6b6d,black=0x1083;
+constexpr uint16_t gold=0xfda5,red=0xc986,green=0x366e;
+struct Ring {float y,w,d,z=0;};
+class NuBuilder {
+public:
+    Mesh& m;BuildOptions options;NuStage stage;
+    Part part=Part::Torso;Point origin{};float roll=0,pitch=0,yaw=0,leg=0;
+    void at(Part p,Point o={},float r=0,float t=0,float a=0){part=p;origin=o;roll=r;pitch=t;yaw=a;leg=0;}
+    Point transform(Point p)const{
+        if(part==Part::Head)p.y=.035f+p.y*.84f;
+        const float cp=std::cos(pitch),sp=std::sin(pitch),cy=std::cos(yaw),sy=std::sin(yaw);
+        p={p.x,p.y*cp-p.z*sp,p.y*sp+p.z*cp};
+        p={p.x*cy+p.z*sy,p.y,p.z*cy-p.x*sy};
+        const float c=std::cos(roll),s=std::sin(roll);
+        p={origin.x+p.x*c-p.y*s,origin.y+p.x*s+p.y*c,origin.z+p.z};
+        // Shorten the chest/abdomen while lifting the belt and connected arms.
+        // Each part uses an affine map, so planar armour stays planar.
+        if(part==Part::Torso)p.y=3.115f+(p.y-3.115f)*.82f;
+        if(part==Part::Waist)p.y+=.145f;
+        if(part==Part::Arms || part==Part::Hands)p.y=2.96f+(p.y-2.96f)*.92f;
+        p.x+=leg*(2.f-p.y)*.12f;return p;
+    }
+    void face(Point a,Point b,Point c,Point d,uint16_t color,Point outward,bool insert=false){
+        auto n=cross(subtract(b,a),subtract(c,a));
+        const float len=std::sqrt(dot(n,n));if(len<1e-8f)return;
+        if(std::abs(dot(n,subtract(d,a)))>1e-6f*len){
+            face(a,b,c,c,color,outward,insert);face(a,c,d,d,color,outward,insert);return;
+        }
+        if(dot(n,outward)<0){
+            if(c.x==d.x&&c.y==d.y&&c.z==d.z){std::swap(b,c);d=c;}else std::swap(b,d);
+        }
+        a=transform(a);b=transform(b);c=transform(c);d=transform(d);
+        n=cross(subtract(b,a),subtract(c,a));const float length=std::sqrt(dot(n,n));
+        if(length<1e-8f)return;
+        if(m.count>=Mesh::capacity){m.overflowed=true;return;}
+        n={n.x/length,n.y/length,n.z/length};
+        const float light=.56f+.36f*std::max(0.f,dot(n,Point{-.46f,.65f,.60f}))
+            +.13f*std::max(0.f,dot(n,Point{.70f,.25f,-.67f}));
+        lets_and_go::mesh_parts::MeshWriter writer{{m.panels.data(),Mesh::capacity},m.count,false};
+        lets_and_go::mesh_parts::Builder base{writer,12};
+        base.quad(a,b,c,d,lets_and_go::mesh_parts::shade(options.gray?ivory:color,light));
+        m.normals[m.count]=n;m.parts[m.count]=part;m.twoSided[m.count]=insert;m.count=writer.count;
+    }
+    void box(float x,float y,float z,float w,float h,float d,uint16_t color){
+        const float l=x-w/2,r=x+w/2,b=y-h/2,t=y+h/2,f=z+d/2,k=z-d/2;
+        face({l,b,f},{r,b,f},{r,t,f},{l,t,f},color,{0,0,1});
+        face({r,b,k},{l,b,k},{l,t,k},{r,t,k},color,{0,0,-1});
+        face({l,b,k},{l,b,f},{l,t,f},{l,t,k},color,{-1,0,0});
+        face({r,b,f},{r,b,k},{r,t,k},{r,t,f},color,{1,0,0});
+        face({l,t,f},{r,t,f},{r,t,k},{l,t,k},color,{0,1,0});
+        face({l,b,k},{r,b,k},{r,b,f},{l,b,f},color,{0,-1,0});
+    }
+    void shell(std::initializer_list<Ring> rings,uint16_t color,bool aperture=false,int count=8){
+        const auto point=[&](Ring r,int i){
+            if(count==8){
+                constexpr float xs[]={-.72f,.72f,1,1,.72f,-.72f,-1,-1};
+                constexpr float zs[]={1,1,.70f,-.70f,-1,-1,-.70f,.70f};
+                return Point{xs[i%8]*r.w,r.y,r.z+zs[i%8]*r.d};
+            }
+            const float a=2*pi*i/count;
+            const float arch=part==Part::Shins && r.y==.33f?.09f*std::max(0.f,std::cos(a)):0.f;
+            return Point{std::sin(a)*r.w,r.y+arch,r.z+std::cos(a)*r.d};
+        };
+        for(auto it=rings.begin()+1;it!=rings.end();++it){
+            const auto a=*(it-1),b=*it;
+            for(int i=0;i<count;++i){
+                if(aperture && a.y<.25f && (count==8?(i==0||i==1||i==7):(i<4||i>=count-4)))continue;
+                auto p=point(a,i),q=point(a,i+1);
+                if(part==Part::Torso && stage!=NuStage::Blockout && i==0 && a.y==2.78f){
+                    const auto sample=[&](float u,float v){auto top=point(b,0),right=point(b,1);
+                        return Point{(p.x*(1-u)+q.x*u)*(1-v)+(top.x*(1-u)+right.x*u)*v,
+                            a.y*(1-v)+b.y*v,(a.z+a.d)*(1-v)+(b.z+b.d)*v};};
+                    constexpr float us[]={0,.025f,.34f,.66f,.975f,1},vs[]={0,.07f,.61f,1};
+                    for(int x=0;x<5;++x)for(int y=0;y<3;++y){
+                        const auto aa=sample(us[x],vs[y]),bb=sample(us[x+1],vs[y]),
+                            cc=sample(us[x+1],vs[y+1]),dd=sample(us[x],vs[y+1]);
+                        if((x==1||x==3)&&y==1)opening(aa,bb,cc,dd,.023f,gold);
+                        else face(aa,bb,cc,dd,color,{0,0,1});
+                    }
+                    continue;
+                }
+                face(p,q,point(b,i+1),point(b,i),color,{(p.x+q.x)/2,0,(p.z+q.z)/2-a.z},aperture || (part==Part::Shins && a.y==.33f));
+            }
+        }
+        for(int end=0;end<2;++end){const auto r=end?*(rings.end()-1):*rings.begin();
+            if(part==Part::Shins && !end && r.y==.33f){
+                // Open ankle lip, with a short inner wall instead of a sealed cap.
+                for(int i=0;i<count;++i){const auto a=point(r,i),c=point(r,i+1);
+                    const auto inner=[&](Point q,float rise){return Point{q.x*.89f,q.y+rise,r.z+(q.z-r.z)*.89f};};
+                    face(a,c,inner(c,.015f),inner(a,.015f),ivory,{0,-1,0},true);
+                    const auto upper=*(rings.begin()+1);
+                    const auto top=[&](int j){auto q=point(upper,j);return Point{q.x*.88f,q.y,upper.z+(q.z-upper.z)*.88f};};
+                    face(inner(a,.015f),inner(c,.015f),top(i+1),top(i),ivory,{-a.x,0,r.z-a.z},true);
+                }
+                continue;
+            }
+            for(int i=1;i<count-1;i+=2)face(point(r,0),point(r,i),point(r,i+1),point(r,i+2),color,{0,end?1.f:-1.f,0},aperture);
+        }
+    }
+    void opening(Point a,Point b,Point c,Point d,float depth,uint16_t border){
+        const Point center{(a.x+b.x+c.x+d.x)/4,(a.y+b.y+c.y+d.y)/4,(a.z+b.z+c.z+d.z)/4};
+        const Point outer[]={a,b,c,d};Point inner[4],back[4];
+        for(int i=0;i<4;++i){const auto p=outer[i];
+            inner[i]={center.x+(p.x-center.x)*.82f,center.y+(p.y-center.y)*.72f,center.z+(p.z-center.z)*.72f};
+            // Interpolate depth with vertical inset; this opening is on an inclined front plane.
+            back[i]={inner[i].x,inner[i].y,inner[i].z-depth};
+        }
+        for(int i=0;i<4;++i){const int j=(i+1)%4;
+            face(outer[i],outer[j],inner[j],inner[i],border,{0,0,1});
+            face(inner[i],inner[j],back[j],back[i],border,{center.x-(inner[i].x+inner[j].x)/2,center.y-(inner[i].y+inner[j].y)/2,0});
+        }
+        face(back[0],back[1],back[2],back[3],black,{0,0,1});
+        const auto lerp=[](Point x,Point y,float t){return Point{x.x*(1-t)+y.x*t,x.y*(1-t)+y.y*t,x.z*(1-t)+y.z*t+.005f};};
+        for(float t:{.33f,.66f})face(lerp(back[0],back[3],t),lerp(back[1],back[2],t),
+            lerp(back[1],back[2],t+.055f),lerp(back[0],back[3],t+.055f),frame,{0,0,1},true);
+    }
+    void plate(std::initializer_list<Point> points,float depth,uint16_t color){
+        Point center{};for(auto p:points){center.x+=p.x;center.y+=p.y;center.z+=p.z;}
+        const float count=float(points.size());center={center.x/count,center.y/count,center.z/count};
+        for(size_t i=0;i<points.size();++i){auto a=points.begin()[i],b=points.begin()[(i+1)%points.size()];
+            face(center,a,b,b,color,{0,0,1});
+            face({center.x,center.y,center.z-depth},{a.x,a.y,a.z-depth},{b.x,b.y,b.z-depth},
+                {b.x,b.y,b.z-depth},color,{0,0,-1});
+            face(a,{a.x,a.y,a.z-depth},{b.x,b.y,b.z-depth},b,color,{(a.x+b.x)/2-center.x,(a.y+b.y)/2-center.y,0});
+        }
+    }
+    void tube(Point a,Point b,float r0,float r1,uint16_t color,bool hollow=false,int count=10){
+        auto axis=subtract(b,a);const float len=std::sqrt(dot(axis,axis));if(len<1e-6f)return;
+        axis={axis.x/len,axis.y/len,axis.z/len};auto u=cross(axis,std::abs(axis.y)<.9f?Point{0,1,0}:Point{1,0,0});
+        const float ul=std::sqrt(dot(u,u));u={u.x/ul,u.y/ul,u.z/ul};const auto v=cross(axis,u);
+        const auto p=[&](Point c,float radius,int i){const float t=2*pi*i/count,co=std::cos(t),si=std::sin(t);
+            return Point{c.x+radius*(u.x*co+v.x*si),c.y+radius*(u.y*co+v.y*si),c.z+radius*(u.z*co+v.z*si)};};
+        for(int i=0;i<count;++i){auto x=p(a,r0,i),y=p(a,r0,i+1);
+            face(x,y,p(b,r1,i+1),p(b,r1,i),color,subtract(x,a));
+            face(a,y,x,x,color,{-axis.x,-axis.y,-axis.z});
+            if(!hollow){face(b,p(b,r1,i),p(b,r1,i+1),p(b,r1,i+1),color,axis);continue;}
+            const float recess=std::min(.045f,len*.65f);
+            const auto inner=Point{b.x-axis.x*recess,b.y-axis.y*recess,b.z-axis.z*recess};
+            face(p(b,r1,i),p(b,r1,i+1),p(b,r1*.70f,i+1),p(b,r1*.70f,i),color,axis);
+            face(p(b,r1*.70f,i),p(b,r1*.70f,i+1),p(inner,r1*.66f,i+1),p(inner,r1*.66f,i),frame,subtract(b,p(b,r1,i)));
+            face(inner,p(inner,r1*.66f,i),p(inner,r1*.66f,i+1),p(inner,r1*.66f,i+1),black,axis);
+        }
+    }
+};
+
+void body(NuBuilder& b){
+    for(float side:{-1.f,1.f}){
+        b.at(Part::Feet,{side*.26f,0,0},0,0,side*.20f);b.leg=side;
+        b.shell({{.025f,.185f,.33f,.045f},{.12f,.190f,.35f,.065f},{.145f,.180f,.325f,.045f}},navy);
+        // The toe cap occupies only the front; the instep slopes into it.
+        b.shell({{.13f,.165f,.092f,.295f},{.225f,.145f,.077f,.292f}},navy);
+        b.shell({{.142f,.151f,.285f,-.030f},{.30f,.123f,.175f,-.025f}},white);
+        b.at(Part::Shins,{side*.26f,0,0});b.leg=side;
+        b.shell({{.33f,.200f,.190f,-.035f},{.50f,.168f,.145f,-.045f},{.79f,.125f,.135f,-.025f},
+            {1.10f,.158f,.168f,-.055f},{1.40f,.145f,.135f,-.045f}},white,false,16);
+        // The dark teardrop is a calf-side pod, not the front kneecap.
+        b.at(Part::Knees,{side*.26f,0,0});b.leg=side;
+        b.tube({-.135f,1.48f,-.04f},{.135f,1.48f,-.04f},.105f,.105f,frame,false,12);
+        for(float flank:{-1.f,1.f}){
+            b.at(Part::Knees,{side*.26f+flank*.12f,0,-.045f});b.leg=side;
+            b.shell({{.80f,.025f,.040f,-.025f},{.94f,.080f,.125f,-.035f},
+                {1.16f,.095f,.155f,-.045f},{1.32f,.065f,.105f,-.035f},{1.38f,.030f,.045f,-.025f}},navy,false,12);
+        }
+        b.at(Part::Shins,{side*.26f,0,0});b.leg=side;
+        for(float half:{-1.f,1.f}){
+            b.face({half*.10f,1.51f,.060f},{half*.126f,1.32f,.163f},
+                {half*.13f,1.32f,.040f},{half*.105f,1.40f,.020f},ivory,{half,0,0},true);
+            b.face({half*.126f,1.32f,.163f},{half*.064f,1.02f,.153f},
+                {half*.10f,1.02f,.08f},{half*.13f,1.32f,.04f},ivory,{half,0,0},true);
+            b.face({0,1.51f,.08f},{half*.10f,1.51f,.06f},{half*.126f,1.32f,.163f},{0,1.32f,.188f},white,{0,0,1},true);
+            b.face({0,1.32f,.188f},{half*.126f,1.32f,.163f},{half*.064f,1.02f,.153f},{0,.95f,.165f},white,{0,0,1},true);
+        }
+        b.at(Part::Thighs,{side*.26f,0,0});b.leg=side;
+        b.shell({{1.55f,.12f,.125f,-.04f},{1.88f,.165f,.145f,-.018f},{2.21f,.14f,.13f,0}},white);
+        b.at(Part::Waist);
+        const auto skirt=[&](float x,float y){return Point{side*x,y,.20f+(2.18f-y)*.18f};};
+        b.plate({skirt(.075f,2.18f),skirt(.32f,2.18f),skirt(.41f,1.80f),
+            skirt(.23f,1.66f),skirt(.08f,1.76f)},.055f,white);
+        b.plate({{side*.32f,2.17f,.10f},{side*.44f,2.11f,.045f},{side*.47f,1.91f,.045f},
+            {side*.39f,1.87f,.075f}},.25f,ivory);
+        b.plate({{side*.05f,2.16f,-.20f},{side*.31f,2.14f,-.19f},{side*.37f,1.92f,-.24f},{side*.08f,1.91f,-.25f}},.045f,white);
+        b.at(Part::Shoulders,{side*.56f,2.96f,0},side*.065f);
+        const Point outline[]={{side*-.19f,.17f,.14f},{side*.18f,.27f,.14f},
+            {side*.25f,.18f,.14f},{side*.22f,-.06f,.14f},{side*-.02f,-.23f,.14f},{side*-.17f,-.12f,.14f}};
+        const Point center{0,.04f,.177f};
+        const auto inner=[&](int i){auto p=outline[i%6];return Point{p.x*.84f,.04f+(p.y-.04f)*.84f,.177f};};
+        for(int i=0;i<6;++i){auto a=outline[i],c=outline[(i+1)%6];
+            b.face(a,c,inner(i+1),inner(i),ivory,{0,0,1});
+            b.face(center,inner(i),inner(i+1),inner(i+1),white,{0,0,1});
+            b.face(a,{a.x,a.y,-.15f},{c.x,c.y,-.15f},c,ivory,{a.x+c.x,a.y+c.y-.08f,0});
+            b.face({0,.04f,-.15f},{a.x,a.y,-.15f},{c.x,c.y,-.15f},{c.x,c.y,-.15f},white,{0,0,-1});
+        }
+        b.at(Part::Arms,{side*.60f,2.83f,0},side*.09f);
+        b.tube({0,-.02f,0},{0,-.14f,0},.085f,.085f,frame);
+        b.shell({{-.37f,.105f,.112f},{-.15f,.115f,.115f}},ivory);
+        b.tube({-.12f,-.43f,0},{.12f,-.43f,0},.092f,.092f,frame,false,12);
+        b.shell({{-.89f,.11f,.135f},{-.60f,.145f,.145f},{-.51f,.10f,.115f}},white);
+        b.shell({{-.98f,.11f,.125f},{-.87f,.113f,.137f}},navy);
+        b.at(Part::Hands,{side*.60f,2.83f,0},side*.09f);
+        b.shell({{-1.14f,.095f,.10f},{-.98f,.10f,.11f}},frame);
+    }
+    b.at(Part::Waist);b.shell({{2.06f,.26f,.13f},{2.27f,.32f,.18f}},frame);
+    b.box(0,2.24f,.0f,.60f,.10f,.40f,white);
+    b.plate({{-.075f,2.22f,.24f},{.075f,2.22f,.24f},{.07f,1.77f,.32f},{-.07f,1.77f,.32f}},.065f,white);
+    b.at(Part::Torso);
+    b.shell({{2.32f,.25f,.14f},{2.58f,.31f,.18f},{2.67f,.33f,.17f}},white);
+    b.shell({{2.59f,.345f,.19f},{2.78f,.42f,.235f},{3.03f,.405f,.175f},{3.115f,.30f,.125f}},navy);
+    b.plate({{-.114f,2.365f,.194f},{.114f,2.365f,.194f},{.125f,2.657f,.214f},{-.125f,2.657f,.214f}},.04f,navy);
+    b.plate({{-.080f,2.40f,.207f},{.080f,2.40f,.207f},{.092f,2.63f,.226f},{-.092f,2.63f,.226f}},.035f,red);
+    b.plate({{-.088f,2.64f,.247f},{.088f,2.64f,.247f},{.088f,2.96f,.225f},{-.088f,2.96f,.225f}},.06f,navy);
+    b.tube({0,3.10f,0},{0,3.22f,0},.075f,.075f,frame);
+    b.at(Part::Backpack);
+    b.box(0,2.87f,-.265f,.49f,.43f,.24f,navy);
+    b.box(0,3.08f,-.345f,.72f,.21f,.22f,navy);
+    // The uncovered backpack reference shows two stacked nozzles per side.
+    for(float side:{-1.f,1.f})for(int row=0;row<2;++row)
+        b.tube({side*.145f,2.84f-row*.15f,-.32f},{side*.145f,2.77f-row*.15f,-.46f},.048f,.067f,navy,true);
+    b.tube({-.30f,3.12f,-.34f},{-.40f,3.12f,-.34f},.095f,.095f,gold,false,12);
+    b.at(Part::Sabers);
+    b.tube({-.30f,3.10f,-.29f},{-.47f,3.48f,-.25f},.035f,.030f,white);
+
+}
+
+void head(NuBuilder& b){
+    b.at(Part::Head,{0,3.16f,0});
+    b.shell({{-.035f,.150f,.110f,-.025f},{.16f,.178f,.140f,-.022f},{.27f,.157f,.135f,-.022f},
+        {.33f,.110f,.105f,-.025f},{.365f,.047f,.065f,-.025f}},white,true,16);
+    if(b.stage==NuStage::Blockout)return;
+    b.shell({{.25f,.036f,.036f,.103f},{.350f,.039f,.046f,.090f},{.423f,.028f,.040f,.072f}},white);
+    // A continuous inner face backing prevents the rear camera showing through.
+    b.box(0,.133f,.075f,.210f,.198f,.040f,black);
+    // Sockets follow the folded face; they are recessed behind the brow.
+    for(float side:{-1.f,1.f}){
+        const auto p=[&](float x,float y,float z){return Point{side*x,y,z};};
+        b.plate({p(.012f,.203f,.151f),p(.110f,.226f,.117f),p(.098f,.171f,.132f),p(.027f,.181f,.162f)},.018f,black);
+        b.plate({p(.025f,.202f,.154f),p(.085f,.214f,.131f),p(.079f,.191f,.139f),p(.040f,.188f,.153f)},.005f,green);
+        // White cheek pillars frame the narrow muzzle and extend below it.
+        b.plate({p(.076f,.146f,.147f),p(.111f,.185f,.126f),p(.139f,.216f,.095f),
+            p(.145f,.012f,.095f),p(.107f,-.043f,.119f),p(.090f,.022f,.140f)},.072f,white);
+        b.face(p(.145f,.012f,.095f),p(.166f,.022f,.025f),p(.166f,.19f,.025f),p(.139f,.216f,.095f),ivory,{side,0,1},true);
+        b.plate({p(.008f,.226f,.186f),p(.114f,.242f,.135f),p(.141f,.271f,.099f),p(.032f,.263f,.160f)},.023f,white);
+        // Broad roots and tapered tips, not four constant-width rods.
+        b.plate({p(.026f,.273f,.179f),p(.075f,.300f,.169f),p(.304f,.508f,.095f),
+            p(.283f,.500f,.102f),p(.059f,.322f,.157f)},.014f,gold);
+        b.plate({p(.027f,.305f,.155f),p(.058f,.325f,.148f),p(.113f,.531f,.077f),p(.099f,.529f,.078f)},.012f,gold);
+        // Two planes per half preserve the bridge, mouth and inward lower jaw.
+        b.face(p(0,.184f,.170f),p(.070f,.165f,.140f),p(.063f,.087f,.139f),p(0,.098f,.177f),white,{0,0,1},true);
+        b.face(p(0,.098f,.177f),p(.063f,.087f,.139f),p(.034f,.025f,.131f),p(0,.016f,.151f),white,{0,0,1},true);
+        b.face(p(.070f,.165f,.140f),p(.078f,.163f,.112f),p(.071f,.077f,.111f),p(.063f,.087f,.139f),ivory,{side,0,1},true);
+        b.face(p(.063f,.087f,.139f),p(.071f,.077f,.111f),p(.034f,.025f,.111f),p(.034f,.025f,.131f),ivory,{side,0,1},true);
+    }
+    b.shell({{-.046f,.018f,.020f,.141f},{-.015f,.024f,.027f,.161f},{.050f,.024f,.025f,.155f},{.067f,.017f,.018f,.142f}},red);
+    b.plate({{-.033f,.279f,.189f},{0,.240f,.207f},{.033f,.279f,.189f},{.024f,.390f,.136f},{-.023f,.390f,.136f}},.023f,navy);
+    b.box(0,.404f,.119f,.027f,.027f,.012f,green);
+}
+
+void equipment(NuBuilder& b){
+    // Six hinged units: two full length and four folded back, staggered
+    // along the left rack. Front and rear remain distinct surfaces.
+    for(int i=0;i<6;++i){
+        b.at(Part::Funnels,{.36f+i*.145f,2.49f+i*.145f,-.42f},.16f);
+        b.box(0,0,0,.137f,.25f,.078f,navy);
+        b.plate({{-.068f,.13f,.045f},{.068f,.13f,.045f},{.050f,1.30f,.03f},{-.050f,1.30f,.03f}},.070f,white);
+        if(i==1||i==5)
+            b.plate({{-.068f,-.13f,.045f},{.068f,-.13f,.045f},{.033f,-1.30f,.03f},{-.033f,-1.30f,.03f}},.070f,white);
+        else
+            b.plate({{-.067f,-.13f,-.055f},{.067f,-.13f,-.055f},{.033f,1.08f,-.065f},{-.033f,1.08f,-.065f}},.040f,navy);
+        if(b.stage!=NuStage::Blockout){
+            b.box(0,.13f,.004f,.14f,.053f,.09f,gold);b.box(0,-.13f,.004f,.14f,.053f,.09f,gold);
+            b.box(0,0,.047f,.065f,.068f,.015f,gold);b.box(0,0,.057f,.026f,.036f,.012f,navy);
+        }
+    }
+    b.at(Part::Shield,{.85f,2.25f,.06f},-.13f,0,.12f);
+    b.plate({{-.20f,.65f,.075f},{.20f,.65f,.075f},{.23f,.13f,.10f},
+        {.085f,-.60f,.06f},{-.085f,-.60f,.06f},{-.23f,.13f,.10f}},.095f,white);
+    // The shield ends in two short prongs, leaving a genuine central notch.
+    for(float side:{-1.f,1.f})b.plate({{side*.085f,-.60f,.06f},{side*.067f,-.76f,.06f},
+        {side*.026f,-.76f,.06f},{side*.026f,-.60f,.06f}},.095f,white);
+    b.at(Part::Rifle,{-.77f,1.83f,.16f},-.17f);
+    b.plate({{-.075f,.33f,.06f},{.065f,.33f,.06f},{.083f,-.39f,.075f},{.025f,-.60f,.045f},
+        {-.055f,-.60f,.045f},{-.070f,-.35f,.06f}},.105f,navy);
+    b.tube({0,-.51f,.012f},{0,-1.14f,.012f},.024f,.018f,navy,true);
+    b.box(.11f,.075f,-.025f,.14f,.13f,.10f,navy);
+    b.at(Part::Bazooka,{-.10f,2.05f,-.57f});
+    b.tube({0,-.67f,0},{0,.53f,0},.049f,.053f,ivory);
+    b.tube({0,.47f,0},{0,.70f,0},.067f,.096f,navy,true);
+    b.box(.08f,.50f,0,.17f,.30f,.16f,navy);
+}
+void detail(NuBuilder& b){
+    b.at(Part::Head,{0,3.16f,0});
+    for(float side:{-1.f,1.f}){
+        b.tube({side*.135f,.266f,.081f},{side*.135f,.266f,.102f},.017f,.011f,white,true,10);
+        // RX-78 R4 lesson: tile the sloped cheek around real recesses.
+        const auto p=[&](float u,float y,float depth=0.f){
+            return Point{side*(.166f+u*.018f),y,.063f-u*.105f-depth};
+        };
+        const float ys[]={.025f,.035f,.063f,.078f,.097f,.112f,.131f,.146f,.165f,.180f,.195f};
+        b.face(p(0,ys[0]),p(.20f,ys[0]),p(.20f,ys[10]),p(0,ys[10]),white,{side,0,1},true);
+        b.face(p(.82f,ys[0]),p(1,ys[0]),p(1,ys[10]),p(.82f,ys[10]),white,{side,0,1},true);
+        for(int row=0;row<10;++row){
+            const bool hole=row%2==1;
+            const float depth=hole?.012f:0.f;
+            b.face(p(.20f,ys[row],depth),p(.82f,ys[row],depth),p(.82f,ys[row+1],depth),p(.20f,ys[row+1],depth),hole?navy:white,{side,0,1},true);
+            if(hole){
+                const Point outer[]={p(.20f,ys[row]),p(.82f,ys[row]),p(.82f,ys[row+1]),p(.20f,ys[row+1])};
+                for(int i=0;i<4;++i){auto a=outer[i],c=outer[(i+1)%4];
+                    b.face(a,c,{c.x,c.y,c.z-depth},{a.x,a.y,a.z-depth},ivory,{side,0,1},true);
+                }
+            }
+        }
+        b.face(p(0,ys[0]),p(1,ys[0]),{side*.156f,ys[0],-.055f},{side*.115f,ys[0],-.055f},ivory,{0,-1,0},true);
+        b.face(p(1,ys[0]),p(1,ys[10]),{side*.173f,ys[10],-.092f},{side*.173f,ys[0],-.092f},ivory,{side,0,0},true);
+        b.face({side*.139f,.216f,.095f},{side*.163f,.205f,.093f},
+            {side*.178f,.205f,-.02f},{side*.157f,.27f,-.022f},white,{side,0,1},true);
+        b.box(side*.111f,.022f,.125f,.010f,.074f,.006f,navy);
+        b.box(side*.102f,.127f,.145f,.010f,.033f,.006f,navy);
+        for(int row=0;row<3;++row){const float y=.158f-row*.017f,w=.037f-row*.004f;
+            const auto z=[&](float x){return .174f+(.184f-y)*(.007f/.086f)-x*(.038f/.063f);};
+            b.face({0,y,z(0)},{side*w,y-.005f,z(w)},{side*w,y-.009f,z(w)},{0,y-.004f,z(0)},navy,{0,0,1},true);
+        }
+    }
+    b.box(0,.20f,-.147f,.044f,.026f,.010f,ivory);
+    b.face({-.017f,.191f,-.153f},{.017f,.191f,-.153f},{.017f,.209f,-.153f},{-.017f,.209f,-.153f},green,{0,0,-1});
+    b.at(Part::Waist);
+    b.box(0,2.10f,.287f,.070f,.143f,.013f,red);
+    b.plate({{-.032f,2.178f,.280f},{.032f,2.178f,.280f},{0,2.145f,.300f}},.009f,gold);
+    b.at(Part::Torso);
+    b.plate({{-.095f,2.985f,.195f},{.095f,2.985f,.195f},{.088f,3.03f,.184f},{-.088f,3.03f,.184f}},.006f,white);
+    b.plate({{-.088f,3.03f,.184f},{.088f,3.03f,.184f},{.076f,3.097f,.145f},{-.076f,3.097f,.145f}},.006f,white);
+    for(float side:{-1.f,1.f}){
+        b.at(Part::Torso);
+        b.box(side*.282f,3.10f,.038f,.045f,.032f,.082f,frame);
+        b.box(side*.282f,3.119f,.044f,.023f,.011f,.060f,green);
+        for(int row=0;row<2;++row){float y=2.38f+row*.11f,z=.14f+(y-2.32f)*(.04f/.26f)+.003f;
+            b.face({side*.115f,y,z},{side*.180f,y,z},{side*.182f,y+.012f,z+.002f},{side*.115f,y+.012f,z+.002f},navy,{0,0,1},true);
+        }
+        b.at(Part::Waist);
+        b.face({side*.10f,2.04f,-.274f},{side*.25f,2.04f,-.274f},{side*.25f,2.14f,-.245f},{side*.10f,2.14f,-.245f},red,{0,0,-1},true);
+        b.face({side*.105f,2.07f,.227f},{side*.302f,2.07f,.214f},{side*.303f,2.084f,.211f},{side*.105f,2.084f,.224f},frame,{0,0,1},true);
+        b.at(Part::Feet,{side*.26f,0,0},0,0,side*.20f);b.leg=side;
+        b.face({-.020f,.059f,.398f},{.020f,.059f,.398f},{.020f,.116f,.418f},{-.020f,.116f,.418f},gold,{0,0,1},true);
+        b.face({-.044f,.174f,.164f},{.044f,.174f,.164f},{.035f,.276f,.121f},{-.035f,.276f,.121f},frame,{0,1,1},true);
+        b.face({-.029f,.178f,.164f},{.029f,.178f,.164f},{.024f,.272f,.126f},{-.024f,.272f,.126f},white,{0,1,1},true);
+        b.at(Part::Shins,{side*.26f,0,0});b.leg=side;
+        // Outboard yellow vernier under a small white lip, on the calf side.
+        b.box(side*.150f,.74f,-.037f,.020f,.16f,.072f,navy);
+        b.box(side*.163f,.74f,-.037f,.010f,.115f,.043f,gold);
+        b.at(Part::Knees,{side*.26f,0,0});b.leg=side;
+        b.tube({side*.133f,1.48f,-.04f},{side*.152f,1.48f,-.04f},.066f,.066f,navy,false,12);
+        b.at(Part::Arms,{side*.60f,2.83f,0},side*.09f);
+        b.box(0,-.675f,.147f,.11f,.038f,.012f,navy);
+        b.tube({side*.12f,-.43f,0},{side*.13f,-.43f,0},.054f,.054f,navy,false,10);
+        b.at(Part::Hands,{side*.60f,2.83f,0},side*.09f);
+        for(int finger=0;finger<3;++finger)b.box(0,-1.028f-finger*.035f,.111f,.152f,.007f,.007f,navy);
+    }
+    b.at(Part::Shoulders,{.56f,2.96f,0},.065f);
+    // Simplified large red Amuro mark; no invented microtext.
+    b.plate({{-.070f,-.047f,.182f},{-.062f,.13f,.182f},{.067f,-.04f,.182f},{.032f,-.016f,.182f},{-.048f,.080f,.182f}},.002f,red);
+    b.plate({{-.08f,-.02f,.185f},{.080f,.080f,.185f},{.062f,.042f,.185f},{-.052f,-.037f,.185f}},.002f,red);
+    if(!b.options.equipment)return;
+    b.at(Part::Backpack);for(float side:{-1.f,1.f}){
+        b.tube({side*.07f,3.12f,-.34f},{side*.07f,3.205f,-.34f},.028f,.028f,red,false,8);
+    }
+    b.at(Part::Shield,{.85f,2.25f,.06f},-.13f,0,.12f);
+    b.plate({{-.11f,.24f,.115f},{-.075f,.51f,.104f},{.10f,.22f,.115f},{.047f,.27f,.113f},{-.062f,.435f,.107f}},.003f,red);
+    b.plate({{-.15f,.24f,.12f},{.14f,.48f,.11f},{.096f,.397f,.113f},{-.10f,.238f,.12f}},.003f,red);
+    b.face({-.013f,.13f,.103f},{.013f,.13f,.103f},{.013f,-.27f,.082f},{-.013f,-.27f,.082f},navy,{0,0,1},true);
+    b.box(0,-.045f,-.038f,.22f,.70f,.028f,frame);
+    for(int i=-1;i<=1;++i)b.tube({i*.060f,-.50f,-.061f},{i*.060f,-.32f,-.061f},.021f,.021f,red,false,8);
+    b.at(Part::Rifle,{-.77f,1.83f,.16f},-.17f);
+    b.plate({{-.065f,.27f,.071f},{.032f,.27f,.071f},{.043f,-.48f,.071f},{-.018f,-.48f,.071f}},.010f,white);
+    b.tube({0,-.50f,.012f},{0,-.86f,.012f},.034f,.027f,ivory,false,8);
+    b.box(-.076f,.02f,.018f,.028f,.10f,.078f,navy);
+    b.tube({-.080f,.015f,.049f},{-.080f,.015f,.062f},.023f,.023f,green,false,8);
+    b.at(Part::Bazooka,{-.10f,2.05f,-.57f});
+    for(int i=0;i<3;++i)b.tube({.045f+i*.050f,.61f,.03f},{.045f+i*.050f,.69f,.03f},.020f,.020f,red,false,8);
+    for(int i=0;i<6;++i){
+        b.at(Part::Funnels,{.36f+i*.145f,2.49f+i*.145f,-.42f},.16f);
+        b.box(0,.50f,.045f,.024f,.105f,.008f,navy);b.box(0,.50f,.051f,.011f,.080f,.004f,ivory);
+        b.box(.070f,0,-.01f,.036f,.046f,.045f,frame);
+    }
+}
+} // namespace
+void buildNuGundam(Mesh& mesh,BuildOptions options,NuStage stage){
+    mesh.count=mesh.buriedOmitted=0;mesh.overflowed=false;
+    NuBuilder builder{mesh,options,stage};body(builder);head(builder);
+    if(options.equipment)equipment(builder);
+    if(stage==NuStage::Final)detail(builder);
+}
+} // namespace gundam_museum

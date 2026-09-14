@@ -1,0 +1,1 @@
+Same triangle crossing detector against v3 mesh: unintended=442 permitted=0. Expected regression detected.

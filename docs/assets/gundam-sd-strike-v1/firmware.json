@@ -1,0 +1,10 @@
+{
+  "built": true,
+  "flashed": false,
+  "binary": "build/StopWatch-UserDemo.bin",
+  "bytes": 3991072,
+  "sha256": "4e0b8164c6f108c41af1c5ca4e31ae6bbb8ea62fb2189a992401ef74e8d7eecf",
+  "elf_sha256": "9e7d81a24f08c6887ed61ecfe9a635df7ff639daf056b83ba62985318f9824b5",
+  "partition_free_percent": 23,
+  "reason": "Final SD SDEX002 Strike, corrected mirrored chest vents and knee insert return; includes previously prepared head icon. No flash requested in this implementation turn."
+}

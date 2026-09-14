@@ -7,6 +7,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "sd_rx78_geometry_test.h"
+#include "sd_nu_geometry_test.h"
+#include "sd_strike_geometry_test.h"
+#include "sd_rx78_equipment_test.h"
 using namespace gundam_museum;
 void controls(){
     MuseumController c;lets_and_go::DeviceControlFrame f;f.input.valid=true;
@@ -15,35 +19,67 @@ void controls(){
     assert(std::abs(c.view().yaw+.04f)<.0001f && c.percent(1010)==65);
     f.preview={1,30,20,false,true};c.update(f,1050);
     f.preview.changed=false;c.update(f,1250);assert(c.percent(1250)==100);
-    f.input.confirmPressed=true;c.update(f,1260);f.input.confirmPressed=false;
-    f.preview={1,120,40,true,true};c.update(f,1270);assert(std::abs(c.view().yaw+.40f)<.0001f);
+    const float heldYaw=c.view().yaw;f.input.confirmPressed=true;c.update(f,1260);f.input.confirmPressed=false;assert(c.view().yaw==heldYaw);
+    f.preview={1,120,40,true,true};c.update(f,1270);assert(c.view().yaw!=heldYaw);
     f.preview={2,0,300,true,true};c.update(f,1280);assert(c.view().pitch==.70f);
     f.preview.dy=299;c.update(f,1290);assert(c.view().pitch<.70f);
     f.input.valid=false;c.update(f,1300);const auto interrupted=c.view();
     f.input.valid=true;f.preview.dx=100;c.update(f,1310);assert(c.view().yaw==interrupted.yaw);
-    f.preview={};f.navigation=1;c.update(f,1320);assert(!c.view().equipment && !c.view().detail);
-    c.update(f,1330);assert(c.view().detail);c.update(f,1340);assert(c.view().equipment && !c.view().detail);
+    f.preview={};f.navigation=1;
+    for(ModelId expected:{ModelId::NuGundam,ModelId::StrikeGundam,ModelId::Rx78}){
+        c.update(f,1320);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
+    }
+    f.navigation=-1;
+    for(ModelId expected:{ModelId::StrikeGundam,ModelId::NuGundam,ModelId::Rx78}){
+        c.update(f,1330);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
+    }
+    f.navigation=1;c.update(f,1340);f.navigation=0;f.input.confirmPressed=true;c.update(f,1346);
+    assert(c.view().model==ModelId::NuGundam && c.view().equipment && !c.view().detail);
+    f.input.confirmPressed=false;
     f.navigation=0;f.autoToggle=true;c.update(f,1350);f.autoToggle=false;
-    const float start=c.view().yaw;c.update(f,2350);assert(c.view().automatic && c.view().yaw!=start);
+    const float start=c.view().yaw;c.update(f,2350);assert(!c.view().automatic && c.view().yaw==start);
     f.preview={3,1,0,true,true};c.update(f,2400);assert(!c.view().automatic);
     f.input.valid=false;f.input.cancelPressed=true;c.update(f,2500);assert(c.exitRequested());
     c.reset();assert(!c.exitRequested());f={};f.input.valid=true;
     c.update(f,0xfffffff0u);f.autoToggle=true;c.update(f,0xfffffff1u);f.autoToggle=false;c.update(f,30);
     assert(std::isfinite(c.view().yaw));
     // Entire touch gesture between slow render frames is delivered once.
-    lets_and_go::DeviceControlLogic logic;logic.setScreen(lets_and_go::GameScreen::CarInspect);
-    logic.presentScreen(lets_and_go::GameScreen::CarInspect);logic.touch(false,0,0);
+    lets_and_go::DeviceControlLogic logic;logic.setScreen(lets_and_go::GameScreen::MuseumInspect);
+    logic.presentScreen(lets_and_go::GameScreen::MuseumInspect);logic.touch(false,0,0);
     logic.touch(true,210,230);logic.touch(true,250,240);logic.touch(false,250,240);
     c.reset();assert(c.update(logic.consume(true),400));const auto moved=c.view();
     c.update(logic.consume(true),410);assert(c.view().yaw==moved.yaw);
+    using lets_and_go::GameScreen;using lets_and_go::TouchAction;
+    assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,32,233)==TouchAction::Previous);
+    assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,436,233)==TouchAction::Next);
+    for(auto p:{std::pair<int,int>{170,414},{298,414},{116,69},{123,350}})
+        assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,p.first,p.second)==TouchAction::None);
+    // Racer's original touch actions remain intact.
+    assert(lets_and_go::menuTouchTarget(GameScreen::CarInspect,170,414)==TouchAction::Auto);
+    assert(lets_and_go::menuTouchTarget(GameScreen::CarInspect,298,414)==TouchAction::Confirm);
+    logic.touch(true,436,233);logic.touch(false,436,233);
+    auto click=logic.consume(true);assert(click.navigation==1);c.update(click,500);
+    assert(c.view().model==ModelId::NuGundam);
+    assert(logic.consume(true).navigation==0);
+    logic.touch(true,32,233);logic.touch(true,100,233);logic.touch(false,100,233);
+    assert(logic.consume(true).navigation==0);
+    // A drag started on the model keeps ownership while crossing an arrow.
+    logic.touch(true,230,233);logic.touch(true,436,233);logic.touch(false,436,233);
+    auto drag=logic.consume(true);assert(drag.preview.changed && drag.navigation==0);
+    c.update(drag,600);const float yaw=c.view().yaw;c.update(logic.consume(true),10000);
+    assert(c.view().yaw==yaw && !c.view().automatic);
+
 }
 int main(int argc,char** argv){
     controls();
     const std::string out=argc>1?argv[1]:"/tmp/gundam-museum";
     MuseumRenderer renderer;assert(renderer.open());
     LGFX_Sprite canvas;canvas.createSprite(468,466);
-    View view;
-    const auto save=[&](const std::string& name){canvas.save(out+"/"+name+".ppm");};
+    const bool strike=argc>2 && std::string(argv[2])=="strike";
+    const bool nu=argc>2 && std::string(argv[2])=="nu";
+    const ModelId model=strike?ModelId::StrikeGundam:nu?ModelId::NuGundam:ModelId::Rx78;
+    View view;view.model=model;
+    const auto save=[&](const std::string& name){canvas.save(out+"/"+((nu || strike) && name.rfind("rx78-",0)==0?(strike?"strike-":"nu-")+name.substr(5):name)+".ppm");};
     renderer.render(canvas,view);save("rx78-equipped");
     std::cout<<"working_bytes="<<renderer.workingBytes()<<" panels="<<renderer.mesh().count
              <<" omitted="<<renderer.mesh().buriedOmitted<<" submitted="<<renderer.stats().submitted
@@ -55,7 +91,13 @@ int main(int argc,char** argv){
         assert(std::abs(dot(mesh.normals[i],mesh.normals[i])-1)<.0001f);
         for(auto p:mesh.panels[i].point)assert(std::isfinite(p.x)&&std::isfinite(p.y)&&std::isfinite(p.z));
     }
-    for(auto n:parts)assert(n>0);
+    for(unsigned i=0;i<static_cast<unsigned>(Part::Bazooka);++i)assert(parts[i]>0);
+    assert(nu?parts[static_cast<unsigned>(Part::Bazooka)]>0:parts[static_cast<unsigned>(Part::Bazooka)]==0);
+    assert(strike?parts[static_cast<unsigned>(Part::Aile)]>0:parts[static_cast<unsigned>(Part::Aile)]==0);
+    assert(nu?parts[static_cast<unsigned>(Part::Funnels)]>0:parts[static_cast<unsigned>(Part::Funnels)]==0);
+    if(!nu && !strike){checkSdRx78Geometry(renderer.mesh());sd_equipment_check::check(renderer.mesh());}
+    if(nu)sd_nu_check::check(renderer.mesh());
+    if(strike)sd_strike_check::check(renderer.mesh());
     view.equipment=false;view.yaw=0;view.pitch=.04f;renderer.render(canvas,view);save("rx78-front");
     view.yaw=3.14159265f;renderer.render(canvas,view);save("rx78-rear");
     view.yaw=1.5707963f;renderer.render(canvas,view);save("rx78-side");
@@ -66,12 +108,20 @@ int main(int argc,char** argv){
     renderer.render(canvas,view,100,true,true);save("rx78-gray");
     view.detail=true;renderer.render(canvas,view);save("rx78-head");
     unsigned cases=0;std::size_t cullDiff=0,buriedDiff=0,totalCull=0,totalFaces=0,coverageDiff=0,interiorDiff=0,maxDiff=0;
-    std::size_t partialDiff=0;
-    for(Pose pose:{Pose::Display,Pose::Salute,Pose::Saber})for(int percent:{65,90,100})for(bool equipment:{false,true})for(bool detail:{false,true})for(float pitch:{-.20f,.10f,.70f})for(int i=0;i<24;++i){
-        view={float(i)*6.2831853f/24,pitch,equipment,detail,false,pose};
+    std::size_t partialDiff=0,frameEdge=0,circleEdge=0;
+    for(Pose pose:{Pose::Display})for(int percent:{65,90,100})for(bool equipment:{false,true})for(bool detail:{false,true})for(float pitch:{-.20f,.10f,.70f})for(int i=0;i<24;++i){
+        view={float(i)*6.2831853f/24,pitch,equipment,detail,false,pose,model};
         renderer.render(canvas,view,percent,false,false,false);const auto reference=canvas.frame();
         renderer.render(canvas,view,percent);totalCull+=renderer.stats().culled;totalFaces+=renderer.stats().total;
         const auto optimized=canvas.frame();
+        assert(canvas.texts.empty());
+        if(equipment && !detail && percent==100)for(size_t p=0;p<optimized.size();++p){
+            if(optimized[p]==0x0863)continue;
+            const int x=int(p)%468,y=int(p)/468;
+            if((x-234)*(x-234)+(y-233)*(y-233)>=230*230)++circleEdge;
+            if((x==22 || x==445 || y==21 || y==444) && x>=22 && x<=445 && y>=21 && y<=444)++frameEdge;
+        }
+
         const auto edge=[&](const std::vector<uint16_t>& pixels,size_t p,bool coverage){
             const int x=int(p)%468,y=int(p)/468;
             const int radius=(100+percent-1)/percent;
@@ -96,7 +146,9 @@ int main(int argc,char** argv){
             save("debug-cull-on");renderer.render(canvas,view,percent,false,false,false);save("debug-cull-off");
         }
         cullDiff+=cd;
+        const auto optimizedCount=renderer.mesh().count,omitted=renderer.mesh().buriedOmitted;
         renderer.render(canvas,view,percent,true,false,true);assert(!renderer.mesh().overflowed);
+        assert(omitted==(nu?8u:strike?10u:12u));assert(renderer.mesh().count==optimizedCount+omitted);
         std::size_t bd=0;for(size_t p=0;p<reference.size();++p)bd+=optimized[p]!=canvas.frame()[p];
         if(bd && !buriedDiff){std::cout<<"first_buried_case "<<equipment<<' '<<detail<<' '<<pitch<<' '<<i<<" pixels="<<bd<<'\n';save("debug-buried");}
         buriedDiff+=bd;
@@ -110,9 +162,23 @@ int main(int argc,char** argv){
     // Q13 depth and coverage epsilon can differ at a one-pixel silhouette.
     // No changed interior pixels, missing features, or buried-cap differences.
     if(interiorDiff || maxDiff>8 || buriedDiff || partialDiff)return 2;
-    for(int i=0;i<10;++i){renderer.close();assert(!renderer.ready());assert(renderer.open());renderer.render(canvas,View{});}
-    MuseumController tour;lets_and_go::DeviceControlFrame f;f.input.valid=true;
-    tour.update(f,1000);f.autoToggle=true;tour.update(f,1000);f.autoToggle=false;
-    for(int i=0;i<48;++i){tour.update(f,1000+uint32_t(i)*20000/48);renderer.render(canvas,tour.view(),90);save("tour-"+std::to_string(i));}
+    std::cout<<"full_exhibit circle_edge="<<circleEdge<<" viewport_edge="<<frameEdge<<'\n';
+    assert(circleEdge==0 && frameEdge==0);
+    // A cached exhibit must be replaced even when all camera/equipment fields match.
+    View original;original.model=model;renderer.render(canvas,original);const auto identity=canvas.frame();
+    for(ModelId id:{ModelId::Rx78,ModelId::NuGundam,ModelId::StrikeGundam}){
+        if(id==model)continue;
+        View other=original;other.model=id;
+        renderer.render(canvas,other);assert(canvas.frame()!=identity);
+        renderer.render(canvas,original);assert(canvas.frame()==identity);
+    }
+    View moved=original;moved.yaw+=1.2f;moved.pitch=.6f;
+    renderer.render(canvas,moved);const auto movedFull=canvas.frame();
+    renderer.render(canvas,original);renderer.render(canvas,moved,100,true,false,false,true);
+    assert(canvas.frame()==movedFull);
+    for(int i=0;i<10;++i){renderer.close();assert(!renderer.ready());assert(renderer.open());renderer.render(canvas,original);assert(canvas.frame()==identity);}
+    // Offline orbit evidence samples manual camera poses; no product auto mode.
+    for(int i=0;i<48;++i){View tourView;tourView.model=model;
+        tourView.yaw=-.4f-float(i)*6.2831853f/48;renderer.render(canvas,tourView,100);save("tour-"+std::to_string(i));}
     std::cout<<"Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed\n";
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "../../app_gundam_museum/view/museum_layout.h"
 #include "../controller/game_flow.h"
 #include "../controller/race_ui_layout.h"
 
@@ -35,6 +36,11 @@ inline TouchAction menuTouchTargetPass(GameScreen screen,int x,int y,bool expand
     }
     if(screen==GameScreen::Paused)
         return hit(Rect{100,185,266,81}) ? TouchAction::Resume : TouchAction::None;
+    if(screen==GameScreen::MuseumInspect) {
+        if(hit(gundam_museum::layout::previous))return TouchAction::Previous;
+        if(hit(gundam_museum::layout::next))return TouchAction::Next;
+        return TouchAction::None;
+    }
     if(screen==GameScreen::CarInspect) {
         if(hit(setupBack))return TouchAction::Back;
         if(hit(inspectAuto))return TouchAction::Auto;

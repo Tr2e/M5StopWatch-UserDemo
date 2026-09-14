@@ -1,0 +1,6 @@
+RX-78: 10 native + 21 structural frames decoded-pixel identical to pre-Nu baseline.
+Base model revision: 1dfa778.
+Native baseline: /private/tmp/nu-rx78-native-baseline
+Native candidate: /private/tmp/nu-rx78-regression-final
+Structural baseline: /private/tmp/nu-rx78-baseline
+Structural candidate: /private/tmp/nu-rx78-study-final

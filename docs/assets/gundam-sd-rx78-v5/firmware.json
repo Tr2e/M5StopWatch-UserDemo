@@ -1,0 +1,13 @@
+{
+  "version": "sd-rx78-v5",
+  "branch": "feat/gundam-museum",
+  "head": "1dfa778-dirty",
+  "bytes": 4001168,
+  "sha256": "7292049f1c8f5f4c603fbf4b3812326bf17e222cc0e75662180910985ec72fb9",
+  "flashed": true,
+  "startup_verified": true,
+  "port": "/dev/cu.usbmodem83401",
+  "device_mac": "44:1b:f6:c1:8a:00",
+  "elf_sha256": "07d8fb60feabfb75bd89dba1fa5b7d8addea1fc6bb6d4e3783a948a81dcd33f7",
+  "device_observation": "PSRAM test OK, display/touch initialized, Launcher opened. Museum visual acceptance and FPS not measured."
+}

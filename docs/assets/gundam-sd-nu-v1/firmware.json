@@ -1,0 +1,16 @@
+{
+  "built": true,
+  "flashed": true,
+  "binary": "build/StopWatch-UserDemo.bin",
+  "bytes": 3996720,
+  "sha256": "01ce2d45c16ac44ef4afa71209384b02255d43b2c5eabb000acc63c365c57e8c",
+  "elf_sha256": "5b33ee61e2541dfa4d8cec7273a5f9ec47718132fbb6d7bf47105eaeb9049cb5",
+  "reason": "User requested flash. Image hashes verified before and after flashing; serial startup reached Launcher. Museum visual acceptance and FPS not measured.",
+  "port": "/dev/cu.usbmodem83401",
+  "device_mac": "44:1b:f6:c1:8a:00",
+  "flash_verified": true,
+  "boot_elf_prefix": "5b33ee61e",
+  "boot_verified": true,
+  "monitor_closed": true,
+  "flashed_at": "2026-09-14T22:35:35.033286+08:00"
+}

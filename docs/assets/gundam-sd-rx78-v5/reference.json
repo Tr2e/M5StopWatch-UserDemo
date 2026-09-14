@@ -1,0 +1,6 @@
+{
+  "file": "hardware/reference/gundam-sd-rx78-user-baseline/user-pose-v5.png",
+  "sha256": "36f6ad71c24118b32f8c88c6dc7ace4865f32d0685fab5d073e3b5265071f00b",
+  "role": "User-selected pose only; original proportions and v4 structure retained",
+  "head_pixels_equal_v4": true
+}

@@ -1,0 +1,17 @@
+{
+  "asset_sources": {
+    "main/apps/app_gundam_museum/model/rx78.cpp": true,
+    "main/apps/app_gundam_museum/model/strike_gundam.cpp": true,
+    "main/apps/app_gundam_museum/controller/museum_controller.h": true
+  },
+  "production_pixels": {
+    "rx78": {
+      "identical_frames": 58,
+      "baseline": "/private/tmp/sd-v5-final-rx78"
+    },
+    "strike": {
+      "identical_frames": 58,
+      "baseline": "/private/tmp/sd-v5-final-strike"
+    }
+  }
+}

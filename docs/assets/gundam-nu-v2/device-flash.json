@@ -1,0 +1,16 @@
+{
+  "date": "2026-09-13T23:05:58.051537+08:00",
+  "model": "Nu Gundam R2",
+  "purpose": "User explicitly requested flashing for visual inspection; not model acceptance",
+  "port": "/dev/cu.usbmodem83401",
+  "chip": "ESP32-S3 revision 0.2",
+  "binary_bytes": 3978240,
+  "binary_sha256": "096ee674949d1a4ade0963f2947f39fd1500c4ff2c77c77941a56d9a333665a2",
+  "matches_preflash_binary": true,
+  "source_matches_r2": true,
+  "write_verification": "Hash of data verified; flash completed",
+  "startup": "PSRAM test OK; Launcher opened; LauncherView initialized",
+  "app_version": "1dfa778-dirty",
+  "visual_acceptance": "pending user feedback",
+  "device_fps": "not measured"
+}

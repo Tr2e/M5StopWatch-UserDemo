@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "model_id": "rx78-hguc191-revive",
+  "model_revision": "1dfa778",
+  "flash_observation": {
+    "time": "2026-09-13T18:48:13.991041",
+    "revision": "1dfa778",
+    "reported_app_version": "1dfa778-dirty",
+    "port": "/dev/cu.usbmodem83401",
+    "binary_sha256": "fbef162659b9642bd6f6472b653767ce9c61e25c1e61877cec60f4dae0b40287",
+    "binary_bytes": 3947600,
+    "model_sources_match_r5": true,
+    "flash_hash_verified": true,
+    "boot_observed": "Launcher on open and LauncherView init; PSRAM test OK",
+    "visual_fidelity_validated": false
+  },
+  "user_visual_acceptance": {
+    "date": "2026-09-13",
+    "timezone": "Asia/Shanghai",
+    "status": "user_basically_accepted",
+    "quote": "基本满足要求了",
+    "context": "用户在 R5 烧录并实际查看后提出沉淀制作 Pipeline。",
+    "scope": "此次 RX-78 博物馆展示外观基本符合用户预期。"
+  },
+  "limitations": [
+    "flash_observation.visual_fidelity_validated=false 是用户反馈前的观察状态，原样保留；后续反馈见 user_visual_acceptance。",
+    "未测设备 FPS 和运行时剩余内存。",
+    "不代表所有官方角度的精确复刻。",
+    "实际固件构建标识含 dirty；R5 模型源一致，但整个固件还包含已有工作区修改。"
+  ]
+}

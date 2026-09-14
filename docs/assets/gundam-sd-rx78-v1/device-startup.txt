@@ -1,0 +1,7 @@
+I (1332) esp_psram: SPI SRAM memory test OK
+I (1347) app_init: Project name:     StopWatch-UserDemo
+I (1352) app_init: App version:      1dfa778-dirty
+I (1361) app_init: ELF file SHA256:  99567af18...
+[1789317701200] [info] [Launcher] on open
+[1789317701211] [info] [LauncherView] init
+[1789317702810] [info] [Vector Run] Joystick2 calibrated neutral=(0,0)

@@ -1,0 +1,6 @@
+working_bytes=710712 panels=3224 omitted=12 submitted=2202 culled=1022
+sd_volume depth_width=1.25152 blade_width_ratio=0.457747 blade_depth_ratio=0.57918
+sd_geometry heads=2.55246 head_shoulder=0.478643 sole_y=0.025,0.025 contact_area=0.489538,0.489538 mask_z=0.431321 brow_z=0.522098 tip_faces=12,12
+first_cull_case 0 0 0.7 14 pixels=4
+cases=864 cull_pixel_diff=72 buried_pixel_diff=0 coverage_diff=42 interior_diff=0 max_diff=4 partial_diff=0 culled_ratio=0.177625
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed
