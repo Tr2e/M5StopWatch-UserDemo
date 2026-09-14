@@ -1,0 +1,13 @@
+continuous angle mismatch model=model=0 percent=65 samples=288 reference_mean_us=1210.33 p95_us=1655.96 optimized_mean_us=1036.99 p95_us=1393.17 transforms_before=1696872 transforms_after=415545
+model=0 percent=90 samples=288 reference_mean_us=1678.53 p95_us=2310.83 optimized_mean_us=1670.89 p95_us=2251.29 transforms_before=1696872 transforms_after=415545
+model=0 percent=100 samples=288 reference_mean_us=1887.05 p95_us=2602.29 optimized_mean_us=1884.59 p95_us=2584.62 transforms_before=1696872 transforms_after=415545
+model=1 percent=65 samples=288 reference_mean_us=1220.68 p95_us=1964.17 optimized_mean_us=1050.82 p95_us=1667.67 transforms_before=1913076 transforms_after=450420
+model=1 percent=90 samples=288 reference_mean_us=1706.4 p95_us=2843.04 optimized_mean_us=1703.83 p95_us=2804.92 transforms_before=1913076 transforms_after=450420
+model=1 percent=100 samples=288 reference_mean_us=1959.86 p95_us=3240.42 optimized_mean_us=1952.95 p95_us=3217.83 transforms_before=1913076 transforms_after=450420
+model=2 percent=65 samples=288 reference_mean_us=1136.47 p95_us=1688.42 optimized_mean_us=977.504 p95_us=1441.04 transforms_before=1796116 transforms_after=407010
+model=2 percent=90 samples=288 reference_mean_us=1576.85 p95_us=2387.58 optimized_mean_us=1574.23 p95_us=2368.79 transforms_before=1796116 transforms_after=407010
+model=2 percent=100 samples=288 reference_mean_us=1784.26 p95_us=2722.79 optimized_mean_us=1775.45 p95_us=2704.83 transforms_before=1796116 transforms_after=407010
+1 yaw=-3.1305 pitch=-0.0758775
+Assertion failed: (before==canvas.frame()), function main, file gundam_museum_perf_test.cpp, line 56.
+tools/test_gundam_museum_perf.sh: line 15: 88073 Abort trap: 6           "$out_dir/test"
+     88074 Done                    | tee "$out_dir/results.txt"

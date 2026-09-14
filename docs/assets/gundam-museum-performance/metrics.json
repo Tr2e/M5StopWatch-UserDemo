@@ -1,0 +1,108 @@
+{
+  "platform": "macOS host; not ESP32-S3 FPS",
+  "timing_scope": "paired warm renders, alternating order; both modes share the current identity blit; includes unarmed/head diagnostics",
+  "rows": [
+    {
+      "model": 0,
+      "percent": 65,
+      "samples": 288,
+      "reference_mean_us": 1206.07,
+      "optimized_mean_us": 1146.61,
+      "unique_vertices": 2677,
+      "transforms_before": 1696872,
+      "transforms_after": 415545,
+      "reduction_percent": 4.9300621025313625
+    },
+    {
+      "model": 0,
+      "percent": 90,
+      "samples": 288,
+      "reference_mean_us": 1756.86,
+      "optimized_mean_us": 1681.31,
+      "unique_vertices": 2677,
+      "transforms_before": 1696872,
+      "transforms_after": 415545,
+      "reduction_percent": 4.300285737053599
+    },
+    {
+      "model": 0,
+      "percent": 100,
+      "samples": 288,
+      "reference_mean_us": 1978.94,
+      "optimized_mean_us": 1902.36,
+      "unique_vertices": 2677,
+      "transforms_before": 1696872,
+      "transforms_after": 415545,
+      "reduction_percent": 3.8697484511910463
+    },
+    {
+      "model": 1,
+      "percent": 65,
+      "samples": 288,
+      "reference_mean_us": 1242.97,
+      "optimized_mean_us": 1175.07,
+      "unique_vertices": 3137,
+      "transforms_before": 1913076,
+      "transforms_after": 450420,
+      "reduction_percent": 5.462722350499217
+    },
+    {
+      "model": 1,
+      "percent": 90,
+      "samples": 288,
+      "reference_mean_us": 1714.79,
+      "optimized_mean_us": 1628.14,
+      "unique_vertices": 3137,
+      "transforms_before": 1913076,
+      "transforms_after": 450420,
+      "reduction_percent": 5.053096880667596
+    },
+    {
+      "model": 1,
+      "percent": 100,
+      "samples": 288,
+      "reference_mean_us": 1938.19,
+      "optimized_mean_us": 1843.2,
+      "unique_vertices": 3137,
+      "transforms_before": 1913076,
+      "transforms_after": 450420,
+      "reduction_percent": 4.900964301745447
+    },
+    {
+      "model": 2,
+      "percent": 65,
+      "samples": 288,
+      "reference_mean_us": 1110.69,
+      "optimized_mean_us": 1045.82,
+      "unique_vertices": 3008,
+      "transforms_before": 1796116,
+      "transforms_after": 407010,
+      "reduction_percent": 5.840513554637217
+    },
+    {
+      "model": 2,
+      "percent": 90,
+      "samples": 288,
+      "reference_mean_us": 1584.13,
+      "optimized_mean_us": 1509.34,
+      "unique_vertices": 3008,
+      "transforms_before": 1796116,
+      "transforms_after": 407010,
+      "reduction_percent": 4.721203436586652
+    },
+    {
+      "model": 2,
+      "percent": 100,
+      "samples": 288,
+      "reference_mean_us": 1761.48,
+      "optimized_mean_us": 1677.68,
+      "unique_vertices": 3008,
+      "transforms_before": 1796116,
+      "transforms_after": 407010,
+      "reduction_percent": 4.757363126461833
+    }
+  ],
+  "mean_reduction_percent": 4.789311968837529,
+  "transform_reduction_percent": 76.45283148701162,
+  "frame_equal_cases": 3360
+}

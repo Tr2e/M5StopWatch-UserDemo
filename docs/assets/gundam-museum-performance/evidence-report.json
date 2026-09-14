@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/Users/tree/Documents/stopwatch/docs/assets/gundam-museum-performance",
+  "baseline_root": "/Users/tree/Documents/stopwatch/docs/assets/gundam-museum-minimal",
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "rx78",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "rx78/rx78-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a84a87e5b1b2bda4382a3df8e95a8d2f3a8b835efc63314e9325f674ab7bd3d9",
+          "baseline_file": "rx78/rx78-equipped.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "drag",
+          "file": "rx78/rx78-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "231035a0ea4d380c2c04470d7d0378f2b90dacaad5cb9af43c6fd52b1bba6006",
+          "baseline_file": "rx78/rx78-drag.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "rx78/rx78-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "54c3f904c7e5337acc40fe0ff7314e612b228ab89ad3fa18d031f14b9d099a5e",
+          "baseline_file": "rx78/rx78-side.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "head",
+          "file": "rx78/rx78-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "db0fe43b53d6de878cfa1a8d1683dea3c52e8290d7aaca2598af5aeff4797707",
+          "baseline_file": "rx78/rx78-head.png",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "nu",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "nu/nu-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "482fffb3da8149572cfe847a9adca0500924007639e6598b4a8c5bd45389a2a9",
+          "baseline_file": "nu/nu-equipped.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "drag",
+          "file": "nu/nu-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0e37c9b7909cbc7bf898395a3317b74604e171d47b236d2fff653b196c5ece6d",
+          "baseline_file": "nu/nu-drag.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "nu/nu-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d58db3e215b2cfd6a937772d9451bafce682dca14d76cbeaa770e5c2b6c0b636",
+          "baseline_file": "nu/nu-side.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "head",
+          "file": "nu/nu-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "95adea91a4829ccb522d4fb5a679beb16de16c2f751a40a89f5ab1cd29d7121e",
+          "baseline_file": "nu/nu-head.png",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "strike/strike-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c8f35261f394ba6170a8fa3e4f4f61671d3dce8e890ee6889bb6da8831d00948",
+          "baseline_file": "strike/strike-equipped.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "drag",
+          "file": "strike/strike-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "eb4b83470c16d85ba79b49f98921ab050c9b1af74c108b9c22bfea7dd7ddde28",
+          "baseline_file": "strike/strike-drag.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "side",
+          "file": "strike/strike-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "852d49c45c6d244979a3530094563f75136bc03406820f68505fbdf74c8f2aca",
+          "baseline_file": "strike/strike-side.png",
+          "pixels_equal_to_baseline": true
+        },
+        {
+          "view": "head",
+          "file": "strike/strike-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "04d72e84b0960c2635ed4583540fab1a93b8d6f367aba5c853b401ee0e69edd6",
+          "baseline_file": "strike/strike-head.png",
+          "pixels_equal_to_baseline": true
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

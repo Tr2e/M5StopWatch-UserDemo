@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {
+      "id": "rx78",
+      "required_views": [
+        "equipped",
+        "drag",
+        "side",
+        "head"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "rx78/rx78-equipped.png",
+          "baseline_file": "rx78/rx78-equipped.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "drag",
+          "file": "rx78/rx78-drag.png",
+          "baseline_file": "rx78/rx78-drag.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "side",
+          "file": "rx78/rx78-side.png",
+          "baseline_file": "rx78/rx78-side.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "head",
+          "file": "rx78/rx78-head.png",
+          "baseline_file": "rx78/rx78-head.png",
+          "expect_unchanged": true
+        }
+      ]
+    },
+    {
+      "id": "nu",
+      "required_views": [
+        "equipped",
+        "drag",
+        "side",
+        "head"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "nu/nu-equipped.png",
+          "baseline_file": "nu/nu-equipped.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "drag",
+          "file": "nu/nu-drag.png",
+          "baseline_file": "nu/nu-drag.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "side",
+          "file": "nu/nu-side.png",
+          "baseline_file": "nu/nu-side.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "head",
+          "file": "nu/nu-head.png",
+          "baseline_file": "nu/nu-head.png",
+          "expect_unchanged": true
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "required_views": [
+        "equipped",
+        "drag",
+        "side",
+        "head"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "strike/strike-equipped.png",
+          "baseline_file": "strike/strike-equipped.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "drag",
+          "file": "strike/strike-drag.png",
+          "baseline_file": "strike/strike-drag.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "side",
+          "file": "strike/strike-side.png",
+          "baseline_file": "strike/strike-side.png",
+          "expect_unchanged": true
+        },
+        {
+          "view": "head",
+          "file": "strike/strike-head.png",
+          "baseline_file": "strike/strike-head.png",
+          "expect_unchanged": true
+        }
+      ]
+    }
+  ]
+}

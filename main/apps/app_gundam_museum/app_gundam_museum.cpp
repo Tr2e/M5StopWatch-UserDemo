@@ -47,6 +47,8 @@ void AppGundamMuseum::draw(uint32_t now){
         mclog::tagInfo("Museum","panels={} culled={} submitted={} scale={} draw_us={} present_us={}",
             stats.total,stats.culled,stats.submitted,_controller.percent(now),
             uint32_t(rendered-start),uint32_t(esp_timer_get_time()-rendered));
+        mclog::tagInfo("MuseumStage","vertices={} transformed={} clear_us={} cull_us={} project_raster_us={} blit_us={}",
+            stats.vertices,stats.transformed,stats.clearUs,stats.prepareUs,stats.rasterUs,stats.blitUs);
     }
 }
 void AppGundamMuseum::onClose(){

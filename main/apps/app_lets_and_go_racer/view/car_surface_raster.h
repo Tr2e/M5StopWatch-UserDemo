@@ -83,6 +83,7 @@ public:
     static constexpr int kWidth=Width,kHeight=Height;
     void setPaintAtlas(const RacePaintAtlas* atlas) { _paintAtlas=atlas; }
     void setIncrementalInterpolation(bool enabled) { _incrementalInterpolation=enabled; }
+    void setSolidFastPath(bool enabled) { _solidFastPath=enabled; }
     unsigned preferInternalMemory() {
         return unsigned(_fastDepth.allocate())+unsigned(_fastColor.allocate());
     }
@@ -96,13 +97,16 @@ public:
     }
     void triangle(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
+        if(_solidFastPath && paint==CarPaint::Solid) {
+            triangleImpl<false,true>(a,b,c,color,paint,light);return;
+        }
         if(_incrementalInterpolation)
             triangleImpl<true>(a,b,c,color,paint,light);
         else
             triangleImpl<false>(a,b,c,color,paint,light);
     }
 private:
-    template<bool Incremental> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
+    template<bool Incremental,bool Solid=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
         auto* depthBuffer=depthData();auto* colorBuffer=colorData();
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
@@ -180,6 +184,11 @@ private:
             const auto d=uint16_t(std::clamp(depth*8192.f,1.f,65535.f));
             const auto index=std::size_t(y-_y)*_width+(x-_x);
             if(d<depthBuffer[index])continue;
+            if constexpr(Solid) {
+                // Identical barycentric/depth operations; compile out texture
+                // sampling and per-pixel material branches for solid exhibits.
+                depthBuffer[index]=d;colorBuffer[index]=solidColor;
+            }else{
             uint16_t pigment=color;
             if(paint!=CarPaint::Solid) {
                 const float u=(a.uDepth+s*(b.uDepth-a.uDepth)+t*(c.uDepth-a.uDepth))/depth;
@@ -190,6 +199,7 @@ private:
             depthBuffer[index]=d;
             colorBuffer[index]=texture ? pigment : paint==CarPaint::Solid ? solidColor :
                           (light==255 ? pigment : carTint(pigment,lightFactor));
+            }
             }
         }
     }
@@ -324,17 +334,23 @@ public:
     // Reuse the existing compact active planes; no second sprite is allocated.
     void blitScaled(lgfx::LGFXBase& canvas,int x,int y,int width,int height) const {
         if(width<=0 || width>Width || height<=0 || height>Height)return;
+        if(width==_width && height==_height)blitScaledImpl<false>(canvas,x,y,width,height);
+        else blitScaledImpl<true>(canvas,x,y,width,height);
+    }
+private:
+    template<bool Scale> void blitScaledImpl(lgfx::LGFXBase& canvas,int x,int y,int width,int height) const {
         std::array<uint16_t,Width> row{},sourceX{};
-        for(int px=0;px<width;++px)sourceX[px]=uint16_t((2*px+1)*_width/(2*width));
+        if constexpr(Scale)for(int px=0;px<width;++px)sourceX[px]=uint16_t((2*px+1)*_width/(2*width));
         const auto* depth=depthData();const auto* color=colorData();
         for(int py=0;py<height;++py) {
-            const int sourceY=(2*py+1)*_height/(2*height);
+            const int sourceY=Scale?(2*py+1)*_height/(2*height):py;
             const auto offset=std::size_t(sourceY)*_width;
             int start=-1;
             for(int px=0;px<=width;++px) {
-                const bool visible=px<width && depth[offset+sourceX[px]]!=0;
+                const auto sx=Scale?(px<width?sourceX[px]:0):px;
+                const bool visible=px<width && depth[offset+sx]!=0;
                 if(visible) {
-                    row[px]=color[offset+sourceX[px]];
+                    row[px]=color[offset+sx];
                     if(start<0)start=px;
                 } else if(start>=0) {
                     drawColorSpan(canvas,x+start,y+py,px-start,row.data()+start);
@@ -343,10 +359,12 @@ public:
             }
         }
     }
+public:
     uint16_t depthAt(int x,int y) const {return depthData()[std::size_t(y)*_width+x];}
 private:
     const RacePaintAtlas* _paintAtlas=nullptr;
     bool _incrementalInterpolation=false;
+    bool _solidFastPath=false;
     using Pixels=std::array<uint16_t,Width*Height>;
     RenderScratch<Pixels> _fastDepth,_fastColor;
     mutable std::array<uint16_t,PencilOcclusion::kCapacity> _occlusionCandidates{};

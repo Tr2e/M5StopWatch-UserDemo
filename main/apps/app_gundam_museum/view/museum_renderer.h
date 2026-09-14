@@ -1,6 +1,7 @@
 #pragma once
 #include "../model/rx78.h"
 #include "../../app_lets_and_go_racer/view/car_surface_raster.h"
+#include "museum_projection_cache.h"
 #include <memory>
 
 namespace gundam_museum {
@@ -10,7 +11,10 @@ struct View {
     Pose pose=Pose::Display;
     ModelId model=ModelId::Rx78;
 };
-struct RenderStats {std::size_t total=0,culled=0,submitted=0,offscreen=0;};
+struct RenderStats {
+    std::size_t total=0,culled=0,submitted=0,offscreen=0,vertices=0,transformed=0;
+    uint32_t clearUs=0,prepareUs=0,rasterUs=0,blitUs=0;
+};
 class MuseumRenderer {
 public:
     bool open();
@@ -21,15 +25,19 @@ public:
     const RenderStats& stats() const{return _stats;}
     const Mesh& mesh() const{return _surface->mesh;}
     static std::size_t workingBytes();
+    // Diagnostic A/B switch; production always uses the optimized path.
+    void setOptimizations(bool enabled){_optimizations=enabled;}
 private:
     struct Surface {
         Mesh mesh;
         lets_and_go::CarSurfaceRaster<424,424> raster;
+        MuseumProjectionCache projection;
     };
     std::unique_ptr<Surface> _surface;
     RenderStats _stats{};
     bool _cached=false,_equipment=false,_gray=false,_buried=false;
     Pose _pose=Pose::Display;
     ModelId _model=ModelId::Rx78;
+    bool _optimizations=true;
 };
 } // namespace gundam_museum

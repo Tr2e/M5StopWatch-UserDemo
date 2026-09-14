@@ -1,0 +1,10 @@
+{
+  "source_base": "062819a74e10af5284e3476ad98b12933130e581",
+  "workspace_dirty": true,
+  "scope": "Museum performance changes plus pre-existing unrelated Racer worktree changes",
+  "binary": "build/StopWatch-UserDemo.bin",
+  "bytes": 4008656,
+  "sha256": "ca5fbfb3dc5251c5ba70f3d55234e21b9a2789cc34fd1d6b8e3f229108dfb6ed",
+  "flashed": false,
+  "device_performance_measured": false
+}
