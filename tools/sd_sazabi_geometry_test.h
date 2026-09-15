@@ -1,6 +1,7 @@
 #pragma once
 #include "../main/apps/app_gundam_museum/model/sazabi.h"
 #include "sd_rx78_equipment_test.h"
+#include "sd_curved_shape_test.h"
 #include <memory>
 
 namespace sd_sazabi_check {
@@ -12,9 +13,17 @@ inline unsigned crosses(const Mesh& m,size_t i,size_t j){
     return hits;
 }
 inline unsigned rangeAgainstParts(const Mesh& m,SazabiAssembly::Range r,std::initializer_list<Part> ignored){
-    unsigned pairs=0;for(size_t i=r.begin;i<r.end;++i)for(size_t j=0;j<m.count;++j){if(j>=r.begin&&j<r.end)continue;bool skip=false;for(auto p:ignored)skip|=m.parts[j]==p;if(skip)continue;if(crosses(m,i,j))++pairs;}return pairs;
+    unsigned pairs=0;for(size_t i=r.begin;i<r.end;++i)for(size_t j=0;j<m.count;++j){if(j>=r.begin&&j<r.end)continue;bool skip=false;for(auto p:ignored)skip|=m.parts[j]==p;if(skip)continue;if(crosses(m,i,j)){if(pairs==0)std::cout<<"contact first range="<<r.begin<<":"<<r.end<<" i="<<i<<" j="<<j<<" part="<<unsigned(m.parts[j])<<" xyz="<<m.panels[i].point[0].x<<","<<m.panels[i].point[0].y<<","<<m.panels[i].point[0].z<<'\n';++pairs;}}return pairs;
 }
 inline unsigned between(const Mesh& m,SazabiAssembly::Range a,SazabiAssembly::Range b){unsigned pairs=0;for(size_t i=a.begin;i<a.end;++i)for(size_t j=b.begin;j<b.end;++j)if(crosses(m,i,j))++pairs;return pairs;}
+struct Contact { SazabiAssembly::Range moving,body; };
+inline unsigned strictContacts(const Mesh& m,SazabiAssembly::Range r,std::initializer_list<Contact> allowed={}){
+    unsigned pairs=0;for(size_t i=r.begin;i<r.end;++i)for(size_t j=0;j<m.count;++j){
+        if(j>=r.begin&&j<r.end)continue;bool skip=false;
+        for(auto c:allowed)skip|=i>=c.moving.begin&&i<c.moving.end&&j>=c.body.begin&&j<c.body.end;
+        if(!skip&&crosses(m,i,j)){if(!pairs)std::cout<<"strict_contact moving="<<i<<" body="<<j<<" part="<<unsigned(m.parts[j])<<'\n';++pairs;}
+    }return pairs;
+}
 inline void reportRange(const Mesh& m,SazabiAssembly::Range r,std::initializer_list<Part> ignored,const char* name){
     std::array<unsigned,static_cast<unsigned>(Part::Count)> counts{};for(size_t i=r.begin;i<r.end;++i)for(size_t j=0;j<m.count;++j){if(j>=r.begin&&j<r.end)continue;bool skip=false;for(auto p:ignored)skip|=m.parts[j]==p;if(!skip&&crosses(m,i,j))++counts[static_cast<unsigned>(m.parts[j])];}
     for(unsigned i=0;i<counts.size();++i)if(counts[i])std::cout<<name<<"_cross_part="<<i<<" pairs="<<counts[i]<<'\n';
@@ -23,11 +32,11 @@ inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();SazabiAssembly a;buildSazabi(*m,{},SazabiStage::Final,&a);assert(!m->overflowed&&m->count==production.count);
     assert(a.rifle.end>a.rifle.begin&&a.shield.end>a.shield.begin);for(auto r:a.funnels)assert(r.end>r.begin+20);for(auto r:a.shoulders)assert(r.end>r.begin+30);for(auto r:a.palms)assert(r.end>r.begin);
     unsigned funnelPairs=0,funnelBody=0;for(size_t i=0;i<a.funnels.size();++i){
-        funnelBody+=rangeAgainstParts(*m,a.funnels[i],{Part::Backpack,Part::Funnels});
+        funnelBody+=strictContacts(*m,a.funnels[i],{{a.funnels[i],a.containers[i/3]}});
         for(size_t j=i+1;j<a.funnels.size();++j)funnelPairs+=between(*m,a.funnels[i],a.funnels[j]);
     }
-    const unsigned rifle=rangeAgainstParts(*m,a.rifle,{Part::Hands,Part::Rifle});
-    const unsigned shield=rangeAgainstParts(*m,a.shield,{Part::Arms,Part::Hands,Part::Shield,Part::Sabers});
+    const unsigned rifle=strictContacts(*m,a.rifle,{{{a.rifle.begin,a.rifle.begin+6},a.palms[0]}});
+    const unsigned shield=strictContacts(*m,a.shield,{{a.shield,a.shieldMount}});
     unsigned palms=0;for(auto r:a.palms)for(size_t i=r.begin;i<r.end;++i)for(size_t j=0;j<m->count;++j)if(m->parts[j]==Part::Arms)palms+=crosses(*m,i,j)>0;
     std::cout<<"sd_sazabi contacts rifle="<<rifle<<" shield="<<shield<<" funnel_pairs="<<funnelPairs<<" funnel_body="<<funnelBody<<" palm_armor="<<palms<<'\n';
     if(rifle)reportRange(*m,a.rifle,{Part::Hands,Part::Rifle},"rifle");
@@ -44,10 +53,11 @@ inline void check(const Mesh& production){
     assert(ratio>2.8f&&ratio<3.35f&&depth>.75f&&depth<1.2f&&shoulderMax-shoulderMin>2.2f&&floorArea[0]>.38f&&floorArea[1]>.38f);
     // Controlled equipment error: move the complete rifle into the chest.
     for(size_t i=a.rifle.begin;i<a.rifle.end;++i)for(auto& p:m->panels[i].point){p.x+=.72f;p.y+=.45f;p.z-=.40f;}
-    const unsigned badRifle=rangeAgainstParts(*m,a.rifle,{Part::Hands,Part::Rifle});assert(badRifle>0);
+    const unsigned badRifle=strictContacts(*m,a.rifle,{{{a.rifle.begin,a.rifle.begin+6},a.palms[0]}});assert(badRifle>0);
     buildSazabi(*m,{},SazabiStage::Final,&a);
-    const auto shifted=a.funnels[0];for(size_t i=shifted.begin;i<shifted.end;++i)for(auto& p:m->panels[i].point){p.x-=.10f;p.y-=.12f;p.z+=.025f;}
+    const auto shifted=a.funnels[0];for(size_t i=shifted.begin;i<shifted.end;++i)for(auto& p:m->panels[i].point){p.x+=.02f;p.y+=.16f;p.z-=.07f;}
     const unsigned badFunnels=between(*m,a.funnels[0],a.funnels[1]);
     std::cout<<"sd_sazabi negative rifle="<<badRifle<<" funnel_overlap="<<badFunnels<<'\n';assert(badFunnels>0);
+    buildSazabi(*m,{},SazabiStage::Final,&a);sd_curved_check::crownAndNegative(*m);
 }
 } // namespace sd_sazabi_check

@@ -135,6 +135,11 @@ int main(int argc,char** argv){
         {"shoulder",-.35f,.02f,1.83f,315,Pose::Display,false,false,.95f,Part::Shoulders,Part::Arms,1},
         {"funnels",0,.25f,2.15f,220,Pose::Display,true,false,0,Part::Funnels},{"funnels-rear",3.14159265f,.15f,2.10f,220,Pose::Display,true,false,0,Part::Funnels},
         {"rifle",-.7f,.02f,1.22f,245,Pose::Display,true,false,-1.1f,Part::Rifle},{"shield",-.2f,.02f,1.52f,250,Pose::Display,true,false,1.3f,Part::Shield},
+        {"grip-assembly",-.8f,.08f,1.1f,420,Pose::Display,true,false,-1.05f,Part::Arms,Part::Rifle,-1},
+        {"grip-side",1.57079633f,.08f,1.1f,420,Pose::Display,true,false,-1.05f,Part::Arms,Part::Rifle,-1},
+        {"shield-mount",-2.15f,.10f,1.35f,360,Pose::Display,true,false,1.2f,Part::Shoulders,Part::Shield,1},
+        {"shield-side",-1.57079633f,.08f,1.35f,360,Pose::Display,true,false,1.2f,Part::Shoulders,Part::Shield,1},
+        {"backpack",2.75f,.3f,1.75f,300,Pose::Display,true,false,0,Part::Backpack,Part::Funnels},
         {"top",-.4f,.70f,1.70f,125,Pose::Display,true,false},{"underside",-.4f,-.30f,1.70f,125,Pose::Display,true,false},
     };
     const Shot* shots=strike?strikeShots:nu?nuShots:zaku?zakuShots:sazabi?sazabiShots:rxShots;

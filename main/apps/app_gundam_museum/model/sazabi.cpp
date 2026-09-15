@@ -1,125 +1,140 @@
 #include "sazabi.h"
-#include "sd_model_builder.h"
+#include "sd_curved_parts.h"
 
 namespace gundam_museum {
 namespace {
-using sd_model::Builder;using sd_model::Ring;
-constexpr uint16_t red=0xd946,bright=0xf208,deep=0x9145,wine=0x68e4;
-constexpr uint16_t frame=0x39e7,black=0x1082,gold=0xfdc7,green=0x07ec,metal=0x7bef;
-
+using sd_model::Builder;
+constexpr uint16_t red=0xd946,bright=0xe9e7,deep=0xa126;
+constexpr uint16_t frame=0x39e7,black=0x1082,gold=0xe486,green=0x07ec;
 void legs(Builder& b,bool detail){
     for(float s:{-1.f,1.f}){
         const Point hip{s*.31f,1.13f,s<0?.045f:0};const float spread=s*(s<0?.22f:.18f),footYaw=s*(s<0?.24f:.20f);
         b.at(Part::Feet,{hip.x+s*.18f,0,hip.z},0,0,footYaw);
-        b.shell({{.025f,.36f,.45f,.14f},{.11f,.40f,.49f,.17f},{.23f,.34f,.40f,.13f},{.30f,.25f,.28f,.03f}},black,12);
-        b.cover({{-.28f,.28f,.30f},{.28f,.28f,.30f},{.34f,.08f,.47f},{.24f,.025f,.51f},{-.24f,.025f,.51f},{-.34f,.08f,.47f}},.05f,red,.008f);
+        b.shell({{.025f,.36f,.45f,.14f},{.075f,.38f,.47f,.15f}},black,12);
+        b.shell({{.075f,.38f,.47f,.15f},{.15f,.37f,.45f,.15f},{.25f,.30f,.33f,.08f},{.31f,.23f,.24f}},red,12);
+        b.at(Part::Knees);b.tube({hip.x+s*.18f,.25f,hip.z},{hip.x+s*.17f,.46f,hip.z},.09f,.09f,frame,false,8);
         b.at(Part::Thighs,hip,spread);b.shell({{-.34f,.18f,.18f},{-.13f,.22f,.21f},{.05f,.18f,.17f}},red,12);
-        b.at(Part::Knees,hip,spread);b.tube({-.11f,-.36f,0},{.11f,-.36f,0},.10f,.10f,frame,false,10);
+        b.at(Part::Knees,hip,spread);b.tube({-.12f,-.36f,0},{.12f,-.36f,0},.11f,.11f,frame,false,10);
         b.at(Part::Shins,hip,spread);
-        b.shell({{-.75f,.30f,.27f,-.02f},{-.59f,.34f,.32f,-.04f},{-.39f,.24f,.23f,-.02f}},bright,12);
-        b.cover({{-.12f,-.40f,.31f},{.12f,-.40f,.31f},{.17f,-.67f,.34f},{0,-.77f,.37f},{-.17f,-.67f,.34f}},.055f,red,.007f);
-        if(detail){
-            for(float side:{-1.f,1.f}){b.at(Part::Shins,hip,spread);b.box(side*.25f,-.59f,.18f,.065f,.22f,.19f,gold,true);}
-            b.at(Part::Shins,{hip.x+s*.18f,.39f,hip.z},0,0,footYaw);b.tube({0,-.02f,-.26f},{0,-.05f,-.36f},.105f,.075f,frame,true,10);
-        }
+        b.shell({{-.77f,.31f,.29f,-.02f},{-.70f,.35f,.34f,-.04f},{-.57f,.32f,.32f,-.06f},{-.43f,.27f,.26f,-.04f},{-.31f,.20f,.20f}},red,14);
+        b.cover({{-.15f,-.39f,.25f},{.15f,-.39f,.25f},{.19f,-.67f,.33f},{0,-.75f,.35f},{-.19f,-.67f,.33f}},.045f,bright,.008f);
+        b.cover({{s*.17f,-.40f,-.15f},{s*.33f,-.49f,-.27f},{s*.41f,-.71f,-.32f},{s*.17f,-.67f,-.36f}},.055f,red,.005f);
+        if(detail)b.tube({s*.23f,-.59f,-.24f},{s*.30f,-.64f,-.36f},.075f,.09f,gold,true,10);
     }
 }
 void body(Builder& b,bool detail){
-    b.at(Part::Waist);b.shell({{1.03f,.40f,.31f},{1.27f,.47f,.35f},{1.43f,.40f,.30f}},frame,12);
+    b.at(Part::Waist);b.shell({{1.03f,.39f,.30f},{1.25f,.46f,.34f},{1.39f,.37f,.27f}},deep,12);
     for(float s:{-1.f,1.f}){
-        b.cover({{s*.06f,1.41f,.34f},{s*.38f,1.39f,.34f},{s*.52f,1.08f,.39f},{s*.31f,.99f,.42f},{s*.10f,1.05f,.42f}},.075f,red,.007f);
-        b.at(Part::Waist,{s*.43f,1.34f,-.02f},s*.25f,0,s*.23f);b.shell({{-.24f,.15f,.25f},{-.03f,.19f,.27f},{.08f,.15f,.24f}},bright,10);
+        b.at(Part::Waist);b.cover({{s*.06f,1.35f,.35f},{s*.36f,1.34f,.33f},{s*.51f,1.06f,.39f},{s*.28f,.99f,.45f},{s*.10f,1.05f,.44f}},.065f,red,.008f);
+        b.at(Part::Waist,{s*.43f,1.30f,-.04f},s*.27f,0,s*.23f);
+        b.shell({{-.27f,.20f,.27f},{-.13f,.21f,.28f},{.02f,.17f,.24f},{.10f,.12f,.18f}},red,10);
     }
-    b.at(Part::Waist);b.cover({{-.13f,1.43f,.38f},{.13f,1.43f,.38f},{.13f,1.03f,.45f},{0,.98f,.47f},{-.13f,1.03f,.45f}},.065f,bright,.008f);
-    if(detail){for(float s:{-1.f,1.f})for(int i=0;i<3;++i)b.box(s*(.055f+i*.055f),1.22f-i*.035f,.48f,.035f,.13f,.025f,gold,true);}
-    b.at(Part::Torso);b.shell({{1.39f,.42f,.31f},{1.61f,.53f,.40f},{1.91f,.65f,.46f},{2.03f,.45f,.34f}},deep,12);
-    b.cover({{-.31f,1.96f,.39f},{.31f,1.96f,.39f},{.45f,1.67f,.50f},{.22f,1.47f,.52f},{-.22f,1.47f,.52f},{-.45f,1.67f,.50f}},.08f,red,.009f);
-    b.cover({{-.17f,1.93f,.48f},{.17f,1.93f,.48f},{.20f,1.57f,.56f},{0,1.48f,.57f},{-.20f,1.57f,.56f}},.04f,bright,.006f);
-    if(detail){
-        for(float s:{-1.f,1.f}){b.cover({{s*.22f,1.85f,.53f},{s*.47f,1.82f,.48f},{s*.38f,1.66f,.53f},{s*.21f,1.67f,.56f}},.025f,black,.004f,true);b.box(s*.33f,1.74f,.555f,.12f,.025f,.03f,gold,true);}
-    }
-    b.shell({{1.98f,.18f,.16f},{2.10f,.22f,.19f}},frame,10);
-    b.at(Part::Backpack);b.box(0,1.76f,-.42f,.50f,.56f,.18f,wine);
-    // The two funnel racks remain visible beside the helmet in the complete
-    // rear view; a slight overlap with the central backpack is the mount.
+    b.at(Part::Waist);b.cover({{-.105f,1.37f,.39f},{.105f,1.37f,.39f},{.12f,1.05f,.46f},{0,.98f,.48f},{-.12f,1.05f,.46f}},.045f,bright,.008f);
+    b.at(Part::Torso);b.shell({{1.36f,.34f,.26f},{1.49f,.39f,.29f},{1.58f,.36f,.27f}},black,12);
+    if(detail){for(float s:{-1.f,1.f})sd_curved::hose(b,{{s*.08f,1.47f,.32f},{s*.30f,1.46f,.31f},{s*.40f,1.47f,.08f},{s*.28f,1.49f,-.27f}},.058f,gold,9,6);
+        b.tube({0,1.47f,.31f},{0,1.47f,.39f},.093f,.09f,red,false,12);b.tube({0,1.47f,.39f},{0,1.47f,.402f},.04f,.038f,gold,true,10);}
+    b.at(Part::Torso);b.shell({{1.55f,.36f,.29f},{1.73f,.53f,.37f},{1.91f,.53f,.34f},{1.99f,.36f,.25f}},deep,14);
+    b.at(Part::Torso,{0,0,.24f});
+    b.shell({{1.59f,.39f,.15f},{1.65f,.52f,.23f},{1.77f,.57f,.25f},{1.88f,.53f,.21f},{1.95f,.36f,.10f}},red,18);
+    b.box(0,1.78f,.252f,.014f,.12f,.008f,deep,true);
+    b.at(Part::Torso);b.shell({{1.96f,.17f,.15f},{2.14f,.18f,.16f}},frame,10);
+    b.at(Part::Backpack);b.box(0,1.81f,-.48f,.52f,.51f,.22f,black);
     for(float s:{-1.f,1.f}){
-        b.box(s*.55f,1.94f,-.50f,.22f,.42f,.18f,wine);
-        b.tube({s*.22f,1.85f,-.48f},{s*.49f,1.91f,-.52f},.045f,.055f,frame,false,8);
+        b.tube({s*.19f,1.83f,-.47f},{s*.57f,1.79f,-.75f},.065f,.07f,frame,false,8);
+        b.tube({s*.13f,1.78f,-.60f},{s*.13f,1.77f,-.70f},.06f,.065f,gold,true,10,false,true);
+        // Propellant tanks are distinct from the six stowed funnel ports.
+        b.tube({s*.22f,1.67f,-.69f},{s*.36f,.88f,-1.01f},.13f,.13f,black,false,12);
+        b.tube({s*.33f,1.07f,-.93f},{s*.34f,1.03f,-.95f},.138f,.138f,frame,false,12);
     }
-    for(float s:{-1.f,1.f})b.tube({s*.15f,1.49f,-.51f},{s*.15f,1.30f,-.64f},.08f,.11f,metal,true,10);
 }
-void head(Builder& b,bool detail){
-    b.at(Part::Head);
-    b.shell({{2.08f,.36f,.37f,-.035f},{2.20f,.53f,.48f,-.04f},{2.45f,.60f,.54f,-.055f},{2.68f,.56f,.50f,-.07f},{2.84f,.45f,.40f,-.09f},{2.94f,.28f,.25f,-.10f},{2.98f,.09f,.09f,-.10f}},red,24);
-    b.cover({{-.48f,2.57f,.48f},{.48f,2.57f,.48f},{.43f,2.42f,.55f},{-.43f,2.42f,.55f}},.05f,black,.004f,true);
-    b.tube({0,2.50f,.540f},{0,2.50f,.558f},.058f,.056f,green,false,14);
+void head(Builder& b,bool detail,SazabiAssembly* a){
+    b.at(Part::Head);if(a)a->crown.begin=b.m.count;
+    b.shell({{2.57f,.52f,.44f,-.06f},{2.69f,.49f,.43f,-.08f},{2.82f,.40f,.35f,-.09f},{2.93f,.27f,.24f,-.10f},{2.98f,.09f,.09f,-.10f}},red,20);
+    if(a)a->crown.end=b.m.count;
+    sd_curved::arc(b,{{2.13f,.36f,.32f,-.04f},{2.30f,.49f,.43f,-.04f},{2.57f,.52f,.44f,-.06f}},red,1.08f,2*sd_model::pi-1.08f,16);
+    // SDEX 017: oblique eye slit and pointed mask, not a Zaku visor.
     for(float s:{-1.f,1.f}){
-        b.cover({{s*.12f,2.39f,.54f},{s*.42f,2.39f,.48f},{s*.49f,2.11f,.39f},{s*.30f,2.04f,.43f},{s*.13f,2.12f,.53f}},.075f,bright,.008f,true);
-        b.face({s*.35f,2.30f,.48f},{s*.50f,2.16f,.37f},{s*.55f,1.94f,.23f},{s*.39f,2.03f,.43f},red,{s,0,1},true);
-        if(detail)b.tube({s*.48f,2.47f,.22f},{s*.54f,2.45f,.15f},.07f,.06f,frame,true,10);
+        const auto brow=[&](float t,float v){return Point{s*.43f*t,(2.43f+.19f*t)*(1-v)+(2.91f-.25f*t*t)*v,(.55f-.21f*t*t)*(1-v)+(.30f-.08f*t*t)*v};};
+        for(int i=0;i<6;++i){const float t=i/6.f,u=(i+1)/6.f;auto p=brow(t,0),q=brow(u,0);
+            b.face(p,q,{q.x,q.y-.037f,q.z+.005f},{p.x,p.y-.037f,p.z+.005f},black,{0,0,1},true);
+            for(int j=0;j<3;++j)b.face(brow(t,j/3.f),brow(u,j/3.f),brow(u,(j+1)/3.f),brow(t,(j+1)/3.f),red,{s*.2f,.2f,1},true);
+        }
+        b.cover({{s*.35f,2.54f,.38f},{s*.49f,2.46f,.24f},{s*.54f,2.17f,.20f},{s*.36f,2.14f,.38f},{s*.23f,2.32f,.49f}},.055f,bright,.006f);
     }
-    b.cover({{-.18f,2.40f,.56f},{.18f,2.40f,.56f},{.18f,2.14f,.57f},{0,2.06f,.59f},{-.18f,2.14f,.57f}},.04f,deep,.005f,true);
-    // Central commander crest and the two short side fins are separate tapered solids.
-    b.cover({{-.09f,2.88f,.37f},{.09f,2.88f,.37f},{.045f,3.48f,.08f},{0,3.54f,.05f},{-.045f,3.48f,.08f}},.075f,bright,.006f,true);
-    for(float s:{-1.f,1.f})b.face({s*.20f,2.83f,.34f},{s*.44f,3.14f,.18f},{s*.32f,2.79f,.35f},{s*.32f,2.79f,.35f},gold,{0,0,1},true);
+    b.cover({{-.22f,2.37f,.47f},{0,2.41f,.58f},{.22f,2.37f,.47f},{0,2.12f,.57f}},.045f,red,.012f);
+    b.tube({0,2.410f,.557f},{0,2.410f,.577f},.027f,.025f,green,false,12);
+    // All three prongs are red; gold belongs to the vents and waist pipes.
+    b.cover({{-.065f,2.82f,.31f},{.065f,2.82f,.31f},{.025f,3.54f,.02f},{0,3.59f,0},{-.025f,3.54f,.02f}},.065f,bright,.006f);
+    for(float s:{-1.f,1.f})b.cover({{s*.08f,2.88f,.32f},{s*.23f,2.92f,.23f},{s*.32f,3.46f,.12f},{s*.27f,3.46f,.14f},{s*.13f,3.02f,.30f}},.06f,red,.005f);
+    if(detail){b.cover({{-.052f,2.78f,.363f},{.052f,2.78f,.363f},{.039f,2.96f,.289f},{-.039f,2.96f,.289f}},.012f,black,.002f);
+        b.cover({{-.032f,2.80f,.370f},{.032f,2.80f,.370f},{.025f,2.94f,.312f},{-.025f,2.94f,.312f}},.008f,green,.002f);}
 }
-void armFrame(Builder& b,Part p,float s){b.at(p,{s*.86f,1.91f,-.01f},s*(s<0?.17f:.10f),s<0?-.10f:-.03f);}
+void armFrame(Builder& b,Part p,float s){b.at(p,{s*.85f,2.00f,-.01f},s*(s<0?.17f:.10f),s<0?-.10f:-.03f);}
 Point armAnchor(Builder& b,float s,Point p){armFrame(b,Part::Hands,s);return b.transform(p);}
-Point handAnchor(Builder& b,float s){return armAnchor(b,s,{0,-.88f,s<0?.43f:.38f});}
+Point handAnchor(Builder& b,float s){return armAnchor(b,s,{0,-1.05f,.17f});}
 void arms(Builder& b,bool detail,SazabiAssembly* a){
     for(float s:{-1.f,1.f}){
-        armFrame(b,Part::Shoulders,s);
-        if(a)a->shoulders[s>0].begin=b.m.count;
+        armFrame(b,Part::Shoulders,s);if(a)a->shoulders[s>0].begin=b.m.count;
         b.tube({-.17f,0,0},{.17f,0,0},.12f,.12f,frame,false,10);
-        b.shell({{-.27f,.34f,.29f},{.08f,.45f,.39f},{.25f,.37f,.32f}},bright,12);
-        b.cover({{-.32f,.18f,.33f},{.31f,.22f,.33f},{.45f,-.10f,.31f},{.20f,-.36f,.33f},{-.18f,-.33f,.33f},{-.42f,-.07f,.31f}},.07f,red,.007f);
-        b.face({s*.05f,.18f,.38f},{s*.42f,.13f,.34f},{s*.58f,-.03f,.25f},{s*.18f,-.05f,.34f},bright,{s,0,1},true);
-        if(detail){for(int i=0;i<3;++i)b.box(-.19f+i*.17f,-.22f,.35f,.08f,.035f,.04f,gold,true);}
+        b.shell({{-.16f,.30f,.27f},{.04f,.41f,.35f},{.21f,.42f,.34f},{.35f,.35f,.28f},{.39f,.24f,.22f}},red,12);
+        b.cover({{-s*.28f,.27f,.37f},{s*.31f,.38f,.36f},{s*.43f,.25f,.35f},{s*.39f,-.02f,.39f},{s*.12f,-.15f,.41f},{-s*.25f,.02f,.40f}},.035f,bright,.007f);
+        if(detail)for(int i=0;i<2;++i){const float y=.12f+i*.13f;
+            b.face({-s*.06f,y,.415f},{s*.23f,y+.065f,.408f},{s*.23f,y+.075f,.408f},{-s*.06f,y+.01f,.415f},deep,{0,0,1},true);}
+        b.cover({{-.20f,-.09f,.33f},{.17f,-.10f,.34f},{.22f,-.30f,.34f},{.12f,-.49f,.32f},{-.12f,-.47f,.32f},{-.23f,-.27f,.34f}},.055f,red,.006f);
+        if(detail)for(int i=0;i<2;++i){b.box(0,-.20f-i*.15f,.353f,.12f,.105f,.028f,gold,true);b.box(0,-.20f-i*.15f,.372f,.071f,.066f,.020f,black,true);}
         if(a)a->shoulders[s>0].end=b.m.count;
-        armFrame(b,Part::Arms,s);b.shell({{-.34f,.15f,.17f},{-.10f,.19f,.21f}},red,10);b.tube({0,-.10f,0},{0,-.56f,0},.14f,.16f,frame,false,10);
-        b.at(Part::Arms,armAnchor(b,s,{0,-.58f,.05f}),s<0?-.20f:.13f);b.shell({{-.22f,.19f,.21f},{.13f,.22f,.24f},{.24f,.17f,.18f}},bright,10);
-        const auto wrist=armAnchor(b,s,{0,-.70f,.05f}),hand=handAnchor(b,s);b.at(Part::Hands);b.tube(wrist,hand,.06f,.06f,frame,false,8);
+        armFrame(b,Part::Arms,s);b.tube({0,-.22f,0},{0,-.57f,0},.14f,.14f,frame,false,10);
+        b.at(Part::Arms,armAnchor(b,s,{0,-.65f,.05f}),s<0?-.20f:.13f,-.18f);
+        b.shell({{-.21f,.18f,.20f},{-.14f,.23f,.24f},{.02f,.25f,.25f},{.15f,.23f,.21f},{.23f,.17f,.17f}},red,12);
+        const auto wrist=armAnchor(b,s,{0,-.86f,.08f}),hand=handAnchor(b,s);b.at(Part::Hands);b.tube(wrist,{hand.x,hand.y+.01f,hand.z-.10f},.055f,.055f,frame,false,8);
         if(a)a->palms[s>0].begin=b.m.count;
-        b.at(Part::Hands,hand,s<0?-.20f:.13f);b.box(0,0,0,.27f,.21f,.20f,frame);
+        b.at(Part::Hands,hand,s<0?-.20f:.13f,s<0?.78f:0,-.08f);b.box(0,0,0,.27f,.21f,.20f,frame);
         if(a)a->palms[s>0].end=b.m.count;
     }
 }
 void funnels(Builder& b,SazabiAssembly* a){
-    // Six physical funnel bodies in two banks; each range remains independently testable.
-    int unit=0;for(float side:{-1.f,1.f})for(int row=0;row<3;++row,++unit){
-        const Point base{side*(.55f+row*.15f),2.00f-row*.11f,-.61f-row*.025f};
-        b.at(Part::Funnels);
-        if(a)a->funnels[unit].begin=b.m.count;
-        b.tube(base,{base.x+side*.08f,base.y+.32f,base.z-.11f},.055f,.038f,deep,true,10);
-        b.box(base.x,base.y-.045f,base.z+.035f,.09f,.10f,.085f,frame,true);
-        if(a)a->funnels[unit].end=b.m.count;
+    for(int side=0;side<2;++side){const float s=side?1.f:-1.f;
+        b.at(Part::Funnels,{s*.60f,2.04f,-.81f},s*.15f,-.48f);
+        if(a)a->containers[side].begin=b.m.count;
+        // An open angular container per side; three ports on its forward face.
+        b.box(-.135f,.15f,0,.055f,.72f,.34f,black);b.box(.135f,.15f,0,.055f,.72f,.34f,black);
+        b.box(0,.15f,-.145f,.22f,.72f,.05f,black);b.box(0,.15f,.145f,.22f,.72f,.05f,black);
+        b.box(0,-.22f,0,.32f,.07f,.34f,black);
+        if(a)a->containers[side].end=b.m.count;
+        for(int row=0;row<3;++row){const int n=side*3+row;const float y=-.10f+row*.21f;
+            if(a)a->funnels[n].begin=b.m.count;
+            b.tube({0,y,.17f},{0,y,.21f},.073f,.073f,deep,true,10);
+            if(a)a->funnels[n].end=b.m.count;
+        }
     }
 }
 void equipment(Builder& b,SazabiAssembly* a){
-    const auto right=handAnchor(b,-1);
-    b.at(Part::Rifle,right,-.20f,0,-.08f);
+    const auto right=handAnchor(b,-1);b.at(Part::Rifle,right,-.20f,.78f,-.08f);
     if(a)a->rifle.begin=b.m.count;
-    b.box(0,-.02f,.04f,.10f,.25f,.10f,frame);b.box(0,.19f,.38f,.18f,.20f,.67f,black);
-    b.tube({0,.21f,.63f},{0,.21f,1.18f},.045f,.027f,metal,true,10);b.box(0,.31f,.39f,.28f,.17f,.31f,deep);
-    b.tube({0,.38f,.39f},{0,.38f,.56f},.075f,.052f,green,true,10);b.box(0,.02f,.48f,.09f,.30f,.08f,frame);
+    b.box(0,0,.02f,.10f,.27f,.09f,frame);b.box(0,.24f,.23f,.18f,.20f,.48f,black);
+    b.box(0,.23f,.67f,.115f,.13f,.65f,black);b.box(0,.25f,1.05f,.15f,.18f,.22f,black);
+    b.box(0,.13f,.37f,.14f,.24f,.20f,black);b.box(0,.38f,.19f,.15f,.09f,.26f,deep);
+    b.box(0,.26f,1.163f,.057f,.063f,.015f,frame,true);
     if(a)a->rifle.end=b.m.count;
-    const auto left=armAnchor(b,1,{.14f,-.34f,.05f});const Point center{left.x+.48f,left.y+.01f,left.z+.38f};
-    b.at(Part::Shield);b.tube(left,{center.x-.12f,center.y,center.z-.13f},.04f,.04f,frame,false,8);b.at(Part::Shield,center,.18f,0,.46f);
-    if(a)a->shield.begin=b.m.count;
-    b.box(0,0,-.16f,.13f,.35f,.06f,frame,true);
-    b.cover({{-.28f,.76f,.05f},{.28f,.76f,.05f},{.39f,.34f,.05f},{.28f,-.69f,.05f},{0,-.82f,.05f},{-.28f,-.69f,.05f},{-.39f,.34f,.05f}},.13f,deep,.009f,true);
-    b.cover({{-.21f,.65f,.075f},{.21f,.65f,.075f},{.29f,.29f,.075f},{.18f,-.58f,.075f},{0,-.70f,.075f},{-.18f,-.58f,.075f},{-.29f,.29f,.075f}},.025f,black,.006f,true);
-    b.cover({{-.035f,.47f,.102f},{.035f,.47f,.102f},{.05f,-.20f,.102f},{0,-.34f,.102f},{-.05f,-.20f,.102f}},.018f,gold,.004f,true);
+    const auto left=armAnchor(b,1,{.15f,-.53f,.05f});const Point center{left.x+.59f,left.y-.10f,left.z+.24f};
+    if(a)a->shieldMount.begin=b.m.count;
+    b.at(Part::Shield);b.tube(left,{center.x-.07f,center.y,center.z-.10f},.045f,.045f,frame,false,8);
+    if(a)a->shieldMount.end=b.m.count;
+    b.at(Part::Shield,center,.08f,0,.46f);if(a)a->shield.begin=b.m.count;
+    b.cover({{-.22f,.77f,.04f},{.18f,.79f,.04f},{.32f,.51f,.04f},{.26f,.12f,.04f},{.103f,-.62f,.04f},{-.102f,-.62f,.04f},{-.25f,.11f,.04f},{-.32f,.49f,.04f}},.13f,red,.009f);
+    for(float s:{-1.f,1.f})b.cover({{s*.018f,-.615f,.04f},{s*.104f,-.615f,.04f},{s*.065f,-.82f,.04f},{s*.018f,-.82f,.04f}},.13f,red,.003f);
+    b.cover({{-.19f,.68f,.071f},{.17f,.70f,.071f},{.26f,.45f,.071f},{.11f,.22f,.071f},{.06f,-.52f,.071f},{-.05f,-.52f,.071f},{-.12f,.23f,.071f},{-.25f,.46f,.071f}},.019f,black,.004f);
+    b.cover({{-.018f,.66f,.04f},{.018f,.66f,.04f},{.018f,.96f,-.01f},{-.018f,.96f,-.01f}},.04f,red,.003f);
+    for(float s:{-1.f,1.f})b.face({0,.43f,.112f},{s*.17f,.55f,.112f},{s*.10f,.34f,.112f},{s*.10f,.34f,.112f},gold,{0,0,1},true);
+    b.face({-.033f,.51f,.114f},{.033f,.51f,.114f},{0,.14f,.114f},{0,.14f,.114f},gold,{0,0,1},true);
     if(a)a->shield.end=b.m.count;
-    // Beam tomahawk clipped to the shield back, visible from rear rotation.
-    b.at(Part::Sabers,center,.18f,0,.46f);b.tube({0,-.38f,-.18f},{0,.30f,-.18f},.04f,.04f,frame,false,8);
-    b.cover({{-.04f,.24f,-.14f},{.25f,.38f,-.14f},{.34f,.22f,-.14f},{.08f,.09f,-.14f}},.05f,gold,.006f,true);
+    b.at(Part::Sabers,center,.08f,0,.46f);b.tube({0,-.40f,-.14f},{0,.32f,-.14f},.033f,.033f,frame,false,8);
+    b.cover({{-.05f,.22f,-.12f},{.15f,.31f,-.12f},{.18f,.20f,-.12f},{.04f,.12f,-.12f}},.035f,frame,.004f);
     funnels(b,a);
 }
 } // namespace
-
 void buildSazabi(Mesh& mesh,BuildOptions options,SazabiStage stage,SazabiAssembly* assembly){
     mesh.count=mesh.buriedOmitted=0;mesh.overflowed=false;if(assembly)*assembly={};if(stage==SazabiStage::Blockout)options.gray=true;
-    Builder b{mesh,options};legs(b,stage==SazabiStage::Final);body(b,stage==SazabiStage::Final);head(b,stage!=SazabiStage::Blockout);arms(b,stage==SazabiStage::Final,assembly);if(options.equipment)equipment(b,assembly);
+    Builder b{mesh,options};legs(b,stage==SazabiStage::Final);body(b,stage==SazabiStage::Final);head(b,stage!=SazabiStage::Blockout,assembly);arms(b,stage==SazabiStage::Final,assembly);if(options.equipment)equipment(b,assembly);
 }
 } // namespace gundam_museum
