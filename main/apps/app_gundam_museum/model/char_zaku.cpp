@@ -111,7 +111,9 @@ void head(Builder& b,bool detail,ZakuAssembly* a){
 }
 void armFrame(Builder& b,Part p,float s){b.at(p,{s*.78f,1.90f,0},s*(s<0?.16f:.10f),s<0?-.08f:0);}
 Point anchor(Builder& b,float s,Point p){armFrame(b,Part::Hands,s);return b.transform(p);}
-Point handAnchor(Builder& b,float s){return anchor(b,s,{0,-1.02f,.16f});}
+void forearmFrame(Builder& b,Part p,float s){b.at(p,anchor(b,s,{0,-.63f,.07f}),s<0?-.16f:.10f,-.22f);}
+Point handAnchor(Builder& b,float s){forearmFrame(b,Part::Hands,s);return b.transform({0,s<0?-.38f:-.26f,.02f});}
+void handFrame(Builder& b,Part p,float s){b.at(p,handAnchor(b,s),s<0?-.16f:.10f,s<0?.78f:-.22f);}
 void leftPauldron(Builder& b){
     // Keep the accepted outer silhouette and spike anchors. Only the medial
     // half is relieved so the low-set helmet/hoses do not enter the shoulder.
@@ -141,10 +143,10 @@ void arms(Builder& b,bool detail,ZakuAssembly* a){
             // the connector is part of the shield assembly and its collision gate.
             if(a)a->rightShieldMount.begin=b.m.count;
             b.at(Part::Shield);
-            b.tube({-.88f,1.95f,-.08f},{-1.08f,1.96f,-.21f},.045f,.050f,frame,false,8);
+            b.tube({-.86f,1.95f,-.08f},{-1.04f,1.96f,-.20f},.045f,.050f,frame,false,8);
             if(a)a->rightShieldMount.end=b.m.count;
             if(a)a->rightShield.begin=b.m.count;
-            b.at(Part::Shield,{s*1.24f,1.96f,-.25f},.05f,0,s*.08f);
+            b.at(Part::Shield,{s*1.18f,1.96f,-.24f},.05f,0,s*.08f);
             b.box(0,-.02f,0,.58f,1.04f,.13f,pink,true);
             b.box(0,.01f,.075f,.43f,.83f,.025f,salmon,true);
             b.box(.22f,-.32f,-.10f,.11f,.25f,.10f,frame,true);
@@ -158,20 +160,27 @@ void arms(Builder& b,bool detail,ZakuAssembly* a){
             if(a)a->leftSpikes.end=b.m.count;
         }
         armFrame(b,Part::Arms,s);b.shell({{-.30f,.14f,.15f},{-.08f,.17f,.18f}},salmon,10);b.tube({0,-.12f,0},{0,-.54f,0},.13f,.15f,frame,false,10);
-        b.at(Part::Arms,anchor(b,s,{0,-.63f,.07f}),s<0?-.16f:.10f,-.22f);b.shell({{-.22f,.17f,.18f},{-.13f,.21f,.22f},{.06f,.22f,.23f},{.20f,.17f,.18f}},pink,14);
-        const auto wrist=anchor(b,s,{0,-.84f,.08f}),hand=handAnchor(b,s);b.at(Part::Hands);b.tube(wrist,{hand.x,hand.y+.015f,hand.z-.09f},.055f,.055f,frame,false,8);
+        forearmFrame(b,Part::Arms,s);
+        if(a)a->forearms[s>0].begin=b.m.count;
+        b.shell({{-.22f,.17f,.18f},{-.13f,.21f,.22f},{.06f,.22f,.23f},{.20f,.17f,.18f}},pink,14);
+        if(a)a->forearms[s>0].end=b.m.count;
+        forearmFrame(b,Part::Arms,s);const auto cuff=b.transform({0,-.16f,0});
+        handFrame(b,Part::Hands,s);const auto socket=b.transform({0,0,-.09f});
+        if(a)a->wrists[s>0].begin=b.m.count;
+        b.at(Part::Hands);b.tube(cuff,socket,.055f,.055f,frame,false,8);
+        if(a)a->wrists[s>0].end=b.m.count;
         if(a)a->palms[s>0].begin=b.m.count;
-        b.at(Part::Hands,hand,s<0?-.16f:.10f,s<0?.78f:0);b.box(0,0,0,.25f,.20f,.22f,salmon);
+        handFrame(b,Part::Hands,s);b.box(0,s<0?0.f:-.08f,0,.25f,.20f,.22f,salmon);
         if(a)a->palms[s>0].end=b.m.count;
     }
     if(detail){b.at(Part::Shoulders);b.box(-.72f,1.93f,-.18f,.12f,.31f,.12f,frame);}
 }
 void equipment(Builder& b,ZakuAssembly* a){
     // Zaku machine gun in the right fist, including drum and hollow muzzle.
-    const Point grip=handAnchor(b,-1);b.at(Part::Rifle,grip,-.16f,.78f,-.12f);
+    handFrame(b,Part::Rifle,-1);
     if(a)a->rifle.begin=b.m.count;
     if(a)a->rifleGrip.begin=b.m.count;
-    b.box(0,.02f,.05f,.10f,.25f,.10f,frame);
+    b.box(0,0,.06f,.10f,.18f,.16f,frame);
     if(a)a->rifleGrip.end=b.m.count;
     b.box(0,.21f,.28f,.16f,.16f,.58f,black);
     b.tube({0,.21f,.46f},{0,.21f,1.12f},.065f,.040f,frame,true,12);

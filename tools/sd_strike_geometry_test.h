@@ -3,6 +3,7 @@
 #include "sd_rx78_equipment_test.h"
 #include "sd_eye_socket_test.h"
 #include "sd_skirt_assembly_test.h"
+#include "sd_wrist_assembly_test.h"
 #include <limits>
 #include <memory>
 
@@ -47,10 +48,14 @@ inline Contacts inspect(const Mesh& m,const StrikeAssembly& assembly){
             for(size_t j=assembly.aile[b].begin;j<assembly.aile[b].end;++j){bool allowed=true;
                 if(pairCrossings(m,i,j,allowed)){if(allowed && a==0 && b<=2)++r.wingRoots;else ++r.unitPairs;}
             }
-    for(auto palm:assembly.palms)for(size_t i=palm.begin;i<palm.end;++i)
+    unsigned palmArmor[2]={};
+    int which=0;
+    for(auto palm:assembly.palms){for(size_t i=palm.begin;i<palm.end;++i)
         for(size_t j=0;j<m.count;++j)if(m.parts[j]==Part::Arms){bool allowed=false;
-            if(pairCrossings(m,i,j,allowed))++r.palmArmor;
-        }
+            if(pairCrossings(m,i,j,allowed))++palmArmor[which];
+        }++which;}
+    r.palmArmor=palmArmor[0]+palmArmor[1];
+    std::cout<<"sd_strike palm_armor_by_side right="<<palmArmor[0]<<" left="<<palmArmor[1]<<'\n';
     return r;
 }
 
@@ -84,6 +89,12 @@ inline void check(const Mesh& production){
         <<" aile_peg="<<result.ailePeg<<" inter_aile="<<result.unitPairs<<" palm_armor="<<result.palmArmor<<" wing_roots="<<result.wingRoots<<" saber_peg="<<result.saberPeg<<'\n';
     assert(result.unintended==0 && result.unitPairs==0 && result.palmArmor==0);
     assert(result.shieldPeg>0 && result.shieldPeg<=16 && result.ailePeg>0 && result.ailePeg<=12 && result.saberPeg>0 && result.saberPeg<=48 && result.wingRoots>0 && result.wingRoots<=48);
+    for(int side=0;side<2;++side){
+        sd_wrist_check::Range wrist{assembly.wrists[side].begin,assembly.wrists[side].end};
+        sd_wrist_check::Range palm{assembly.palms[side].begin,assembly.palms[side].end};
+        sd_wrist_check::check(*m,wrist,palm,"strike",side);
+        sd_wrist_check::checkDetached(*m,wrist,palm);
+    }
     // Controlled negative: shift the complete rifle toward the forearm.
     // This intentionally invalidates the correct grip frame and must be rejected.
     for(size_t i=0;i<m->count;++i)if(m->parts[i]==Part::Rifle)

@@ -3,6 +3,7 @@
 #include "sd_rx78_equipment_test.h"
 #include "sd_curved_shape_test.h"
 #include "sd_skirt_assembly_test.h"
+#include "sd_wrist_assembly_test.h"
 #include <limits>
 #include <memory>
 
@@ -61,7 +62,13 @@ inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();ZakuAssembly a;buildCharZaku(*m,{},ZakuStage::Final,&a);
     assert(!m->overflowed && m->count==production.count);
     sd_skirt_check::check(*m,a.skirts,false,"zaku");
-    for(auto r:{a.rightShieldMount,a.rightShield,a.leftSpikes,a.headHose,a.waistHose,a.headMount,a.headBody,a.headSocket,a.antenna,a.rifleGrip,a.rifle,a.heatHawkMount,a.heatHawk,a.armMounts[0],a.armMounts[1],a.palms[0],a.palms[1]})assert(r.end>r.begin);
+    for(auto r:{a.rightShieldMount,a.rightShield,a.leftSpikes,a.headHose,a.waistHose,a.headMount,a.headBody,a.headSocket,a.antenna,a.rifleGrip,a.rifle,a.heatHawkMount,a.heatHawk,a.armMounts[0],a.armMounts[1],a.wrists[0],a.wrists[1],a.forearms[0],a.forearms[1],a.palms[0],a.palms[1]})assert(r.end>r.begin);
+    for(int side=0;side<2;++side){
+        sd_wrist_check::Range wrist{a.wrists[side].begin,a.wrists[side].end};
+        sd_wrist_check::Range palm{a.palms[side].begin,a.palms[side].end};
+        sd_wrist_check::check(*m,wrist,palm,"zaku",side);
+        sd_wrist_check::checkDetached(*m,wrist,palm);
+    }
     const unsigned armTorso[]={againstPart(*m,a.armMounts[0],Part::Torso),againstPart(*m,a.armMounts[1],Part::Torso)};
     const unsigned armShoulder[]={againstPart(*m,a.armMounts[0],Part::Shoulders),againstPart(*m,a.armMounts[1],Part::Shoulders)};
     const unsigned shieldShoulder=againstPart(*m,a.rightShieldMount,Part::Shoulders);
@@ -159,9 +166,16 @@ inline void check(const Mesh& production){
     std::cout<<"sd_zaku negative heat_hawk="<<negativeHawk<<" shoulder_shield="<<negativeShield<<'\n';
     assert(negativeHawk>0&&negativeShield>0);
     buildCharZaku(*m,{},ZakuStage::Final,&a);
-    const Point drumAxis{.0303f,.7150f,.6984f};float axialLo=100,axialHi=-100;
-    for(size_t i=a.drum.begin;i<a.drum.end;++i)for(auto p:m->panels[i].point){const float v=dot(p,drumAxis);axialLo=std::min(axialLo,v);axialHi=std::max(axialHi,v);}
-    std::cout<<"zaku_top_drum_axial_thickness="<<axialHi-axialLo<<'\n';assert(axialHi-axialLo<.10f);
+    // Thin axis follows the current grip frame; a world-frozen vector would
+    // read the disk diameter after any wrist/rifle seating change.
+    Point drumAxis{};float thin=100;
+    for(int iz=-8;iz<=8;++iz)for(int iy=-8;iy<=8;++iy)for(int ix=-8;ix<=8;++ix){
+        Point d{float(ix),float(iy),float(iz)};const float L=std::sqrt(dot(d,d));if(L<1)continue;
+        d.x/=L;d.y/=L;d.z/=L;float lo=100,hi=-100;
+        for(size_t i=a.drum.begin;i<a.drum.end;++i)for(auto p:m->panels[i].point){const float v=dot(p,d);lo=std::min(lo,v);hi=std::max(hi,v);}
+        if(hi-lo<thin){thin=hi-lo;drumAxis=d;}
+    }
+    std::cout<<"zaku_top_drum_axial_thickness="<<thin<<" axis="<<drumAxis.x<<','<<drumAxis.y<<','<<drumAxis.z<<'\n';assert(thin<.10f);
     sd_curved_check::crownAndNegative(*m,-.14f);
 }
 } // namespace sd_zaku_check

@@ -306,7 +306,7 @@ void equipment(SdNuBuilder& b,bool detail,NuAssembly* assembly){
     b.box(0,.32f,.235f,.10f,.11f,.035f,navy);
     // A2-21 shield: narrow white kite, pointed lower tip, real arm peg.
     auto anchor=forearmAnchor(b,1,{.12f,-.13f,0});
-    const Point origin{anchor.x+.33f,anchor.y+.12f,anchor.z+.34f};
+    const Point origin{anchor.x+.22f,anchor.y+.08f,anchor.z+.23f};
     b.at(Part::Shield,origin,.26f,0,.70f);auto mount=b.transform({0,0,-.16f});
     b.at(Part::Shield);b.tube(anchor,mount,.033f,.033f,frame,false,8);
     b.at(Part::Shield,origin,.26f,0,.70f);

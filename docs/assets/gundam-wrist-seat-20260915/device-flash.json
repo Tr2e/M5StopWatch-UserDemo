@@ -1,0 +1,41 @@
+{
+  "recorded_at": "2026-09-15T20:57:57+08:00",
+  "base_head": "6b777e5",
+  "working_tree_dirty": true,
+  "scope": "Zaku machine gun reseated in right fist after wrist seating had pushed the receiver forward",
+  "port": "/dev/cu.usbmodem83301",
+  "macos_usb_device": "Espressif USB JTAG/serial debug unit",
+  "usb_vid_pid": "303a:1001",
+  "usb_serial": "44:1B:F6:C1:8A:00",
+  "actively_verified_mac": "44:1B:F6:C1:8A:00",
+  "chip": "ESP32-S3 QFN56 rev 0.2",
+  "baud": 460800,
+  "images": [
+    {
+      "offset": "0x0",
+      "verified": true
+    },
+    {
+      "offset": "0x20000",
+      "file": "build/StopWatch-UserDemo.bin",
+      "bytes": 4022112,
+      "sha256": "68fbc840fb71755849666fcbdf5fa516835d12f13aad01b6a751e63562fbf39f",
+      "verified": true
+    },
+    {
+      "offset": "0x8000",
+      "verified": true
+    },
+    {
+      "offset": "0xd000",
+      "verified": true
+    }
+  ],
+  "elf_sha256": "5d8e552dc06336b4a33c4d3210ec180df3c2e1c2dc1935a559bcc9d339e2b6a4",
+  "flash_result": "All four segments Hash of data verified; hard reset completed",
+  "boot_observation": {
+    "duration_seconds": 12,
+    "serial_capture_completed_and_port_closed": true
+  },
+  "acceptance_boundary": "Write verification and launcher startup only; museum appearance awaits user inspection."
+}

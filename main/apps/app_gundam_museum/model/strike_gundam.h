@@ -8,7 +8,8 @@ struct StrikeAssembly {
     std::array<EyeSocketAssembly,2> eyes{};
     struct Range {size_t begin=0,end=0;};
     std::array<Range,2> vents{}; // Mirrored chest openings and blades.
- std::array<Range,2> palms{}; // Rigid fist shells, excluding wrist pins.
+    std::array<Range,2> wrists{}; // Cuff pins only.
+    std::array<Range,2> palms{}; // Rigid fist shells, excluding wrist pins.
  std::array<Range,5> aile{}; // center, left/right main wings, left/right pods
  SkirtAssembly skirts{};
 };

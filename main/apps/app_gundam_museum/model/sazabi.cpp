@@ -118,7 +118,9 @@ void head(Builder& b,bool detail,SazabiAssembly* a){
 }
 void armFrame(Builder& b,Part p,float s){b.at(p,{s*.85f,2.00f,-.01f},s*(s<0?.17f:.10f),s<0?-.10f:-.03f);}
 Point armAnchor(Builder& b,float s,Point p){armFrame(b,Part::Hands,s);return b.transform(p);}
-Point handAnchor(Builder& b,float s){return armAnchor(b,s,{0,-1.05f,.17f});}
+void forearmFrame(Builder& b,Part p,float s){b.at(p,armAnchor(b,s,{0,-.65f,.05f}),s<0?-.20f:.13f,-.18f);}
+Point handAnchor(Builder& b,float s){forearmFrame(b,Part::Hands,s);return b.transform({0,s<0?-.38f:-.26f,.02f});}
+void handFrame(Builder& b,Part p,float s){b.at(p,handAnchor(b,s),s<0?-.20f:.13f,s<0?.78f:-.18f,-.08f);}
 void arms(Builder& b,bool detail,SazabiAssembly* a){
     for(float s:{-1.f,1.f}){
         armFrame(b,Part::Shoulders,s);if(a)a->shoulders[s>0].begin=b.m.count;
@@ -131,11 +133,17 @@ void arms(Builder& b,bool detail,SazabiAssembly* a){
         if(detail)for(int i=0;i<2;++i){b.box(0,-.20f-i*.15f,.353f,.12f,.105f,.028f,gold,true);b.box(0,-.20f-i*.15f,.372f,.071f,.066f,.020f,black,true);}
         if(a)a->shoulders[s>0].end=b.m.count;
         armFrame(b,Part::Arms,s);b.tube({0,-.22f,0},{0,-.57f,0},.14f,.14f,frame,false,10);
-        b.at(Part::Arms,armAnchor(b,s,{0,-.65f,.05f}),s<0?-.20f:.13f,-.18f);
+        forearmFrame(b,Part::Arms,s);
+        if(a)a->forearms[s>0].begin=b.m.count;
         b.shell({{-.21f,.18f,.20f},{-.14f,.23f,.24f},{.02f,.25f,.25f},{.15f,.23f,.21f},{.23f,.17f,.17f}},red,12);
-        const auto wrist=armAnchor(b,s,{0,-.86f,.08f}),hand=handAnchor(b,s);b.at(Part::Hands);b.tube(wrist,{hand.x,hand.y+.01f,hand.z-.10f},.055f,.055f,frame,false,8);
+        if(a)a->forearms[s>0].end=b.m.count;
+        forearmFrame(b,Part::Arms,s);const auto cuff=b.transform({0,-.16f,0});
+        handFrame(b,Part::Hands,s);const auto socket=b.transform({0,0,-.09f});
+        if(a)a->wrists[s>0].begin=b.m.count;
+        b.at(Part::Hands);b.tube(cuff,socket,.055f,.055f,frame,false,8);
+        if(a)a->wrists[s>0].end=b.m.count;
         if(a)a->palms[s>0].begin=b.m.count;
-        b.at(Part::Hands,hand,s<0?-.20f:.13f,s<0?.78f:0,-.08f);b.box(0,0,0,.27f,.21f,.20f,frame);
+        handFrame(b,Part::Hands,s);b.box(0,s<0?0.f:-.08f,0,.27f,.21f,.20f,frame);
         if(a)a->palms[s>0].end=b.m.count;
     }
 }
@@ -156,16 +164,16 @@ void funnels(Builder& b,SazabiAssembly* a){
     }
 }
 void equipment(Builder& b,SazabiAssembly* a){
-    const auto right=handAnchor(b,-1);b.at(Part::Rifle,right,-.20f,.78f,-.08f);
+    handFrame(b,Part::Rifle,-1);
     if(a)a->rifle.begin=b.m.count;
-    b.box(0,0,.02f,.10f,.27f,.09f,frame);b.box(0,.24f,.23f,.18f,.20f,.48f,black);
+    b.box(0,0,.05f,.10f,.18f,.14f,frame);b.box(0,.24f,.23f,.18f,.20f,.48f,black);
     b.box(0,.23f,.67f,.115f,.13f,.65f,black);b.box(0,.25f,1.05f,.15f,.18f,.22f,black);
     b.box(0,.13f,.37f,.14f,.24f,.20f,black);b.box(0,.38f,.19f,.15f,.09f,.26f,deep);
     b.box(0,.26f,1.163f,.057f,.063f,.015f,frame,true);
     if(a)a->rifle.end=b.m.count;
-    const auto left=armAnchor(b,1,{.15f,-.53f,.05f});const Point center{left.x+.59f,left.y-.10f,left.z+.24f};
+    const auto left=armAnchor(b,1,{.15f,-.53f,.05f});const Point center{left.x+.50f,left.y-.085f,left.z+.205f};
     if(a)a->shieldMount.begin=b.m.count;
-    b.at(Part::Shield);b.tube(left,{center.x-.07f,center.y,center.z-.10f},.045f,.045f,frame,false,8);
+    b.at(Part::Shield);b.tube(left,{center.x-.06f,center.y,center.z-.09f},.045f,.045f,frame,false,8);
     if(a)a->shieldMount.end=b.m.count;
     b.at(Part::Shield,center,.08f,0,.46f);if(a)a->shield.begin=b.m.count;
     b.cover({{-.22f,.77f,.04f},{.18f,.79f,.04f},{.32f,.51f,.04f},{.26f,.12f,.04f},{.103f,-.62f,.04f},{-.102f,-.62f,.04f},{-.25f,.11f,.04f},{-.32f,.49f,.04f}},.13f,red,.009f);

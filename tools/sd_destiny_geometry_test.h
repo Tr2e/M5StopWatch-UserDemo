@@ -3,6 +3,7 @@
 #include "sd_rx78_equipment_test.h"
 #include "sd_eye_socket_test.h"
 #include "sd_skirt_assembly_test.h"
+#include "sd_wrist_assembly_test.h"
 #include <initializer_list>
 #include <iostream>
 #include <memory>
@@ -65,10 +66,10 @@ inline void check(const Mesh& production){
         <<" wings="<<supports[3]<<','<<supports[4]<<" sword="<<supports[5]<<" cannon="<<supports[6]<<'\n';
     for(auto count:supports)assert(count>0);
     for(int side=0;side<2;++side){
-        const auto parent=between(*m,a.wrists[side],a.forearms[side]);
-        const auto child=between(*m,a.wrists[side],a.palms[side]);
-        std::cout<<"sd_destiny wrist="<<side<<" forearm="<<parent<<" palm="<<child<<'\n';
-        assert(parent>0&&child>0);
+        sd_wrist_check::Range wrist{a.wrists[side].begin,a.wrists[side].end};
+        sd_wrist_check::Range palm{a.palms[side].begin,a.palms[side].end};
+        sd_wrist_check::check(*m,wrist,palm,"destiny",side);
+        sd_wrist_check::checkDetached(*m,wrist,palm);
         // Previous white outer / yellow inner interpretation was wrong.
         // Every antenna surface must belong to the yellow material family.
         const auto fin=a.fins[side];assert(fin.end-fin.begin>=20&&fin.end-fin.begin<=32);

@@ -246,7 +246,7 @@ Point armAnchor(SdStrikeBuilder& b,float side,Point p){armFrame(b,Part::Hands,si
 void forearmFrame(SdStrikeBuilder& b,Part part,float side){b.at(part,armAnchor(b,side,{0,-.385f,0}),side<0?-.58f:.16f,side<0?-.30f:-.08f);}
 Point forearmAnchor(SdStrikeBuilder& b,float side,Point p){forearmFrame(b,Part::Hands,side);return b.transform(p);}
 void handFrame(SdStrikeBuilder& b,Part part,float side){
-    b.at(part,forearmAnchor(b,side,{0,side<0?-.47f:-.37f,side<0?.17f:0.f}),side<0?-.55f:.16f,side<0?.85f:-.08f,side<0?-.06f:0);
+    b.at(part,forearmAnchor(b,side,{0,side<0?-.36f:-.30f,side<0?.12f:0.f}),side<0?-.55f:.16f,side<0?.85f:-.08f,side<0?-.06f:0);
 }
 void arms(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
     for(float s:{-1.f,1.f}){
@@ -271,11 +271,13 @@ void arms(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
         b.shell({{-.345f,.105f,.12f},{-.19f,.135f,.14f}},white);
         b.tube({-.13f,-.385f,0},{.13f,-.385f,0},.085f,.085f,frame,false,8);
         forearmFrame(b,Part::Arms,s);
-        b.shell({{-.25f,.145f,.16f},{-.07f,.16f,.19f},{-.025f,.12f,.15f}},white);
-        b.cover({{-.12f,-.06f,.215f},{.12f,-.06f,.215f},{.145f,-.18f,.215f},{.095f,-.25f,.215f},{-.12f,-.24f,.215f}},.022f,white,.006f);
-        if(detail)b.cover({{-.035f,-.055f,.231f},{-.01f,-.055f,.231f},{.02f,-.14f,.231f},{.10f,-.16f,.231f},{.10f,-.18f,.231f},{-.002f,-.15f,.231f}},.008f,frame,.002f);
-        auto cuff=forearmAnchor(b,s,{0,-.235f,0});handFrame(b,Part::Hands,s);auto socket=b.transform({0,0,-.11f});
+        b.shell({{-.20f,.145f,.16f},{-.06f,.16f,.19f},{.02f,.13f,.16f}},white);
+        b.cover({{-.12f,-.05f,.215f},{.12f,-.05f,.215f},{.13f,-.18f,.215f},{.09f,-.26f,.215f},{-.12f,-.25f,.215f}},.022f,white,.006f);
+        if(detail)b.cover({{-.035f,-.045f,.231f},{-.01f,-.045f,.231f},{.02f,-.12f,.231f},{.10f,-.14f,.231f},{.10f,-.16f,.231f},{-.002f,-.13f,.231f}},.008f,frame,.002f);
+        auto cuff=forearmAnchor(b,s,{0,-.24f,0});handFrame(b,Part::Hands,s);auto socket=b.transform({0,0,-.11f});
+        if(assembly)assembly->wrists[s>0].begin=b.m.count;
         b.at(Part::Hands);b.tube(cuff,socket,.057f,.057f,frame,false,8);
+        if(assembly)assembly->wrists[s>0].end=b.m.count;
         handFrame(b,Part::Hands,s);
         if(assembly)assembly->palms[s>0].begin=b.m.count;
         b.box(0,0,-.082f,.23f,.19f,.055f,frame);
@@ -286,7 +288,7 @@ void arms(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
 }
 void equipment(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
     handFrame(b,Part::Rifle,-1);
-    b.box(0,0,0,.075f,.25f,.065f,black);
+    b.box(0,0,0,.075f,.22f,.065f,black);
     b.box(0,.21f,.33f,.12f,.19f,.59f,frame);
     b.box(0,.24f,.37f,.14f,.08f,.66f,black);
     b.tube({0,.21f,.61f},{0,.21f,1.12f},.039f,.024f,black,true,8);
@@ -296,7 +298,7 @@ void equipment(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
     b.tube({0,.38f,.205f},{0,.38f,.25f},.04f,.04f,black,true,8);
     b.box(0,.13f,.45f,.11f,.24f,.08f,black);
     const auto anchor=forearmAnchor(b,1,{.125f,-.13f,0});
-    const Point origin{anchor.x+.34f,anchor.y+.12f,anchor.z+.35f};
+    const Point origin{anchor.x+.26f,anchor.y+.09f,anchor.z+.27f};
     b.at(Part::Shield,origin,.28f,0,.70f);auto mount=b.transform({0,0,-.16f});
     b.at(Part::Shield);b.tube(anchor,mount,.032f,.032f,frame,false,8);
     b.at(Part::Shield,origin,.28f,0,.70f);

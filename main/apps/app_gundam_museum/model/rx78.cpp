@@ -338,10 +338,10 @@ void equipment(SdBuilder& b){
     b.box(.13f,.10f,.20f,.23f,.065f,.075f,frame);
     auto anchor=armAnchor(b,1,{0,-.51f,0});
     // C1-11/B13 plate is outboard and forward; B16 bridges to forearm.
-    const Point shieldOrigin{anchor.x+.43f,anchor.y,anchor.z+.34f};
+    const Point shieldOrigin{anchor.x+.42f,anchor.y,anchor.z+.30f};
     b.at(Part::Shield,shieldOrigin,.42f,0,.72f);
     auto mount=b.transform({0,0,-.175f});mount.y+=.14f;
-    const Point socket{anchor.x+.16f,anchor.y,anchor.z+.12f};
+    const Point socket{anchor.x+.16f,anchor.y,anchor.z+.10f};
     b.at(Part::Shield);b.tube(socket,mount,.038f,.038f,frame,false,8);
     b.at(Part::Shield,shieldOrigin,.42f,0,.72f);
     // B16's U-shaped handle stands off the shield rear, with a forearm peg.

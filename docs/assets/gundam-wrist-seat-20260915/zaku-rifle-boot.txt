@@ -1,0 +1,221 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420a6765
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xd24
+load:0x403cb700,len:0x2ef0
+entry 0x403c8924
+I (24) boot: ESP-IDF v5.5.4 2nd stage bootloader
+I (24) boot: compile time Aug  8 2026 12:48:04
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 16MB
+I (43) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (50) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00004000
+I (62) boot:  1 otadata          OTA data         01 00 0000d000 00002000
+I (69) boot:  2 phy_init         RF data          01 01 0000f000 00001000
+I (75) boot:  3 ota_0            OTA app          00 10 00020000 004f0000
+I (82) boot:  4 ota_1            OTA app          00 11 00510000 004f0000
+I (89) boot:  5 storage          Unknown data     01 81 00a00000 00400000
+I (95) boot:  6 coredump         Unknown data     01 03 00e00000 00010000
+I (102) boot: End of partition table
+I (105) esp_image: segment 0: paddr=00020020 vaddr=3c1f0020 size=1d12e8h (1905384) map
+I (448) esp_image: segment 1: paddr=001f1310 vaddr=3fc9ea00 size=0590ch ( 22796) load
+I (453) esp_image: segment 2: paddr=001f6c24 vaddr=40374000 size=093f4h ( 37876) load
+I (462) esp_image: segment 3: paddr=00200020 vaddr=42000020 size=1e49e8h (1985000) map
+I (812) esp_image: segment 4: paddr=003e4a10 vaddr=4037d3f4 size=11504h ( 70916) load
+I (828) esp_image: segment 5: paddr=003f5f1c vaddr=50000000 size=00020h (    32) load
+I (839) boot: Loaded app from partition at offset 0x20000
+I (839) boot: Disabling RNG early entropy source...
+I (849) octal_psram: vendor id    : 0x0d (AP)
+I (849) octal_psram: dev id       : 0x02 (generation 3)
+I (849) octal_psram: density      : 0x03 (64 Mbit)
+I (851) octal_psram: good-die     : 0x01 (Pass)
+I (856) octal_psram: Latency      : 0x01 (Fixed)
+I (860) octal_psram: VCC          : 0x01 (3V)
+I (864) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (869) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (874) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (878) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (884) octal_psram: DriveStrength: 0x00 (1/1)
+I (888) MSPI Timing: Enter psram timing tuning
+I (893) esp_psram: Found 8MB PSRAM device
+I (896) esp_psram: Speed: 80MHz
+I (899) cpu_start: Multicore app
+I (1334) esp_psram: SPI SRAM memory test OK
+I (1342) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (1343) cpu_start: Pro cpu start user code
+I (1343) cpu_start: cpu freq: 240000000 Hz
+I (1345) app_init: Application information:
+I (1349) app_init: Project name:     StopWatch-UserDemo
+I (1354) app_init: App version:      V0.5-206-g6b777e5-dirty
+I (1359) app_init: Compile time:     Sep 15 2026 19:03:34
+I (1364) app_init: ELF file SHA256:  5d8e552dc...
+I (1369) app_init: ESP-IDF:          v5.5.4
+I (1373) efuse_init: Min chip rev:     v0.0
+I (1377) efuse_init: Max chip rev:     v0.99 
+I (1381) efuse_init: Chip rev:         v0.2
+I (1385) heap_init: Initializing. RAM available for dynamic allocation:
+I (1391) heap_init: At 3FCADF88 len 0003B788 (237 KiB): RAM
+I (1396) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (1401) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (1407) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (1412) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator
+I (1420) spi_flash: detected chip: generic
+I (1423) spi_flash: flash io: dio
+I (1426) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (1432) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (1439) main_task: Started on CPU0
+I (1442) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1450) main_task: Calling app_main()
+[1789477063462] [[32minfo[0m] [HAL] creating hal instance
+[1789477063467] [[32minfo[0m] [HAL] init
+[1789477063479] [[32minfo[0m] [HAL] i2c init
+E (1472) i2c.master: this port has not been initialized, please initialize it first
+I (1475) i2c_bus: i2c0 bus inited
+I (1477) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+I (1485) i2c_bus: found i2c device address = 0x15
+I (1487) i2c_bus: found i2c device address = 0x18
+I (1495) i2c_bus: found i2c device address = 0x32
+I (1500) i2c_bus: found i2c device address = 0x4f
+I (1503) i2c_bus: found i2c device address = 0x68
+I (1505) i2c_bus: found i2c device address = 0x6e
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- 15 -- -- 18 -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- 32 -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 4f 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- 6e -- 
+70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+[1789477063560] [[32minfo[0m] [HAL-PMIC] pmic init
+I (1570) M5PM1_SYS: Device: ID=0x50 MODEL=0x20 HW=0x05 SW=0x53(S)
+I (1573) M5PM1_I2C: I2C config set and verified: sleep=0, speed=100K
+I (1598) M5PM1_I2C: M5PM1 initialized at address 0x6E (I2C: 100000 Hz)
+I (1601) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1603) M5PM1_I2C: I2C sleep time set and verified to 0
+I (1607) M5PM1_SYS: Watchdog set to 0 sec
+I (1611) M5PM1_PWR: Charge Enabled
+I (1695) M5PM1_SYS: Single Reset: Disabled
+[1789477063708] [[32minfo[0m] [HAL-PMIC] start bat reading task
+[1789477063708] [[32minfo[0m] [HAL-IOE] init
+I (1701) M5IOE1_I2C: Initializing M5IOE1 with 100KHz (device default)
+I (1716) M5IOE1_SYS: Device UID: 0x2BF0, FW Version: 57
+I (1717) M5IOE1_I2C: Current I2C speed matches user request (400K)
+I (1718) M5IOE1_I2C: I2C config set and verified: sleep=0, speed=400K, wake=falling, pull=on
+I (1735) M5IOE1_I2C: M5IOE1 initialized at address 0x4F (I2C: 400000 Hz)
+I (1736) M5IOE1_IRQ: Interrupt mode -> POLLING (pause if I2C sleep on; resume when off)
+[1789477063747] [[32minfo[0m] [HAL-IOE] init success, addr: 0x4F
+I (1747) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1751) M5IOE1_I2C: I2C sleep time set and verified to 0
+I (1769) M5IOE1_GPIO: Pin 8 mode set and verified: OUTPUT (0x03)
+I (1783) M5IOE1_GPIO: Pin 7 mode set and verified: OUTPUT (0x03)
+I (1797) M5IOE1_GPIO: Pin 9 mode set and verified: OUTPUT (0x03)
+I (1810) M5IOE1_GPIO: Pin 3 mode set and verified: OUTPUT (0x03)
+I (1823) M5IOE1_GPIO: Pin 4 mode set and verified: OUTPUT (0x03)
+I (1836) M5IOE1_GPIO: Pin 0 mode set and verified: OUTPUT (0x03)
+I (1849) M5IOE1_GPIO: Pin 2 mode set and verified: OUTPUT (0x03)
+I (1851) M5IOE1_GPIO: Pin 7 digital write and verified: 1
+I (1853) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (1856) M5IOE1_GPIO: Pin 9 digital write and verified: 0
+I (1861) M5IOE1_GPIO: Pin 4 digital write and verified: 1
+I (1866) M5IOE1_GPIO: Pin 0 digital write and verified: 0
+I (1871) M5IOE1_GPIO: Pin 2 digital write and verified: 1
+I (1879) M5IOE1_PWM: PWM frequency set and verified: 5000 Hz
+[1789477063888] [[32minfo[0m] [HAL-IOE] start vibrator task
+I (1897) M5IOE1_PWM: PWM ch0 verified: duty=0 pol=Norm en=On
+[1789477064024] [[32minfo[0m] [HAL-Display] display init
+[1789477064259] [[32minfo[0m] [HAL-Display] create full screen canvas
+[1789477064273] [[32minfo[0m] [HAL-Display] brightness loaded from settings: 40
+[1789477064274] [[32minfo[0m] [HAL-Display] touchpad init
+[1789477064274] [[32minfo[0m] [HAL-IOE] touchpad reset
+I (2273) M5IOE1_GPIO: Pin 3 digital write and verified: 0
+I (2287) M5IOE1_GPIO: Pin 3 digital write and verified: 1
+I (2339) CST820: Chip ID: 0xb7, Soft Ver: 0x02
+[1789477064347] [[32minfo[0m] [HAL-Display] lvgl init
+[1789477064355] [[32minfo[0m] [HAL-Audio] init
+[1789477064358] [[32minfo[0m] [HAL-Audio] start audio play task
+[1789477064359] [[32minfo[0m] [HAL-Audio] i2s init
+I (2362) ES8311: Work in Slave mode
+I (2368) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2370) I2S_IF: STD Mode 1 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2370) I2S_IF: channel mode 0 bits:16/16 channel:2 mask:1
+I (2375) I2S_IF: STD Mode 0 bits:16/16 channel:2 sample_rate:44100 mask:1
+I (2401) Adev_Codec: Open codec device OK
+[1789477064410] [[32minfo[0m] [HAL-IOE] set speaker enable
+I (2405) M5IOE1_GPIO: Pin 9 digital write and verified: 1
+[1789477064425] [[32minfo[0m] [HAL-Audio] volume loaded from settings: 0
+[1789477064426] [[32minfo[0m] [HAL-Audio] set speaker volume to 0
+[1789477064429] [[32minfo[0m] [HAL-IMU] init
+[1789477065484] [[32minfo[0m] [HAL-RTC] init
+[1789477065486] [[32minfo[0m] [HAL-RTC] load timezone from nvs: UTC-8
+[1789477066000] [[32minfo[0m] [HAL-RTC] rtc synced to system (UTC): 2026-09-15 12:57:46
+[1789477066002] [[32minfo[0m] [HAL-BTN] init
+[1789477066007] [[32minfo[0m] [HAL-BTN] config loaded from settings: sfx=true, vibrate=true
+[1789477066015] [[32minfo[0m] [HAL-FS] init
+I (3500) wear_levelling: Mounting FAT filesystem
+I (3506) wear_levelling: Done
+I (3508) WifiManager: Initializing...
+I (3512) pp: pp rom version: e7ae62f
+I (3514) net80211: net80211 rom version: e7ae62f
+I (3520) wifi:wifi driver task: 3fccc794, prio:23, stack:6656, core=0
+I (3526) wifi:wifi firmware version: 0947e8b
+I (3529) wifi:wifi certification version: v7.0
+I (3533) wifi:config NVS flash: disabled
+I (3536) wifi:config nano formatting: disabled
+I (3541) wifi:Init data frame dynamic rx buffer num: 32
+I (3546) wifi:Init static rx mgmt buffer num: 5
+I (3550) wifi:Init management short buffer num: 32
+I (3554) wifi:Init dynamic tx buffer num: 32
+I (3558) wifi:Init static tx FG buffer num: 2
+I (3562) wifi:Init static rx buffer size: 1600
+I (3567) wifi:Init static rx buffer num: 10
+I (3570) wifi:Init dynamic rx buffer num: 32
+I (3575) wifi_init: rx ba win: 6
+I (3577) wifi_init: accept mbox: 6
+I (3580) wifi_init: tcpip mbox: 32
+I (3584) wifi_init: udp mbox: 6
+I (3586) wifi_init: tcp mbox: 6
+I (3589) wifi_init: tcp tx win: 5760
+I (3593) wifi_init: tcp rx win: 5760
+I (3596) wifi_init: tcp mss: 1440
+I (3599) wifi_init: WiFi IRAM OP enabled
+I (3603) wifi_init: WiFi RX IRAM OP enabled
+I (3607) WifiManager: Initialized
+
+ _____ _____ _____ _____ _____ _____ _____ _____
+|     |     |     |   | |     |  _  |  |  |   __|
+| | | |  |  |  |  | | | |   --|     |    -|   __|
+|_|_|_|_____|_____|_|___|_____|__|__|__|__|_____|
+
+- @author Forairaaaaa
+- @version 2.3.3
+- @build at 17:29:29 Aug 31 2026
+
+[1789477066156] [[32minfo[0m] [Launcher] on create
+[1789477066157] [[32minfo[0m] [Launcher] on open
+[1789477066162] [[32minfo[0m] [HAL] skip guide, launch count: 5
+[1789477066168] [[32minfo[0m] [LauncherView] init
+I (3654) M5PM1_PWR: Boost Enabled
+[1789477066179] [[32minfo[0m] [HAL-PMIC] Grove 5V enabled
+E (3682) i2c.master: this port has not been initialized, please initialize it first
+I (3683) i2c_bus: i2c1 bus inited
+I (3683) i2c_bus: I2C Bus V2 Config Succeed, Version: 1.5.0
+[1789477066379] [[32minfo[0m] [HAL-Audio] play boot sfx
+[1789477066440] [[32minfo[0m] [Typhoon] on create
+[1789477066441] [[32minfo[0m] [Bot Lab] on create
+[1789477066442] [[32minfo[0m] [Glow Field] on create
+[1789477066444] [[32minfo[0m] [Vector Run] on create
+[1789477066449] [[32minfo[0m] [Mini 4WD] on create
+[1789477066454] [[32minfo[0m] [RuView] on create
+[1789477066458] [[32minfo[0m] [LuckyWheel] on create
+[1789477066463] [[32minfo[0m] [Settings] on create

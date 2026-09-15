@@ -142,7 +142,9 @@ void head(Builder& b,bool detail,DestinyAssembly* a){
 
 void armFrame(Builder& b,Part p,float s){b.at(p,{s*.76f,1.92f,0},s*(s<0?.15f:.10f),s<0?-.08f:-.03f);}
 Point armAnchor(Builder& b,float s,Point p){armFrame(b,Part::Hands,s);return b.transform(p);}
-Point handAnchor(Builder& b,float s){return armAnchor(b,s,{0,-.81f,.10f});}
+void forearmFrame(Builder& b,Part p,float s){b.at(p,armAnchor(b,s,{0,-.43f,.02f}),s*.10f,-.08f);}
+Point handAnchor(Builder& b,float s){forearmFrame(b,Part::Hands,s);return b.transform({0,s<0?-.35f:-.26f,.02f});}
+void handFrame(Builder& b,Part p,float s){b.at(p,handAnchor(b,s),s*.10f,s<0?.72f:-.08f,-.05f);}
 void arms(Builder& b,bool detail,DestinyAssembly* a){
     for(float s:{-1.f,1.f}){
         armFrame(b,Part::Shoulders,s);b.tube({-.14f,0,0},{.14f,0,0},.10f,.10f,frame,false,8);
@@ -152,17 +154,18 @@ void arms(Builder& b,bool detail,DestinyAssembly* a){
         if(detail)b.cover({{s*.27f,.15f,.047f},{s*.41f,.28f,.012f},{s*.39f,.15f,.042f},{s*.27f,.055f,.079f}},.01f,black,.002f);
         armFrame(b,Part::Arms,s);b.shell({{-.29f,.12f,.12f},{-.14f,.15f,.15f}},white,10);
         b.tube({-.11f,-.34f,0},{.11f,-.34f,0},.08f,.08f,frame,false,8);
-        b.at(Part::Arms,armAnchor(b,s,{0,-.43f,.02f}),s*.10f,-.08f);
+        forearmFrame(b,Part::Arms,s);
         if(a)a->forearms[s>0].begin=b.m.count;
         b.shell({{-.20f,.15f,.16f},{-.07f,.18f,.19f},{.12f,.16f,.17f},{.20f,.12f,.13f}},white,10);
         if(detail)b.cover({{-.10f,.04f,.19f},{.10f,.04f,.19f},{.12f,-.15f,.21f},{-.10f,-.16f,.21f}},.025f,blue,.004f);
         if(a)a->forearms[s>0].end=b.m.count;
-        const auto wrist=armAnchor(b,s,{0,-.60f,.04f}),hand=handAnchor(b,s);
+        forearmFrame(b,Part::Arms,s);const auto cuff=b.transform({0,-.16f,0});
+        handFrame(b,Part::Hands,s);const auto socket=b.transform({0,0,-.09f});
         if(a)a->wrists[s>0].begin=b.m.count;
-        b.at(Part::Hands);b.tube(wrist,{hand.x,hand.y+.02f,hand.z-.10f},.052f,.052f,frame,false,8);
+        b.at(Part::Hands);b.tube(cuff,socket,.052f,.052f,frame,false,8);
         if(a)a->wrists[s>0].end=b.m.count;
         if(a)a->palms[s>0].begin=b.m.count;
-        b.at(Part::Hands,hand,s*.10f,s<0?.72f:0,-.05f);b.box(0,0,0,.23f,.19f,.18f,frame);
+        handFrame(b,Part::Hands,s);b.box(0,s<0?0.f:-.08f,0,.23f,.19f,.18f,frame);
         if(a)a->palms[s>0].end=b.m.count;
     }
 }
@@ -225,16 +228,16 @@ void backpackAndWeapons(Builder& b,bool detail,DestinyAssembly* a){
 }
 
 void handheld(Builder& b,DestinyAssembly* a){
-    const auto right=handAnchor(b,-1);b.at(Part::Rifle,right,-.10f,.72f,-.05f);
+    handFrame(b,Part::Rifle,-1);
     if(a)a->rifle.begin=b.m.count;
-    b.box(0,0,.01f,.09f,.25f,.08f,frame);
+    b.box(0,0,.05f,.09f,.18f,.14f,frame);
     b.box(0,.20f,.29f,.14f,.18f,.52f,frame);
     b.box(0,.21f,.67f,.09f,.09f,.40f,black);
     b.tube({0,.21f,.78f},{0,.21f,1.04f},.034f,.022f,frame,true,8);
     b.box(0,.10f,.37f,.11f,.23f,.09f,black);
     b.box(0,.33f,.16f,.10f,.08f,.14f,red);
     if(a)a->rifle.end=b.m.count;
-    const auto left=armAnchor(b,1,{.13f,-.54f,.07f});const Point center{left.x+.31f,left.y-.02f,left.z+.23f};
+    const auto left=armAnchor(b,1,{.13f,-.54f,.07f});const Point center{left.x+.20f,left.y-.01f,left.z+.15f};
     b.at(Part::Shield);if(a)a->shieldMount.begin=b.m.count;
     b.tube(left,center,.038f,.042f,frame,false,8);
     if(a)a->shieldMount.end=b.m.count;

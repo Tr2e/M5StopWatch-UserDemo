@@ -11,7 +11,7 @@ using namespace gundam_museum;
 inline bool permitted(Part a,Part b,Point p){
     // Only physical peg insertions, expressed in this model's own coordinates.
     return (a==Part::Shield && b==Part::Arms && p.x>.92f && p.x<.94f &&
-        p.y>1.39f && p.y<1.47f && p.z>.01f && p.z<.115f) ||
+        p.y>1.39f && p.y<1.48f && p.z>.01f && p.z<.115f) ||
         (a==Part::Bazooka && b==Part::Backpack && p.x>-.027f && p.x<.067f &&
         p.y>1.583f && p.y<1.657f && p.z>-.554f && p.z<-.54f);
 }

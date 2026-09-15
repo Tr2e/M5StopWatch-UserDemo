@@ -4,6 +4,7 @@
 #include "sd_curved_shape_test.h"
 #include "sd_eye_socket_test.h"
 #include "sd_skirt_assembly_test.h"
+#include "sd_wrist_assembly_test.h"
 #include <memory>
 
 namespace sd_sazabi_check {
@@ -33,7 +34,13 @@ inline void reportRange(const Mesh& m,SazabiAssembly::Range r,std::initializer_l
 inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();SazabiAssembly a;buildSazabi(*m,{},SazabiStage::Final,&a);assert(!m->overflowed&&m->count==production.count);
     sd_skirt_check::check(*m,a.skirts,true,"sazabi");
-    assert(a.rifle.end>a.rifle.begin&&a.shield.end>a.shield.begin&&a.headMount.end>a.headMount.begin&&a.mask.end>a.mask.begin);for(auto r:a.funnels)assert(r.end>r.begin+20);for(auto r:a.shoulders)assert(r.end>r.begin+30);for(auto r:a.palms)assert(r.end>r.begin);
+    assert(a.rifle.end>a.rifle.begin&&a.shield.end>a.shield.begin&&a.headMount.end>a.headMount.begin&&a.mask.end>a.mask.begin);for(auto r:a.funnels)assert(r.end>r.begin+20);for(auto r:a.shoulders)assert(r.end>r.begin+30);for(auto r:a.palms)assert(r.end>r.begin);for(auto r:a.wrists)assert(r.end>r.begin);for(auto r:a.forearms)assert(r.end>r.begin);
+    for(int side=0;side<2;++side){
+        sd_wrist_check::Range wrist{a.wrists[side].begin,a.wrists[side].end};
+        sd_wrist_check::Range palm{a.palms[side].begin,a.palms[side].end};
+        sd_wrist_check::check(*m,wrist,palm,"sazabi",side);
+        sd_wrist_check::checkDetached(*m,wrist,palm);
+    }
     auto bounds=[&](SazabiAssembly::Range r){Point lo{100,100,100},hi{-100,-100,-100};for(size_t i=r.begin;i<r.end;++i)for(auto p:m->panels[i].point){lo.x=std::min(lo.x,p.x);lo.y=std::min(lo.y,p.y);lo.z=std::min(lo.z,p.z);hi.x=std::max(hi.x,p.x);hi.y=std::max(hi.y,p.y);hi.z=std::max(hi.z,p.z);}return std::pair<Point,Point>{lo,hi};};
     const auto headMount=bounds(a.headMount),mask=bounds(a.mask);
     const auto lens=bounds(a.eyeLens);
