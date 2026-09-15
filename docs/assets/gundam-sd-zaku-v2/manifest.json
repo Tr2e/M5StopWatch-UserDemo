@@ -1,0 +1,468 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {
+      "id": "ms-06s-sdcs-char-zaku-ii",
+      "required_views": [
+        "equipped",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "unarmed",
+        "drag",
+        "gray",
+        "head",
+        "blockout-study-arm-left",
+        "blockout-study-arm-right",
+        "blockout-study-chest-front",
+        "blockout-study-chest",
+        "blockout-study-face-front",
+        "blockout-study-face-quarter",
+        "blockout-study-face-side",
+        "blockout-study-front",
+        "blockout-study-gray-equipped",
+        "blockout-study-gray",
+        "blockout-study-grip-assembly",
+        "blockout-study-grip-side",
+        "blockout-study-heat-hawk",
+        "blockout-study-leg-side",
+        "blockout-study-leg",
+        "blockout-study-other-side",
+        "blockout-study-quarter-right",
+        "blockout-study-rear-equipped",
+        "blockout-study-rear",
+        "blockout-study-rifle",
+        "blockout-study-shield-mount",
+        "blockout-study-shield-side",
+        "blockout-study-shield",
+        "blockout-study-side",
+        "blockout-study-standing",
+        "blockout-study-top",
+        "blockout-study-underside",
+        "identity-study-arm-left",
+        "identity-study-arm-right",
+        "identity-study-chest-front",
+        "identity-study-chest",
+        "identity-study-face-front",
+        "identity-study-face-quarter",
+        "identity-study-face-side",
+        "identity-study-front",
+        "identity-study-gray-equipped",
+        "identity-study-gray",
+        "identity-study-grip-assembly",
+        "identity-study-grip-side",
+        "identity-study-heat-hawk",
+        "identity-study-leg-side",
+        "identity-study-leg",
+        "identity-study-other-side",
+        "identity-study-quarter-right",
+        "identity-study-rear-equipped",
+        "identity-study-rear",
+        "identity-study-rifle",
+        "identity-study-shield-mount",
+        "identity-study-shield-side",
+        "identity-study-shield",
+        "identity-study-side",
+        "identity-study-standing",
+        "identity-study-top",
+        "identity-study-underside",
+        "study-arm-left",
+        "study-arm-right",
+        "study-chest-front",
+        "study-chest",
+        "study-face-front",
+        "study-face-quarter",
+        "study-face-side",
+        "study-front",
+        "study-gray-equipped",
+        "study-gray",
+        "study-grip-assembly",
+        "study-grip-side",
+        "study-heat-hawk",
+        "study-leg-side",
+        "study-leg",
+        "study-other-side",
+        "study-quarter-right",
+        "study-rear-equipped",
+        "study-rear",
+        "study-rifle",
+        "study-shield-mount",
+        "study-shield-side",
+        "study-shield",
+        "study-side",
+        "study-standing",
+        "study-top",
+        "study-underside"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "zaku-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "zaku-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "zaku-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "zaku-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "zaku-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "zaku-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "zaku-unarmed.png"
+        },
+        {
+          "view": "drag",
+          "file": "zaku-drag.png"
+        },
+        {
+          "view": "gray",
+          "file": "zaku-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "zaku-head.png"
+        },
+        {
+          "view": "blockout-study-arm-left",
+          "file": "blockout-study-arm-left.png"
+        },
+        {
+          "view": "blockout-study-arm-right",
+          "file": "blockout-study-arm-right.png"
+        },
+        {
+          "view": "blockout-study-chest-front",
+          "file": "blockout-study-chest-front.png"
+        },
+        {
+          "view": "blockout-study-chest",
+          "file": "blockout-study-chest.png"
+        },
+        {
+          "view": "blockout-study-face-front",
+          "file": "blockout-study-face-front.png"
+        },
+        {
+          "view": "blockout-study-face-quarter",
+          "file": "blockout-study-face-quarter.png"
+        },
+        {
+          "view": "blockout-study-face-side",
+          "file": "blockout-study-face-side.png"
+        },
+        {
+          "view": "blockout-study-front",
+          "file": "blockout-study-front.png"
+        },
+        {
+          "view": "blockout-study-gray-equipped",
+          "file": "blockout-study-gray-equipped.png"
+        },
+        {
+          "view": "blockout-study-gray",
+          "file": "blockout-study-gray.png"
+        },
+        {
+          "view": "blockout-study-grip-assembly",
+          "file": "blockout-study-grip-assembly.png"
+        },
+        {
+          "view": "blockout-study-grip-side",
+          "file": "blockout-study-grip-side.png"
+        },
+        {
+          "view": "blockout-study-heat-hawk",
+          "file": "blockout-study-heat-hawk.png"
+        },
+        {
+          "view": "blockout-study-leg-side",
+          "file": "blockout-study-leg-side.png"
+        },
+        {
+          "view": "blockout-study-leg",
+          "file": "blockout-study-leg.png"
+        },
+        {
+          "view": "blockout-study-other-side",
+          "file": "blockout-study-other-side.png"
+        },
+        {
+          "view": "blockout-study-quarter-right",
+          "file": "blockout-study-quarter-right.png"
+        },
+        {
+          "view": "blockout-study-rear-equipped",
+          "file": "blockout-study-rear-equipped.png"
+        },
+        {
+          "view": "blockout-study-rear",
+          "file": "blockout-study-rear.png"
+        },
+        {
+          "view": "blockout-study-rifle",
+          "file": "blockout-study-rifle.png"
+        },
+        {
+          "view": "blockout-study-shield-mount",
+          "file": "blockout-study-shield-mount.png"
+        },
+        {
+          "view": "blockout-study-shield-side",
+          "file": "blockout-study-shield-side.png"
+        },
+        {
+          "view": "blockout-study-shield",
+          "file": "blockout-study-shield.png"
+        },
+        {
+          "view": "blockout-study-side",
+          "file": "blockout-study-side.png"
+        },
+        {
+          "view": "blockout-study-standing",
+          "file": "blockout-study-standing.png"
+        },
+        {
+          "view": "blockout-study-top",
+          "file": "blockout-study-top.png"
+        },
+        {
+          "view": "blockout-study-underside",
+          "file": "blockout-study-underside.png"
+        },
+        {
+          "view": "identity-study-arm-left",
+          "file": "identity-study-arm-left.png"
+        },
+        {
+          "view": "identity-study-arm-right",
+          "file": "identity-study-arm-right.png"
+        },
+        {
+          "view": "identity-study-chest-front",
+          "file": "identity-study-chest-front.png"
+        },
+        {
+          "view": "identity-study-chest",
+          "file": "identity-study-chest.png"
+        },
+        {
+          "view": "identity-study-face-front",
+          "file": "identity-study-face-front.png"
+        },
+        {
+          "view": "identity-study-face-quarter",
+          "file": "identity-study-face-quarter.png"
+        },
+        {
+          "view": "identity-study-face-side",
+          "file": "identity-study-face-side.png"
+        },
+        {
+          "view": "identity-study-front",
+          "file": "identity-study-front.png"
+        },
+        {
+          "view": "identity-study-gray-equipped",
+          "file": "identity-study-gray-equipped.png"
+        },
+        {
+          "view": "identity-study-gray",
+          "file": "identity-study-gray.png"
+        },
+        {
+          "view": "identity-study-grip-assembly",
+          "file": "identity-study-grip-assembly.png"
+        },
+        {
+          "view": "identity-study-grip-side",
+          "file": "identity-study-grip-side.png"
+        },
+        {
+          "view": "identity-study-heat-hawk",
+          "file": "identity-study-heat-hawk.png"
+        },
+        {
+          "view": "identity-study-leg-side",
+          "file": "identity-study-leg-side.png"
+        },
+        {
+          "view": "identity-study-leg",
+          "file": "identity-study-leg.png"
+        },
+        {
+          "view": "identity-study-other-side",
+          "file": "identity-study-other-side.png"
+        },
+        {
+          "view": "identity-study-quarter-right",
+          "file": "identity-study-quarter-right.png"
+        },
+        {
+          "view": "identity-study-rear-equipped",
+          "file": "identity-study-rear-equipped.png"
+        },
+        {
+          "view": "identity-study-rear",
+          "file": "identity-study-rear.png"
+        },
+        {
+          "view": "identity-study-rifle",
+          "file": "identity-study-rifle.png"
+        },
+        {
+          "view": "identity-study-shield-mount",
+          "file": "identity-study-shield-mount.png"
+        },
+        {
+          "view": "identity-study-shield-side",
+          "file": "identity-study-shield-side.png"
+        },
+        {
+          "view": "identity-study-shield",
+          "file": "identity-study-shield.png"
+        },
+        {
+          "view": "identity-study-side",
+          "file": "identity-study-side.png"
+        },
+        {
+          "view": "identity-study-standing",
+          "file": "identity-study-standing.png"
+        },
+        {
+          "view": "identity-study-top",
+          "file": "identity-study-top.png"
+        },
+        {
+          "view": "identity-study-underside",
+          "file": "identity-study-underside.png"
+        },
+        {
+          "view": "study-arm-left",
+          "file": "study-arm-left.png"
+        },
+        {
+          "view": "study-arm-right",
+          "file": "study-arm-right.png"
+        },
+        {
+          "view": "study-chest-front",
+          "file": "study-chest-front.png"
+        },
+        {
+          "view": "study-chest",
+          "file": "study-chest.png"
+        },
+        {
+          "view": "study-face-front",
+          "file": "study-face-front.png"
+        },
+        {
+          "view": "study-face-quarter",
+          "file": "study-face-quarter.png"
+        },
+        {
+          "view": "study-face-side",
+          "file": "study-face-side.png"
+        },
+        {
+          "view": "study-front",
+          "file": "study-front.png"
+        },
+        {
+          "view": "study-gray-equipped",
+          "file": "study-gray-equipped.png"
+        },
+        {
+          "view": "study-gray",
+          "file": "study-gray.png"
+        },
+        {
+          "view": "study-grip-assembly",
+          "file": "study-grip-assembly.png"
+        },
+        {
+          "view": "study-grip-side",
+          "file": "study-grip-side.png"
+        },
+        {
+          "view": "study-heat-hawk",
+          "file": "study-heat-hawk.png"
+        },
+        {
+          "view": "study-leg-side",
+          "file": "study-leg-side.png"
+        },
+        {
+          "view": "study-leg",
+          "file": "study-leg.png"
+        },
+        {
+          "view": "study-other-side",
+          "file": "study-other-side.png"
+        },
+        {
+          "view": "study-quarter-right",
+          "file": "study-quarter-right.png"
+        },
+        {
+          "view": "study-rear-equipped",
+          "file": "study-rear-equipped.png"
+        },
+        {
+          "view": "study-rear",
+          "file": "study-rear.png"
+        },
+        {
+          "view": "study-rifle",
+          "file": "study-rifle.png"
+        },
+        {
+          "view": "study-shield-mount",
+          "file": "study-shield-mount.png"
+        },
+        {
+          "view": "study-shield-side",
+          "file": "study-shield-side.png"
+        },
+        {
+          "view": "study-shield",
+          "file": "study-shield.png"
+        },
+        {
+          "view": "study-side",
+          "file": "study-side.png"
+        },
+        {
+          "view": "study-standing",
+          "file": "study-standing.png"
+        },
+        {
+          "view": "study-top",
+          "file": "study-top.png"
+        },
+        {
+          "view": "study-underside",
+          "file": "study-underside.png"
+        }
+      ]
+    }
+  ]
+}

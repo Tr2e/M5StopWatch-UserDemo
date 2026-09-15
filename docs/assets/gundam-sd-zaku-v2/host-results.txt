@@ -1,0 +1,9 @@
+working_bytes=1274184 panels=2540 omitted=0 submitted=2168 culled=372
+sd_zaku panels=2540 helmet_body_ratio=3.10099 depth_width=0.989477 shoulder_span=2.4121 antenna_top=3.31 antenna_forward=0.1305 shield_panel_area=0.6032 sole_area=0.5088,0.5088 rifle_floor=1.00929
+sd_zaku rifle_unintended=0
+sd_zaku contacts shield_body=0 heat_hawk_body=0 palm_armor=0
+sd_zaku negative_rifle_unintended=57
+sd_zaku negative heat_hawk=10 shoulder_shield=140
+cases=864 cull_pixel_diff=0 buried_pixel_diff=0 coverage_diff=0 interior_diff=0 max_diff=0 partial_diff=0 culled_ratio=0.0755728
+full_exhibit circle_edge=0 viewport_edge=0
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

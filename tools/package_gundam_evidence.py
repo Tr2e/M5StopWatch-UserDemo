@@ -8,6 +8,8 @@ from PIL import Image, ImageDraw
 p=argparse.ArgumentParser();p.add_argument('frames',type=Path);p.add_argument('output',type=Path)
 p.add_argument('--baseline',type=Path,help='Optional previous production frames; compare without rescaling.')
 p.add_argument('--studies',type=Path,help='Optional larger structural studies from the same asset/raster.')
+p.add_argument('--blockout-studies',type=Path,help='Optional G3 blockout studies from the same asset/raster.')
+p.add_argument('--identity-studies',type=Path,help='Optional G4 identity studies from the same asset/raster.')
 p.add_argument('--model',choices=['rx78','nu','strike','zaku','sazabi'],default='rx78',help='Model identity; input names must match.')
 a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
 prefix=a.model;title={'rx78':'SD RX-78-2','nu':'RX-93 NU','strike':'GAT-X105 AILE STRIKE','zaku':'MS-06S CHAR ZAKU II','sazabi':'MSN-04 SAZABI'}[prefix]
@@ -37,14 +39,20 @@ for i in range(48):
 tour[0].save(a.output/f'{prefix}-orbit.gif',save_all=True,append_images=tour[1:],duration=420,loop=0)
 manifest={'schema':1,'identity_view':'equipped','models':[{'id':model_id,'required_views':names,
     'frames':[{'view':n,'file':f'{prefix}-{n}.png'} for n in names]}]}
-if a.studies:
-    studies=sorted(a.studies.glob('study-*.ppm'))
-    if not studies:raise ValueError('No structural study frames found')
+def add_studies(folder,prefix_name):
+    if not folder:return
+    studies=sorted(folder.glob('study-*.ppm'))
+    if not studies:raise ValueError(f'No {prefix_name or "final"} structural study frames found')
     for path in studies:
-        with Image.open(path) as im:im.save(a.output/f'{path.stem}.png')
-        manifest['models'][0]['required_views'].append(path.stem)
-        manifest['models'][0]['frames'].append({'view':path.stem,'file':f'{path.stem}.png'})
-    (a.output/'study-cameras.txt').write_text((a.studies/'cameras.txt').read_text())
+        view=f'{prefix_name}-{path.stem}' if prefix_name else path.stem
+        with Image.open(path) as im:im.save(a.output/f'{view}.png')
+        manifest['models'][0]['required_views'].append(view)
+        manifest['models'][0]['frames'].append({'view':view,'file':f'{view}.png'})
+    camera_name=f'{prefix_name}-study-cameras.txt' if prefix_name else 'study-cameras.txt'
+    (a.output/camera_name).write_text((folder/'cameras.txt').read_text())
+add_studies(a.blockout_studies,'blockout')
+add_studies(a.identity_studies,'identity')
+add_studies(a.studies,'')
 (a.output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 (a.output/'host-results.txt').write_text((a.frames/'results.txt').read_text())
 print(a.output)

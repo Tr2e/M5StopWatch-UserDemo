@@ -1,0 +1,13 @@
+{
+  "status": "target-build-passed-flash-pending-device-verification",
+  "binary": "build/StopWatch-UserDemo.bin",
+  "binary_bytes": 3979488,
+  "smallest_app_partition_bytes": 5177344,
+  "free_bytes": 1197856,
+  "free_percent": 23,
+  "binary_sha256": "7b8203b65713c3d38c9b50e49fe7ca8a0c026fea2ba4e18b2c78442d04c7d468",
+  "elf_sha256": "6844e34f6d165f82c4b8b69312600ab837f4aabd76f6d547788f4252749f32f2",
+  "expected_chip": "ESP32-S3",
+  "expected_mac": "44:1B:F6:C1:8A:00",
+  "port_policy": "discover current macOS port; never reuse a historical path without chip and MAC verification"
+}

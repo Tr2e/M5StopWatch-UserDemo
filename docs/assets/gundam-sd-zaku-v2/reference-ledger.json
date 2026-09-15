@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-09-15",
+  "manufacturer": "Bandai Spirits",
+  "product": "SDCS MS-06S Char's Zaku II",
+  "product_number": "4573102588623",
+  "product_page": "https://www.bandaispirits.co.jp/products/search/detail.php?grp_id=5325&prd_id=4573102588623000",
+  "rights": "Remote official images used for study only; image bytes are not redistributed in this repository.",
+  "fingerprints": "unavailable; exact official URLs and inspection date retained instead",
+  "images": [
+    {"id": "official-1", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_1.jpg", "purpose": "front-right quarter, machine-gun grip, chest split, right shoulder shield"},
+    {"id": "official-2", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_2.jpg", "purpose": "heat-hawk silhouette and action envelope"},
+    {"id": "official-3", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_3.jpg", "purpose": "front equipped identity and optional leg missile pods"},
+    {"id": "official-4", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_4.jpg", "purpose": "rear volume, backpack, shield rear, bazooka relationship"},
+    {"id": "official-5", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_5.jpg", "purpose": "machine-gun and bazooka forms"},
+    {"id": "official-6", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_6.jpg", "purpose": "kit accessory inventory"},
+    {"id": "official-7", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_7.jpg", "purpose": "dynamic machine-gun pose and limb clearance"},
+    {"id": "official-8", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_8.jpg", "purpose": "dynamic bazooka pose; cross-check only"},
+    {"id": "official-9", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_9.jpg", "purpose": "heat-hawk colors and silhouette"},
+    {"id": "official-10", "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000142587_10.jpg", "purpose": "box-art identity cross-check only"}
+  ]
+}
