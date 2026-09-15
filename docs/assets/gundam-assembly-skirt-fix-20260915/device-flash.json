@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-09-15T17:42:10+08:00",
+  "implementation_commit": "02ddb336622c4c7683cf6d7758fffcec750f0288",
+  "app_version": "V0.5-205-g02ddb33",
+  "device": {
+    "port": "/dev/cu.usbmodem83301",
+    "usb_vendor": "Espressif",
+    "usb_vid_pid": "303a:1001",
+    "chip": "ESP32-S3 QFN56 rev0.2",
+    "mac": "44:1B:F6:C1:8A:00"
+  },
+  "flash": {
+    "baud": 460800,
+    "mode": "dio",
+    "frequency": "80MHz",
+    "size": "16MB",
+    "application_bytes": 4021872,
+    "application_sha256": "d0dc57d69a6f0f2df004035519ee3685e4adb55a291746b0a9fa5aca984d0b19",
+    "elf_sha256": "fcb2c1b8917a1d651cce03e4267f85ee20f8501232355b5da97c8eab3adea3b4",
+    "verified_segments": [
+      "bootloader",
+      "application",
+      "partition-table",
+      "ota-data"
+    ]
+  },
+  "boot_check": {
+    "app_version_matches": true,
+    "elf_sha256_prefix": "fcb2c1b89",
+    "psram_8mb_memory_test": "OK",
+    "launcher_opened": true,
+    "panic_or_restart_observed": false,
+    "serial_port_closed": true
+  },
+  "acceptance": "Device-side visual and frame-rate acceptance remains with the user."
+}
