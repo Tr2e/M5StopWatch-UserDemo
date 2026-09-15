@@ -60,6 +60,19 @@ inline void check(const Mesh& production){
     std::cout<<"sd_destiny support head="<<supports[0]<<" rifle="<<supports[1]<<" shield="<<supports[2]
         <<" wings="<<supports[3]<<','<<supports[4]<<" sword="<<supports[5]<<" cannon="<<supports[6]<<'\n';
     for(auto count:supports)assert(count>0);
+    for(int side=0;side<2;++side){
+        const auto parent=between(*m,a.wrists[side],a.forearms[side]);
+        const auto child=between(*m,a.wrists[side],a.palms[side]);
+        std::cout<<"sd_destiny wrist="<<side<<" forearm="<<parent<<" palm="<<child<<'\n';
+        assert(parent>0&&child>0);
+        // Previous white outer / yellow inner interpretation was wrong.
+        // Every antenna surface must belong to the yellow material family.
+        const auto fin=a.fins[side];assert(fin.end-fin.begin>=20&&fin.end-fin.begin<=32);
+        for(size_t i=fin.begin;i<fin.end;++i){const auto c=m->panels[i].color;
+            const int r=(c>>11)*255/31,g=((c>>5)&63)*255/63,b=(c&31)*255/31;
+            assert(r>g*.85f&&g>b*2&&r>100);
+        }
+    }
 
     const unsigned rifle=strict(*m,a.rifle,{{a.rifle,a.palms[0]}});
     const unsigned shield=strict(*m,a.shield,{{a.shield,a.shieldMount}});
@@ -88,13 +101,17 @@ inline void check(const Mesh& production){
     const float ratio=(crown-.025f)/(crown-chin),depth=(zmax-zmin)/width;
     std::cout<<"sd_destiny panels="<<m->count<<" helmet_body_ratio="<<ratio<<" depth_width="<<depth
         <<" wing_span="<<wingMax-wingMin<<" sole_area="<<floorArea[0]<<','<<floorArea[1]<<'\n';
-    assert(ratio>2.7f&&ratio<3.3f&&depth>.75f&&depth<1.2f&&wingMax-wingMin>4.4f);
+    // SDEX009 neutral folded-wing pose (official images 1/3), not the old
+    // invented horizontal spread. Width / helmet width is approximately 3.2.
+    assert(ratio>2.7f&&ratio<3.3f&&depth>.75f&&depth<1.2f&&wingMax-wingMin>3.4f&&wingMax-wingMin<3.8f);
     assert(floorArea[0]>.30f&&floorArea[1]>.30f);
 
     // Controlled negatives prove that the support gates detect both a detached
     // display part and a misplaced weapon instead of accepting visual proximity.
     auto detached=*m;for(size_t i=a.helmet.begin;i<a.helmet.end;++i)for(auto& p:detached.panels[i].point)p.y+=.42f;
     const unsigned badHead=between(detached,a.headMount,a.helmet);assert(badHead==0);
+    detached=*m;for(size_t i=a.wrists[0].begin;i<a.wrists[0].end;++i)for(auto& p:detached.panels[i].point)p.x-=.3f;
+    assert(between(detached,a.wrists[0],a.forearms[0])==0&&between(detached,a.wrists[0],a.palms[0])==0);
     buildDestinyGundam(*m,{},DestinyStage::Final,&a);
     for(size_t i=a.wings[0].begin;i<a.wings[0].end;++i)for(auto& p:m->panels[i].point)p.x-=.55f;
     const unsigned badWing=between(*m,a.wingMounts[0],a.wings[0]);assert(badWing==0);

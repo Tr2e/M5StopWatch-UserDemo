@@ -115,6 +115,8 @@ int main(int argc,char** argv){
     view.yaw=-.45f;view.pitch=.75f;renderer.render(canvas,view);save("rx78-top");
     view.yaw=-.40f;view.pitch=.10f;renderer.render(canvas,view);save("rx78-unarmed");
     renderer.render(canvas,view,65);save("rx78-drag");
+    view.equipment=true;renderer.render(canvas,view,65);save("rx78-equipped-drag");
+    view.equipment=false;
     renderer.render(canvas,view,100,true,true);save("rx78-gray");
     view.detail=true;renderer.render(canvas,view);save("rx78-head");
     unsigned cases=0;std::size_t cullDiff=0,buriedDiff=0,totalCull=0,totalFaces=0,coverageDiff=0,interiorDiff=0,maxDiff=0;
