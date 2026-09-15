@@ -1,0 +1,8 @@
+working_bytes=1274184 panels=2328 omitted=0 submitted=1884 culled=444
+sd_zaku panels=2328 helmet_body_ratio=3.2337 depth_width=1.03448 sole_area=0.384,0.384 rifle_floor=0.983253
+sd_zaku rifle_unintended=0
+sd_zaku negative_rifle_unintended=203
+first_cull_case 0 0 -0.2 23 pixels=1
+cases=864 cull_pixel_diff=2 buried_pixel_diff=0 coverage_diff=2 interior_diff=0 max_diff=1 partial_diff=0 culled_ratio=0.102991
+full_exhibit circle_edge=0 viewport_edge=0
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

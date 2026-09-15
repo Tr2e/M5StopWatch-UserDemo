@@ -7,6 +7,7 @@ mkdir -p "$out_dir"
   -I"$repo_dir/tools/lets_and_go_host" \
   -I"${M5GFX_PARENT_INCLUDE:-$repo_dir/M5StopWatch-UserDemo-ruview/components/M5GFX/src}" \
   "$repo_dir/tools/gundam_reference_render.cpp" "$repo_dir/main/apps/app_gundam_museum/model/rx78.cpp" \
+  "$repo_dir/main/apps/app_gundam_museum/model/char_zaku.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/nu_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/strike_gundam.cpp" \
   -o "$out_dir/render"

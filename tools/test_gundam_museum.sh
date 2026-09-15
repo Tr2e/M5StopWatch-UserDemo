@@ -9,6 +9,7 @@ font_inc="${M5GFX_PARENT_INCLUDE:-$repo_dir/M5StopWatch-UserDemo-ruview/componen
 "${CXX:-c++}" "${flags[@]}" -I"$repo_dir/tools/lets_and_go_host" -I"$font_inc" \
   "$repo_dir/tools/gundam_museum_test.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/rx78.cpp" \
+  "$repo_dir/main/apps/app_gundam_museum/model/char_zaku.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/nu_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/strike_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/view/museum_renderer.cpp" \

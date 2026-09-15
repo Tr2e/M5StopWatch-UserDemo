@@ -6,7 +6,7 @@
 namespace gundam_museum {
 using Point=lets_and_go::CarPoint;
 enum class Part : uint8_t { Feet,Shins,Knees,Thighs,Waist,Torso,Head,Shoulders,Arms,Hands,Backpack,Sabers,Rifle,Shield,Bazooka,Funnels,Aile,Count };
-enum class ModelId : uint8_t { Rx78, NuGundam, StrikeGundam };
+enum class ModelId : uint8_t { Rx78, CharZaku, NuGundam, StrikeGundam };
 // Legacy pose IDs are retained; current SD RX-78, Nu and Strike use Display.
 enum class Pose : uint8_t { Display, Salute, Saber };
 struct Mesh {

@@ -18,8 +18,9 @@ public:
         if(input.input.valid){
             if(input.navigation){
                 // One complete exhibit per model; study views remain host-only.
-                _mode=(_mode+(input.navigation>0?1:2))%3;
-                _view.model=_mode==0?ModelId::Rx78:_mode==1?ModelId::NuGundam:ModelId::StrikeGundam;
+                constexpr ModelId models[]={ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::StrikeGundam};
+                _mode=(_mode+(input.navigation>0?1:3))%4;
+                _view.model=models[_mode];
                 _view.equipment=true;_view.detail=false;
                 _view.automatic=false;_touch=false;_blockedGesture=true;dirty=true;
             }

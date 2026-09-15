@@ -3,6 +3,7 @@
 #include "../main/apps/app_gundam_museum/view/museum_renderer.h"
 #include "../main/apps/app_gundam_museum/model/nu_gundam.h"
 #include "../main/apps/app_gundam_museum/model/strike_gundam.h"
+#include "../main/apps/app_gundam_museum/model/char_zaku.h"
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -44,6 +45,7 @@ int main(int argc,char** argv){
     };
     const bool strike=argc>2 && std::string(argv[2])=="strike";
     const bool nu=argc>2 && std::string(argv[2])=="nu";
+    const bool zaku=argc>2 && std::string(argv[2])=="zaku";
     const NuStage stage=argc>3 && std::string(argv[3])=="blockout"?NuStage::Blockout:
         argc>3 && std::string(argv[3])=="identity"?NuStage::Identity:NuStage::Final;
     const Shot nuShots[]={
@@ -99,11 +101,24 @@ int main(int argc,char** argv){
         {"top",-.40f,.70f,1.72f,130,Pose::Display,true,false},
         {"underside",-.40f,-.35f,1.72f,130,Pose::Display,true,false},
     };
-    const Shot* shots=strike?strikeShots:nu?nuShots:rxShots;
-    const size_t shotCount=strike?sizeof(strikeShots)/sizeof(Shot):nu?sizeof(nuShots)/sizeof(Shot):sizeof(rxShots)/sizeof(Shot);
+    const Shot zakuShots[]={
+        {"standing",-.40f,.04f,1.67f,150,Pose::Display,true,false},{"front",0,.02f,1.67f,153,Pose::Display,false,false},
+        {"rear",3.14159265f,.02f,1.67f,153,Pose::Display,false,false},{"rear-equipped",3.14159265f,.05f,1.67f,150,Pose::Display,true,false},
+        {"side",1.57079633f,.02f,1.67f,153,Pose::Display,false,false},{"other-side",-1.57079633f,.02f,1.67f,153,Pose::Display,false,false},
+        {"gray",-.40f,.02f,1.67f,153,Pose::Display,false,true},{"gray-equipped",-.40f,.02f,1.67f,150,Pose::Display,true,true},
+        {"face-front",0,0,2.56f,285,Pose::Display,false,false,0,Part::Head},{"face-quarter",-.8f,.02f,2.56f,285,Pose::Display,false,false,0,Part::Head},
+        {"face-side",-1.57079633f,0,2.56f,285,Pose::Display,false,false,0,Part::Head},{"chest",-.4f,.02f,1.70f,510,Pose::Display,false,false,0,Part::Torso},
+        {"arm-right",-.4f,.02f,1.62f,370,Pose::Display,true,false,-.82f,Part::Shoulders,Part::Hands,-1},
+        {"arm-left",.4f,.02f,1.75f,350,Pose::Display,true,false,.88f,Part::Shoulders,Part::Hands,1},
+        {"rifle",-.7f,.02f,1.22f,270,Pose::Display,true,false,-1.0f,Part::Rifle},{"shield",-.2f,.02f,1.92f,300,Pose::Display,true,false,-1.0f,Part::Shield},
+        {"top",-.4f,.70f,1.67f,140,Pose::Display,true,false},{"underside",-.4f,-.30f,1.67f,140,Pose::Display,true,false},
+    };
+    const Shot* shots=strike?strikeShots:nu?nuShots:zaku?zakuShots:rxShots;
+    const size_t shotCount=strike?sizeof(strikeShots)/sizeof(Shot):nu?sizeof(nuShots)/sizeof(Shot):zaku?sizeof(zakuShots)/sizeof(Shot):sizeof(rxShots)/sizeof(Shot);
     for(size_t shot=0;shot<shotCount;++shot){const auto& s=shots[shot];
         if(strike)buildStrikeGundam(*mesh,{s.equipment,false,s.gray,s.pose},static_cast<StrikeStage>(stage));
         else if(nu)buildNuGundam(*mesh,{s.equipment,false,s.gray,s.pose},stage);
+        else if(zaku)buildCharZaku(*mesh,{s.equipment,false,s.gray,s.pose},static_cast<ZakuStage>(stage));
         else buildRx78(*mesh,{s.equipment,false,s.gray,s.pose});
         assert(!mesh->overflowed);
         const float cy=cos(s.yaw),sy=sin(s.yaw),cp=cos(s.pitch),sp=sin(s.pitch);
@@ -127,7 +142,7 @@ int main(int argc,char** argv){
         }
         raster->blitScaled(canvas,0,0,640,640);
         canvas.setTextColor(0xef5d,0x1083);canvas.setTextSize(1);
-        canvas.drawString(strike?"SD AILE STRIKE / SDEX 002 / SAME ASSET + RASTER":nu?"SD RX-93 NU / BB 387 / SAME ASSET + RASTER":"SD RX-78-2 / POSE V5 / SAME ASSET + RASTER",320,18);
+        canvas.drawString(strike?"SD AILE STRIKE / SDEX 002 / SAME ASSET + RASTER":nu?"SD RX-93 NU / BB 387 / SAME ASSET + RASTER":zaku?"SD MS-06S CHAR ZAKU II / SAME ASSET + RASTER":"SD RX-78-2 / POSE V5 / SAME ASSET + RASTER",320,18);
         canvas.drawString(s.name,320,622);
         std::ofstream file(out+"/study-"+s.name+".ppm",std::ios::binary);
         file<<"P6\n640 640\n255\n";

@@ -1,0 +1,10 @@
+{
+  "status": "target-build-passed",
+  "binary": "build/StopWatch-UserDemo.bin",
+  "binary_bytes": 3970528,
+  "smallest_app_partition_bytes": 5177344,
+  "free_percent": 23,
+  "binary_sha256": "b2f3d2ac31f37f72c37b9e060ed06ed614afa30cc14f0ff540d21dc2c858de70",
+  "elf_sha256": "2b23334ec62960119314081df7b5fe023266645723716a5f51fae628bfa9f053",
+  "device_flash": "deferred-until-uc-pair-complete"
+}

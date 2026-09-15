@@ -52,7 +52,7 @@ int main(){
     MuseumRenderer renderer;assert(renderer.open());
     LGFX_Sprite canvas;canvas.createSprite(468,466);
     std::size_t cases=0,oldTransforms=0,newTransforms=0;
-    for(auto model:{ModelId::Rx78,ModelId::NuGundam,ModelId::StrikeGundam}) {
+    for(auto model:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::StrikeGundam}) {
         for(int percent:{65,90,100}) {
             std::vector<double> times[2];
             std::size_t oldCount=0,newCount=0;
@@ -90,7 +90,7 @@ int main(){
     }
     // Continuous drag angles catch errors hidden by a fixed 15-degree grid.
     std::mt19937 random(78);std::uniform_real_distribution<float> yaw(-3.141593f,3.141593f),pitch(-.2f,.7f);
-    for(auto model:{ModelId::Rx78,ModelId::NuGundam,ModelId::StrikeGundam})for(int i=0;i<256;++i){
+    for(auto model:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::StrikeGundam})for(int i=0;i<256;++i){
         View v;v.model=model;v.yaw=yaw(random);v.pitch=pitch(random);
         renderer.setOptimizations(false);renderer.render(canvas,v,65);const auto before=canvas.frame();
         renderer.setOptimizations(true);renderer.render(canvas,v,65);

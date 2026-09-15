@@ -9,6 +9,7 @@ if [[ "${SANITIZE:-0}" == 1 ]]; then flags+=(-fsanitize=address,undefined -fno-o
   -I"${M5GFX_PARENT_INCLUDE:-$repo_dir/M5StopWatch-UserDemo-ruview/components/M5GFX/src}" \
   "$repo_dir/tools/gundam_museum_perf_test.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/rx78.cpp" \
+  "$repo_dir/main/apps/app_gundam_museum/model/char_zaku.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/nu_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/strike_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/view/museum_renderer.cpp" -o "$out_dir/test"
