@@ -1,0 +1,12 @@
+{
+  "base_commit": "98e691e",
+  "revision": "RX-78 polygon eye refinement, source hashes in the model review",
+  "command": "source ../esp-idf/export.sh && idf.py build",
+  "build_passed": true,
+  "app_size_hex": "0x3d4440",
+  "partition_free_hex": "0x11bbc0",
+  "partition_free_percent_reported": 22,
+  "bin_sha256": "400e4f68bd58eb250907e446159f178a6ffe5738f3a537c5751314a2ca27c7e9",
+  "elf_sha256": "d5a33579f4d18a5983c6a2bb82ba0ffd4b499f9f712618d76ba47c3f85e3c9c1",
+  "flashed": false
+}

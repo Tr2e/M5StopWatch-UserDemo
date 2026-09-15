@@ -22,7 +22,8 @@ struct BuildOptions { bool equipment=true; bool keepBuriedFaces=false; bool gray
 // User-baseline SD RX-78-2, SDCS structure references and user-specified pose.
 // Authored proportions, not measured CAD.
 // +Y up, +Z front, +X the model's left. Nominal sole Y=.025 before articulation.
-void buildRx78(Mesh& mesh,BuildOptions options={});
+struct Rx78Assembly;
+void buildRx78(Mesh& mesh,BuildOptions options={},Rx78Assembly* assembly=nullptr);
 inline Point subtract(Point a,Point b){return {a.x-b.x,a.y-b.y,a.z-b.z};}
 inline Point cross(Point a,Point b){return {a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x};}
 inline float dot(Point a,Point b){return a.x*b.x+a.y*b.y+a.z*b.z;}

@@ -1,0 +1,15 @@
+{
+  "comparison": "decoded RGB of original PPM frames, not PNG/GIF file bytes",
+  "shared_change": "sd_eye_socket four-corner to convex polygon template",
+  "models": [
+    {"id": "nu", "baseline": "98e691e", "frames": 59, "changed_frames": 0},
+    {"id": "strike", "baseline": "2822bb7", "frames": 59, "changed_frames": 0},
+    {"id": "destiny", "baseline": "4255de8", "frames": 59, "changed_frames": 0}
+  ],
+  "per_model_coverage": "11 native diagnostics including 100% and 65%, plus 48 orbit frames",
+  "unchanged_frames": 177,
+  "six_model_optimized_reference_pixel_identical_cases": 6720,
+  "working_bytes": 1274184,
+  "device_fps_measured": false,
+  "flashed": false
+}

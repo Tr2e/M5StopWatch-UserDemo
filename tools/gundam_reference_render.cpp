@@ -20,6 +20,9 @@ int main(int argc,char** argv){
     struct Shot{const char* name;float yaw,pitch,pivot,scale;Pose pose;bool equipment,gray;
         float centerX=0;Part only=Part::Count,through=Part::Count;int limb=0;};
     const Shot rxShots[]={
+        {"eyes-above",-.45f,.30f,2.20f,430,Pose::Display,false,false,0,Part::Head},
+        {"eyes-below",-.45f,-.28f,2.20f,430,Pose::Display,false,false,0,Part::Head},
+        {"eyes-opposite",.80f,.02f,2.20f,430,Pose::Display,false,false,0,Part::Head},
         {"standing",-.40f,.025f,1.49f,173,Pose::Display,true,false},
         {"front",0,.025f,1.49f,179,Pose::Display,false,false},
         {"rear",3.14159265f,.025f,1.49f,179,Pose::Display,false,false},

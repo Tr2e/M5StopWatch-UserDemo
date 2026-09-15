@@ -1,4 +1,5 @@
 #include "rx78.h"
+#include "rx78_assembly.h"
 #include "../../app_lets_and_go_racer/model/car_mesh_builder.h"
 #include <algorithm>
 #include <cmath>
@@ -177,7 +178,7 @@ void body(SdBuilder& b){
     }
 }
 
-void head(SdBuilder& b){
+void head(SdBuilder& b,Rx78Assembly* assembly){
     b.at(Part::Head);
     // A2/A3: dome and wraparound jaw walls form a single open shell.
     const Ring rings[]={{1.99f,.40f,.30f,-.03f},{2.09f,.49f,.38f,-.03f},
@@ -197,16 +198,23 @@ void head(SdBuilder& b){
         b.face(a,c,q(c),q(a),ivory,{0,-1,0},true);
         auto u=q(a),v=q(c);b.face(u,v,{v.x,2.17f,v.z},{u.x,2.17f,u.z},frame,{-u.x,0,-u.z},true);
     }
-    // B2 is inset behind the front shell; eyes and mask are not an external box.
-    b.cover({{-.325f,2.465f,.366f},{.325f,2.465f,.366f},{.275f,2.265f,.383f},{0,2.275f,.382f},{-.275f,2.265f,.383f}},.055f,red,.003f);
+    // The red inter-eye insert shares the actual socket/mask boundary rather
+    // than covering the apertures or crossing the mask as a floating lip.
     for(float s:{-1.f,1.f}){
-        b.face({s*.026f,2.430f,.391f},{s*.305f,2.465f,.371f},{s*.274f,2.287f,.391f},{s*.073f,2.284f,.401f},black,{0,0,1},true);
-        b.cover({{s*.047f,2.416f,.403f},{s*.279f,2.447f,.384f},{s*.269f,2.355f,.397f},
-            {s*.21f,2.311f,.408f},{s*.086f,2.345f,.414f}},.008f,gold,.002f);
+        // Accepted five-corner gold contour, expanded only to derive the rim.
+        std::array<Point,5> opening={Point{s*.047f,2.416f,0},Point{s*.279f,2.447f,0},Point{s*.269f,2.355f,0},Point{s*.21f,2.311f,0},Point{s*.086f,2.345f,0}};
+        for(auto& p:opening){p.x=s*(.1782f+(s*p.x-.1782f)/.88f);p.y=2.3748f+(p.y-2.3748f)/.88f;p.z=.49f-.25f*std::abs(p.x);}
+        buildEyeSocket(b,opening,.072f,black,black,gold,assembly?&assembly->eyes[s>0]:nullptr);
+        b.face(opening[0],opening[4],{0,2.315f,.433f},{0,2.430f,.50f},red,{0,0,1},true);
+        b.face(opening[0],opening[1],{s*.367f,2.470f,.365f},{0,2.430f,.50f},white,{0,0,1},true);
+        b.face(opening[4],opening[3],{s*.235f,2.285f,.35f},{0,2.315f,.433f},white,{0,0,1},true);
+        b.face(opening[3],opening[2],{s*.31f,2.28f,.36f},{s*.235f,2.285f,.35f},ivory,{0,-1,0},true);
+        b.face(opening[2],opening[1],{s*.335f,2.43f,.395f},{s*.31f,2.28f,.36f},ivory,{s,0,0},true);
+        b.face(opening[1],{s*.367f,2.470f,.365f},{s*.335f,2.43f,.395f},{s*.335f,2.43f,.395f},ivory,{s,0,0},true);
         // Broad brow sweeps back to the side shell. Mask's ridge stays behind it.
         b.cover({{0,2.575f,.435f},{s*.405f,2.585f,.27f},{s*.367f,2.470f,.365f},{0,2.430f,.50f}},.04f,white,.005f);
         // Cheek front plane, wraparound facet and actual connection to rear shell.
-        b.cover({{s*.29f,2.43f,.395f},{s*.435f,2.57f,.328f},{s*.45f,2.08f,.334f},{s*.295f,2.035f,.409f}},.045f,white,.008f);
+        b.cover({{s*.335f,2.43f,.395f},{s*.435f,2.57f,.328f},{s*.45f,2.08f,.334f},{s*.295f,2.035f,.409f}},.045f,white,.008f);
         const Point a{s*.435f,2.57f,.328f},c{s*.45f,2.08f,.334f};
         b.face(a,c,{s*.49f,2.09f,.165f},{s*.475f,2.57f,.185f},ivory,{s,0,0},true);
         // A3 cheek rail uses separate crossbars and a recessed continuous cavity.
@@ -348,8 +356,9 @@ void equipment(SdBuilder& b){
     for(int i=0;i<8;++i)b.face(center,star[i],star[(i+1)%8],star[(i+1)%8],gold,{0,0,1},true);
 }
 } // namespace
-void buildRx78(Mesh& mesh,BuildOptions options){
+void buildRx78(Mesh& mesh,BuildOptions options,Rx78Assembly* assembly){
+    if(assembly)*assembly={};
     mesh.count=mesh.buriedOmitted=0;mesh.overflowed=false;
-    SdBuilder b{mesh,options};body(b);head(b);arms(b);if(options.equipment)equipment(b);
+    SdBuilder b{mesh,options};body(b);head(b,assembly);arms(b);if(options.equipment)equipment(b);
 }
 } // namespace gundam_museum

@@ -1,0 +1,11 @@
+working_bytes=1274184 panels=3636 omitted=8 submitted=2775 culled=861
+eye_socket side=0 recess=0.06528 large_eye_aspect=0.556364
+eye_socket side=1 recess=0.06528 large_eye_aspect=0.556364
+sd_nu contacts unintended=0 shield_peg=8 bazooka_peg=4 inter_funnel=0
+sd_nu negative rifle_offset_unintended=38
+sd_nu helmet_body_ratio=2.71379 depth_width=0.979249
+sd_nu face mask_z=0.451833 brow_z=0.555008 blade_width_ratio=0.354481 blade_depth_ratio=0.464193 sole_area=0.410982,0.410982
+first_cull_case 0 0 -0.2 9 pixels=2
+cases=864 cull_pixel_diff=62 buried_pixel_diff=0 coverage_diff=17 interior_diff=0 max_diff=4 partial_diff=0 culled_ratio=0.13412
+full_exhibit circle_edge=0 viewport_edge=0
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

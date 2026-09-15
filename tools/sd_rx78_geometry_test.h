@@ -3,11 +3,47 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include "../main/apps/app_gundam_museum/model/rx78_assembly.h"
+#include "sd_eye_socket_test.h"
+
+inline void checkRx78EyeSockets(const gundam_museum::Mesh& production){
+    using namespace gundam_museum;
+    auto m=std::make_unique<Mesh>();Rx78Assembly assembly;buildRx78(*m,{},&assembly);
+    assert(!m->overflowed&&m->count==production.count);
+    for(int side=0;side<2;++side){auto a=assembly.eyes[side];const float s=side?1.f:-1.f;
+        assert(a.lens.end-a.lens.begin==8); // 3 optical triangles + 5 bevels
+        std::array<Point,5> outline={Point{s*.047f,2.416f,0},Point{s*.279f,2.447f,0},Point{s*.269f,2.355f,0},Point{s*.21f,2.311f,0},Point{s*.086f,2.345f,0}};
+        Point center{};
+        for(auto& p:outline){p.z=.49f-.25f*std::abs(p.x)-.064f;p.x*=.90f;p.y=3.06f+(p.y-3.06f)*1.06f-.14f;
+            center.x+=p.x*.2f;center.y+=p.y*.2f;center.z+=p.z*.2f;
+            bool found=false;for(size_t i=a.lens.begin;i<a.lens.begin+3;++i)for(auto q:m->panels[i].point)
+                found|=std::abs(q.x-p.x)+std::abs(q.y-p.y)+std::abs(q.z-p.z)<1e-5f;
+            assert(found); // five authored corners retained, not a trapezoid
+        }
+        assert(sd_eye_check::sharedVertices(*m,a.rim,a.walls)>=5&&sd_eye_check::sharedVertices(*m,a.walls,a.lens)>=5);
+        assert(std::abs(sd_eye_check::recess(*m,a.lens,.49f,.25f/.90f)-.064f)<1e-5f);
+        const auto visible=[&](const Mesh& mesh,Point p){return std::abs(sd_eye_check::frontSurface(mesh,p.x,p.y)-p.z)<.0001f;};
+        assert(visible(*m,center));
+        for(float inset:{.55f,.90f})for(auto p:outline){Point q{center.x+(p.x-center.x)*inset,center.y+(p.y-center.y)*inset,center.z+(p.z-center.z)*inset};
+            if(!visible(*m,q))std::cerr<<"rx78 eye occluded x="<<q.x<<" y="<<q.y<<" lens="<<q.z<<" front="<<sd_eye_check::frontSurface(*m,q.x,q.y)<<'\n';
+            assert(visible(*m,q));
+        }
+        auto bad=std::make_unique<Mesh>(*m);
+        for(size_t i=a.lens.begin;i<a.lens.end;++i)for(auto& p:bad->panels[i].point)p.z+=.09f;
+        assert(sd_eye_check::recess(*bad,a.lens,.49f,.25f/.90f)<0&&sd_eye_check::sharedVertices(*bad,a.walls,a.lens)==0);
+        *bad=*m;auto& cap=bad->panels[bad->count];cap=m->panels[a.lens.begin];Point probe{};
+        for(int i=0;i<3;++i){probe.x+=cap.point[i].x/3;probe.y+=cap.point[i].y/3;probe.z+=cap.point[i].z/3;}
+        for(auto& p:cap.point)p.z+=.025f;bad->parts[bad->count++]=Part::Head;
+        assert(!visible(*bad,probe));
+    }
+    std::cout<<"rx78_eye_sockets five_corners=2 recess=.064 forward_and_cap_negatives=4\n";
+}
 
 // Independent checks of the delivered mesh, not the builder's parameters.
 // Intersect head triangles with front-facing probe rays to test face depth.
 inline void checkSdRx78Geometry(const gundam_museum::Mesh& m){
     using namespace gundam_museum;
+    checkRx78EyeSockets(m);
     float headBack=100,headFront=-100;
     float low[2]={100,100},footArea[2]={0,0},headHalf=0,shoulderHalf=0,headLow=100,headTop=-100,sole=100;
     float tipX[2]={-100,-100};
