@@ -1,4 +1,5 @@
 #include "../main/apps/app_gundam_museum/view/museum_renderer.h"
+#include "../main/apps/app_gundam_museum/view/museum_space.h"
 #include "../main/apps/app_gundam_museum/controller/museum_controller.h"
 #include <algorithm>
 #include <cassert>
@@ -119,6 +120,9 @@ int main(int argc,char** argv){
     view.equipment=false;
     renderer.render(canvas,view,100,true,true);save("rx78-gray");
     view.detail=true;renderer.render(canvas,view);save("rx78-head");
+    // Keep the original model-only silhouette/coverage gates unchanged.
+    // Room composition and occlusion are checked independently below.
+    renderer.setSpaceEnabled(false);
     unsigned cases=0;std::size_t cullDiff=0,buriedDiff=0,totalCull=0,totalFaces=0,coverageDiff=0,interiorDiff=0,maxDiff=0;
     std::size_t partialDiff=0,frameEdge=0,circleEdge=0;
     for(Pose pose:{Pose::Display})for(int percent:{65,90,100})for(bool equipment:{false,true})for(bool detail:{false,true})for(float pitch:{-.20f,.10f,.70f})for(int i=0;i<24;++i){
@@ -189,6 +193,69 @@ int main(int argc,char** argv){
     renderer.render(canvas,original);renderer.render(canvas,moved,100,true,false,false,true);
     assert(canvas.frame()==movedFull);
     for(int i=0;i<10;++i){renderer.close();assert(!renderer.ready());assert(renderer.open());renderer.render(canvas,original);assert(canvas.frame()==identity);}
+    LGFX_Sprite room;room.createSprite(468,466);room.fillScreen(space::background);
+    View roomView;roomView.model=model;
+    space::draw(room,roomView);room.save(out+"/space-empty.ppm");
+    const auto defaultRoom=room.frame();
+    View turnedRoom=roomView;turnedRoom.yaw+=.35f;
+    room.fillScreen(space::background);space::draw(room,turnedRoom);
+    // Use a non-symmetry angle: a cube legitimately repeats every quarter turn.
+    assert(room.frame()!=defaultRoom);
+    assert(std::abs((space::upper.x-space::lower.x)-(space::upper.y-space::lower.y))<1e-6f);
+    assert(std::abs((space::upper.x-space::lower.x)-(space::upper.z-space::lower.z))<1e-6f);
+    View axisView;axisView.yaw=0;axisView.pitch=0;
+    MuseumCamera axisCamera(axisView);auto probe=axisCamera({1,axisCamera.pivot+2,3});
+    assert(std::abs(probe.x-1)<1e-6f && std::abs(probe.y-2)<1e-6f && std::abs(probe.z-4)<1e-6f);
+    axisView.yaw=1.57079632679f;MuseumCamera quarterCamera(axisView);
+    probe=quarterCamera({1,quarterCamera.pivot+2,3});
+    assert(std::abs(probe.x-3)<1e-5f && std::abs(probe.y-2)<1e-5f && std::abs(probe.z-8)<1e-5f);
+    lets_and_go::TrackCamera lineCamera{};lineCamera.focalLength=686;lineCamera.principalX=234;lineCamera.principalY=233;
+    float lx0,ly0,lx1,ly1;
+    assert(!space::projectLine(axisCamera,lineCamera,{1,axisCamera.pivot,8},{0,axisCamera.pivot,9},lx0,ly0,lx1,ly1));
+    assert(space::projectLine(axisCamera,lineCamera,{1,axisCamera.pivot,8},{0,axisCamera.pivot,6},lx0,ly0,lx1,ly1));
+    assert(space::clipLine(lx0,ly0,lx1,ly1,468,466));
+    assert(lx0>=0 && lx0<=467 && lx1>=0 && lx1<=467);
+    std::size_t sceneCases=0,coveredGrid=0,visibleGrid=0,inkColoredModel=0,gutterChanges=0;
+    for(int percent:{65,100})for(float pitch:{-.2f,.1f,.7f})for(int i=0;i<6;++i){
+        View scene;scene.model=model;scene.pitch=pitch;scene.yaw=-.4f+i*6.2831853f/6;
+        renderer.setSpaceEnabled(false);renderer.render(canvas,scene,percent);const auto flat=canvas.frame();
+        renderer.setSpaceEnabled(true);renderer.render(canvas,scene,percent);const auto complete=canvas.frame();
+        for(size_t i=0;i<renderer.mesh().count;++i)for(auto p:renderer.mesh().panels[i].point)assert(space::contains(p));
+        room.fillScreen(space::background);space::draw(room,scene);const auto backdrop=room.frame();
+        for(size_t p=0;p<flat.size();++p){
+            const int x=int(p%468)-22,y=int(p/468)-layout::top;
+            const int active=(layout::side*percent+50)/100;
+            const bool covered=x>=0 && x<layout::side && y>=0 && y<layout::side &&
+                renderer.modelSampleCovered((2*x+1)*active/(2*layout::side),(2*y+1)*active/(2*layout::side));
+            // Nu's shaded navy can equal the ink background exactly. Depth,
+            // not a color key, distinguishes opaque armor from empty space.
+            const bool modelPixel=covered || flat[p]!=space::diagnosticBackground;
+            inkColoredModel+=covered && flat[p]==space::diagnosticBackground;
+            assert(complete[p]==(modelPixel?flat[p]:backdrop[p]));
+            coveredGrid+=modelPixel && backdrop[p]!=space::background;
+            visibleGrid+=!modelPixel && backdrop[p]!=space::background;
+        }
+        View previous=scene;previous.yaw+=.8f;previous.pitch=.6f;
+        previous.model=model==ModelId::Rx78?ModelId::Sazabi:ModelId::Rx78;
+        renderer.render(canvas,previous,percent==65?100:65);
+        const auto beforePartial=canvas.frame();
+        renderer.render(canvas,scene,percent,true,false,false,true);
+        assert(canvas.frame()==complete);
+        for(int y=0;y<466;++y)if(y<layout::top || y>=layout::top+layout::side)
+            for(int x=0;x<468;++x)gutterChanges+=canvas.frame()[y*468+x]!=beforePartial[y*468+x];
+        ++sceneCases;
+    }
+    assert(coveredGrid>100 && visibleGrid>1000 && gutterChanges>100);
+    // Drawing the room must respect an enclosing display clip and restore it.
+    room.fillScreen(0xffff);room.setClipRect(37,53,391,350);space::draw(room,roomView);
+    int32_t cx,cy,cw,ch;room.getClipRect(&cx,&cy,&cw,&ch);
+    assert(cx==37 && cy==53 && cw==391 && ch==350);
+    for(int y=0;y<466;++y)for(int x=0;x<468;++x)
+        if(x<37 || x>=428 || y<53 || y>=403)assert(room.frame()[y*468+x]==0xffff);
+    std::cout<<"space_composition_cases="<<sceneCases<<" covered_grid="<<coveredGrid
+             <<" visible_grid="<<visibleGrid<<" ink_colored_model="<<inkColoredModel
+             <<" gutter_changes="<<gutterChanges
+             <<" cube_contains_model=1 model_pixels_unchanged=1 mixed_partial_exact=1 clip_restored=1\n";
     // Offline orbit evidence samples manual camera poses; no product auto mode.
     for(int i=0;i<48;++i){View tourView;tourView.model=model;
         tourView.yaw=-.4f-float(i)*6.2831853f/48;renderer.render(canvas,tourView,100);save("tour-"+std::to_string(i));}

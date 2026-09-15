@@ -1,0 +1,7 @@
+Base HEAD: 684c650; includes the previously implemented cubic room. Not committed. Flashed 2026-09-15; see device-flash.json.
+318b7ec251bf985190baec28cb4b6dd77a8e65a53882a341f2780dfbf436b434  main/apps/app_gundam_museum/model/char_zaku.cpp
+6af1547cc75d4bb6e6baa123ad9e1efabdf9bcc1b7ba2db9786d09ce5143fb46  main/apps/app_gundam_museum/model/char_zaku.h
+464819ca0bf6ea1176766d917b88ffd9c2af589625d566f82e2acff73443b1f1  tools/sd_zaku_geometry_test.h
+8ea61ad138dfc502b66e00782d68d003fa9eb2ab02051bc75b0aaf7cce463a64  tools/sd_curved_shape_test.h
+8d9336fe706d9d1a1d70f617acadbd70701d4f8e843f6de8e404b6edcb8ef18d  build/StopWatch-UserDemo.bin
+2e07fc1a15c2d1dffa3b52a1bfc01bad23d7787d4af40d5ad3f5fb8a56ffc13d  build/StopWatch-UserDemo.elf

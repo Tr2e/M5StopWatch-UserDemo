@@ -1,0 +1,20 @@
+working_bytes=1274184 panels=3977 omitted=0 submitted=3462 culled=515
+sd_skirts model=zaku front=16,16 side=0,0 rear=16,16 negatives=2
+zaku_support arm_torso=16,16 arm_shoulder=34,50 shield=18,24 rifle_palm=8
+zaku_support_negatives arm=1 shield=1 rifle=1
+zaku_short_neck post_length=0.15 old_height_negative=1
+zaku_support_negative_detected=1
+zaku_head_clearance unintended=0 negative=179 neck_cup_contacts=46 neck_collar_contacts=27
+sd_zaku panels=3977 helmet_body_ratio=3.18539 depth_width=0.873419 shoulder_span=2.24896 antenna_top=3.17 antenna_forward=0.1305 shield_panel_area=0.6032 sole_area=0.447587,0.447587 rifle_floor=0.268037
+sd_zaku rifle_unintended=0
+sd_zaku contacts shield_body=0 heat_hawk_body=0 palm_armor=0
+sd_zaku negative_rifle_unintended=205
+sd_zaku negative heat_hawk=72 shoulder_shield=304
+zaku_top_drum_axial_thickness=0.0901502
+curved_crown mid_width=1.05 top_width=0.7025 mid_depth=0.92 top_depth=0.63
+curved_crown_negative_detected=1
+first_cull_case 0 0 0.1 20 pixels=1
+cases=864 cull_pixel_diff=6 buried_pixel_diff=0 coverage_diff=6 interior_diff=0 max_diff=2 partial_diff=0 culled_ratio=0.066108
+full_exhibit circle_edge=0 viewport_edge=0
+space_composition_cases=36 covered_grid=51116 visible_grid=287120 ink_colored_model=0 gutter_changes=33278 cube_contains_model=1 model_pixels_unchanged=1 mixed_partial_exact=1 clip_restored=1
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

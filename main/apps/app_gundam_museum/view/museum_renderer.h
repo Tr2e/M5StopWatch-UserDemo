@@ -27,6 +27,11 @@ public:
     static std::size_t workingBytes();
     // Diagnostic A/B switch; production always uses the optimized path.
     void setOptimizations(bool enabled){_optimizations=enabled;}
+    // Diagnostic isolation of model coverage; the product keeps the room on.
+    void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
+    // Diagnostic coverage of the last render, in active raster coordinates.
+    // Callers must keep x/y inside that render's internal sampling dimensions.
+    bool modelSampleCovered(int x,int y) const{return _surface && _surface->raster.depthAt(x,y)!=0;}
 private:
     struct Surface {
         Mesh mesh;
@@ -39,5 +44,6 @@ private:
     Pose _pose=Pose::Display;
     ModelId _model=ModelId::Rx78;
     bool _optimizations=true;
+    bool _spaceEnabled=true;
 };
 } // namespace gundam_museum

@@ -2,6 +2,7 @@
 #include "../main/apps/app_gundam_museum/model/strike_gundam.h"
 #include "sd_rx78_equipment_test.h"
 #include "sd_eye_socket_test.h"
+#include "sd_skirt_assembly_test.h"
 #include <limits>
 #include <memory>
 
@@ -68,6 +69,7 @@ inline float ventMirrorError(const Mesh& m,const StrikeAssembly& assembly){
 inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();StrikeAssembly assembly;buildStrikeGundam(*m,{},StrikeStage::Final,&assembly);
     assert(m->count==production.count && !m->overflowed);
+    sd_skirt_check::check(*m,assembly.skirts,true,"strike");
     sd_eye_check::check(*m,assembly.eyes,.51f,.32f);
     const float mirrorError=ventMirrorError(*m,assembly);
     std::cout<<"sd_strike chest_vent_mirror_error="<<mirrorError<<'\n';assert(mirrorError<1e-5f);

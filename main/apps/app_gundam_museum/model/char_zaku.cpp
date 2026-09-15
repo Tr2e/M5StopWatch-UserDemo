@@ -8,6 +8,7 @@ using sd_model::Builder;using sd_model::Ring;
 constexpr uint16_t salmon=0xdb6e,pink=0xe3cf,deepRed=0x99c7;
 constexpr uint16_t frame=0x39e7,black=0x1082,eye=0xf9d3;
 constexpr uint16_t purple=0x8019,gold=0xfec0;
+constexpr float headLowering=.14f;
 
 void legs(Builder& b){
     for(float s:{-1.f,1.f}){
@@ -25,7 +26,19 @@ void legs(Builder& b){
 }
 void torso(Builder& b,bool detail,ZakuAssembly* a){
     b.at(Part::Waist);b.shell({{1.04f,.35f,.27f},{1.24f,.39f,.30f},{1.39f,.35f,.28f}},deepRed,12);
-    for(float s:{-1.f,1.f})b.cover({{s*.05f,1.36f,.31f},{s*.34f,1.36f,.30f},{s*.45f,1.06f,.34f},{s*.10f,1.02f,.36f}},.06f,pink,.005f);
+    for(float s:{-1.f,1.f}){
+        const int side=s>0;
+        b.at(Part::Waist);
+        if(a)a->skirts.front[side].begin=b.m.count;
+        b.cover({{s*.05f,1.36f,.31f},{s*.34f,1.36f,.30f},{s*.45f,1.06f,.34f},{s*.10f,1.02f,.36f}},.06f,pink,.005f);
+        if(a)a->skirts.front[side].end=b.m.count;
+        b.at(Part::Waist,{},0,0,sd_model::pi);
+        const int rearSide=s<0;
+        if(a)a->skirts.rear[rearSide].begin=b.m.count;
+        b.cover({{s*.06f,1.35f,.27f},{s*.34f,1.35f,.27f},{s*.42f,1.05f,.34f},{s*.10f,1.01f,.35f}},.05f,deepRed,.005f);
+        if(a)a->skirts.rear[rearSide].end=b.m.count;
+    }
+    b.at(Part::Waist);
     b.cover({{-.10f,1.38f,.34f},{.10f,1.38f,.34f},{.11f,1.04f,.39f},{0,.99f,.40f},{-.11f,1.04f,.39f}},.05f,salmon,.006f);
     b.at(Part::Torso);b.shell({{1.36f,.36f,.28f},{1.58f,.47f,.36f},{1.89f,.55f,.39f},{2.01f,.43f,.31f}},deepRed,12);
     // Black rounded central chest with salmon side armor is a primary Zaku
@@ -51,8 +64,27 @@ void head(Builder& b,bool detail,ZakuAssembly* a){
     b.at(Part::Head);
     // The neck post visibly enters both the torso collar and helmet cup.
     if(a)a->headMount.begin=b.m.count;
-    b.tube({0,2.02f,-.03f},{0,2.31f,-.03f},.155f,.17f,frame,false,8);
+    b.tube({0,2.02f,-.03f},{0,2.31f-headLowering,-.03f},.155f,.17f,frame,false,8);
     if(a)a->headMount.end=b.m.count;
+    // Lower the complete rigid head; do not compress the helmet or leave its
+    // hoses/eye/antenna behind. The collar stays fixed on the chest.
+    b.at(Part::Head,{0,-headLowering,0});
+    if(a)a->headBody.begin=b.m.count;
+    // A shallow solid cup joins the open rear helmet rim to the neck post.
+    // Sharing its lower arc avoids treating overlapping AABBs as attachment.
+    if(a)a->headSocket.begin=b.m.count;
+    const auto cupPoint=[](int i,float y){
+        const float angle=1.22f+(2*sd_model::pi-2.44f)*i/14;
+        return Point{std::sin(angle)*.50f,y,-.04f+std::cos(angle)*.44f};
+    };
+    for(int i=0;i<15;++i){
+        const int j=(i+1)%15;const auto p=cupPoint(i,2.23f),q=cupPoint(j,2.23f);
+        const auto u=cupPoint(i,2.255f),v=cupPoint(j,2.255f);
+        b.face({0,2.23f,-.04f},q,p,p,frame,{0,-1,0},true);
+        b.face({0,2.255f,-.04f},u,v,v,frame,{0,1,0},true);
+        b.face(p,q,v,u,frame,{p.x+q.x,0,p.z+q.z+.08f},true);
+    }
+    if(a)a->headSocket.end=b.m.count;
     b.shell({{2.52f,.55f,.48f,-.05f},{2.64f,.55f,.48f,-.05f},{2.76f,.50f,.44f,-.055f},{2.87f,.40f,.36f,-.06f},{2.95f,.27f,.24f,-.06f},{3.00f,.05f,.05f,-.06f}},pink,20);
     sd_curved::arc(b,{{2.23f,.50f,.44f,-.04f},{2.40f,.56f,.48f,-.05f},{2.54f,.55f,.48f,-.05f}},pink,1.22f,2*sd_model::pi-1.22f,14);
     // The visor is a recessed structural band; the eye is a separate lens.
@@ -65,34 +97,60 @@ void head(Builder& b,bool detail,ZakuAssembly* a){
         for(float s:{-1.f,1.f})sd_curved::hose(b,{{s*.18f,2.295f,.53f},{s*.43f,2.29f,.48f},{s*.57f,2.32f,.17f},{s*.50f,2.38f,-.24f},{s*.30f,2.40f,-.46f}},.077f,salmon,15,6);
         if(a)a->headHose.end=b.m.count;
         for(float s:{-1.f,1.f}){
-            b.at(Part::Head);
+            b.at(Part::Head,{0,-headLowering,0});
             b.tube({s*.46f,2.48f,.10f},{s*.58f,2.48f,.10f},.10f,.10f,deepRed,false,12);
         }
     }
     // Official SDCS blade antenna: broad at the helmet, shorter than the old
     // needle and visibly swept toward the face in side view.
-    b.at(Part::Head);
+    if(a)a->headBody.end=b.m.count;
+    b.at(Part::Head,{0,-headLowering,0});
+    if(a)a->antenna.begin=b.m.count;
     b.cover({{-.080f,2.88f,.02f},{.080f,2.88f,.02f},{.025f,3.31f,.13f},{-.025f,3.31f,.13f}},.095f,salmon,.006f,true);
+    if(a)a->antenna.end=b.m.count;
 }
 void armFrame(Builder& b,Part p,float s){b.at(p,{s*.78f,1.90f,0},s*(s<0?.16f:.10f),s<0?-.08f:0);}
 Point anchor(Builder& b,float s,Point p){armFrame(b,Part::Hands,s);return b.transform(p);}
 Point handAnchor(Builder& b,float s){return anchor(b,s,{0,-1.02f,.16f});}
+void leftPauldron(Builder& b){
+    // Keep the accepted outer silhouette and spike anchors. Only the medial
+    // half is relieved so the low-set helmet/hoses do not enter the shoulder.
+    const Ring rings[]={{-.28f,.36f,.35f},{-.20f,.38f,.36f},{.01f,.36f,.35f},{.16f,.31f,.30f},{.26f,.21f,.22f},{.29f,.10f,.12f}};
+    const auto point=[](Ring r,int i){
+        const float angle=2*sd_model::pi*i/16,x=std::sin(angle)*r.w;
+        return Point{x<0?x*.35f:x,r.y,std::cos(angle)*r.d};
+    };
+    for(size_t row=1;row<6;++row)for(int i=0;i<16;++i){
+        const auto p=point(rings[row-1],i),q=point(rings[row-1],i+1);
+        b.face(p,q,point(rings[row],i+1),point(rings[row],i),salmon,{p.x+q.x,0,p.z+q.z});
+    }
+    for(int end=0;end<2;++end)for(int i=1;i<15;++i){
+        const auto r=rings[end?5:0];
+        b.face(point(r,0),point(r,i),point(r,i+1),point(r,i+1),salmon,{0,end?1.f:-1.f,0});
+    }
+}
 void arms(Builder& b,bool detail,ZakuAssembly* a){
     for(float s:{-1.f,1.f}){
+        const int side=s>0;
+        b.at(Part::Arms);if(a)a->armMounts[side].begin=b.m.count;
+        b.tube({s*.44f,1.90f,0},{s*.78f,1.90f,0},.115f,.115f,frame,false,8);
+        if(a)a->armMounts[side].end=b.m.count;
         armFrame(b,Part::Shoulders,s);b.tube({-.15f,0,0},{.15f,0,0},.11f,.11f,frame,false,8);
         if(s<0){ // right shoulder rectangular shield
-            if(a)a->rightShield.begin=b.m.count;
             // Keep the rear-facing shield visibly attached to the shoulder;
             // the connector is part of the shield assembly and its collision gate.
+            if(a)a->rightShieldMount.begin=b.m.count;
             b.at(Part::Shield);
             b.tube({-.88f,1.95f,-.08f},{-1.08f,1.96f,-.21f},.045f,.050f,frame,false,8);
+            if(a)a->rightShieldMount.end=b.m.count;
+            if(a)a->rightShield.begin=b.m.count;
             b.at(Part::Shield,{s*1.24f,1.96f,-.25f},.05f,0,s*.08f);
             b.box(0,-.02f,0,.58f,1.04f,.13f,pink,true);
             b.box(0,.01f,.075f,.43f,.83f,.025f,salmon,true);
             b.box(.22f,-.32f,-.10f,.11f,.25f,.10f,frame,true);
             if(a)a->rightShield.end=b.m.count;
         }else{ // left spiked pauldron
-            b.at(Part::Shoulders,{s*.80f,2.13f,0},.10f);b.shell({{-.28f,.36f,.35f},{-.20f,.38f,.36f},{.01f,.36f,.35f},{.16f,.31f,.30f},{.26f,.21f,.22f},{.29f,.10f,.12f}},salmon,16);
+            b.at(Part::Shoulders,{s*.80f,2.13f,0},.10f);leftPauldron(b);
             if(a)a->leftSpikes.begin=b.m.count;
             b.tube({.12f,.03f,.28f},{.13f,.03f,.36f},.145f,.13f,pink,false,12);
             const std::pair<Point,Point> spikes[]={{{.25f,.13f,0},{.53f,.37f,0}},{{.0f,.21f,-.08f},{.12f,.45f,-.18f}},{{.26f,-.10f,-.15f},{.49f,-.10f,-.28f}}};
@@ -112,7 +170,10 @@ void equipment(Builder& b,ZakuAssembly* a){
     // Zaku machine gun in the right fist, including drum and hollow muzzle.
     const Point grip=handAnchor(b,-1);b.at(Part::Rifle,grip,-.16f,.78f,-.12f);
     if(a)a->rifle.begin=b.m.count;
-    b.box(0,.02f,.05f,.10f,.25f,.10f,frame);b.box(0,.21f,.28f,.16f,.16f,.58f,black);
+    if(a)a->rifleGrip.begin=b.m.count;
+    b.box(0,.02f,.05f,.10f,.25f,.10f,frame);
+    if(a)a->rifleGrip.end=b.m.count;
+    b.box(0,.21f,.28f,.16f,.16f,.58f,black);
     b.tube({0,.21f,.46f},{0,.21f,1.12f},.065f,.040f,frame,true,12);
     if(a)a->drum.begin=b.m.count;
     b.tube({0,.30f,.27f},{0,.39f,.27f},.23f,.23f,frame,false,16);

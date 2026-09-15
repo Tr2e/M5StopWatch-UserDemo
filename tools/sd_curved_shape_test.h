@@ -19,19 +19,19 @@ inline Section section(const Mesh& m,Part part,float y){
         result.zmin=std::min(result.zmin,z);result.zmax=std::max(result.zmax,z);++result.samples;
     }return result;
 }
-inline bool roundedCrown(const Mesh& m){
-    const auto mid=section(m,Part::Head,2.70f),top=section(m,Part::Head,2.90f);
+inline bool roundedCrown(const Mesh& m,float headYOffset=0){
+    const auto mid=section(m,Part::Head,2.70f+headYOffset),top=section(m,Part::Head,2.90f+headYOffset);
     return mid.samples&&top.samples&&(top.xmax-top.xmin)<.85f*(mid.xmax-mid.xmin)
         &&(top.zmax-top.zmin)<.9f*(mid.zmax-mid.zmin);
 }
-inline void crownAndNegative(Mesh& m){
-    const auto mid=section(m,Part::Head,2.70f),top=section(m,Part::Head,2.90f);
+inline void crownAndNegative(Mesh& m,float headYOffset=0){
+    const auto mid=section(m,Part::Head,2.70f+headYOffset),top=section(m,Part::Head,2.90f+headYOffset);
     std::cout<<"curved_crown mid_width="<<mid.xmax-mid.xmin<<" top_width="<<top.xmax-top.xmin
              <<" mid_depth="<<mid.zmax-mid.zmin<<" top_depth="<<top.zmax-top.zmin<<'\n';
-    assert(roundedCrown(m));
+    assert(roundedCrown(m,headYOffset));
     // Collapse the middle without changing the top, antenna or foot envelope.
     for(size_t i=0;i<m.count;++i)if(m.parts[i]==Part::Head)for(auto& p:m.panels[i].point)
-        if(p.y>2.54f&&p.y<2.86f)p.x*=.35f;
-    assert(!roundedCrown(m));std::cout<<"curved_crown_negative_detected=1\n";
+        if(p.y>2.54f+headYOffset&&p.y<2.86f+headYOffset)p.x*=.35f;
+    assert(!roundedCrown(m,headYOffset));std::cout<<"curved_crown_negative_detected=1\n";
 }
 } // namespace sd_curved_check

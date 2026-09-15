@@ -94,7 +94,7 @@ public:
     }
 };
 
-void body(SdNuBuilder& b){
+void body(SdNuBuilder& b,NuAssembly* assembly){
     for(float s:{-1.f,1.f}){
         const float spread=s<0?.26f:.23f;
         const Point hip{s*.285f,1.02f,s<0?.07f:0};
@@ -128,14 +128,23 @@ void body(SdNuBuilder& b){
     b.shell({{1.0f,.28f,.21f},{1.30f,.34f,.24f},{1.38f,.30f,.215f}},frame);
     b.shell({{1.28f,.35f,.255f},{1.38f,.34f,.24f}},white);
     for(float s:{-1.f,1.f}){
+        const int side=s>0;
+        b.at(Part::Waist);
         const auto p=[&](float x,float y,float dz=0){return Point{s*x,y,.25f+(1.35f-y)*.34f+dz};};
+        if(assembly)assembly->skirts.front[side].begin=b.m.count;
         b.cover({p(.105f,1.35f),p(.35f,1.35f),p(.47f,1.05f),p(.29f,.94f),p(.12f,1.02f)},.065f,white);
         b.cover({p(.17f,1.31f,.014f),p(.32f,1.31f,.014f),p(.35f,1.22f,.014f),p(.17f,1.22f,.014f)},.012f,frame,.003f);
         b.cover({p(.17f,1.19f,.013f),p(.35f,1.19f,.013f),p(.39f,1.07f,.013f),p(.24f,1.00f,.013f)},.013f,ivory,.004f);
+        if(assembly)assembly->skirts.front[side].end=b.m.count;
         b.at(Part::Waist,{s*.37f,1.30f,-.02f},s*.34f,0,s*.33f);
+        if(assembly)assembly->skirts.side[side].begin=b.m.count;
         b.shell({{-.27f,.125f,.23f},{.02f,.105f,.20f}},white);
+        if(assembly)assembly->skirts.side[side].end=b.m.count;
         b.at(Part::Waist,{},0,0,pi);
+        const int rearSide=s<0;
+        if(assembly)assembly->skirts.rear[rearSide].begin=b.m.count;
         b.cover({{s*.07f,1.33f,.255f},{s*.33f,1.33f,.255f},{s*.43f,1.03f,.34f},{s*.10f,.99f,.35f}},.04f,ivory);
+        if(assembly)assembly->skirts.rear[rearSide].end=b.m.count;
     }
     b.at(Part::Waist);
     b.cover({{-.10f,1.37f,.26f},{.10f,1.37f,.26f},{.12f,.99f,.395f},{-.12f,.99f,.395f}},.07f,white);
@@ -353,7 +362,7 @@ void buildNuGundam(Mesh& mesh,BuildOptions options,NuStage stage,NuAssembly* ass
     if(assembly)*assembly=NuAssembly{};
     mesh.count=mesh.buriedOmitted=0;mesh.overflowed=false;
     if(stage==NuStage::Blockout)options.gray=true;
-    SdNuBuilder b{mesh,options};body(b);head(b,stage!=NuStage::Blockout,assembly);
+    SdNuBuilder b{mesh,options};body(b,assembly);head(b,stage!=NuStage::Blockout,assembly);
     arms(b,stage==NuStage::Final);if(options.equipment)equipment(b,stage==NuStage::Final,assembly);
 }
 } // namespace gundam_museum

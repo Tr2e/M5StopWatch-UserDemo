@@ -33,9 +33,20 @@ void legs(Builder& b,bool detail){
 void body(Builder& b,bool detail,DestinyAssembly* a){
     b.at(Part::Waist);b.shell({{1.02f,.30f,.22f},{1.23f,.35f,.26f},{1.38f,.31f,.22f}},frame,12);
     for(float s:{-1.f,1.f}){
+        const int side=s>0;
+        b.at(Part::Waist);
+        if(a)a->skirts.front[side].begin=b.m.count;
         b.cover({{s*.07f,1.38f,.31f},{s*.35f,1.37f,.30f},{s*.48f,1.10f,.37f},{s*.28f,1.01f,.43f},{s*.10f,1.06f,.42f}},.06f,white,.008f);
+        if(a)a->skirts.front[side].end=b.m.count;
         b.at(Part::Waist,{s*.41f,1.31f,-.03f},s*.28f,0,s*.22f);
+        if(a)a->skirts.side[side].begin=b.m.count;
         b.shell({{-.25f,.17f,.21f},{-.11f,.19f,.22f},{.03f,.15f,.18f}},white,10);
+        if(a)a->skirts.side[side].end=b.m.count;
+        b.at(Part::Waist,{},0,0,sd_model::pi);
+        const int rearSide=s<0;
+        if(a)a->skirts.rear[rearSide].begin=b.m.count;
+        b.cover({{s*.07f,1.37f,.27f},{s*.34f,1.37f,.27f},{s*.43f,1.08f,.35f},{s*.10f,1.02f,.37f}},.05f,ivory,.006f);
+        if(a)a->skirts.rear[rearSide].end=b.m.count;
     }
     b.at(Part::Waist);b.cover({{-.105f,1.39f,.35f},{.105f,1.39f,.35f},{.12f,1.06f,.45f},{0,.99f,.48f},{-.12f,1.06f,.45f}},.05f,white,.007f);
     b.cover({{-.086f,1.38f,.374f},{.086f,1.38f,.374f},{.072f,1.17f,.445f},{-.072f,1.17f,.445f}},.025f,blue,.005f);

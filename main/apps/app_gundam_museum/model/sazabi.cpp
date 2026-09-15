@@ -22,12 +22,22 @@ void legs(Builder& b,bool detail){
         if(detail)b.tube({s*.23f,-.59f,-.24f},{s*.30f,-.64f,-.36f},.075f,.09f,gold,true,10);
     }
 }
-void body(Builder& b,bool detail){
+void body(Builder& b,bool detail,SazabiAssembly* a){
     b.at(Part::Waist);b.shell({{1.03f,.39f,.30f},{1.25f,.46f,.34f},{1.39f,.37f,.27f}},deep,12);
     for(float s:{-1.f,1.f}){
-        b.at(Part::Waist);b.cover({{s*.06f,1.35f,.35f},{s*.36f,1.34f,.33f},{s*.51f,1.06f,.39f},{s*.28f,.99f,.45f},{s*.10f,1.05f,.44f}},.065f,red,.008f);
+        const int side=s>0;
+        b.at(Part::Waist);if(a)a->skirts.front[side].begin=b.m.count;
+        b.cover({{s*.06f,1.35f,.35f},{s*.36f,1.34f,.33f},{s*.51f,1.06f,.39f},{s*.28f,.99f,.45f},{s*.10f,1.05f,.44f}},.065f,red,.008f);
+        if(a)a->skirts.front[side].end=b.m.count;
         b.at(Part::Waist,{s*.43f,1.30f,-.04f},s*.27f,0,s*.23f);
+        if(a)a->skirts.side[side].begin=b.m.count;
         b.shell({{-.27f,.20f,.27f},{-.13f,.21f,.28f},{.02f,.17f,.24f},{.10f,.12f,.18f}},red,10);
+        if(a)a->skirts.side[side].end=b.m.count;
+        b.at(Part::Waist,{},0,0,sd_model::pi);
+        const int rearSide=s<0;
+        if(a)a->skirts.rear[rearSide].begin=b.m.count;
+        b.cover({{s*.07f,1.35f,.29f},{s*.36f,1.34f,.29f},{s*.47f,1.04f,.38f},{s*.10f,1.00f,.40f}},.055f,deep,.007f);
+        if(a)a->skirts.rear[rearSide].end=b.m.count;
     }
     b.at(Part::Waist);b.cover({{-.105f,1.37f,.39f},{.105f,1.37f,.39f},{.12f,1.05f,.46f},{0,.98f,.48f},{-.12f,1.05f,.46f}},.045f,bright,.008f);
     b.at(Part::Torso);b.shell({{1.36f,.34f,.26f},{1.49f,.39f,.29f},{1.58f,.36f,.27f}},black,12);
@@ -172,6 +182,6 @@ void equipment(Builder& b,SazabiAssembly* a){
 } // namespace
 void buildSazabi(Mesh& mesh,BuildOptions options,SazabiStage stage,SazabiAssembly* assembly){
     mesh.count=mesh.buriedOmitted=0;mesh.overflowed=false;if(assembly)*assembly={};if(stage==SazabiStage::Blockout)options.gray=true;
-    Builder b{mesh,options};legs(b,stage==SazabiStage::Final);body(b,stage==SazabiStage::Final);head(b,stage!=SazabiStage::Blockout,assembly);arms(b,stage==SazabiStage::Final,assembly);if(options.equipment)equipment(b,assembly);
+    Builder b{mesh,options};legs(b,stage==SazabiStage::Final);body(b,stage==SazabiStage::Final,assembly);head(b,stage!=SazabiStage::Blockout,assembly);arms(b,stage==SazabiStage::Final,assembly);if(options.equipment)equipment(b,assembly);
 }
 } // namespace gundam_museum

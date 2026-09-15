@@ -115,16 +115,25 @@ void body(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
     b.shell({{1.06f,.29f,.22f},{1.38f,.34f,.23f},{1.43f,.30f,.22f}},frame);
     b.shell({{1.35f,.36f,.265f},{1.44f,.33f,.23f}},white);
     for(float s:{-1.f,1.f}){
+        const int side=s>0;
+        b.at(Part::Waist);
         const auto p=[&](float x,float y,float dz=0){return Point{s*x,y,.26f+(1.42f-y)*.32f+dz};};
+        if(assembly)assembly->skirts.front[side].begin=b.m.count;
         b.cover({p(.10f,1.42f),p(.37f,1.42f),p(.48f,1.16f),p(.30f,1.02f),p(.14f,1.08f)},.07f,white);
         if(detail){
             b.cover({p(.16f,1.35f,.016f),p(.19f,1.35f,.016f),p(.21f,1.12f,.016f),p(.18f,1.13f,.016f)},.012f,frame,.003f);
             b.cover({p(.30f,1.13f,.016f),p(.44f,1.23f,.016f),p(.41f,1.16f,.016f),p(.29f,1.08f,.016f)},.012f,frame,.003f);
         }
+        if(assembly)assembly->skirts.front[side].end=b.m.count;
         b.at(Part::Waist,{s*.38f,1.39f,-.04f},s*.38f,0,s*.30f);
+        if(assembly)assembly->skirts.side[side].begin=b.m.count;
         b.shell({{-.31f,.105f,.23f},{-.11f,.14f,.235f},{.015f,.11f,.21f}},white);
+        if(assembly)assembly->skirts.side[side].end=b.m.count;
         b.at(Part::Waist,{},0,0,pi);
+        const int rearSide=s<0;
+        if(assembly)assembly->skirts.rear[rearSide].begin=b.m.count;
         b.cover({{s*.06f,1.40f,.25f},{s*.32f,1.40f,.25f},{s*.40f,1.06f,.34f},{s*.08f,1.04f,.345f}},.04f,ivory);
+        if(assembly)assembly->skirts.rear[rearSide].end=b.m.count;
     }
     b.at(Part::Waist);
     b.cover({{-.12f,1.45f,.275f},{.12f,1.45f,.275f},{.10f,1.03f,.409f},{0,.985f,.424f},{-.10f,1.03f,.409f}},.06f,white);

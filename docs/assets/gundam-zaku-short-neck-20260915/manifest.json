@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {
+      "id": "ms-06s-sdcs-char-zaku-ii",
+      "required_views": [
+        "equipped",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "unarmed",
+        "drag",
+        "gray",
+        "head",
+        "equipped-drag",
+        "study-arm-left",
+        "study-arm-right",
+        "study-chest-front",
+        "study-chest",
+        "study-face-front",
+        "study-face-quarter",
+        "study-face-side",
+        "study-front",
+        "study-gray-equipped",
+        "study-gray",
+        "study-grip-assembly",
+        "study-grip-side",
+        "study-head-mount",
+        "study-heat-hawk-mount",
+        "study-heat-hawk",
+        "study-leg-side",
+        "study-leg",
+        "study-other-side",
+        "study-quarter-right",
+        "study-rear-equipped",
+        "study-rear",
+        "study-rifle",
+        "study-shield-mount",
+        "study-shield-side",
+        "study-shield",
+        "study-side",
+        "study-standing",
+        "study-top",
+        "study-underside"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "zaku-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "zaku-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "zaku-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "zaku-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "zaku-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "zaku-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "zaku-unarmed.png"
+        },
+        {
+          "view": "drag",
+          "file": "zaku-drag.png"
+        },
+        {
+          "view": "gray",
+          "file": "zaku-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "zaku-head.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "zaku-equipped-drag.png"
+        },
+        {
+          "view": "study-arm-left",
+          "file": "study-arm-left.png"
+        },
+        {
+          "view": "study-arm-right",
+          "file": "study-arm-right.png"
+        },
+        {
+          "view": "study-chest-front",
+          "file": "study-chest-front.png"
+        },
+        {
+          "view": "study-chest",
+          "file": "study-chest.png"
+        },
+        {
+          "view": "study-face-front",
+          "file": "study-face-front.png"
+        },
+        {
+          "view": "study-face-quarter",
+          "file": "study-face-quarter.png"
+        },
+        {
+          "view": "study-face-side",
+          "file": "study-face-side.png"
+        },
+        {
+          "view": "study-front",
+          "file": "study-front.png"
+        },
+        {
+          "view": "study-gray-equipped",
+          "file": "study-gray-equipped.png"
+        },
+        {
+          "view": "study-gray",
+          "file": "study-gray.png"
+        },
+        {
+          "view": "study-grip-assembly",
+          "file": "study-grip-assembly.png"
+        },
+        {
+          "view": "study-grip-side",
+          "file": "study-grip-side.png"
+        },
+        {
+          "view": "study-head-mount",
+          "file": "study-head-mount.png"
+        },
+        {
+          "view": "study-heat-hawk-mount",
+          "file": "study-heat-hawk-mount.png"
+        },
+        {
+          "view": "study-heat-hawk",
+          "file": "study-heat-hawk.png"
+        },
+        {
+          "view": "study-leg-side",
+          "file": "study-leg-side.png"
+        },
+        {
+          "view": "study-leg",
+          "file": "study-leg.png"
+        },
+        {
+          "view": "study-other-side",
+          "file": "study-other-side.png"
+        },
+        {
+          "view": "study-quarter-right",
+          "file": "study-quarter-right.png"
+        },
+        {
+          "view": "study-rear-equipped",
+          "file": "study-rear-equipped.png"
+        },
+        {
+          "view": "study-rear",
+          "file": "study-rear.png"
+        },
+        {
+          "view": "study-rifle",
+          "file": "study-rifle.png"
+        },
+        {
+          "view": "study-shield-mount",
+          "file": "study-shield-mount.png"
+        },
+        {
+          "view": "study-shield-side",
+          "file": "study-shield-side.png"
+        },
+        {
+          "view": "study-shield",
+          "file": "study-shield.png"
+        },
+        {
+          "view": "study-side",
+          "file": "study-side.png"
+        },
+        {
+          "view": "study-standing",
+          "file": "study-standing.png"
+        },
+        {
+          "view": "study-top",
+          "file": "study-top.png"
+        },
+        {
+          "view": "study-underside",
+          "file": "study-underside.png"
+        }
+      ]
+    }
+  ]
+}

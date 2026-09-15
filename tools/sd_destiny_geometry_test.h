@@ -2,6 +2,7 @@
 #include "../main/apps/app_gundam_museum/model/destiny_gundam.h"
 #include "sd_rx78_equipment_test.h"
 #include "sd_eye_socket_test.h"
+#include "sd_skirt_assembly_test.h"
 #include <initializer_list>
 #include <iostream>
 #include <memory>
@@ -47,6 +48,7 @@ inline std::pair<Point,Point> bounds(const Mesh& m,Range r){
 inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();DestinyAssembly a;buildDestinyGundam(*m,{},DestinyStage::Final,&a);
     assert(!m->overflowed&&m->count==production.count);
+    sd_skirt_check::check(*m,a.skirts,true,"destiny");
     sd_eye_check::check(*m,a.eyes,.525f,.32f);
     const Range required[]={a.headMount,a.helmet,a.backpackMount,a.rifle,a.shieldMount,a.shield,
         a.swordMount,a.sword,a.cannonMount,a.cannon,a.palms[0],a.palms[1],

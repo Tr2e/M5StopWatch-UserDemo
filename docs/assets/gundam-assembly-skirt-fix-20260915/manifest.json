@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {"id":"zaku","required_views":["front","rear","equipped","orbit"],"frames":[{"view":"front","file":"zaku-front.png"},{"view":"rear","file":"zaku-rear.png"},{"view":"equipped","file":"zaku-equipped.png"},{"view":"orbit","file":"zaku-orbit.gif"}]},
+    {"id":"nu","required_views":["front","rear","equipped","orbit"],"frames":[{"view":"front","file":"nu-front.png"},{"view":"rear","file":"nu-rear.png"},{"view":"equipped","file":"nu-equipped.png"},{"view":"orbit","file":"nu-orbit.gif"}]},
+    {"id":"sazabi","required_views":["front","rear","equipped","orbit"],"frames":[{"view":"front","file":"sazabi-front.png"},{"view":"rear","file":"sazabi-rear.png"},{"view":"equipped","file":"sazabi-equipped.png"},{"view":"orbit","file":"sazabi-orbit.gif"}]},
+    {"id":"strike","required_views":["front","rear","equipped","orbit"],"frames":[{"view":"front","file":"strike-front.png"},{"view":"rear","file":"strike-rear.png"},{"view":"equipped","file":"strike-equipped.png"},{"view":"orbit","file":"strike-orbit.gif"}]},
+    {"id":"destiny","required_views":["front","rear","equipped","orbit"],"frames":[{"view":"front","file":"destiny-front.png"},{"view":"rear","file":"destiny-rear.png"},{"view":"equipped","file":"destiny-equipped.png"},{"view":"orbit","file":"destiny-orbit.gif"}]}
+  ]
+}

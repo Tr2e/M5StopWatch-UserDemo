@@ -1,0 +1,13 @@
+Production and sanitizer runs, 2026-09-15
+
+zaku: 3977 panels; skirts front 16/16, rear 16/16; arm-to-torso 16/16; arm-to-shoulder 34/50; shield mount 18/24; rifle-to-palm 8; 864 cases passed; max edge diff 2; 36 room cases passed.
+nu: 3636 panels; skirts front 52/52, side 24/24, rear 16/16; 864 cases passed; max edge diff 4; 36 room cases passed.
+sazabi: 4091 panels; skirts front 20/20, side 70/70, rear 16/16; 864 cases passed; max edge diff 4; 36 room cases passed.
+strike: 3784 panels; skirts front 52/52, side 36/36, rear 16/16; 864 cases passed; max edge diff 2; 36 room cases passed.
+destiny: 3608 panels; skirts front 20/20, side 52/52, rear 16/16; 864 cases passed; max edge diff 2; 36 room cases passed.
+
+All five models passed the same runs under AddressSanitizer and UndefinedBehaviorSanitizer (4320 production combinations total). Each skirt check includes a displaced right-front and right-rear negative. Zaku additionally includes detached arm-root, shield-mount, and rifle-grip negatives.
+
+Full-museum performance A/B: 6720 pixel-identical cases; working bytes 1274184; transforms before 36140760, after 7483212. Host timing is not device FPS.
+
+ESP32-S3 target build: StopWatch-UserDemo.bin size 0x3d5e70; partition free 0x11a190 (22%).

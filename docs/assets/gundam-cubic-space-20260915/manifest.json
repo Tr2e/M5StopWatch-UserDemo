@@ -1,0 +1,318 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {
+      "id": "rx78",
+      "required_views": [
+        "equipped",
+        "equipped-drag",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "head",
+        "gray"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "rx78/rx78-equipped.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "rx78/rx78-equipped-drag.png"
+        },
+        {
+          "view": "front",
+          "file": "rx78/rx78-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "rx78/rx78-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "rx78/rx78-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "rx78/rx78-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "rx78/rx78-top.png"
+        },
+        {
+          "view": "head",
+          "file": "rx78/rx78-head.png"
+        },
+        {
+          "view": "gray",
+          "file": "rx78/rx78-gray.png"
+        }
+      ]
+    },
+    {
+      "id": "zaku",
+      "required_views": [
+        "equipped",
+        "equipped-drag",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "head",
+        "gray"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "zaku/zaku-equipped.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "zaku/zaku-equipped-drag.png"
+        },
+        {
+          "view": "front",
+          "file": "zaku/zaku-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "zaku/zaku-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "zaku/zaku-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "zaku/zaku-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "zaku/zaku-top.png"
+        },
+        {
+          "view": "head",
+          "file": "zaku/zaku-head.png"
+        },
+        {
+          "view": "gray",
+          "file": "zaku/zaku-gray.png"
+        }
+      ]
+    },
+    {
+      "id": "nu",
+      "required_views": [
+        "equipped",
+        "equipped-drag",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "head",
+        "gray"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "nu/nu-equipped.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "nu/nu-equipped-drag.png"
+        },
+        {
+          "view": "front",
+          "file": "nu/nu-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "nu/nu-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "nu/nu-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "nu/nu-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "nu/nu-top.png"
+        },
+        {
+          "view": "head",
+          "file": "nu/nu-head.png"
+        },
+        {
+          "view": "gray",
+          "file": "nu/nu-gray.png"
+        }
+      ]
+    },
+    {
+      "id": "sazabi",
+      "required_views": [
+        "equipped",
+        "equipped-drag",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "head",
+        "gray"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "sazabi/sazabi-equipped.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "sazabi/sazabi-equipped-drag.png"
+        },
+        {
+          "view": "front",
+          "file": "sazabi/sazabi-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "sazabi/sazabi-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "sazabi/sazabi-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "sazabi/sazabi-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "sazabi/sazabi-top.png"
+        },
+        {
+          "view": "head",
+          "file": "sazabi/sazabi-head.png"
+        },
+        {
+          "view": "gray",
+          "file": "sazabi/sazabi-gray.png"
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "required_views": [
+        "equipped",
+        "equipped-drag",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "head",
+        "gray"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "strike/strike-equipped.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "strike/strike-equipped-drag.png"
+        },
+        {
+          "view": "front",
+          "file": "strike/strike-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "strike/strike-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "strike/strike-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "strike/strike-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "strike/strike-top.png"
+        },
+        {
+          "view": "head",
+          "file": "strike/strike-head.png"
+        },
+        {
+          "view": "gray",
+          "file": "strike/strike-gray.png"
+        }
+      ]
+    },
+    {
+      "id": "destiny",
+      "required_views": [
+        "equipped",
+        "equipped-drag",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "head",
+        "gray"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "destiny/destiny-equipped.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "destiny/destiny-equipped-drag.png"
+        },
+        {
+          "view": "front",
+          "file": "destiny/destiny-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "destiny/destiny-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "destiny/destiny-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "destiny/destiny-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "destiny/destiny-top.png"
+        },
+        {
+          "view": "head",
+          "file": "destiny/destiny-head.png"
+        },
+        {
+          "view": "gray",
+          "file": "destiny/destiny-gray.png"
+        }
+      ]
+    }
+  ]
+}

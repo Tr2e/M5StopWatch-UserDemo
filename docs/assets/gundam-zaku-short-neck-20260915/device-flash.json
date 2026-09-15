@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-09-15T17:02:27+08:00",
+  "base_head": "684c650",
+  "working_tree_dirty": true,
+  "scope": "Short-neck Zaku refinement and synchronized light-gray cubic wireframe room",
+  "port": "/dev/cu.usbmodem83301",
+  "macos_usb_device": "Espressif USB JTAG/serial debug unit",
+  "usb_vid_pid": "303a:1001",
+  "usb_serial": "44:1B:F6:C1:8A:00",
+  "actively_verified_mac": "44:1B:F6:C1:8A:00",
+  "chip": "ESP32-S3 QFN56 rev 0.2",
+  "baud": 460800,
+  "flash_mode": "dio",
+  "flash_frequency": "80m",
+  "flash_size": "16MB",
+  "images": [
+    {"offset": "0x0", "file": "build/bootloader/bootloader.bin", "verified": true},
+    {"offset": "0x20000", "file": "build/StopWatch-UserDemo.bin", "bytes": 4020000, "sha256": "8d9336fe706d9d1a1d70f617acadbd70701d4f8e843f6de8e404b6edcb8ef18d", "verified": true},
+    {"offset": "0x8000", "file": "build/partition_table/partition-table.bin", "verified": true},
+    {"offset": "0xd000", "file": "build/ota_data_initial.bin", "verified": true}
+  ],
+  "elf_sha256": "2e07fc1a15c2d1dffa3b52a1bfc01bad23d7787d4af40d5ad3f5fb8a56ffc13d",
+  "flash_result": "All four segments reported Hash of data verified; esptool exited 0 and hard reset completed",
+  "boot_observation": {
+    "duration_seconds": 12,
+    "app_version": "V0.5-204-g684c650-dirty",
+    "compile_time": "Sep 15 2026 16:29:32",
+    "reported_elf_sha256_prefix": "2e07fc1a1",
+    "psram_test": "SPI SRAM memory test OK",
+    "launcher": "on create, on open, LauncherView init observed",
+    "panic_or_restart_loop_observed": false,
+    "diagnostic_notes": "Two i2c.master port-not-initialized messages were followed by successful i2c0/i2c1 initialization; this is not a claim of an error-free boot log.",
+    "serial_capture_completed_and_port_closed": true
+  },
+  "acceptance_boundary": "Write verification and bounded launcher startup observation only; museum appearance and frame rate await user inspection."
+}

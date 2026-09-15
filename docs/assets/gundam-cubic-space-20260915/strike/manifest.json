@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {
+      "id": "gat-x105-sd-aile-sdex-002",
+      "required_views": [
+        "equipped",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "unarmed",
+        "drag",
+        "gray",
+        "head",
+        "equipped-drag"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "strike-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "strike-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "strike-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "strike-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "strike-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "strike-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "strike-unarmed.png"
+        },
+        {
+          "view": "drag",
+          "file": "strike-drag.png"
+        },
+        {
+          "view": "gray",
+          "file": "strike-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "strike-head.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "strike-equipped-drag.png"
+        }
+      ]
+    }
+  ]
+}

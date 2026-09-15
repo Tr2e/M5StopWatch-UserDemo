@@ -1,0 +1,218 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/Users/xudanyang/Documents/stopwatch/userdemo/docs/assets/gundam-assembly-skirt-fix-20260915",
+  "baseline_root": null,
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "zaku",
+      "frames": [
+        {
+          "view": "front",
+          "file": "zaku-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "1a071d2788425b3dc65726e80b6ece8406370a8f1c1cd7b4ae4528bcf6c1a190"
+        },
+        {
+          "view": "rear",
+          "file": "zaku-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c20eda2c27eafd9b683a7a3d5bacba79c427e261d64496b17846cb0fb076fd96"
+        },
+        {
+          "view": "equipped",
+          "file": "zaku-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "660c27a16f397255446f28187f93820b9764e0bec53be35934eb0f39527a18e0"
+        },
+        {
+          "view": "orbit",
+          "file": "zaku-orbit.gif",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "660c27a16f397255446f28187f93820b9764e0bec53be35934eb0f39527a18e0"
+        }
+      ]
+    },
+    {
+      "id": "nu",
+      "frames": [
+        {
+          "view": "front",
+          "file": "nu-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7d70cf05be499858194a6f82920f218aace6c262c9d059b753f80fc098d5cb0b"
+        },
+        {
+          "view": "rear",
+          "file": "nu-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ea671f5ec4efc144ea9bf4054edeaf70220b2c8cf9f9278d63284eecb52df79f"
+        },
+        {
+          "view": "equipped",
+          "file": "nu-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "95b6825d407ba28896c69ae7860a1797b4fbe0204862ab663256c8604b1dacc2"
+        },
+        {
+          "view": "orbit",
+          "file": "nu-orbit.gif",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "95b6825d407ba28896c69ae7860a1797b4fbe0204862ab663256c8604b1dacc2"
+        }
+      ]
+    },
+    {
+      "id": "sazabi",
+      "frames": [
+        {
+          "view": "front",
+          "file": "sazabi-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ca9a96c5839f78064a1b9ebbb6deb93a3f58f8155bc478939a7e56e2f61a7e5e"
+        },
+        {
+          "view": "rear",
+          "file": "sazabi-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "08d9d58311ce5ee754a3471636b9148c083052768545b37f156d476462ec85cc"
+        },
+        {
+          "view": "equipped",
+          "file": "sazabi-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "63e16308ac787ecd5f2fa26ac2fc39eb412fb3c396c635f0403c87e6053889b4"
+        },
+        {
+          "view": "orbit",
+          "file": "sazabi-orbit.gif",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "63e16308ac787ecd5f2fa26ac2fc39eb412fb3c396c635f0403c87e6053889b4"
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "frames": [
+        {
+          "view": "front",
+          "file": "strike-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d1b922f3f115e5a7ef960eeaee50aa69b00fd2a3e851811a1686bc3adf3d9a06"
+        },
+        {
+          "view": "rear",
+          "file": "strike-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0a08b9a81c51e2c79898a3d7640a3d90b6d557f259b3eed2df34c0fdb015b755"
+        },
+        {
+          "view": "equipped",
+          "file": "strike-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "865d56b6d82064267da4f8d3cb6bc80b4568ac122ecaad480c987532a8e40d10"
+        },
+        {
+          "view": "orbit",
+          "file": "strike-orbit.gif",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "865d56b6d82064267da4f8d3cb6bc80b4568ac122ecaad480c987532a8e40d10"
+        }
+      ]
+    },
+    {
+      "id": "destiny",
+      "frames": [
+        {
+          "view": "front",
+          "file": "destiny-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "450b4fc4c665b59c201d1ac12b7788a428430f9745bca67224cbbd8e2508f740"
+        },
+        {
+          "view": "rear",
+          "file": "destiny-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ee7ffb16855e4bbfdfc9bc7a5407e4366195ebcca9a6ff6b87ae06325770d7a6"
+        },
+        {
+          "view": "equipped",
+          "file": "destiny-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4826c556c0cc392b7aabf2261aaa8f1dabe1cb14e9c5da1b2427ad8ce16f1ce0"
+        },
+        {
+          "view": "orbit",
+          "file": "destiny-orbit.gif",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4826c556c0cc392b7aabf2261aaa8f1dabe1cb14e9c5da1b2427ad8ce16f1ce0"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

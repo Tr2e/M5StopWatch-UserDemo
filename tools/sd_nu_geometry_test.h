@@ -2,6 +2,7 @@
 #include "../main/apps/app_gundam_museum/model/nu_gundam.h"
 #include "sd_rx78_equipment_test.h"
 #include "sd_eye_socket_test.h"
+#include "sd_skirt_assembly_test.h"
 #include <limits>
 #include <memory>
 
@@ -46,6 +47,7 @@ inline Contacts inspect(const Mesh& m,const NuAssembly& assembly){
 inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();NuAssembly assembly;buildNuGundam(*m,{},NuStage::Final,&assembly);
     assert(m->count==production.count && !m->overflowed);
+    sd_skirt_check::check(*m,assembly.skirts,true,"nu");
     sd_eye_check::check(*m,assembly.eyes,.515f*1.02f,.35f*1.02f/1.08f);
     auto result=inspect(*m,assembly);
     std::cout<<"sd_nu contacts unintended="<<result.unintended<<" shield_peg="<<result.shieldPeg

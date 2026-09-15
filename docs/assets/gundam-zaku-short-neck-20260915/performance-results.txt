@@ -1,0 +1,19 @@
+model=0 percent=65 samples=288 reference_mean_us=1123.77 p95_us=1528.25 optimized_mean_us=1063.21 p95_us=1438.83 unique_vertices=2670 transforms_before=1701480 transforms_after=413529
+model=0 percent=90 samples=288 reference_mean_us=1610.42 p95_us=2251.5 optimized_mean_us=1534.5 p95_us=2102.62 unique_vertices=2670 transforms_before=1701480 transforms_after=413529
+model=0 percent=100 samples=288 reference_mean_us=1808.08 p95_us=2459.21 optimized_mean_us=1724.61 p95_us=2328.33 unique_vertices=2670 transforms_before=1701480 transforms_after=413529
+model=1 percent=65 samples=288 reference_mean_us=1064.75 p95_us=1502.83 optimized_mean_us=999.626 p95_us=1420.58 unique_vertices=2495 transforms_before=2387168 transforms_after=394496
+model=1 percent=90 samples=288 reference_mean_us=1505.01 p95_us=2129.54 optimized_mean_us=1426.44 p95_us=2016.12 unique_vertices=2495 transforms_before=2387168 transforms_after=394496
+model=1 percent=100 samples=288 reference_mean_us=1683.04 p95_us=2411 optimized_mean_us=1602.14 p95_us=2287.58 unique_vertices=2495 transforms_before=2387168 transforms_after=394496
+model=2 percent=65 samples=288 reference_mean_us=1125 p95_us=1861.83 optimized_mean_us=1055.89 p95_us=1761.67 unique_vertices=3121 transforms_before=1892340 transforms_after=445812
+model=2 percent=90 samples=288 reference_mean_us=1611.89 p95_us=2669.17 optimized_mean_us=1523.46 p95_us=2504.42 unique_vertices=3121 transforms_before=1892340 transforms_after=445812
+model=2 percent=100 samples=288 reference_mean_us=1831.55 p95_us=3075.42 optimized_mean_us=1738.87 p95_us=2867.96 unique_vertices=3121 transforms_before=1892340 transforms_after=445812
+model=3 percent=65 samples=288 reference_mean_us=1088.39 p95_us=1623.83 optimized_mean_us=1023.99 p95_us=1522.67 unique_vertices=2939 transforms_before=2121296 transforms_after=411036
+model=3 percent=90 samples=288 reference_mean_us=1626.31 p95_us=2434.54 optimized_mean_us=1563.66 p95_us=2273.83 unique_vertices=2939 transforms_before=2121296 transforms_after=411036
+model=3 percent=100 samples=288 reference_mean_us=1751.25 p95_us=2649.25 optimized_mean_us=1672.45 p95_us=2515.5 unique_vertices=2939 transforms_before=2121296 transforms_after=411036
+model=4 percent=65 samples=288 reference_mean_us=1136.87 p95_us=1630.46 optimized_mean_us=1064.2 p95_us=1514.92 unique_vertices=2980 transforms_before=1770772 transforms_after=398946
+model=4 percent=90 samples=288 reference_mean_us=1474.95 p95_us=2243.92 optimized_mean_us=1393.07 p95_us=2078.21 unique_vertices=2980 transforms_before=1770772 transforms_after=398946
+model=4 percent=100 samples=288 reference_mean_us=1642.14 p95_us=2530.79 optimized_mean_us=1562.16 p95_us=2396.42 unique_vertices=2980 transforms_before=1770772 transforms_after=398946
+model=5 percent=65 samples=288 reference_mean_us=1154.64 p95_us=1934.17 optimized_mean_us=1215.81 p95_us=1861.25 unique_vertices=2683 transforms_before=2090920 transforms_after=413305
+model=5 percent=90 samples=288 reference_mean_us=1568.26 p95_us=2670.75 optimized_mean_us=1489.3 p95_us=2550.79 unique_vertices=2683 transforms_before=2090920 transforms_after=413305
+model=5 percent=100 samples=288 reference_mean_us=1773.69 p95_us=3052.92 optimized_mean_us=1685.2 p95_us=2925.42 unique_vertices=2683 transforms_before=2090920 transforms_after=413305
+pixel_identical_cases=6720 working_bytes=1274184 transforms_before=35891928 transforms_after=7431372

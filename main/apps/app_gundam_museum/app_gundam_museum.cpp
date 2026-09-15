@@ -30,16 +30,16 @@ void AppGundamMuseum::draw(uint32_t now){
     uint64_t rendered=0;
     if(_direct){
         auto& display=GetHAL().getDisplay();
-        const app_performance::DisplayRegion region=partial?app_performance::DisplayRegion{0,gundam_museum::layout::top,display.width(),gundam_museum::layout::side}:
-            app_performance::DisplayRegion{0,0,display.width(),display.height()};
+        // Room grids rotate into the top/bottom gutters as well as the model
+        // tile. Present their full dirty extent in both rendering paths.
+        const app_performance::DisplayRegion region{0,0,display.width(),display.height()};
         app_performance::DisplayFrameScope frame(display,region);
         _renderer.render(display,_controller.view(),_controller.percent(now),true,false,false,partial);
         rendered=esp_timer_get_time();frame.finish();
     }else{
         _renderer.render(GetHAL().getCanvas(),_controller.view(),_controller.percent(now),true,false,false,partial);
         rendered=esp_timer_get_time();
-        if(partial)GetHAL().updateCanvasRegion(0,gundam_museum::layout::top,GetHAL().getCanvas().width(),gundam_museum::layout::side);
-        else GetHAL().updateCanvas();
+        GetHAL().updateCanvas();
     }
     _presented=true;
     if(now-_lastLog>=2000){

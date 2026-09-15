@@ -1,0 +1,529 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/Users/xudanyang/Documents/stopwatch/userdemo/docs/assets/gundam-cubic-space-20260915",
+  "baseline_root": null,
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "rx78",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "rx78/rx78-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0f06ca89efbab4388f3b8a4e13de4434428662119fefa72c774779a442b4a711"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "rx78/rx78-equipped-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "dd76e62822541f35e4eabe18a8a5f5107dc1d6dd3552a3be0c91a622926bd33f"
+        },
+        {
+          "view": "front",
+          "file": "rx78/rx78-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "2c4267ab0e2b2a8638b08c01ca6517e3dc4a2b850c56a7a6cc98056acbad6a97"
+        },
+        {
+          "view": "rear",
+          "file": "rx78/rx78-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "f58947a4ad4fba67ac5cbb83e011142044cb05ac368d0193631e0bf903fd84d0"
+        },
+        {
+          "view": "side",
+          "file": "rx78/rx78-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "fb1b738ab877ad7fc2e2642fe6abfd2a06a5b8fd8310b176eb0c543731bc18bb"
+        },
+        {
+          "view": "other-side",
+          "file": "rx78/rx78-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "5cda670c1178bbebb69eb6709128d80773898c2288b27fbe20fb8d0b2cfb4d5a"
+        },
+        {
+          "view": "top",
+          "file": "rx78/rx78-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9714085b826aa93d038ca41e2f63128f2376221912e8631ba85729d6790011e9"
+        },
+        {
+          "view": "head",
+          "file": "rx78/rx78-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "be9076f94208e80854f8818d13256e023d61bb591ce4ba6da1d6d06a02a74c3e"
+        },
+        {
+          "view": "gray",
+          "file": "rx78/rx78-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "cb821b52df1e4c1b653520e52f7eca6d3a889f49d34ffe32f66554cdc658454c"
+        }
+      ]
+    },
+    {
+      "id": "zaku",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "zaku/zaku-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4341e995e3c6127822b81a57fdd8d9de83e01b35d3e018929a6b481c6947500e"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "zaku/zaku-equipped-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ce5a1b861d6811702962c25246b93a95a181ef21d614d44b8ad80775d9832288"
+        },
+        {
+          "view": "front",
+          "file": "zaku/zaku-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "e7d89c61f8534aa2d62711efeba51bc8b4087e7566cd121036083e08886194d1"
+        },
+        {
+          "view": "rear",
+          "file": "zaku/zaku-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b577f3f46cc98efdde66357c3c0537af2a456b6fffa04dc4e6c8f133eaa4d0de"
+        },
+        {
+          "view": "side",
+          "file": "zaku/zaku-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9ace96d9ef3c53cf5386ff324f4a1c9b283026e120eaa02ddb664eedaf2f33a5"
+        },
+        {
+          "view": "other-side",
+          "file": "zaku/zaku-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "65fd518c382f74efe04e1111a6aa5d44e51c0eb8050a6a4cfa55e7170b113d70"
+        },
+        {
+          "view": "top",
+          "file": "zaku/zaku-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4b8188d8929b7d4571fd6967d5db6d26f117f0024fabb107f38a248bfd607140"
+        },
+        {
+          "view": "head",
+          "file": "zaku/zaku-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6721f3e28c37f509f6de77d166d4378b499294af3d8d41c158d9887b930155d8"
+        },
+        {
+          "view": "gray",
+          "file": "zaku/zaku-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "560723238b3d2267fe0cdda6fd8bf76f7c51b7e8fa76dd83d8de145f808c7071"
+        }
+      ]
+    },
+    {
+      "id": "nu",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "nu/nu-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c97b6cae179d76fd127fe0372dfa1958bfacd45729bc855e1c7c12897a1e91fb"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "nu/nu-equipped-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7b26a9da4de7c6b90e08dc972b42f145b1297302e23bfd82d677d5c3dc8e6247"
+        },
+        {
+          "view": "front",
+          "file": "nu/nu-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8fedb9c2208c69f7ba712de9d33f650678fef1492b8cab47b3f74331e9d8b26e"
+        },
+        {
+          "view": "rear",
+          "file": "nu/nu-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "af9f25f451efa9805f149e2486425bbb9ed6bd8efb6df5db19587f7ce6f165a3"
+        },
+        {
+          "view": "side",
+          "file": "nu/nu-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "025929383747dcb44a7b9fb59f0689d597e59f147eec4c082e569a2af1fd5d7c"
+        },
+        {
+          "view": "other-side",
+          "file": "nu/nu-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "49dda7629c5d257ed275055b0e35cc330e89ac1893e944695c68d8e61f310b90"
+        },
+        {
+          "view": "top",
+          "file": "nu/nu-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ed871aec62dd75c71da7d9752a7ac2d527b33167d4447ca9553368110e491151"
+        },
+        {
+          "view": "head",
+          "file": "nu/nu-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "69cd6d071110ebc72dbbc33f2efa36f429745688e70569a3c5c5ad52b91b2fed"
+        },
+        {
+          "view": "gray",
+          "file": "nu/nu-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "035264ceed1fd8f32248d0b00e318abbc420cf893f7a78531859c58275b4a597"
+        }
+      ]
+    },
+    {
+      "id": "sazabi",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "sazabi/sazabi-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "63e16308ac787ecd5f2fa26ac2fc39eb412fb3c396c635f0403c87e6053889b4"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "sazabi/sazabi-equipped-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9586f2bc443892963b53a7b0c5d76921c3af082ae983b983abc896352626f4ee"
+        },
+        {
+          "view": "front",
+          "file": "sazabi/sazabi-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "ca9a96c5839f78064a1b9ebbb6deb93a3f58f8155bc478939a7e56e2f61a7e5e"
+        },
+        {
+          "view": "rear",
+          "file": "sazabi/sazabi-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "648cb8d7b6391ac307c247f2d33bc5298e75bf546b6ba96577db6263d2fdae1d"
+        },
+        {
+          "view": "side",
+          "file": "sazabi/sazabi-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "a8d76eeaea2293520eec19f332c8eb9f1ccc0e6a2cae4ea7a1c9e229f8e175ff"
+        },
+        {
+          "view": "other-side",
+          "file": "sazabi/sazabi-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7077656d5a7d65cde93bf17c63fe2b6404607839dc3459e9ec7fd69e0e356a0e"
+        },
+        {
+          "view": "top",
+          "file": "sazabi/sazabi-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6fe59f995c1a7ff68ccd0e45dd4c99a10d6bd26575de5ed934e3f5e6ff2d0d74"
+        },
+        {
+          "view": "head",
+          "file": "sazabi/sazabi-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "fd207874e469cbe97467f73c0780a24068ec4a07d78b4a88496ca41b98629821"
+        },
+        {
+          "view": "gray",
+          "file": "sazabi/sazabi-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9589b9c292b679126a420678021dfc68f7978016ca7a61bea35bc810647361bd"
+        }
+      ]
+    },
+    {
+      "id": "strike",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "strike/strike-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "e8730ec54dd0ea888877a656c63fdf261d16f483aa356fb7f00f2735f656bb5f"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "strike/strike-equipped-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "75e428f41380ba1af19a736743e59efdcbbf72e3fe8f3cc5bc827d2c1d7b21b6"
+        },
+        {
+          "view": "front",
+          "file": "strike/strike-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6470772a14fc173e683e80841e42768a5931adfc9cf63568c9aa134cba274a92"
+        },
+        {
+          "view": "rear",
+          "file": "strike/strike-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "2fff9617d6b3f57410a7c86bb6e88fbcc317bd621c5725170499c59f24aa6503"
+        },
+        {
+          "view": "side",
+          "file": "strike/strike-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "aa80d9fe650c52a47693e615860b8926ea655afc90367c9be9208f30475d94d5"
+        },
+        {
+          "view": "other-side",
+          "file": "strike/strike-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8354fca22b869fb8c61c84460cf525f3c0274e48e7248c32b0af8507885d0fbf"
+        },
+        {
+          "view": "top",
+          "file": "strike/strike-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "fe5dba579d02f125152a337f054cee35e8fdec480065508276b128cd431aa283"
+        },
+        {
+          "view": "head",
+          "file": "strike/strike-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "8f73745e4e02896485392c3d050be19ce44d298cc4c99346083792142e87a3e7"
+        },
+        {
+          "view": "gray",
+          "file": "strike/strike-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "bf3e942b92307b8d73331e5382f05dc490ee92efc08be6f0c2d3aeb43da787da"
+        }
+      ]
+    },
+    {
+      "id": "destiny",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "destiny/destiny-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "7eb23b627eaba020f39124b0d751b662aa4ea2c93726b6dd8805c3c9f36388e1"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "destiny/destiny-equipped-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "90728e0fdb2fa0b906f21c0522ebdbba4c04189bf3cd37080bb2d639ce1ba2df"
+        },
+        {
+          "view": "front",
+          "file": "destiny/destiny-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b3586dec87c1710060aeabe5389c8d801b2eee4dab34785e47745a57831d4689"
+        },
+        {
+          "view": "rear",
+          "file": "destiny/destiny-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "6a76f21f4072ab4bf29b34f9fb9f9982a323caa8dfdc1cc2055af9665ca6d9d2"
+        },
+        {
+          "view": "side",
+          "file": "destiny/destiny-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c15489bbe9ce20f6e926fd9609e8644ebe983ae3683b0865cf4333cf87db93b1"
+        },
+        {
+          "view": "other-side",
+          "file": "destiny/destiny-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "12cb40e2f13987d14a0d905d2456479594086f77f6afe337f53684dccf1ba73b"
+        },
+        {
+          "view": "top",
+          "file": "destiny/destiny-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3dbe525689dfd6353585f1a090eb36d008eb6552140b2aa89ef715328c523022"
+        },
+        {
+          "view": "head",
+          "file": "destiny/destiny-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "9e86d5dbd5321f2efb33d13bf68fa77a8e52d5f5297176d663f5a8bca05e7f4d"
+        },
+        {
+          "view": "gray",
+          "file": "destiny/destiny-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "5d93959aabd693372d1ef54e8b7cddcf06ddb820f900ef871feaaa1c750cd168"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

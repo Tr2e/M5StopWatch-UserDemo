@@ -1,6 +1,7 @@
 #pragma once
 #include "rx78.h"
 #include "sd_eye_socket.h"
+#include "sd_skirt_assembly.h"
 
 namespace gundam_museum {
 enum class DestinyStage : uint8_t { Blockout, Identity, Final };
@@ -10,6 +11,7 @@ struct DestinyAssembly {
     Range headMount,helmet,backpackMount,rifle,shieldMount,shield;
     Range swordMount,sword,cannonMount,cannon;
     std::array<EyeSocketAssembly,2> eyes{};
+    SkirtAssembly skirts{};
 };
 void buildDestinyGundam(Mesh&,BuildOptions={},DestinyStage=DestinyStage::Final,DestinyAssembly* =nullptr);
 } // namespace gundam_museum
