@@ -1,13 +1,13 @@
-working_bytes=1274184 panels=3568 omitted=0 submitted=3118 culled=450
+working_bytes=1274184 panels=3576 omitted=0 submitted=3126 culled=450
 eye_socket side=0 recess=0.064 large_eye_aspect=0.6
 eye_socket side=1 recess=0.064 large_eye_aspect=0.6
 sd_destiny support head=10 rifle=8 shield=14 wings=32,32 sword=12 cannon=20
 sd_destiny wrist=0 forearm=12 palm=10
 sd_destiny wrist=1 forearm=14 palm=14
 sd_destiny unintended rifle=0 shield=0 wings=0,0 sword=0 cannon=0 palm_armor=0
-sd_destiny panels=3568 helmet_body_ratio=2.93951 depth_width=0.983669 wing_span=3.56 sole_area=0.3999,0.3999
+sd_destiny panels=3576 helmet_body_ratio=2.93951 depth_width=0.983669 wing_span=3.56 sole_area=0.3999,0.3999
 sd_destiny negatives detached_head=0 detached_wing=0 misplaced_rifle=109
 first_cull_case 0 0 -0.2 9 pixels=2
-cases=864 cull_pixel_diff=10 buried_pixel_diff=0 coverage_diff=6 interior_diff=0 max_diff=2 partial_diff=0 culled_ratio=0.0648155
+cases=864 cull_pixel_diff=10 buried_pixel_diff=0 coverage_diff=6 interior_diff=0 max_diff=2 partial_diff=0 culled_ratio=0.0646551
 full_exhibit circle_edge=0 viewport_edge=0
 Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

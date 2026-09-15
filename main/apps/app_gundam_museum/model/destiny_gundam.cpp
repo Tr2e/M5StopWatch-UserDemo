@@ -83,18 +83,20 @@ void head(Builder& b,bool detail,DestinyAssembly* a){
         for(int row=0;row<3;++row){auto u=p(rings[row],s>0?4:20),v=p(rings[row+1],s>0?4:20);
             b.face(edge[row],u,v,edge[row+1],ivory,{s,0,0},true);
         }
-        b.cover({{s*.27f,2.52f,.43f},{s*.48f,2.66f,.29f},{s*.50f,2.19f,.27f},{s*.30f,2.08f,.40f}},.06f,white,.007f);
-        b.cover({{0,2.67f,.49f},{s*.43f,2.70f,.34f},{s*.37f,2.54f,.42f},{0,2.49f,.55f}},.04f,white,.006f);
+        b.cover({{s*.35f,2.52f,.43f},{s*.48f,2.66f,.29f},{s*.50f,2.19f,.27f},{s*.30f,2.08f,.40f}},.06f,white,.007f);
+        b.cover({{0,2.67f,.49f},{s*.43f,2.70f,.34f},{s*.37f,2.575f,.42f},{0,2.51f,.55f}},.04f,white,.006f);
         b.face({0,2.67f,.49f},{s*.43f,2.70f,.34f},{s*.38f,2.82f,.18f},{0,2.86f,.29f},white,{0,1,1},true);
         b.face({0,2.40f,.49f},{s*.23f,2.37f,.40f},{s*.19f,2.20f,.38f},{0,2.13f,.46f},white,{0,0,1},true);
         b.face({s*.23f,2.37f,.40f},{s*.29f,2.39f,.30f},{s*.26f,2.17f,.30f},{s*.19f,2.20f,.38f},ivory,{s,0,1},true);
         const auto eye=[&](float x,float y){return Point{s*x,y,.525f-.32f*x};};
         const std::array<Point,4> opening={eye(.035f,2.515f),eye(.335f,2.565f),eye(.302f,2.415f),eye(.075f,2.385f)};
         buildEyeSocket(b,opening,.072f,ivory,black,green,a?&a->eyes[s>0]:nullptr);
+        b.face(opening[0],{0,2.51f,.55f},{s*.37f,2.575f,.42f},opening[1],ivory,{0,0,1},true);
+        b.face(opening[1],{s*.35f,2.52f,.43f},{s*.338f,2.415f,.423f},opening[2],ivory,{s,0,1},true);
         // Lower orbital ledge and medial bridge belong to the mask, in FRONT
         // of the inset lens. No white mask surface runs behind the eye window.
         b.face(opening[3],opening[2],{s*.23f,2.37f,.40f},{0,2.40f,.49f},white,{0,0,1},true);
-        b.face({0,2.49f,.55f},opening[0],opening[3],{0,2.40f,.49f},ivory,{0,0,1},true);
+        b.face({0,2.51f,.55f},opening[0],opening[3],{0,2.40f,.49f},ivory,{0,0,1},true);
         // The red tear ducts are a Destiny identity cue, not red eyebrows.
         b.cover({{s*.10f,2.38f,.48f},{s*.126f,2.386f,.466f},{s*.18f,2.285f,.418f},{s*.158f,2.31f,.433f}},.012f,red,.002f);
         if(detail){

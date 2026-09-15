@@ -44,7 +44,10 @@ inline void check(const Mesh& m,const std::array<EyeSocketAssembly,2>& eyes,floa
         const float aspect=(yh-yl)/(xh-xl);assert(aspect>.48f&&aspect<.8f);
         // Sample the center and four inset corners against ALL head surfaces;
         // a leftover mask/cap over the opening must be caught.
-        for(auto p:m.panels[a.lens.begin].point){auto q=Point{c.x+(p.x-c.x)*.55f,c.y+(p.y-c.y)*.55f,c.z+(p.z-c.z)*.55f};
+        assert(std::abs(frontSurface(m,c.x,c.y)-c.z)<.0001f);
+        for(float inset:{.55f,.90f})for(auto p:m.panels[a.lens.begin].point){auto q=Point{c.x+(p.x-c.x)*inset,c.y+(p.y-c.y)*inset,c.z+(p.z-c.z)*inset};
+            if(std::abs(frontSurface(m,q.x,q.y)-q.z)>=.0001f)
+                std::cerr<<"eye occlusion side="<<side<<" x="<<q.x<<" y="<<q.y<<" lens_z="<<q.z<<" front_z="<<frontSurface(m,q.x,q.y)<<'\n';
             assert(std::abs(frontSurface(m,q.x,q.y)-q.z)<.0001f);
         }
         std::cout<<"eye_socket side="<<side<<" recess="<<depth<<" large_eye_aspect="<<aspect<<'\n';
