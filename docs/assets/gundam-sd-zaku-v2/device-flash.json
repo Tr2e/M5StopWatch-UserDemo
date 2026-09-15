@@ -1,0 +1,21 @@
+{
+  "flashed_at": "2026-09-15T11:43:37+08:00",
+  "commit": "773696550648c0b0c90c46e613e031a592aa2661",
+  "port": "/dev/cu.usbmodem83301",
+  "macos_usb_device": "Espressif USB JTAG/serial debug unit",
+  "chip": "ESP32-S3 QFN56 rev 0.2",
+  "usb_mode": "USB-Serial/JTAG",
+  "mac": "44:1B:F6:C1:8A:00",
+  "baud": 921600,
+  "flash_mode": "dio",
+  "flash_frequency": "80m",
+  "flash_size": "16MB",
+  "images": [
+    {"offset": "0x0", "file": "build/bootloader/bootloader.bin", "verified": true},
+    {"offset": "0x20000", "file": "build/StopWatch-UserDemo.bin", "bytes": 3979488, "sha256": "7b8203b65713c3d38c9b50e49fe7ca8a0c026fea2ba4e18b2c78442d04c7d468", "verified": true},
+    {"offset": "0x8000", "file": "build/partition_table/partition-table.bin", "verified": true},
+    {"offset": "0xd000", "file": "build/ota_data_initial.bin", "verified": true}
+  ],
+  "result": "all four images reported Hash of data verified; hard reset completed",
+  "acceptance_boundary": "flash/write verification only; display appearance and frame rate await user inspection"
+}

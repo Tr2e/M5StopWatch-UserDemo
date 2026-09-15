@@ -1,5 +1,5 @@
 {
-  "status": "target-build-passed-flash-pending-device-verification",
+  "status": "flashed-and-write-hash-verified",
   "binary": "build/StopWatch-UserDemo.bin",
   "binary_bytes": 3979488,
   "smallest_app_partition_bytes": 5177344,
@@ -9,5 +9,8 @@
   "elf_sha256": "6844e34f6d165f82c4b8b69312600ab837f4aabd76f6d547788f4252749f32f2",
   "expected_chip": "ESP32-S3",
   "expected_mac": "44:1B:F6:C1:8A:00",
-  "port_policy": "discover current macOS port; never reuse a historical path without chip and MAC verification"
+  "port_policy": "discover current macOS port; never reuse a historical path without chip and MAC verification",
+  "flashed_port": "/dev/cu.usbmodem83301",
+  "flashed_at": "2026-09-15T11:43:37+08:00",
+  "flashed_commit": "773696550648c0b0c90c46e613e031a592aa2661"
 }
