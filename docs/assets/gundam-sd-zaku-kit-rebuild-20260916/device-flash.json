@@ -1,0 +1,39 @@
+{
+  "recorded_at": "2026-09-16T07:45:01+08:00",
+  "base_head": "f9c87a7",
+  "working_tree_dirty": true,
+  "scope": "SDCS #14 Char Zaku kit-part rebuild only; other suits unchanged",
+  "port": "/dev/cu.usbmodem83401",
+  "macos_usb_device": "Espressif USB JTAG/serial debug unit",
+  "usb_vid_pid": "303a:1001",
+  "usb_serial": "44:1B:F6:C1:8A:00",
+  "actively_verified_mac": "44:1B:F6:C1:8A:00",
+  "chip": "ESP32-S3 QFN56 rev 0.2",
+  "baud": 460800,
+  "flash_mode": "dio",
+  "flash_frequency": "80m",
+  "flash_size": "16MB",
+  "images": [
+    {"offset": "0x0", "file": "build/bootloader/bootloader.bin", "verified": true},
+    {"offset": "0x20000", "file": "build/StopWatch-UserDemo.bin", "bytes": 4021744, "sha256": "02586b007a087977e6cd53db7ffc468aac8b7094b3c6c64f20bbe541152bdce1", "verified": true},
+    {"offset": "0x8000", "file": "build/partition_table/partition-table.bin", "verified": true},
+    {"offset": "0xd000", "file": "build/ota_data_initial.bin", "verified": true}
+  ],
+  "elf_sha256": "3d1634bcec8a046c7f8ab170877cb99febad05cde6368a533b6fde57dda3d304",
+  "app_size": "0x3d5df0",
+  "partition_free": "0x11a210",
+  "partition_free_percent": 22,
+  "flash_result": "All four segments Hash of data verified; hard reset completed",
+  "boot_observation": {
+    "duration_seconds": 14,
+    "app_version": "f9c87a7-dirty",
+    "compile_time": "Sep 16 2026 07:41:43",
+    "reported_elf_sha256_prefix": "3d1634bce",
+    "psram_test": "SPI SRAM memory test OK",
+    "launcher": "on create, on open, LauncherView init observed",
+    "panic_or_restart_loop_observed": false,
+    "diagnostic_notes": "i2c.master port-not-initialized messages were followed by successful i2c0/i2c1 initialization; an existing IMU i2c_bus_device_delete error also appeared. This is not a claim of an error-free boot log.",
+    "serial_capture_completed_and_port_closed": true
+  },
+  "acceptance_boundary": "Write verification and bounded launcher startup only; museum appearance and frame rate await user inspection."
+}

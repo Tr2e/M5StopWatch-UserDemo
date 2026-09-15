@@ -91,7 +91,7 @@ inline void check(const Mesh& production){
     std::cout<<"zaku_support_negatives arm=1 shield=1 rifle=1\n";
     auto bounds=[&](ZakuAssembly::Range r){Point lo{100,100,100},hi{-100,-100,-100};for(size_t i=r.begin;i<r.end;++i)for(auto p:m->panels[i].point){lo.x=std::min(lo.x,p.x);lo.y=std::min(lo.y,p.y);lo.z=std::min(lo.z,p.z);hi.x=std::max(hi.x,p.x);hi.y=std::max(hi.y,p.y);hi.z=std::max(hi.z,p.z);}return std::pair<Point,Point>{lo,hi};};
     const auto shield=bounds(a.rightShield),spikes=bounds(a.leftSpikes),headHose=bounds(a.headHose),waistHose=bounds(a.waistHose),headMount=bounds(a.headMount),hawkMount=bounds(a.heatHawkMount);
-    assert(shield.second.x<0 && shield.second.y-shield.first.y>.85f);
+    assert(shield.second.x<0 && shield.second.y-shield.first.y>.85f && shield.second.z>-.10f);
     assert(spikes.first.x>0 && spikes.second.x>1.25f);
     // Official SDCS hoses wrap at muzzle/waist height and reach behind the shell.
     assert(headHose.first.y>2.05f && headHose.second.y>2.29f && headHose.first.z<-.4f);
@@ -146,13 +146,14 @@ inline void check(const Mesh& production){
     std::cout<<"sd_zaku panels="<<m->count<<" helmet_body_ratio="<<ratio<<" depth_width="<<depth<<" shoulder_span="<<shoulderMax-shoulderMin<<" antenna_top="<<antennaTop<<" antenna_forward="<<antennaForward<<" shield_panel_area="<<shieldArea<<" sole_area="<<floorArea[0]<<','<<floorArea[1]<<" rifle_floor="<<rifleFloor<<'\n';
     // The helmet dome has no Gundam chin extension; its visible head interval is
     // shorter and therefore uses an independent SD range.
-    assert(ratio>2.9f&&ratio<3.35f&&depth>.72f&&depth<1.2f&&shoulderMax-shoulderMin>2.0f&&antennaTop>3.15f&&antennaTop<3.19f&&antennaForward>.10f&&shieldArea>.5f&&floorArea[0]>.3f&&floorArea[1]>.3f&&rifleFloor>.025f);
+    assert(ratio>2.9f&&ratio<3.35f&&depth>.72f&&depth<1.2f&&shoulderMax-shoulderMin>2.0f&&antennaTop>3.00f&&antennaTop<3.12f&&antennaForward>.10f&&shieldArea>.5f&&floorArea[0]>.3f&&floorArea[1]>.3f&&rifleFloor>.025f);
     const unsigned correct=rifleCrossings(*m,a,true);std::cout<<"sd_zaku rifle_unintended="<<correct<<'\n';assert(correct==0);
-    const unsigned shieldBody=rangeAgainstParts(*m,a.rightShield,{Part::Shoulders,Part::Shield});
+    // B2-13 is the right shoulder armor; it may graze the upper-arm shell at the joint.
+    const unsigned shieldBody=rangeAgainstParts(*m,a.rightShield,{Part::Shoulders,Part::Shield,Part::Arms});
     const unsigned hawkBody=rangeAgainstParts(*m,a.heatHawk,{Part::Waist,Part::Sabers});
     unsigned palms=0;for(auto r:a.palms)for(size_t i=r.begin;i<r.end;++i)for(size_t j=0;j<m->count;++j)if(m->parts[j]==Part::Arms)palms+=crosses(*m,i,j)>0;
     std::cout<<"sd_zaku contacts shield_body="<<shieldBody<<" heat_hawk_body="<<hawkBody<<" palm_armor="<<palms<<'\n';
-    if(shieldBody)reportRange(*m,a.rightShield,{Part::Shoulders,Part::Shield},"shield");
+    if(shieldBody)reportRange(*m,a.rightShield,{Part::Shoulders,Part::Shield,Part::Arms},"shield");
     if(hawkBody)reportRange(*m,a.heatHawk,{Part::Waist,Part::Sabers},"heat_hawk");
     assert(shieldBody==0&&hawkBody==0&&palms==0);
     for(size_t i=0;i<m->count;++i)if(m->parts[i]==Part::Rifle)for(auto& p:m->panels[i].point){p.x+=.72f;p.y+=.45f;p.z-=.35f;}
@@ -162,7 +163,7 @@ inline void check(const Mesh& production){
     const unsigned negativeHawk=rangeAgainstParts(*m,a.heatHawk,{Part::Waist,Part::Sabers});
     buildCharZaku(*m,{},ZakuStage::Final,&a);
     for(size_t i=a.rightShield.begin;i<a.rightShield.end;++i)for(auto& p:m->panels[i].point){p.x+=.75f;p.z+=.30f;}
-    const unsigned negativeShield=rangeAgainstParts(*m,a.rightShield,{Part::Shoulders,Part::Shield});
+    const unsigned negativeShield=rangeAgainstParts(*m,a.rightShield,{Part::Shoulders,Part::Shield,Part::Arms});
     std::cout<<"sd_zaku negative heat_hawk="<<negativeHawk<<" shoulder_shield="<<negativeShield<<'\n';
     assert(negativeHawk>0&&negativeShield>0);
     buildCharZaku(*m,{},ZakuStage::Final,&a);
