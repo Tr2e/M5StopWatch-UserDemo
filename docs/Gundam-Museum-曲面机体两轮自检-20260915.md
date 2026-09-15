@@ -87,3 +87,11 @@ H从足底到头盔顶，扎古2.975、沙扎比2.955。官方照片有透视与
 ## 通用规范
 
 本轮规则写入 `skills/reference-model-workshop/references/pipeline.md` 的“曲面占比高的机体”C01–C09，并加入模型卡模板：曲面类型、归一化比例与截面位置、先形状后细分、共享分色边界、连续管路、具体装配接口、屏幕预算、曲率负例、两轮独立复查。新项目先定截面与硬边，再做身份件；不能先照搬高达框架或扎古眼罩，再凭颜色声称完成。
+
+## 提交、目标构建与烧录
+
+- 扎古两轮修复：`ad942d3`；沙扎比两轮修复与曲面规范：`fe5a3a3`。原分支 `feat/gundam-museum`，未切分支、未推送。
+- ESP-IDF目标构建通过。第一次沙箱构建被组件管理器读取进程信息的权限拦截，授权后成功；没有修改依赖或锁文件来绕过。最终固件3,986,288B，应用分区余量23%。
+- 最终BIN SHA256：`6774375d3ba24930c6ddc843f867dea0a9c1fe38996a8d79dcc495899c87ea8d`；ELF SHA256：`360edbd2b1bfbbc9a82f80697adf56fbe5a9d10a133e3576f2e3c37756a8bf7e`。
+- macOS串口枚举：`/dev/cu.usbmodem83301`，VID:PID `303A:1001`，USB序列号 `44:1B:F6:C1:8A:00`。随后esptool主动read_mac再次确认同一MAC、ESP32-S3 rev0.2；才执行烧录。
+- 写入最终应用、bootloader、分区表与OTA初始化数据，四项Hash校验通过，RTS复位完成。完整记录见 `assets/gundam-curved-review-20260915/flash.log`。这不是启动日志确认，也不是屏幕视觉／FPS验收；等待用户真机检查。
