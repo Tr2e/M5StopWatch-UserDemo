@@ -1,0 +1,342 @@
+{
+  "schema": 1,
+  "evidence_checks_passed": true,
+  "frames_root": "/Users/xudanyang/Documents/stopwatch/userdemo/docs/assets/gundam-sd-strike-v2",
+  "baseline_root": null,
+  "limitations": [
+    "No reference-fidelity or hardware certification.",
+    "Distinct hashes do not prove distinct model geometry."
+  ],
+  "models": [
+    {
+      "id": "gat-x105-sd-aile-sdex-002",
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "strike-equipped.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "b9957ece0911b77c3938899a83f68ca2445678a56af39a8393eaa3c315addd4d"
+        },
+        {
+          "view": "front",
+          "file": "strike-front.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "deedb90c28e3c7b5c4f16db49395bb8ebb168155041f99730e1748ede0cd3feb"
+        },
+        {
+          "view": "rear",
+          "file": "strike-rear.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "c8d995f44fc38c0b94b7b3ca895231055d21430386d05bf860af6b9fe1152f0a"
+        },
+        {
+          "view": "side",
+          "file": "strike-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "39ff3aae7044acb4392565ae95dd818623b48b264deedfb4dd0d0137cf04fa68"
+        },
+        {
+          "view": "other-side",
+          "file": "strike-other-side.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "3d8af64ab4f57e21a3fa75f9a8cfbc2b46de84de6f52813e7fa91c98cecb94a0"
+        },
+        {
+          "view": "top",
+          "file": "strike-top.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "d1a45f015441b7c8ed61e26f342dbbc1b5060235a6f49dfecacf81429b3c296b"
+        },
+        {
+          "view": "unarmed",
+          "file": "strike-unarmed.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0c1c6040f7eb07a56b5c1e3b5fbaa3a7e28daa0668cd16dd327cf70775498d4d"
+        },
+        {
+          "view": "drag",
+          "file": "strike-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "0eb94d6dde47287c352f21dea7c4fd09ed5f23eac44e4c3eb6f947f93b8c383c"
+        },
+        {
+          "view": "gray",
+          "file": "strike-gray.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "998dc3894aa15368ff366cb3adac2d5a438db57068a68dd7fd79a80587ccbf71"
+        },
+        {
+          "view": "head",
+          "file": "strike-head.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "64f4c82248c31af2105aa2c530a872d4af7f28446e967b0ea1227a76eaa7bc07"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "strike-equipped-drag.png",
+          "size": [
+            468,
+            466
+          ],
+          "pixel_sha256": "4c50ccd18089c04604fd97fe3bf091224b7c6d0c1d855c79c130a3046ba08e2d"
+        },
+        {
+          "view": "study-aile-rear",
+          "file": "study-aile-rear.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "cff15579510f870c78163c1fbad71a58df09312838d4c21c169eb830fb7ade6c"
+        },
+        {
+          "view": "study-aile",
+          "file": "study-aile.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "5c8ee9f652a7e4e7a98961ec99dcdfbd85758f9efe0b651f4195d9a0d8f1928d"
+        },
+        {
+          "view": "study-arm",
+          "file": "study-arm.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "dbfc8a9345419874197090d387c9be0463173dbb4f127baaa0156c2fdb3d2675"
+        },
+        {
+          "view": "study-chest-front",
+          "file": "study-chest-front.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "b562a683d07c34181d6fb5c478e53d8861e6057417d67175e727a6b9b6630014"
+        },
+        {
+          "view": "study-chest",
+          "file": "study-chest.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "97194f5c1359711bd21a2b402b42706746091ac647f1b54ed6e936de6e94d514"
+        },
+        {
+          "view": "study-face-front",
+          "file": "study-face-front.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "11b50a3de7c5920ac65ab6a0ef09bfc229c8ade0074ddc65b445266336f2c779"
+        },
+        {
+          "view": "study-face-quarter",
+          "file": "study-face-quarter.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "29ef7e5c8ad08abca0ec63367bb27246145f9c8af40f9f13683df3e8b03fd608"
+        },
+        {
+          "view": "study-face-side",
+          "file": "study-face-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "196cb42262733a6c524cf578665aba1266270cec64601ff26f864feee0249209"
+        },
+        {
+          "view": "study-front",
+          "file": "study-front.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "f6d6bef2883022540ccf43e446fbf4c737a92e929ccf8cd0dd7672d83cdf7f7a"
+        },
+        {
+          "view": "study-gray-equipped",
+          "file": "study-gray-equipped.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "00cf26ebbb52a8049e977e43cd0c570560412cd2f91fa920eb0cfcc39f512fc5"
+        },
+        {
+          "view": "study-gray",
+          "file": "study-gray.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "207c9560ed0938abbfa52685f1411b9981be0ed8f32970043de117b61fdd7b22"
+        },
+        {
+          "view": "study-grip-assembly",
+          "file": "study-grip-assembly.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "7e956fe878e8a7f396d67fb1fadeb678b508d138650d698807068e54b8532db8"
+        },
+        {
+          "view": "study-grip-side",
+          "file": "study-grip-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "f39c430682408e4b9dcec91961a14d8f379c5140657995655048f1f06967b9c3"
+        },
+        {
+          "view": "study-leg-side",
+          "file": "study-leg-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "f847ca97a321ec2deb26b3bd1bb9a905e55bc50258139c85cc40e09df1458f25"
+        },
+        {
+          "view": "study-leg",
+          "file": "study-leg.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "b2002f2f02b765c765c50607760ebb9b43069147f8f825648ba57481e3f8478c"
+        },
+        {
+          "view": "study-other-side",
+          "file": "study-other-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "4c1b0189435ca6dfc1bc37e377f49b17f21b58bf0540e3f7a01439987ed37655"
+        },
+        {
+          "view": "study-rear-equipped",
+          "file": "study-rear-equipped.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "386f3cc8aea7e200f2b7a2a817842cec602b4380cc17fd300990d6f5f41e80af"
+        },
+        {
+          "view": "study-rear",
+          "file": "study-rear.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "999c5b0c5bff7a745076c64f1845912854442e67828e5f03fe0c4c617463422b"
+        },
+        {
+          "view": "study-rifle",
+          "file": "study-rifle.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "e0ec711d564311896ae123ae4c155e59dba8823d0e22a7416efe739c7a220164"
+        },
+        {
+          "view": "study-shield-mount",
+          "file": "study-shield-mount.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "288646a291f7c28ee1c57bf096cdf30ca5078c6ce6ff38a10a7f0d69361b6aa7"
+        },
+        {
+          "view": "study-shield",
+          "file": "study-shield.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "fcdc15fd70f2ed534005d35ace048d107d4fdc7dab6b82e32613c30017d1a794"
+        },
+        {
+          "view": "study-side",
+          "file": "study-side.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "f2a302fc7ff6fe64124772fd109ef2036c44fae56b0deb822618f43f2596c0f6"
+        },
+        {
+          "view": "study-standing",
+          "file": "study-standing.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "fa55db00eea561922787ecfce1b29f91b1f26cfe16fd1d701bf198eaab0abe79"
+        },
+        {
+          "view": "study-top",
+          "file": "study-top.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "90590da1d66d154eaeec0750f6672ac3c957d42c13664d0711f4c0b3e8af60f2"
+        },
+        {
+          "view": "study-underside",
+          "file": "study-underside.png",
+          "size": [
+            640,
+            640
+          ],
+          "pixel_sha256": "c3eec0c2e64455f46f6ef7605ab93920a6cc53ee7b20d5946e252b99eb1661e7"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

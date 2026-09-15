@@ -8,8 +8,8 @@ namespace gundam_museum {
 namespace {
 // SDEX 002 Aile Strike; newly authored SD geometry, not scaled HGCE 171.
 constexpr float pi=3.14159265359f;
-constexpr uint16_t white=0xf7be,ivory=0xdedb,blue=0x225b,red=0xd946;
-constexpr uint16_t gold=0xfe68,frame=0x528a,black=0x18c4,cameraBlue=0x241a;
+constexpr uint16_t white=0xffff,ivory=0xef7d,blue=0x2256,red=0xd126;
+constexpr uint16_t gold=0xfea6,frame=0x52aa,black=0x18c4,cameraBlue=0x3397;
 struct Ring {float y,w,d,z=0;};
 class SdStrikeBuilder {
 public:
@@ -171,22 +171,26 @@ void head(SdStrikeBuilder& b,bool detail){
         {2.91f,.37f,.32f,-.065f},{2.99f,.23f,.22f,-.075f},{3.025f,.10f,.12f,-.08f}};
     const auto p=[](Ring r,int i){float a=2*pi*i/24;return Point{std::sin(a)*r.w,r.y,r.z+std::cos(a)*r.d};};
     for(int row=0;row<7;++row)for(int i=0;i<24;++i){
-        if(row<4&&(i<4||i>=20))continue;
+        if(row<3&&(i<4||i>=20))continue;
         auto a=p(rings[row],i),c=p(rings[row],i+1);
         b.face(a,c,p(rings[row+1],i+1),p(rings[row+1],i),ivory,{a.x+c.x,0,a.z+c.z+.08f},true);
     }
     for(int i=0;i<24;++i)b.face(p(rings[7],i),p(rings[7],i+1),{0,3.04f,-.08f},{0,3.04f,-.08f},ivory,{0,1,0},true);
     for(float s:{-1.f,1.f}){
+        // Close the actual aperture side, independent of the decorative cheek
+        // cover. A neck contact test cannot detect a detached face frame.
+        const Point edge[]={{s*.285f,2.06f,.395f},{s*.49f,2.17f,.305f},{s*.475f,2.38f,.33f},{s*.46f,2.60f,.30f}};
+        for(int row=0;row<3;++row)b.face(edge[row],p(rings[row],s>0?4:20),p(rings[row+1],s>0?4:20),edge[row+1],ivory,{s,0,0},true);
         b.cover({{s*.29f,2.49f,.382f},{s*.46f,2.71f,.30f},{s*.49f,2.17f,.305f},{s*.285f,2.075f,.395f}},.065f,white,.006f);
         b.face({s*.46f,2.71f,.30f},{s*.49f,2.17f,.305f},{s*.50f,2.17f,.11f},{s*.50f,2.65f,.115f},ivory,{s,0,0},true);
         b.cover({{0,2.675f,.47f},{s*.44f,2.72f,.295f},{s*.37f,2.56f,.385f},{0,2.50f,.53f}},.04f,white,.006f);
-        b.face({0,2.36f,.457f},{s*.21f,2.36f,.365f},{s*.19f,2.18f,.35f},{0,2.12f,.435f},white,{0,0,1},true);
-        b.face({s*.21f,2.36f,.365f},{s*.26f,2.35f,.30f},{s*.23f,2.16f,.30f},{s*.19f,2.18f,.35f},ivory,{s,0,0},true);
+        b.face({0,2.43f,.457f},{s*.21f,2.43f,.365f},{s*.19f,2.18f,.35f},{0,2.12f,.435f},white,{0,0,1},true);
+        b.face({s*.21f,2.43f,.365f},{s*.26f,2.42f,.30f},{s*.23f,2.16f,.30f},{s*.19f,2.18f,.35f},ivory,{s,0,0},true);
         b.face({0,2.12f,.435f},{s*.19f,2.18f,.35f},{s*.15f,2.10f,.305f},{0,2.09f,.37f},ivory,{0,-1,0},true);
         if(detail){
-            b.cover({{s*.025f,2.51f,.425f},{s*.33f,2.565f,.365f},{s*.30f,2.365f,.375f},{s*.09f,2.35f,.43f}},.025f,red,.004f);
-            b.cover({{s*.038f,2.496f,.434f},{s*.315f,2.546f,.379f},{s*.29f,2.385f,.389f},{s*.092f,2.371f,.44f}},.013f,black,.003f);
-            b.cover({{s*.05f,2.482f,.445f},{s*.292f,2.528f,.395f},{s*.267f,2.415f,.403f},{s*.10f,2.394f,.45f}},.008f,gold,.002f);
+            b.cover({{s*.025f,2.51f,.425f},{s*.33f,2.565f,.365f},{s*.29f,2.43f,.382f},{s*.09f,2.415f,.43f}},.025f,red,.004f);
+            b.cover({{s*.038f,2.496f,.434f},{s*.315f,2.546f,.379f},{s*.28f,2.445f,.395f},{s*.092f,2.428f,.44f}},.013f,black,.003f);
+            b.cover({{s*.05f,2.482f,.445f},{s*.292f,2.528f,.395f},{s*.26f,2.474f,.410f},{s*.10f,2.453f,.45f}},.008f,gold,.002f);
             b.at(Part::Head,{s*.477f,2.575f,.28f},0,0,s*.82f);
             b.opening({-.047f,-.06f,.035f},{.047f,-.06f,.035f},{.047f,.08f,.035f},{-.047f,.08f,.035f},.035f,frame);
             b.tube({0,.015f,.025f},{0,.015f,.07f},.039f,.039f,ivory,true,8);
@@ -209,10 +213,10 @@ void head(SdStrikeBuilder& b,bool detail){
     b.cover({{-.09f,2.86f,.41f},{.09f,2.86f,.41f},{.059f,2.595f,.522f},{0,2.56f,.545f},{-.059f,2.595f,.522f}},.04f,red,.007f);
     for(float s:{-1.f,1.f})for(int blade=0;blade<2;++blade){
         struct Section {float x,y,z,w,d;};
-        const Section outer[]={{.09f,2.60f,.465f,.19f,.075f},{.33f,2.79f,.36f,.135f,.058f},
+        const Section outer[]={{.17f,2.69f,.39f,.16f,.075f},{.33f,2.86f,.36f,.135f,.058f},
             {.64f,3.13f,.235f,.082f,.033f},{.89f,3.48f,.145f,.018f,.014f}};
         const Section inner[]={{.20f,2.80f,.325f,.095f,.068f},{.25f,3.08f,.27f,.073f,.050f},
-            {.31f,3.39f,.22f,.044f,.029f},{.35f,3.62f,.18f,.020f,.017f}};
+            {.31f,3.31f,.22f,.044f,.029f},{.35f,3.53f,.18f,.020f,.017f}};
         const auto* rows=blade?inner:outer;
         const auto vertex=[&](Section r,int k){constexpr float u[]={-1,0,1,0},v[]={0,1,0,-1};
             return Point{s*(r.x-(blade?.985f:.79f)*u[k]*r.w*.5f),r.y+(blade?.17f:.61f)*u[k]*r.w*.5f,r.z+v[k]*r.d*.5f};};
@@ -316,8 +320,8 @@ void equipment(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
         b.shell({{-.18f,.17f,.17f},{-.11f,.23f,.24f},{.17f,.22f,.24f},{.29f,.13f,.15f}},frame,12);
         b.tube({0,-.08f,-.20f},{0,-.19f,-.31f},.10f,.11f,0x31a6,true,8);
         // Long lower vanes on the local rear plane taper in width AND depth.
-        b.cover({{-.06f,.10f,-.12f},{.055f,.10f,-.12f},{.065f,-.83f,-.12f},{.02f,-.93f,-.12f},{-.04f,-.81f,-.12f}},.05f,0x31a6,.003f);
-        b.cover({{s*.13f,.05f,-.04f},{s*.23f,.07f,-.04f},{s*.69f,-.50f,-.04f},{s*.62f,-.53f,-.04f}},.05f,0x31a6,.003f);
+        b.cover({{-.06f,.10f,-.12f},{.055f,.10f,-.12f},{.065f,-.83f,-.12f},{.02f,-.93f,-.12f},{-.04f,-.81f,-.12f}},.05f,red,.003f);
+        b.cover({{s*.13f,.05f,-.04f},{s*.23f,.07f,-.04f},{s*.69f,-.50f,-.04f},{s*.62f,-.53f,-.04f}},.05f,red,.003f);
         if(detail){
             b.at(Part::Aile,{s*.70f,1.58f,-.83f},0,0,s*pi/2);
             b.opening({-.095f,-.075f,.016f},{.095f,-.075f,.016f},{.095f,.085f,.016f},{-.095f,.085f,.016f},.03f,gold);

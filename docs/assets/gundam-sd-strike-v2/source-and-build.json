@@ -1,0 +1,19 @@
+{
+  "date": "2026-09-15",
+  "baseline_model_commit": "73e6bba",
+  "renderer_changed": false,
+  "display_scale_changed": false,
+  "model_sha256": {
+    "destiny_gundam.cpp": "628473d184f61e74367cf54a7d1c8927c4f7cda6373a21911adc43718f109bac",
+    "strike_gundam.cpp": "1dc3a208a365df0751ab99e3e609269d4df7f77576f17d449e4dc16195723a5f"
+  },
+  "firmware": {
+    "filename": "build/StopWatch-UserDemo.bin",
+    "bytes": 4002720,
+    "sha256": "84410c775f459de1b421eee9cb104434735a7bd7b689828f7ff71dd81f2cfdd5",
+    "embedded_version": "V0.5-197-gf8dca9b-dirty",
+    "flashed": false
+  },
+  "device_fps_measured": false,
+  "user_visual_acceptance": "pending"
+}

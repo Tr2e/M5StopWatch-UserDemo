@@ -1,0 +1,210 @@
+Command: make -j 14 all
+-- Minimal build - OFF
+-- Building ESP-IDF components for target esp32s3
+NOTICE: Skipping optional dependency: espressif/cjson
+NOTICE: Cannot establish a connection to the component registry. Skipping checks of dependency changes.
+NOTICE: Processing 6 dependencies:
+NOTICE: [1/6] 78/esp-wifi-connect (3.1.3)
+NOTICE: [2/6] espressif/cmake_utilities (0.5.3)
+NOTICE: [3/6] espressif/esp-dsp (1.8.0)
+NOTICE: [4/6] espressif/esp_codec_dev (1.5.4)
+NOTICE: [5/6] espressif/i2c_bus (1.5.0)
+NOTICE: [6/6] idf (5.5.4)
+-- M5GFX use components = nvs_flash;efuse;driver;esp_timer;esp_lcd;esp_mm
+-- Using esp_driver_i2c (SRC_FILE=i2c_bus_v2.c, REQ=esp_driver_i2c driver)
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5 SoCs
+NOTICE: Skipping optional dependency: espressif/cjson
+-- Project sdkconfig file /Users/xudanyang/Documents/stopwatch/userdemo/sdkconfig
+Loading defaults file /Users/xudanyang/Documents/stopwatch/userdemo/sdkconfig.defaults...
+-- Compiler supported targets: xtensa-esp-elf
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- USING O3
+-- App "StopWatch-UserDemo" version: V0.5-197-gf8dca9b-dirty
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/userdemo/build/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/userdemo/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.bt_funcs.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.wdt.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_master.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_50.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_smp.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_dtm.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_test.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_scan.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libc.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.newlib.ld
+-- Adding linker script /Users/xudanyang/Documents/stopwatch/esp-idf/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- Using esp_driver_i2c (SRC_FILE=i2c_bus_v2.c, REQ=esp_driver_i2c driver)
+-- I2C_BUS: 1.5.0
+-- M5GFX use components = nvs_flash;efuse;driver;esp_timer;esp_lcd;esp_mm
+-- Components: 78__esp-wifi-connect ArduinoJson BMI270_BMM150_Sensor M5GFX M5IOE1 M5PM1 app_trace app_update bootloader bootloader_support bt cmock console cxx driver efuse esp-tls esp_adc esp_app_format esp_bootloader_format esp_coex esp_common esp_driver_ana_cmpr esp_driver_bitscrambler esp_driver_cam esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_isp esp_driver_jpeg esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_ppa esp_driver_rmt esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_touch_sens esp_driver_tsens esp_driver_twai esp_driver_uart esp_driver_usb_serial_jtag esp_eth esp_event esp_gdbstub esp_hal_ieee802154 esp_hid esp_http_client esp_http_server esp_https_ota esp_https_server esp_hw_support esp_lcd esp_local_ctrl esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_security esp_system esp_timer esp_vfs_console esp_wifi espcoredump espressif__cmake_utilities espressif__esp-dsp espressif__esp_codec_dev espressif__i2c_bus esptool_py fatfs freertos hal heap http_parser idf_test ieee802154 json log lvgl lwip main mbedtls mooncake mooncake_log mqtt newlib nvs_flash nvs_sec_provider openthread partition_table perfmon protobuf-c protocomm pthread rt sdmmc smooth_ui_toolkit soc spi_flash spiffs tcp_transport touch_element ulp unity usb vfs wear_levelling wifi_provisioning wpa_supplicant xtensa
+-- Component paths: /Users/xudanyang/Documents/stopwatch/userdemo/managed_components/78__esp-wifi-connect /Users/xudanyang/Documents/stopwatch/userdemo/components/ArduinoJson /Users/xudanyang/Documents/stopwatch/userdemo/components/BMI270_BMM150_Sensor /Users/xudanyang/Documents/stopwatch/userdemo/components/M5GFX /Users/xudanyang/Documents/stopwatch/userdemo/components/M5IOE1 /Users/xudanyang/Documents/stopwatch/userdemo/components/M5PM1 /Users/xudanyang/Documents/stopwatch/esp-idf/components/app_trace /Users/xudanyang/Documents/stopwatch/esp-idf/components/app_update /Users/xudanyang/Documents/stopwatch/esp-idf/components/bootloader /Users/xudanyang/Documents/stopwatch/esp-idf/components/bootloader_support /Users/xudanyang/Documents/stopwatch/esp-idf/components/bt /Users/xudanyang/Documents/stopwatch/esp-idf/components/cmock /Users/xudanyang/Documents/stopwatch/esp-idf/components/console /Users/xudanyang/Documents/stopwatch/esp-idf/components/cxx /Users/xudanyang/Documents/stopwatch/esp-idf/components/driver /Users/xudanyang/Documents/stopwatch/esp-idf/components/efuse /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp-tls /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_adc /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_app_format /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_bootloader_format /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_coex /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_common /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_ana_cmpr /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_bitscrambler /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_cam /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_dac /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_gpio /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_gptimer /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_i2c /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_i2s /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_isp /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_jpeg /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_ledc /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_mcpwm /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_parlio /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_pcnt /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_ppa /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_rmt /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_sdio /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_sdm /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_sdmmc /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_sdspi /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_spi /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_touch_sens /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_tsens /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_twai /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_uart /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_driver_usb_serial_jtag /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_eth /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_event /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_gdbstub /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_hal_ieee802154 /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_hid /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_http_client /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_http_server /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_https_ota /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_https_server /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_hw_support /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_lcd /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_local_ctrl /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_mm /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_netif /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_netif_stack /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_partition /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_phy /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_pm /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_psram /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_ringbuf /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_rom /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_security /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_system /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_timer /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_vfs_console /Users/xudanyang/Documents/stopwatch/esp-idf/components/esp_wifi /Users/xudanyang/Documents/stopwatch/esp-idf/components/espcoredump /Users/xudanyang/Documents/stopwatch/userdemo/managed_components/espressif__cmake_utilities /Users/xudanyang/Documents/stopwatch/userdemo/managed_components/espressif__esp-dsp /Users/xudanyang/Documents/stopwatch/userdemo/managed_components/espressif__esp_codec_dev /Users/xudanyang/Documents/stopwatch/userdemo/managed_components/espressif__i2c_bus /Users/xudanyang/Documents/stopwatch/esp-idf/components/esptool_py /Users/xudanyang/Documents/stopwatch/esp-idf/components/fatfs /Users/xudanyang/Documents/stopwatch/esp-idf/components/freertos /Users/xudanyang/Documents/stopwatch/esp-idf/components/hal /Users/xudanyang/Documents/stopwatch/esp-idf/components/heap /Users/xudanyang/Documents/stopwatch/esp-idf/components/http_parser /Users/xudanyang/Documents/stopwatch/esp-idf/components/idf_test /Users/xudanyang/Documents/stopwatch/esp-idf/components/ieee802154 /Users/xudanyang/Documents/stopwatch/esp-idf/components/json /Users/xudanyang/Documents/stopwatch/esp-idf/components/log /Users/xudanyang/Documents/stopwatch/userdemo/components/lvgl /Users/xudanyang/Documents/stopwatch/esp-idf/components/lwip /Users/xudanyang/Documents/stopwatch/userdemo/main /Users/xudanyang/Documents/stopwatch/esp-idf/components/mbedtls /Users/xudanyang/Documents/stopwatch/userdemo/components/mooncake /Users/xudanyang/Documents/stopwatch/userdemo/components/mooncake_log /Users/xudanyang/Documents/stopwatch/esp-idf/components/mqtt /Users/xudanyang/Documents/stopwatch/esp-idf/components/newlib /Users/xudanyang/Documents/stopwatch/esp-idf/components/nvs_flash /Users/xudanyang/Documents/stopwatch/esp-idf/components/nvs_sec_provider /Users/xudanyang/Documents/stopwatch/esp-idf/components/openthread /Users/xudanyang/Documents/stopwatch/esp-idf/components/partition_table /Users/xudanyang/Documents/stopwatch/esp-idf/components/perfmon /Users/xudanyang/Documents/stopwatch/esp-idf/components/protobuf-c /Users/xudanyang/Documents/stopwatch/esp-idf/components/protocomm /Users/xudanyang/Documents/stopwatch/esp-idf/components/pthread /Users/xudanyang/Documents/stopwatch/esp-idf/components/rt /Users/xudanyang/Documents/stopwatch/esp-idf/components/sdmmc /Users/xudanyang/Documents/stopwatch/userdemo/components/smooth_ui_toolkit /Users/xudanyang/Documents/stopwatch/esp-idf/components/soc /Users/xudanyang/Documents/stopwatch/esp-idf/components/spi_flash /Users/xudanyang/Documents/stopwatch/esp-idf/components/spiffs /Users/xudanyang/Documents/stopwatch/esp-idf/components/tcp_transport /Users/xudanyang/Documents/stopwatch/esp-idf/components/touch_element /Users/xudanyang/Documents/stopwatch/esp-idf/components/ulp /Users/xudanyang/Documents/stopwatch/esp-idf/components/unity /Users/xudanyang/Documents/stopwatch/esp-idf/components/usb /Users/xudanyang/Documents/stopwatch/esp-idf/components/vfs /Users/xudanyang/Documents/stopwatch/esp-idf/components/wear_levelling /Users/xudanyang/Documents/stopwatch/esp-idf/components/wifi_provisioning /Users/xudanyang/Documents/stopwatch/esp-idf/components/wpa_supplicant /Users/xudanyang/Documents/stopwatch/esp-idf/components/xtensa
+-- Configuring done (45.0s)
+-- Generating done (1.4s)
+-- Build files have been written to: /Users/xudanyang/Documents/stopwatch/userdemo/build
+[  0%] Built target custom_bundle
+[  0%] Built target _project_elf_src
+[  0%] Built target blank_ota_data
+[  0%] Built target memory.ld
+[  0%] Built target partition_table_bin
+[  0%] Built target sections.ld.in
+[  1%] Performing build step for 'bootloader'
+[  1%] Built target __idf_esp_https_ota
+[  1%] Built target __idf_esp_http_server
+[  1%] Built target _project_elf_src
+[  9%] Built target __idf_log
+[  1%] Built target __idf_esp_http_client
+[ 19%] Built target __idf_esp_rom
+[  1%] Built target __idf_tcp_transport
+[ 21%] Built target __idf_esp_common
+[ 30%] Built target __idf_esp_hw_support
+[  2%] Built target __idf_esp_adc
+[ 32%] Built target __idf_esp_system
+[  2%] Built target __idf_esp-tls
+[ 40%] Built target __idf_efuse
+[  2%] Built target __idf_http_parser
+[ 59%] Built target __idf_bootloader_support
+[  3%] Built target __idf_driver
+[ 60%] Built target __idf_esp_bootloader_format
+[  3%] Built target __idf_esp_driver_twai
+[ 62%] Built target __idf_spi_flash
+[  4%] Built target __idf_esp_driver_ledc
+[ 68%] Built target __idf_hal
+[  4%] Built target __idf_esp_driver_i2c
+[ 69%] Built target __idf_micro-ecc
+[  4%] Built target __idf_esp_driver_sdm
+[ 92%] Built target __idf_soc
+[  4%] Built target __idf_esp_driver_tsens
+[ 94%] Built target __idf_xtensa
+[  4%] Built target __idf_esp_driver_rmt
+[ 96%] Built target __idf_main
+[  4%] Built target __idf_esp_driver_sdspi
+[ 98%] Built target bootloader.elf
+[100%] Built target gen_project_binary
+[  5%] Built target __idf_esp_driver_sdmmc
+[  6%] Built target __idf_sdmmc
+Bootloader binary size 0x5160 bytes. 0x2ea0 bytes (36%) free.
+[100%] Built target bootloader_check_size
+[  6%] Built target __idf_esp_driver_i2s
+[100%] Built target app
+[  6%] Built target __idf_esp_driver_mcpwm
+[  6%] No install step for 'bootloader'
+[  6%] Completed 'bootloader'
+[  6%] Built target __idf_esp_driver_pcnt
+[  6%] Built target bootloader
+[  6%] Built target __idf_esp_gdbstub
+[  6%] Built target __idf_esp_driver_spi
+[  6%] Built target __idf_esp_wifi
+[  6%] Built target __idf_esp_coex
+[ 10%] Built target __idf_wpa_supplicant
+[ 10%] Built target __idf_esp_netif
+[ 14%] Built target __idf_lwip
+[ 14%] Built target __idf_vfs
+[ 14%] Built target __idf_esp_vfs_console
+[ 14%] Built target __idf_esp_driver_usb_serial_jtag
+[ 14%] Built target __idf_esp_phy
+[ 15%] Built target __idf_nvs_flash
+[ 15%] Built target __idf_esp_event
+[ 16%] Built target __idf_esp_driver_uart
+[ 16%] Built target __idf_esp_psram
+[ 16%] Built target __idf_esp_ringbuf
+[ 16%] Built target __idf_esp_driver_gptimer
+[ 17%] Built target __idf_esp_timer
+[ 17%] Built target __idf_cxx
+[ 17%] Built target __idf_pthread
+[ 18%] Built target __idf_newlib
+[ 19%] Built target __idf_freertos
+[ 22%] Built target __idf_esp_hw_support
+[ 22%] Built target __idf_esp_security
+[ 24%] Built target __idf_soc
+[ 24%] Built target __idf_heap
+[ 24%] Built target __idf_log
+[ 26%] Built target __idf_hal
+[ 27%] Built target __idf_esp_rom
+[ 27%] Built target __idf_esp_common
+[ 28%] Built target __idf_esp_system
+[ 29%] Built target __idf_spi_flash
+[ 30%] Built target __idf_esp_mm
+[ 31%] Built target __idf_bootloader_support
+[ 31%] Built target __idf_efuse
+[ 31%] Built target __idf_esp_partition
+[ 31%] Built target __idf_app_update
+[ 31%] Built target __idf_esp_bootloader_format
+[ 31%] Building C object esp-idf/esp_app_format/CMakeFiles/__idf_esp_app_format.dir/esp_app_desc.c.obj
+[ 31%] Linking C static library libesp_app_format.a
+[ 31%] Built target __idf_esp_app_format
+[ 32%] Built target mbedtls
+[ 32%] Built target mbedx509
+[ 37%] Built target mbedcrypto
+[ 37%] Built target p256m
+[ 37%] Built target everest
+[ 38%] Built target __idf_mbedtls
+[ 39%] Built target __idf_esp_pm
+[ 39%] Built target __idf_esp_driver_gpio
+[ 39%] Built target __idf_xtensa
+[ 39%] Built target __idf_protobuf-c
+[ 40%] Built target __idf_json
+[ 41%] Built target __idf_esp_hid
+[ 41%] Built target __idf_app_trace
+[ 41%] Built target __idf_esp_driver_touch_sens
+[ 41%] Built target __idf_esp_https_server
+[ 41%] Built target __idf_esp_eth
+[ 42%] Built target __idf_esp_driver_cam
+[ 43%] Built target __idf_wear_levelling
+[ 44%] Built target __idf_espcoredump
+[ 45%] Built target __idf_unity
+[ 45%] Built target __idf_esp_lcd
+[ 46%] Built target __idf_console
+[ 46%] Built target __idf_nvs_sec_provider
+[ 46%] Built target __idf_smooth_ui_toolkit
+[ 46%] Built target __idf_perfmon
+[ 46%] Built target __idf_mqtt
+[ 46%] Built target __idf_rt
+[ 46%] Built target __idf_espressif__i2c_bus
+[ 46%] Built target __idf_touch_element
+[ 46%] Built target __idf_spiffs
+[ 46%] Built target __idf_usb
+[ 46%] Built target __idf_78__esp-wifi-connect
+[ 47%] Built target __idf_espressif__esp_codec_dev
+[ 47%] Built target __idf_cmock
+[ 47%] Built target __idf_mooncake_log
+[ 47%] Built target __idf_mooncake
+[ 47%] Built target __idf_M5PM1
+[ 48%] Built target __idf_BMI270_BMM150_Sensor
+[ 49%] Built target __idf_fatfs
+[ 50%] Built target __idf_protocomm
+[ 50%] Built target __idf_esp_local_ctrl
+[ 57%] Built target __idf_espressif__esp-dsp
+[ 57%] Built target __idf_wifi_provisioning
+[ 59%] Built target __idf_M5GFX
+[ 59%] Built target __idf_M5IOE1
+[ 95%] Built target __idf_lvgl
+[ 95%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_gundam_museum/model/destiny_gundam.cpp.obj
+[ 95%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_gundam_museum/view/museum_renderer.cpp.obj
+[ 95%] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/apps/app_gundam_museum/model/strike_gundam.cpp.obj
+[ 95%] Linking C static library libmain.a
+[100%] Built target __idf_main
+[100%] Generating esp-idf/esp_system/ld/sections.ld
+[100%] Built target __ldgen_output_sections.ld
+[100%] Linking CXX executable StopWatch-UserDemo.elf
+[100%] Built target StopWatch-UserDemo.elf
+[100%] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /Users/xudanyang/Documents/stopwatch/userdemo/build/StopWatch-UserDemo.bin
+[100%] Built target gen_project_binary
+StopWatch-UserDemo.bin binary size 0x3d13a0 bytes. Smallest app partition is 0x4f0000 bytes. 0x11ec60 bytes (23%) free.
+[100%] Built target app_check_size
+[100%] Built target app
