@@ -132,6 +132,9 @@ int main(int argc,char** argv){
         {"top",-.4f,.70f,1.67f,140,Pose::Display,true,false},{"underside",-.4f,-.30f,1.67f,140,Pose::Display,true,false},
     };
     const Shot sazabiShots[]={
+        {"eyes-above",-.45f,.30f,2.45f,430,Pose::Display,false,false,0,Part::Head},
+        {"eyes-below",-.45f,-.28f,2.45f,430,Pose::Display,false,false,0,Part::Head},
+        {"eyes-opposite",.80f,.02f,2.45f,430,Pose::Display,false,false,0,Part::Head},
         {"standing",-.40f,.04f,1.70f,137,Pose::Display,true,false},{"front",0,.02f,1.70f,140,Pose::Display,false,false},
         {"rear",3.14159265f,.02f,1.70f,140,Pose::Display,false,false},{"rear-equipped",3.14159265f,.05f,1.70f,137,Pose::Display,true,false},
         {"side",1.57079633f,.02f,1.70f,140,Pose::Display,false,false},{"other-side",-1.57079633f,.02f,1.70f,140,Pose::Display,false,false},

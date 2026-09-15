@@ -1,0 +1,208 @@
+{
+  "schema": 1,
+  "identity_view": "equipped",
+  "models": [
+    {
+      "id": "msn-04-sazabi-sdex-017",
+      "required_views": [
+        "equipped",
+        "front",
+        "rear",
+        "side",
+        "other-side",
+        "top",
+        "unarmed",
+        "drag",
+        "gray",
+        "head",
+        "equipped-drag",
+        "study-backpack",
+        "study-chest",
+        "study-face-front",
+        "study-face-quarter",
+        "study-face-side",
+        "study-front",
+        "study-funnels-rear",
+        "study-funnels",
+        "study-gray-equipped",
+        "study-gray",
+        "study-grip-assembly",
+        "study-grip-side",
+        "study-head-mount",
+        "study-leg-side",
+        "study-leg",
+        "study-mask-assembly",
+        "study-other-side",
+        "study-rear-equipped",
+        "study-rear",
+        "study-rifle",
+        "study-shield-mount",
+        "study-shield-side",
+        "study-shield",
+        "study-shoulder",
+        "study-side",
+        "study-standing",
+        "study-top",
+        "study-underside"
+      ],
+      "frames": [
+        {
+          "view": "equipped",
+          "file": "sazabi-equipped.png"
+        },
+        {
+          "view": "front",
+          "file": "sazabi-front.png"
+        },
+        {
+          "view": "rear",
+          "file": "sazabi-rear.png"
+        },
+        {
+          "view": "side",
+          "file": "sazabi-side.png"
+        },
+        {
+          "view": "other-side",
+          "file": "sazabi-other-side.png"
+        },
+        {
+          "view": "top",
+          "file": "sazabi-top.png"
+        },
+        {
+          "view": "unarmed",
+          "file": "sazabi-unarmed.png"
+        },
+        {
+          "view": "drag",
+          "file": "sazabi-drag.png"
+        },
+        {
+          "view": "gray",
+          "file": "sazabi-gray.png"
+        },
+        {
+          "view": "head",
+          "file": "sazabi-head.png"
+        },
+        {
+          "view": "equipped-drag",
+          "file": "sazabi-equipped-drag.png"
+        },
+        {
+          "view": "study-backpack",
+          "file": "study-backpack.png"
+        },
+        {
+          "view": "study-chest",
+          "file": "study-chest.png"
+        },
+        {
+          "view": "study-face-front",
+          "file": "study-face-front.png"
+        },
+        {
+          "view": "study-face-quarter",
+          "file": "study-face-quarter.png"
+        },
+        {
+          "view": "study-face-side",
+          "file": "study-face-side.png"
+        },
+        {
+          "view": "study-front",
+          "file": "study-front.png"
+        },
+        {
+          "view": "study-funnels-rear",
+          "file": "study-funnels-rear.png"
+        },
+        {
+          "view": "study-funnels",
+          "file": "study-funnels.png"
+        },
+        {
+          "view": "study-gray-equipped",
+          "file": "study-gray-equipped.png"
+        },
+        {
+          "view": "study-gray",
+          "file": "study-gray.png"
+        },
+        {
+          "view": "study-grip-assembly",
+          "file": "study-grip-assembly.png"
+        },
+        {
+          "view": "study-grip-side",
+          "file": "study-grip-side.png"
+        },
+        {
+          "view": "study-head-mount",
+          "file": "study-head-mount.png"
+        },
+        {
+          "view": "study-leg-side",
+          "file": "study-leg-side.png"
+        },
+        {
+          "view": "study-leg",
+          "file": "study-leg.png"
+        },
+        {
+          "view": "study-mask-assembly",
+          "file": "study-mask-assembly.png"
+        },
+        {
+          "view": "study-other-side",
+          "file": "study-other-side.png"
+        },
+        {
+          "view": "study-rear-equipped",
+          "file": "study-rear-equipped.png"
+        },
+        {
+          "view": "study-rear",
+          "file": "study-rear.png"
+        },
+        {
+          "view": "study-rifle",
+          "file": "study-rifle.png"
+        },
+        {
+          "view": "study-shield-mount",
+          "file": "study-shield-mount.png"
+        },
+        {
+          "view": "study-shield-side",
+          "file": "study-shield-side.png"
+        },
+        {
+          "view": "study-shield",
+          "file": "study-shield.png"
+        },
+        {
+          "view": "study-shoulder",
+          "file": "study-shoulder.png"
+        },
+        {
+          "view": "study-side",
+          "file": "study-side.png"
+        },
+        {
+          "view": "study-standing",
+          "file": "study-standing.png"
+        },
+        {
+          "view": "study-top",
+          "file": "study-top.png"
+        },
+        {
+          "view": "study-underside",
+          "file": "study-underside.png"
+        }
+      ]
+    }
+  ]
+}

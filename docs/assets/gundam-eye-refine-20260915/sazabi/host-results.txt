@@ -1,0 +1,13 @@
+working_bytes=1274184 panels=4059 omitted=0 submitted=3294 culled=765
+sazabi_eye_window recess=.070 lens_recess=.060 negatives_detected=2
+sazabi_support_negatives_detected=2
+sd_sazabi contacts rifle=0 shield=0 funnel_pairs=0 funnel_body=0 palm_armor=0
+sd_sazabi panels=4059 helmet_body_ratio=3.29514 depth_width=1.00926 shoulder_span=2.50132 sole_area=0.486,0.486
+strict_contact moving=3538 body=962 part=4
+sd_sazabi negative rifle=306 funnel_overlap=36
+curved_crown mid_width=0.966154 top_width=0.610909 mid_depth=0.930222 top_depth=0.697844
+curved_crown_negative_detected=1
+first_cull_case 0 0 0.1 1 pixels=4
+cases=864 cull_pixel_diff=23 buried_pixel_diff=0 coverage_diff=12 interior_diff=0 max_diff=4 partial_diff=0 culled_ratio=0.0918382
+full_exhibit circle_edge=0 viewport_edge=0
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

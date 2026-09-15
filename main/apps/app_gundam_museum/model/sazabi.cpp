@@ -58,13 +58,28 @@ void head(Builder& b,bool detail,SazabiAssembly* a){
     b.shell({{2.57f,.52f,.44f,-.06f},{2.69f,.49f,.43f,-.08f},{2.82f,.40f,.35f,-.09f},{2.93f,.27f,.24f,-.10f},{2.98f,.09f,.09f,-.10f}},red,20);
     if(a)a->crown.end=b.m.count;
     sd_curved::arc(b,{{2.13f,.36f,.32f,-.04f},{2.30f,.49f,.43f,-.04f},{2.57f,.52f,.44f,-.06f}},red,1.08f,2*sd_model::pi-1.08f,16);
-    // SDEX 017: oblique eye slit and pointed mask, not a Zaku visor.
+    // SDEX 017: tapered oblique window with a recessed back, not a painted
+    // equal-width V strip. All three boundaries share the brow's curved rim.
     for(float s:{-1.f,1.f}){
-        const auto brow=[&](float t,float v){return Point{s*.43f*t,(2.43f+.19f*t)*(1-v)+(2.91f-.25f*t*t)*v,(.55f-.21f*t*t)*(1-v)+(.30f-.08f*t*t)*v};};
-        for(int i=0;i<6;++i){const float t=i/6.f,u=(i+1)/6.f;auto p=brow(t,0),q=brow(u,0);
-            b.face(p,q,{q.x,q.y-.037f,q.z+.005f},{p.x,p.y-.037f,p.z+.005f},black,{0,0,1},true);
-            for(int j=0;j<3;++j)b.face(brow(t,j/3.f),brow(u,j/3.f),brow(u,(j+1)/3.f),brow(t,(j+1)/3.f),red,{s*.2f,.2f,1},true);
+        const auto brow=[&](float t,float v){return Point{s*.43f*t,(2.49f+.13f*t)*(1-v)+(2.91f-.25f*t*t)*v,(.55f-.21f*t*t)*(1-v)+(.30f-.08f*t*t)*v};};
+        const auto lower=[&](float t){return Point{s*.43f*t,2.405f+.195f*t,.55f-.21f*t*t};};
+        const auto back=[](Point p){p.z-=.070f;return p;};
+        if(a)a->eyeWindow[s>0].begin=b.m.count;
+        for(int i=0;i<6;++i){const float t=i/6.f,u=(i+1)/6.f;auto p=brow(t,0),q=brow(u,0),r=lower(u),v=lower(t);
+            b.face(p,q,back(q),back(p),black,{0,-1,0},true);
+            b.face(v,r,back(r),back(v),black,{0,1,0},true);
+            b.face(back(p),back(q),back(r),back(v),black,{0,0,1},true);
+            if(i==5)b.face(q,r,back(r),back(q),black,{s,0,0},true);
         }
+        if(a)a->eyeWindow[s>0].end=b.m.count;
+        for(int i=0;i<6;++i){const float t=i/6.f,u=(i+1)/6.f;
+            auto p=lower(t),q=lower(u);
+            b.face(p,q,{0,2.37f,.58f},{0,2.37f,.58f},red,{0,0,1},true);
+            // Spend facets on the actual window; two vertical brow bands
+            // preserve the crown silhouette within the fixed mesh capacity.
+            for(int j=0;j<2;++j)b.face(brow(t,j/2.f),brow(u,j/2.f),brow(u,(j+1)/2.f),brow(t,(j+1)/2.f),red,{s*.2f,.2f,1},true);
+        }
+        b.face(lower(1),{s*.258f,2.37f,.47f},{0,2.37f,.58f},{0,2.37f,.58f},red,{0,0,1},true);
         b.cover({{s*.35f,2.54f,.38f},{s*.49f,2.46f,.24f},{s*.54f,2.17f,.20f},{s*.36f,2.14f,.38f},{s*.22f,2.37f,.47f}},.055f,bright,.006f);
     }
     if(a)a->mask.begin=b.m.count;
@@ -73,9 +88,18 @@ void head(Builder& b,bool detail,SazabiAssembly* a){
     // screen point only and read as a floating decoration in rotation.
     b.tube({0,2.27f,.05f},{0,2.27f,.43f},.06f,.075f,deep,false,6);
     b.cover({{-.30f,2.39f,.435f},{.30f,2.39f,.435f},{.25f,2.14f,.405f},{-.25f,2.14f,.405f}},.035f,deep,.004f,true);
-    b.cover({{-.22f,2.37f,.47f},{0,2.41f,.58f},{.22f,2.37f,.47f},{0,2.12f,.57f}},.045f,red,.012f);
+    for(float s:{-1.f,1.f}){
+        const Point top{0,2.37f,.58f},side{s*.258f,2.37f,.47f},tip{0,2.12f,.57f};
+        const auto rear=[](Point p){p.z-=.045f;return p;};
+        b.face(top,side,tip,tip,red,{0,0,1},true);
+        b.face(rear(top),rear(side),rear(tip),rear(tip),red,{0,0,-1},true);
+        b.face(top,side,rear(side),rear(top),red,{0,1,0},true);
+        b.face(side,tip,rear(tip),rear(side),red,{s,-1,0},true);
+    }
     if(a)a->mask.end=b.m.count;
-    b.tube({0,2.410f,.557f},{0,2.410f,.577f},.027f,.025f,green,false,12);
+    if(a)a->eyeLens.begin=b.m.count;
+    b.tube({0,2.452f,.465f},{0,2.452f,.490f},.037f,.035f,green,false,10);
+    if(a)a->eyeLens.end=b.m.count;
     // All three prongs are red; gold belongs to the vents and waist pipes.
     b.cover({{-.065f,2.82f,.31f},{.065f,2.82f,.31f},{.025f,3.54f,.02f},{0,3.59f,0},{-.025f,3.54f,.02f}},.065f,bright,.006f);
     for(float s:{-1.f,1.f})b.cover({{s*.08f,2.88f,.32f},{s*.23f,2.92f,.23f},{s*.32f,3.46f,.12f},{s*.27f,3.46f,.14f},{s*.13f,3.02f,.30f}},.06f,red,.005f);

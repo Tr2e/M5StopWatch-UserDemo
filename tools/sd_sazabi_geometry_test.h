@@ -2,6 +2,7 @@
 #include "../main/apps/app_gundam_museum/model/sazabi.h"
 #include "sd_rx78_equipment_test.h"
 #include "sd_curved_shape_test.h"
+#include "sd_eye_socket_test.h"
 #include <memory>
 
 namespace sd_sazabi_check {
@@ -33,8 +34,28 @@ inline void check(const Mesh& production){
     assert(a.rifle.end>a.rifle.begin&&a.shield.end>a.shield.begin&&a.headMount.end>a.headMount.begin&&a.mask.end>a.mask.begin);for(auto r:a.funnels)assert(r.end>r.begin+20);for(auto r:a.shoulders)assert(r.end>r.begin+30);for(auto r:a.palms)assert(r.end>r.begin);
     auto bounds=[&](SazabiAssembly::Range r){Point lo{100,100,100},hi{-100,-100,-100};for(size_t i=r.begin;i<r.end;++i)for(auto p:m->panels[i].point){lo.x=std::min(lo.x,p.x);lo.y=std::min(lo.y,p.y);lo.z=std::min(lo.z,p.z);hi.x=std::max(hi.x,p.x);hi.y=std::max(hi.y,p.y);hi.z=std::max(hi.z,p.z);}return std::pair<Point,Point>{lo,hi};};
     const auto headMount=bounds(a.headMount),mask=bounds(a.mask);
+    const auto lens=bounds(a.eyeLens);
+    assert(lens.second.z<.50f&&lens.first.z<.48f&&lens.second.y-lens.first.y>.065f);
+    assert(std::abs(sd_eye_check::frontSurface(*m,0,2.452f)-.490f)<.0001f);
+    for(int i=0;i<10;++i){const float angle=i*6.283185307f/10;
+        assert(std::abs(sd_eye_check::frontSurface(*m,.030f*std::cos(angle),2.452f+.030f*std::sin(angle))-.490f)<.0001f);
+    }
+    for(float s:{-1.f,1.f}){
+        // The middle of each sloping window must expose the recessed back,
+        // not a forward black strip or a red cap. End height is only .020.
+        const float upper=2.49f+.13f*.5f,lower=2.405f+.195f*.5f;
+        assert(upper-lower>.050f&&upper-lower<.060f);
+        assert(std::abs(sd_eye_check::frontSurface(*m,s*.215f,(upper+lower)*.5f)-.4275f)<.0001f);
+    }
+    auto badEye=std::make_unique<Mesh>(*m);
+    for(size_t i=a.eyeLens.begin;i<a.eyeLens.end;++i)for(auto& p:badEye->panels[i].point)p.z+=.10f;
+    assert(sd_eye_check::frontSurface(*badEye,0,2.452f)>.55f);
+    *badEye=*m;
+    for(auto r:a.eyeWindow)for(size_t i=r.begin;i<r.end;++i)for(auto& p:badEye->panels[i].point)p.z+=.075f;
+    assert(sd_eye_check::frontSurface(*badEye,.215f,2.52875f)>.49f);
+    std::cout<<"sazabi_eye_window recess=.070 lens_recess=.060 negatives_detected=2\n";
     assert(headMount.first.y<2.14f&&headMount.second.y>2.30f&&headMount.first.z<-.17f&&headMount.second.z>.12f);
-    assert(mask.first.x<-.29f&&mask.second.x>.29f&&mask.first.y<2.15f&&mask.second.y>2.40f&&mask.first.z<.06f&&mask.first.z<headMount.second.z&&mask.second.z>.57f);
+    assert(mask.first.x<-.29f&&mask.second.x>.29f&&mask.first.y<2.15f&&mask.second.y>2.38f&&mask.first.z<.06f&&mask.first.z<headMount.second.z&&mask.second.z>.57f);
     auto detached=*m;for(size_t i=a.headMount.begin;i<a.headMount.end;++i)for(auto& p:detached.panels[i].point)p.y+=.40f;
     float detachedNeckBottom=100;for(size_t i=a.headMount.begin;i<a.headMount.end;++i)for(auto p:detached.panels[i].point)detachedNeckBottom=std::min(detachedNeckBottom,p.y);
     for(size_t i=a.mask.begin;i<a.mask.end;++i)for(auto& p:detached.panels[i].point)p.z+=.35f;
