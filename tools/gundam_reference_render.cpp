@@ -53,6 +53,9 @@ int main(int argc,char** argv){
     const NuStage stage=argc>3 && std::string(argv[3])=="blockout"?NuStage::Blockout:
         argc>3 && std::string(argv[3])=="identity"?NuStage::Identity:NuStage::Final;
     const Shot nuShots[]={
+        {"eyes-above",-.45f,.30f,2.48f,430,Pose::Display,false,false,0,Part::Head},
+        {"eyes-below",-.45f,-.28f,2.48f,430,Pose::Display,false,false,0,Part::Head},
+        {"eyes-opposite",.80f,.02f,2.48f,430,Pose::Display,false,false,0,Part::Head},
         {"standing",-.40f,.04f,1.65f,145,Pose::Display,true,false},
         {"front",0,0,1.75f,145,Pose::Display,false,false},
         {"rear",3.14159265f,0,1.75f,145,Pose::Display,false,false},

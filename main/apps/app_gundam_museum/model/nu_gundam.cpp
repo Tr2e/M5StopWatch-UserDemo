@@ -167,7 +167,7 @@ void body(SdNuBuilder& b){
     b.tube({-.31f,2.26f,-.48f},{-.335f,2.36f,-.49f},.046f,.039f,ivory,false,8);
 }
 
-void head(SdNuBuilder& b,bool detail){
+void head(SdNuBuilder& b,bool detail,NuAssembly* assembly){
     b.at(Part::Head);
     const Ring rings[]={{2.01f,.38f,.34f,-.04f},{2.12f,.50f,.44f,-.06f},
         {2.34f,.54f,.51f,-.06f},{2.54f,.53f,.50f,-.06f},{2.70f,.48f,.44f,-.07f},
@@ -181,15 +181,24 @@ void head(SdNuBuilder& b,bool detail){
     for(int i=0;i<24;++i){auto a=p(rings[7],i),c=p(rings[7],i+1);b.face(a,c,{0,2.95f,-.09f},{0,2.95f,-.09f},ivory,{0,1,0},true);}
     // A2-26/27 wraparound cheeks and an open front cavity; C2-6 is recessed.
     for(float s:{-1.f,1.f}){
-        b.cover({{s*.27f,2.39f,.37f},{s*.43f,2.66f,.33f},{s*.47f,2.14f,.34f},{s*.28f,2.04f,.40f}},.065f,white,.006f);
+        b.cover({{s*.335f,2.39f,.37f},{s*.43f,2.66f,.33f},{s*.47f,2.14f,.34f},{s*.28f,2.04f,.40f}},.065f,white,.006f);
         b.face({s*.43f,2.66f,.33f},{s*.47f,2.14f,.34f},{s*.51f,2.14f,.09f},{s*.48f,2.66f,.12f},ivory,{s,0,0},true);
         b.cover({{0,2.62f,.47f},{s*.40f,2.65f,.32f},{s*.35f,2.51f,.39f},{0,2.45f,.515f}},.035f,white,.005f);
         b.face({0,2.34f,.447f},{s*.225f,2.32f,.368f},{s*.20f,2.16f,.355f},{0,2.105f,.43f},white,{0,0,1},true);
         b.face({s*.225f,2.32f,.368f},{s*.27f,2.34f,.30f},{s*.24f,2.14f,.30f},{s*.20f,2.16f,.355f},ivory,{s,0,0},true);
         b.face({0,2.105f,.43f},{s*.20f,2.16f,.355f},{s*.18f,2.09f,.30f},{0,2.06f,.35f},ivory,{0,-1,0},true);
         if(detail){
-            b.cover({{s*.022f,2.445f,.430f},{s*.318f,2.51f,.365f},{s*.302f,2.355f,.375f},{s*.105f,2.333f,.428f}},.03f,black,.003f);
-            b.cover({{s*.044f,2.429f,.441f},{s*.296f,2.489f,.383f},{s*.279f,2.389f,.395f},{s*.107f,2.355f,.441f}},.008f,green,.002f);
+            const auto eye=[&](float x,float y){return Point{s*x,y,.515f-.35f*x};};
+            // Invert the socket's optical inset: the accepted green outline
+            // stays the same size instead of becoming the old black plate.
+            std::array<Point,4> opening={eye(.044f,2.429f),eye(.296f,2.489f),eye(.279f,2.389f),eye(.107f,2.355f)};
+            for(auto& p:opening){p.x=s*(.1815f+(s*p.x-.1815f)/.88f);p.y=2.4155f+(p.y-2.4155f)/.88f;p.z=.515f-.35f*std::abs(p.x);}
+            buildEyeSocket(b,opening,.072f,black,black,green,assembly?&assembly->eyes[s>0]:nullptr);
+            // The lower socket edge returns to the mask instead of floating
+            // above a separate colored cover.
+            b.face(opening[3],opening[2],{s*.225f,2.32f,.368f},{0,2.34f,.447f},white,{0,0,1},true);
+            b.face(opening[2],opening[1],{s*.35f,2.51f,.39f},{s*.335f,2.39f,.37f},ivory,{s,0,0},true);
+            b.face({s*.35f,2.51f,.39f},{s*.40f,2.65f,.32f},{s*.43f,2.66f,.33f},{s*.335f,2.39f,.37f},ivory,{s,0,0},true);
             b.tube({s*.35f,2.705f,.268f},{s*.35f,2.705f,.325f},.052f,.06f,ivory,true,10);
             b.at(Part::Head,{s*.462f,2.41f,.285f},0,0,s*.82f);
             b.opening({-.037f,-.18f,.03f},{.037f,-.18f,.03f},{.037f,.12f,.03f},{-.037f,.12f,.03f},.045f,ivory);
@@ -344,7 +353,7 @@ void buildNuGundam(Mesh& mesh,BuildOptions options,NuStage stage,NuAssembly* ass
     if(assembly)*assembly=NuAssembly{};
     mesh.count=mesh.buriedOmitted=0;mesh.overflowed=false;
     if(stage==NuStage::Blockout)options.gray=true;
-    SdNuBuilder b{mesh,options};body(b);head(b,stage!=NuStage::Blockout);
+    SdNuBuilder b{mesh,options};body(b);head(b,stage!=NuStage::Blockout,assembly);
     arms(b,stage==NuStage::Final);if(options.equipment)equipment(b,stage==NuStage::Final,assembly);
 }
 } // namespace gundam_museum
