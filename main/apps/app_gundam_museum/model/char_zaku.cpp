@@ -49,6 +49,10 @@ void torso(Builder& b,bool detail,ZakuAssembly* a){
 }
 void head(Builder& b,bool detail,ZakuAssembly* a){
     b.at(Part::Head);
+    // The neck post visibly enters both the torso collar and helmet cup.
+    if(a)a->headMount.begin=b.m.count;
+    b.tube({0,2.02f,-.03f},{0,2.31f,-.03f},.155f,.17f,frame,false,8);
+    if(a)a->headMount.end=b.m.count;
     b.shell({{2.52f,.55f,.48f,-.05f},{2.64f,.55f,.48f,-.05f},{2.76f,.50f,.44f,-.055f},{2.87f,.40f,.36f,-.06f},{2.95f,.27f,.24f,-.06f},{3.00f,.05f,.05f,-.06f}},pink,20);
     sd_curved::arc(b,{{2.23f,.50f,.44f,-.04f},{2.40f,.56f,.48f,-.05f},{2.54f,.55f,.48f,-.05f}},pink,1.22f,2*sd_model::pi-1.22f,14);
     // The visor is a recessed structural band; the eye is a separate lens.
@@ -117,7 +121,12 @@ void equipment(Builder& b,ZakuAssembly* a){
     b.box(0,.32f,.50f,.06f,.09f,.10f,frame);
     if(a)a->rifle.end=b.m.count;
     // Stowed heat hawk remains visible without crossing the skirt.
-    b.at(Part::Waist);b.tube({.38f,1.14f,-.18f},{.47f,1.12f,-.28f},.055f,.055f,frame,false,8);
+    b.at(Part::Waist);if(a)a->heatHawkMount.begin=b.m.count;
+    b.tube({.38f,1.14f,-.18f},{.47f,1.12f,-.28f},.055f,.055f,frame,false,8);
+    // Continue the clip to a point on the transformed shaft. Previously the
+    // endpoints missed by about one shaft diameter in the device view.
+    b.tube({.47f,1.12f,-.28f},{.551f,1.139f,-.34f},.052f,.046f,frame,false,8);
+    if(a)a->heatHawkMount.end=b.m.count;
     b.at(Part::Sabers,{.54f,1.08f,-.34f},-.18f,0,.15f);
     if(a)a->heatHawk.begin=b.m.count;
     b.tube({0,-.25f,0},{0,.28f,0},.042f,.042f,purple,false,8);

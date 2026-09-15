@@ -45,19 +45,24 @@ inline unsigned rifleCrossings(const Mesh& m,const ZakuAssembly& assembly,bool r
 inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();ZakuAssembly a;buildCharZaku(*m,{},ZakuStage::Final,&a);
     assert(!m->overflowed && m->count==production.count);
-    for(auto r:{a.rightShield,a.leftSpikes,a.headHose,a.waistHose,a.rifle,a.heatHawk,a.palms[0],a.palms[1]})assert(r.end>r.begin);
+    for(auto r:{a.rightShield,a.leftSpikes,a.headHose,a.waistHose,a.headMount,a.rifle,a.heatHawkMount,a.heatHawk,a.palms[0],a.palms[1]})assert(r.end>r.begin);
     auto bounds=[&](ZakuAssembly::Range r){Point lo{100,100,100},hi{-100,-100,-100};for(size_t i=r.begin;i<r.end;++i)for(auto p:m->panels[i].point){lo.x=std::min(lo.x,p.x);lo.y=std::min(lo.y,p.y);lo.z=std::min(lo.z,p.z);hi.x=std::max(hi.x,p.x);hi.y=std::max(hi.y,p.y);hi.z=std::max(hi.z,p.z);}return std::pair<Point,Point>{lo,hi};};
-    const auto shield=bounds(a.rightShield),spikes=bounds(a.leftSpikes),headHose=bounds(a.headHose),waistHose=bounds(a.waistHose);
+    const auto shield=bounds(a.rightShield),spikes=bounds(a.leftSpikes),headHose=bounds(a.headHose),waistHose=bounds(a.waistHose),headMount=bounds(a.headMount),hawkMount=bounds(a.heatHawkMount);
     assert(shield.second.x<0 && shield.second.y-shield.first.y>.85f);
     assert(spikes.first.x>0 && spikes.second.x>1.25f);
     // Official SDCS hoses wrap at muzzle/waist height and reach behind the shell.
     assert(headHose.first.y>2.19f && headHose.second.y>2.43f && headHose.first.z<-.4f);
     assert(waistHose.first.y>1.34f && waistHose.second.y>1.47f && waistHose.first.z<-.25f);
+    assert(headMount.first.y<2.08f&&headMount.second.y>2.23f&&headMount.first.z<-.18f&&headMount.second.z>.12f);
+    assert(hawkMount.first.x<.39f&&hawkMount.second.x>.54f&&hawkMount.first.z<-.34f&&hawkMount.second.z>-.18f);
+    auto detached=*m;for(size_t i=a.headMount.begin;i<a.headMount.end;++i)for(auto& p:detached.panels[i].point)p.y+=.40f;
+    float detachedBottom=100;for(size_t i=a.headMount.begin;i<a.headMount.end;++i)for(auto p:detached.panels[i].point)detachedBottom=std::min(detachedBottom,p.y);
+    assert(detachedBottom>2.08f);std::cout<<"zaku_support_negative_detected=1\n";
     float floorArea[2]={},crown=0,chin=10,width=0,zmin=10,zmax=-10,rifleFloor=10,antennaTop=0,antennaForward=-10,shieldArea=0,shoulderMin=100,shoulderMax=-100;
     for(size_t i=0;i<m->count;++i){
         if(m->parts[i]==Part::Feet){auto p=m->panels[i].point;bool floor=true;for(auto q:p){assert(q.y>=.0249f);floor&=std::abs(q.y-.025f)<.0001f;}if(floor)for(int t=0;t<2;++t){auto n=cross(subtract(p[t+1],p[0]),subtract(p[t+2],p[0]));floorArea[p[0].x>0]+=.5f*std::sqrt(dot(n,n));}}
         if(m->parts[i]==Part::Rifle)for(auto p:m->panels[i].point)rifleFloor=std::min(rifleFloor,p.y);
-        if(m->parts[i]==Part::Head)for(auto p:m->panels[i].point){
+        if(m->parts[i]==Part::Head&&!(i>=a.headMount.begin&&i<a.headMount.end))for(auto p:m->panels[i].point){
             if(p.y<3.08f){crown=std::max(crown,p.y);chin=std::min(chin,p.y);width=std::max(width,std::abs(p.x)*2);zmin=std::min(zmin,p.z);zmax=std::max(zmax,p.z);}
             else{antennaTop=std::max(antennaTop,p.y);antennaForward=std::max(antennaForward,p.z);}
         }
