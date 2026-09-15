@@ -8,10 +8,10 @@ from PIL import Image, ImageDraw
 p=argparse.ArgumentParser();p.add_argument('frames',type=Path);p.add_argument('output',type=Path)
 p.add_argument('--baseline',type=Path,help='Optional previous production frames; compare without rescaling.')
 p.add_argument('--studies',type=Path,help='Optional larger structural studies from the same asset/raster.')
-p.add_argument('--model',choices=['rx78','nu','strike','zaku'],default='rx78',help='Model identity; input names must match.')
+p.add_argument('--model',choices=['rx78','nu','strike','zaku','sazabi'],default='rx78',help='Model identity; input names must match.')
 a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
-prefix=a.model;title={'rx78':'SD RX-78-2','nu':'RX-93 NU','strike':'GAT-X105 AILE STRIKE','zaku':'MS-06S CHAR ZAKU II'}[prefix]
-model_id={'rx78':'rx78-2-user-pose-v5','nu':'rx93-sd-nu-bb-387','strike':'gat-x105-sd-aile-sdex-002','zaku':'ms-06s-sdcs-char-zaku-ii'}[prefix]
+prefix=a.model;title={'rx78':'SD RX-78-2','nu':'RX-93 NU','strike':'GAT-X105 AILE STRIKE','zaku':'MS-06S CHAR ZAKU II','sazabi':'MSN-04 SAZABI'}[prefix]
+model_id={'rx78':'rx78-2-user-pose-v5','nu':'rx93-sd-nu-bb-387','strike':'gat-x105-sd-aile-sdex-002','zaku':'ms-06s-sdcs-char-zaku-ii','sazabi':'msn-04-sazabi-sdex-017'}[prefix]
 names=['equipped','front','rear','side','other-side','top','unarmed','drag','gray','head']
 for n in names:
     with Image.open(a.frames/f'{prefix}-{n}.ppm') as im:

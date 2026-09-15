@@ -34,7 +34,7 @@ public:
         lets_and_go::mesh_parts::MeshWriter writer{{m.panels.data(),Mesh::capacity},m.count,false};
         lets_and_go::mesh_parts::Builder base{writer,12};
         base.quad(a,b,c,d,lets_and_go::mesh_parts::shade(options.gray?uint16_t(0xdedb):color,light));
-        m.normals[m.count]=n;m.parts[m.count]=part;m.twoSided[m.count]=twoSided || part==Part::Head || part==Part::Shield || part==Part::Sabers || part==Part::Rifle || part==Part::Hands || part==Part::Arms || part==Part::Shoulders;m.count=writer.count;
+        m.normals[m.count]=n;m.parts[m.count]=part;m.twoSided[m.count]=twoSided || part==Part::Head || part==Part::Shield || part==Part::Sabers || part==Part::Rifle || part==Part::Hands || part==Part::Arms || part==Part::Shoulders || part==Part::Shins;m.count=writer.count;
     }
     void box(float x,float y,float z,float w,float h,float d,uint16_t color,bool twoSided=false){
         const float l=x-w/2,r=x+w/2,b=y-h/2,t=y+h/2,f=z+d/2,k=z-d/2;
@@ -51,8 +51,12 @@ public:
         Point center{};for(auto p:points){center.x+=p.x;center.y+=p.y;center.z+=p.z;}const float f=1.f/points.size();center={center.x*f,center.y*f,center.z*f};
         const auto inset=[&](Point p){return Point{center.x+(p.x-center.x)*.90f,center.y+(p.y-center.y)*.90f,center.z+(p.z-center.z)*.90f+bevel};};
         const auto back=[&](Point p){p.z-=depth;return p;};const Point fc{center.x,center.y,center.z+bevel};
+        // Covers are independently layered thin shells. Retain both sides at
+        // quantized grazing angles; their back/edge pixels otherwise vanish
+        // even though the enclosing armor remains visible.
+        (void)twoSided;
         for(size_t i=0;i<points.size();++i){auto a=points.begin()[i],b=points.begin()[(i+1)%points.size()],u=inset(a),v=inset(b);
-            face(fc,u,v,v,color,{0,0,1},twoSided);face(a,b,v,u,color,{0,0,1},twoSided);face(a,back(a),back(b),b,color,{a.x+b.x-2*center.x,a.y+b.y-2*center.y,0},twoSided);face(back(center),back(b),back(a),back(a),color,{0,0,-1},twoSided);}
+            face(fc,u,v,v,color,{0,0,1},true);face(a,b,v,u,color,{0,0,1},true);face(a,back(a),back(b),b,color,{a.x+b.x-2*center.x,a.y+b.y-2*center.y,0},true);face(back(center),back(b),back(a),back(a),color,{0,0,-1},true);}
     }
     void tube(Point a,Point b,float r0,float r1,uint16_t color,bool hollow=false,int count=10,bool omitStart=false,bool twoSided=false){
         auto axis=subtract(b,a);const float len=std::sqrt(dot(axis,axis));axis={axis.x/len,axis.y/len,axis.z/len};

@@ -1,6 +1,7 @@
 #include "museum_renderer.h"
 #include "../model/char_zaku.h"
 #include "../model/nu_gundam.h"
+#include "../model/sazabi.h"
 #include "../model/strike_gundam.h"
 #include "museum_layout.h"
 #include <algorithm>
@@ -29,7 +30,7 @@ void label(lgfx::LGFXBase& c,const char* text,int x,int y,int size,uint16_t colo
 struct Camera {
     float cy,sy,cp,sp,pivot;
     Camera(const View& v):cy(std::cos(v.yaw)),sy(std::sin(v.yaw)),cp(std::cos(v.pitch)),sp(std::sin(v.pitch)),
-        pivot(v.model==ModelId::StrikeGundam?(v.detail?2.78f:1.72f):v.model==ModelId::NuGundam?(v.detail?2.68f:1.65f):v.model==ModelId::CharZaku?(v.detail?2.55f:1.67f):(v.detail?2.41f:1.49f)){}
+        pivot(v.model==ModelId::StrikeGundam?(v.detail?2.78f:1.72f):v.model==ModelId::NuGundam?(v.detail?2.68f:1.65f):v.model==ModelId::Sazabi?(v.detail?2.58f:1.70f):v.model==ModelId::CharZaku?(v.detail?2.55f:1.67f):(v.detail?2.41f:1.49f)){}
     lets_and_go::TrackCameraPoint operator()(Point p,uint8_t=0)const{
         p.y-=pivot;const float x=p.x*cy+p.z*sy,z=p.z*cy-p.x*sy;
         return {x,p.y*cp-z*sp,7.f-(z*cp+p.y*sp)};
@@ -45,9 +46,10 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(partial)canvas.fillRect(0,layout::top,canvas.width(),layout::side,background);
     else canvas.fillScreen(background);
     if(!_surface){label(canvas,"MODEL MEMORY UNAVAILABLE",canvas.width()/2,220,1);return;}
-    const bool nu=view.model==ModelId::NuGundam,strike=view.model==ModelId::StrikeGundam,zaku=view.model==ModelId::CharZaku;
+    const bool nu=view.model==ModelId::NuGundam,strike=view.model==ModelId::StrikeGundam,zaku=view.model==ModelId::CharZaku,sazabi=view.model==ModelId::Sazabi;
     if(!_cached || _model!=view.model || _equipment!=view.equipment || _gray!=gray || _buried!=keepBuried || _pose!=view.pose){
         if(strike)buildStrikeGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
+        else if(sazabi)buildSazabi(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         else if(nu)buildNuGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         else if(zaku)buildCharZaku(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         else buildRx78(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
@@ -66,7 +68,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const auto clearUs=micros();
     lets_and_go::TrackCamera camera{};
     camera.principalX=w*.5f;camera.principalY=h*.5f;
-    const float scale=strike?(view.detail?148.f:82.f):nu?(view.detail?148.f:78.f):zaku?(view.detail?158.f:86.f):(view.detail?164.f:98.f);
+    const float scale=strike?(view.detail?148.f:82.f):nu?(view.detail?148.f:78.f):sazabi?(view.detail?155.f:76.f):zaku?(view.detail?158.f:86.f):(view.detail?164.f:98.f);
     camera.focalLength=scale*7.f*float(h)/layout::side;
     const float correction=float(w)/h;
     const auto project=[&](Point point,uint8_t tag){auto v=transform(point,tag);v.x*=correction;return v;};

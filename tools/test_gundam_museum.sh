@@ -11,6 +11,7 @@ font_inc="${M5GFX_PARENT_INCLUDE:-$repo_dir/M5StopWatch-UserDemo-ruview/componen
   "$repo_dir/main/apps/app_gundam_museum/model/rx78.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/char_zaku.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/nu_gundam.cpp" \
+  "$repo_dir/main/apps/app_gundam_museum/model/sazabi.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/strike_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/view/museum_renderer.cpp" \
   -o "$out_dir/test"

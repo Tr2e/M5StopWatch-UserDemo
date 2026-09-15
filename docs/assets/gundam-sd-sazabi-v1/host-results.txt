@@ -1,0 +1,8 @@
+working_bytes=1274184 panels=2994 omitted=0 submitted=2620 culled=374
+sd_sazabi contacts rifle=0 shield=0 funnel_pairs=0 funnel_body=0 palm_armor=0
+sd_sazabi panels=2994 helmet_body_ratio=2.84135 depth_width=0.99 shoulder_span=2.87181 sole_area=0.51,0.51
+sd_sazabi negative rifle=145 funnel_overlap=37
+first_cull_case 0 0 0.1 10 pixels=1
+cases=864 cull_pixel_diff=4 buried_pixel_diff=0 coverage_diff=2 interior_diff=0 max_diff=1 partial_diff=0 culled_ratio=0.0719898
+full_exhibit circle_edge=0 viewport_edge=0
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

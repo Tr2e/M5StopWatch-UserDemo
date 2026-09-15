@@ -11,6 +11,7 @@
 #include "sd_nu_geometry_test.h"
 #include "sd_strike_geometry_test.h"
 #include "sd_zaku_geometry_test.h"
+#include "sd_sazabi_geometry_test.h"
 #include "sd_rx78_equipment_test.h"
 using namespace gundam_museum;
 void controls(){
@@ -27,11 +28,11 @@ void controls(){
     f.input.valid=false;c.update(f,1300);const auto interrupted=c.view();
     f.input.valid=true;f.preview.dx=100;c.update(f,1310);assert(c.view().yaw==interrupted.yaw);
     f.preview={};f.navigation=1;
-    for(ModelId expected:{ModelId::CharZaku,ModelId::NuGundam,ModelId::StrikeGundam,ModelId::Rx78}){
+    for(ModelId expected:{ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::Rx78}){
         c.update(f,1320);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
     }
     f.navigation=-1;
-    for(ModelId expected:{ModelId::StrikeGundam,ModelId::NuGundam,ModelId::CharZaku,ModelId::Rx78}){
+    for(ModelId expected:{ModelId::StrikeGundam,ModelId::Sazabi,ModelId::NuGundam,ModelId::CharZaku,ModelId::Rx78}){
         c.update(f,1330);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
     }
     f.navigation=1;c.update(f,1340);f.navigation=0;f.input.confirmPressed=true;c.update(f,1346);
@@ -79,9 +80,10 @@ int main(int argc,char** argv){
     const bool strike=argc>2 && std::string(argv[2])=="strike";
     const bool nu=argc>2 && std::string(argv[2])=="nu";
     const bool zaku=argc>2 && std::string(argv[2])=="zaku";
-    const ModelId model=strike?ModelId::StrikeGundam:nu?ModelId::NuGundam:zaku?ModelId::CharZaku:ModelId::Rx78;
+    const bool sazabi=argc>2 && std::string(argv[2])=="sazabi";
+    const ModelId model=strike?ModelId::StrikeGundam:nu?ModelId::NuGundam:zaku?ModelId::CharZaku:sazabi?ModelId::Sazabi:ModelId::Rx78;
     View view;view.model=model;
-    const std::string prefix=strike?"strike":nu?"nu":zaku?"zaku":"rx78";
+    const std::string prefix=strike?"strike":nu?"nu":zaku?"zaku":sazabi?"sazabi":"rx78";
     const auto save=[&](const std::string& name){canvas.save(out+"/"+(name.rfind("rx78-",0)==0?prefix+name.substr(4):name)+".ppm");};
     renderer.render(canvas,view);save("rx78-equipped");
     std::cout<<"working_bytes="<<renderer.workingBytes()<<" panels="<<renderer.mesh().count
@@ -97,11 +99,12 @@ int main(int argc,char** argv){
     for(unsigned i=0;i<static_cast<unsigned>(Part::Bazooka);++i)assert(parts[i]>0);
     assert(nu?parts[static_cast<unsigned>(Part::Bazooka)]>0:parts[static_cast<unsigned>(Part::Bazooka)]==0);
     assert(strike?parts[static_cast<unsigned>(Part::Aile)]>0:parts[static_cast<unsigned>(Part::Aile)]==0);
-    assert(nu?parts[static_cast<unsigned>(Part::Funnels)]>0:parts[static_cast<unsigned>(Part::Funnels)]==0);
-    if(!nu && !strike && !zaku){checkSdRx78Geometry(renderer.mesh());sd_equipment_check::check(renderer.mesh());}
+    assert((nu||sazabi)?parts[static_cast<unsigned>(Part::Funnels)]>0:parts[static_cast<unsigned>(Part::Funnels)]==0);
+    if(!nu && !strike && !zaku && !sazabi){checkSdRx78Geometry(renderer.mesh());sd_equipment_check::check(renderer.mesh());}
     if(nu)sd_nu_check::check(renderer.mesh());
     if(strike)sd_strike_check::check(renderer.mesh());
     if(zaku)sd_zaku_check::check(renderer.mesh());
+    if(sazabi)sd_sazabi_check::check(renderer.mesh());
     view.equipment=false;view.yaw=0;view.pitch=.04f;renderer.render(canvas,view);save("rx78-front");
     view.yaw=3.14159265f;renderer.render(canvas,view);save("rx78-rear");
     view.yaw=1.5707963f;renderer.render(canvas,view);save("rx78-side");
@@ -152,7 +155,7 @@ int main(int argc,char** argv){
         cullDiff+=cd;
         const auto optimizedCount=renderer.mesh().count,omitted=renderer.mesh().buriedOmitted;
         renderer.render(canvas,view,percent,true,false,true);assert(!renderer.mesh().overflowed);
-        assert(omitted==(nu?8u:strike?10u:zaku?0u:12u));assert(renderer.mesh().count==optimizedCount+omitted);
+        assert(omitted==(nu?8u:strike?10u:(zaku||sazabi)?0u:12u));assert(renderer.mesh().count==optimizedCount+omitted);
         std::size_t bd=0;for(size_t p=0;p<reference.size();++p)bd+=optimized[p]!=canvas.frame()[p];
         if(bd && !buriedDiff){std::cout<<"first_buried_case "<<equipment<<' '<<detail<<' '<<pitch<<' '<<i<<" pixels="<<bd<<'\n';save("debug-buried");}
         buriedDiff+=bd;
@@ -170,7 +173,7 @@ int main(int argc,char** argv){
     assert(circleEdge==0 && frameEdge==0);
     // A cached exhibit must be replaced even when all camera/equipment fields match.
     View original;original.model=model;renderer.render(canvas,original);const auto identity=canvas.frame();
-    for(ModelId id:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::StrikeGundam}){
+    for(ModelId id:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam}){
         if(id==model)continue;
         View other=original;other.model=id;
         renderer.render(canvas,other);assert(canvas.frame()!=identity);
