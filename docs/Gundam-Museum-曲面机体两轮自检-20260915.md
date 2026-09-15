@@ -15,6 +15,8 @@
 
 扎古最终3852 panels，沙扎比最终4057 panels，均未扩大4096容量。两款目标测试均通过 ASan/UBSan、864组合、边界与局部刷新回归；支撑负例分别检出1个和2个受控断开。新证据位于 `docs/assets/gundam-support-review-20260915/{zaku,sazabi}/`。这些结论仍不替代用户对再次烧录后真机画面的认可。
 
+支撑返修分别提交为 `2bef483`（扎古）和 `21f73a0`（沙扎比及 C10 规则）。五机体性能回归5600例优化A/B逐像素一致，工作内存1,274,184B，累计顶点变换29,581,152→6,219,117。ESP-IDF目标构建通过，最终应用3,987,088B，BIN SHA256为 `f5d55646deb461d6c1310af042759438d0aab7c57e14dec02e5ccaf7db27e396`。烧录前macOS枚举 `/dev/cu.usbmodem83301`（VID:PID `303A:1001`），esptool再次确认ESP32-S3 rev0.2、MAC `44:1B:F6:C1:8A:00`；bootloader、应用、分区表和OTA初始化数据四段写后Hash均通过，RTS硬复位完成。用户对本轮真机外观的结论仍待反馈。
+
 ## 参考与方法
 
 - 扎古锁定 [Bandai SDCS MS-06S](https://www.bandaispirits.co.jp/products/search/detail.php?grp_id=5325&prd_id=4573102588623000)，本轮实际查看官方 `1000142587_1/3/4/5/6.jpg`：分别核正斜体积、全装、背面、武器轴向、附件轮廓。图片源为 `https://bandai-a.akamaihd.net/bc/img/model/b/`，不混入 HG/MG。
