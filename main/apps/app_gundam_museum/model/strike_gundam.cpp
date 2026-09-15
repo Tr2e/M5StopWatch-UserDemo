@@ -164,7 +164,7 @@ void body(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
     b.opening({-.07f,1.78f,.408f},{.07f,1.78f,.408f},{.07f,1.9f,.408f},{-.07f,1.9f,.408f},.04f,frame);
 }
 
-void head(SdStrikeBuilder& b,bool detail){
+void head(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
     b.at(Part::Head);
     const Ring rings[]={{2.06f,.38f,.32f,-.025f},{2.17f,.47f,.42f,-.045f},
         {2.38f,.55f,.48f,-.04f},{2.60f,.54f,.48f,-.045f},{2.77f,.49f,.42f,-.05f},
@@ -181,16 +181,21 @@ void head(SdStrikeBuilder& b,bool detail){
         // cover. A neck contact test cannot detect a detached face frame.
         const Point edge[]={{s*.285f,2.06f,.395f},{s*.49f,2.17f,.305f},{s*.475f,2.38f,.33f},{s*.46f,2.60f,.30f}};
         for(int row=0;row<3;++row)b.face(edge[row],p(rings[row],s>0?4:20),p(rings[row+1],s>0?4:20),edge[row+1],ivory,{s,0,0},true);
-        b.cover({{s*.29f,2.49f,.382f},{s*.46f,2.71f,.30f},{s*.49f,2.17f,.305f},{s*.285f,2.075f,.395f}},.065f,white,.006f);
+        b.cover({{s*.345f,2.49f,.382f},{s*.46f,2.71f,.30f},{s*.49f,2.17f,.305f},{s*.285f,2.075f,.395f}},.065f,white,.006f);
         b.face({s*.46f,2.71f,.30f},{s*.49f,2.17f,.305f},{s*.50f,2.17f,.11f},{s*.50f,2.65f,.115f},ivory,{s,0,0},true);
         b.cover({{0,2.675f,.47f},{s*.44f,2.72f,.295f},{s*.37f,2.56f,.385f},{0,2.50f,.53f}},.04f,white,.006f);
-        b.face({0,2.43f,.457f},{s*.21f,2.43f,.365f},{s*.19f,2.18f,.35f},{0,2.12f,.435f},white,{0,0,1},true);
-        b.face({s*.21f,2.43f,.365f},{s*.26f,2.42f,.30f},{s*.23f,2.16f,.30f},{s*.19f,2.18f,.35f},ivory,{s,0,0},true);
+        b.face({0,2.40f,.457f},{s*.21f,2.37f,.365f},{s*.19f,2.18f,.35f},{0,2.12f,.435f},white,{0,0,1},true);
+        b.face({s*.21f,2.37f,.365f},{s*.26f,2.39f,.30f},{s*.23f,2.16f,.30f},{s*.19f,2.18f,.35f},ivory,{s,0,0},true);
         b.face({0,2.12f,.435f},{s*.19f,2.18f,.35f},{s*.15f,2.10f,.305f},{0,2.09f,.37f},ivory,{0,-1,0},true);
         if(detail){
-            b.cover({{s*.025f,2.51f,.425f},{s*.33f,2.565f,.365f},{s*.29f,2.43f,.382f},{s*.09f,2.415f,.43f}},.025f,red,.004f);
-            b.cover({{s*.038f,2.496f,.434f},{s*.315f,2.546f,.379f},{s*.28f,2.445f,.395f},{s*.092f,2.428f,.44f}},.013f,black,.003f);
-            b.cover({{s*.05f,2.482f,.445f},{s*.292f,2.528f,.395f},{s*.26f,2.474f,.410f},{s*.10f,2.453f,.45f}},.008f,gold,.002f);
+            // Keep the requested large SD eyes inside an actual recessed orbit.
+            const auto eye=[&](float x,float y){return Point{s*x,y,.51f-.32f*x};};
+            const std::array<Point,4> opening={eye(.03f,2.51f),eye(.33f,2.565f),
+                eye(.295f,2.415f),eye(.085f,2.385f)};
+            buildEyeSocket(b,opening,.072f,red,black,gold,assembly?&assembly->eyes[s>0]:nullptr);
+            b.face(opening[1],{s*.345f,2.49f,.382f},{s*.334f,2.415f,.384f},opening[2],ivory,{s,0,1},true);
+            b.face(opening[3],opening[2],{s*.21f,2.37f,.365f},{0,2.40f,.457f},white,{0,0,1},true);
+            b.face({0,2.50f,.53f},opening[0],opening[3],{0,2.40f,.457f},ivory,{0,0,1},true);
             b.at(Part::Head,{s*.477f,2.575f,.28f},0,0,s*.82f);
             b.opening({-.047f,-.06f,.035f},{.047f,-.06f,.035f},{.047f,.08f,.035f},{-.047f,.08f,.035f},.035f,frame);
             b.tube({0,.015f,.025f},{0,.015f,.07f},.039f,.039f,ivory,true,8);
@@ -337,7 +342,7 @@ void equipment(SdStrikeBuilder& b,bool detail,StrikeAssembly* assembly){
 void buildStrikeGundam(Mesh& mesh,BuildOptions options,StrikeStage stage,StrikeAssembly* assembly){
     mesh.count=mesh.buriedOmitted=0;mesh.overflowed=false;if(assembly)*assembly=StrikeAssembly{};
     if(stage==StrikeStage::Blockout)options.gray=true;
-    SdStrikeBuilder b{mesh,options};body(b,stage==StrikeStage::Final,assembly);head(b,stage!=StrikeStage::Blockout);
+    SdStrikeBuilder b{mesh,options};body(b,stage==StrikeStage::Final,assembly);head(b,stage!=StrikeStage::Blockout,assembly);
     arms(b,stage==StrikeStage::Final,assembly);if(options.equipment)equipment(b,stage==StrikeStage::Final,assembly);
 }
 } // namespace gundam_museum

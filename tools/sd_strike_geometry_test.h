@@ -1,6 +1,7 @@
 #pragma once
 #include "../main/apps/app_gundam_museum/model/strike_gundam.h"
 #include "sd_rx78_equipment_test.h"
+#include "sd_eye_socket_test.h"
 #include <limits>
 #include <memory>
 
@@ -64,29 +65,10 @@ inline float ventMirrorError(const Mesh& m,const StrikeAssembly& assembly){
         }
     }return error;
 }
-// SDEX002 eyes are narrow yellow lenses, not the tall yellow plates of v1.
-// Bound the actual colored lens surfaces below the antenna, in model space.
-inline float eyeAspect(const Mesh& m,int side){
-    float xl=100,xh=-100,yl=100,yh=-100;
-    for(size_t i=0;i<m.count;++i){if(m.parts[i]!=Part::Head)continue;
-        const auto c=m.panels[i].color;const int r=(c>>11)*255/31,g=((c>>5)&63)*255/63,b=(c&31)*255/31;
-        if(r<100||r<g*.85f||g<b*2)continue;
-        for(auto p:m.panels[i].point)if((p.x>0)==bool(side)&&p.y>2.30f&&p.y<2.56f){
-            xl=std::min(xl,p.x);xh=std::max(xh,p.x);yl=std::min(yl,p.y);yh=std::max(yh,p.y);
-        }
-    }
-    assert(xh-xl>.20f);return (yh-yl)/(xh-xl);
-}
 inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();StrikeAssembly assembly;buildStrikeGundam(*m,{},StrikeStage::Final,&assembly);
     assert(m->count==production.count && !m->overflowed);
-    for(int side=0;side<2;++side){auto aspect=eyeAspect(*m,side);
-        std::cout<<"sd_strike eye="<<side<<" height_width="<<aspect<<'\n';assert(aspect>.18f&&aspect<.40f);
-    }
-    for(size_t i=0;i<m->count;++i)if(m->parts[i]==Part::Head)for(auto& p:m->panels[i].point)
-        if(p.y>2.30f&&p.y<2.56f)p.y=2.53f+2*(p.y-2.53f);
-    assert(eyeAspect(*m,0)>.40f);
-    buildStrikeGundam(*m,{},StrikeStage::Final,&assembly);
+    sd_eye_check::check(*m,assembly.eyes,.51f,.32f);
     const float mirrorError=ventMirrorError(*m,assembly);
     std::cout<<"sd_strike chest_vent_mirror_error="<<mirrorError<<'\n';assert(mirrorError<1e-5f);
     // Deliberately lift one side; the symmetry gate must reject this defect.
