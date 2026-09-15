@@ -86,12 +86,17 @@ void head(Builder& b,bool detail,DestinyAssembly* a){
         b.cover({{s*.27f,2.52f,.43f},{s*.48f,2.66f,.29f},{s*.50f,2.19f,.27f},{s*.30f,2.08f,.40f}},.06f,white,.007f);
         b.cover({{0,2.67f,.49f},{s*.43f,2.70f,.34f},{s*.37f,2.54f,.42f},{0,2.49f,.55f}},.04f,white,.006f);
         b.face({0,2.67f,.49f},{s*.43f,2.70f,.34f},{s*.38f,2.82f,.18f},{0,2.86f,.29f},white,{0,1,1},true);
-        b.face({0,2.40f,.49f},{s*.23f,2.41f,.40f},{s*.19f,2.20f,.38f},{0,2.13f,.46f},white,{0,0,1},true);
-        b.face({s*.23f,2.41f,.40f},{s*.29f,2.40f,.30f},{s*.26f,2.17f,.30f},{s*.19f,2.20f,.38f},ivory,{s,0,1},true);
-        b.cover({{s*.03f,2.50f,.475f},{s*.33f,2.55f,.408f},{s*.285f,2.435f,.418f},{s*.09f,2.425f,.47f}},.022f,black,.003f);
-        b.cover({{s*.055f,2.487f,.488f},{s*.298f,2.531f,.430f},{s*.255f,2.474f,.440f},{s*.10f,2.455f,.48f}},.008f,green,.001f);
+        b.face({0,2.40f,.49f},{s*.23f,2.37f,.40f},{s*.19f,2.20f,.38f},{0,2.13f,.46f},white,{0,0,1},true);
+        b.face({s*.23f,2.37f,.40f},{s*.29f,2.39f,.30f},{s*.26f,2.17f,.30f},{s*.19f,2.20f,.38f},ivory,{s,0,1},true);
+        const auto eye=[&](float x,float y){return Point{s*x,y,.525f-.32f*x};};
+        const std::array<Point,4> opening={eye(.035f,2.515f),eye(.335f,2.565f),eye(.302f,2.415f),eye(.075f,2.385f)};
+        buildEyeSocket(b,opening,.072f,ivory,black,green,a?&a->eyes[s>0]:nullptr);
+        // Lower orbital ledge and medial bridge belong to the mask, in FRONT
+        // of the inset lens. No white mask surface runs behind the eye window.
+        b.face(opening[3],opening[2],{s*.23f,2.37f,.40f},{0,2.40f,.49f},white,{0,0,1},true);
+        b.face({0,2.49f,.55f},opening[0],opening[3],{0,2.40f,.49f},ivory,{0,0,1},true);
         // The red tear ducts are a Destiny identity cue, not red eyebrows.
-        b.cover({{s*.095f,2.441f,.474f},{s*.125f,2.451f,.46f},{s*.18f,2.30f,.426f},{s*.155f,2.32f,.438f}},.014f,red,.002f);
+        b.cover({{s*.10f,2.38f,.48f},{s*.126f,2.386f,.466f},{s*.18f,2.285f,.418f},{s*.158f,2.31f,.433f}},.012f,red,.002f);
         if(detail){
             b.at(Part::Head,{s*.48f,2.49f,.25f},0,0,s*.78f);
             b.tube({0,0,-.03f},{0,0,.065f},.047f,.04f,frame,true,8);
