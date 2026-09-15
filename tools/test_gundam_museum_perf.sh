@@ -13,5 +13,6 @@ if [[ "${SANITIZE:-0}" == 1 ]]; then flags+=(-fsanitize=address,undefined -fno-o
   "$repo_dir/main/apps/app_gundam_museum/model/nu_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/sazabi.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/model/strike_gundam.cpp" \
+  "$repo_dir/main/apps/app_gundam_museum/model/destiny_gundam.cpp" \
   "$repo_dir/main/apps/app_gundam_museum/view/museum_renderer.cpp" -o "$out_dir/test"
 "$out_dir/test" | tee "$out_dir/results.txt"

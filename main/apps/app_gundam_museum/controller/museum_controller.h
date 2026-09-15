@@ -18,8 +18,9 @@ public:
         if(input.input.valid){
             if(input.navigation){
                 // One complete exhibit per model; study views remain host-only.
-                constexpr ModelId models[]={ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam};
-                _mode=(_mode+(input.navigation>0?1:4))%5;
+                constexpr ModelId models[]={ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::DestinyGundam};
+                constexpr int count=int(sizeof(models)/sizeof(models[0]));
+                _mode=(_mode+(input.navigation>0?1:count-1))%count;
                 _view.model=models[_mode];
                 _view.equipment=true;_view.detail=false;
                 _view.automatic=false;_touch=false;_blockedGesture=true;dirty=true;

@@ -1,0 +1,12 @@
+{
+  "branch": "feat/gundam-museum",
+  "base_commit": "cbdf4fc447b3959eefa8e13ff95da0c07fc61994",
+  "host": "SANITIZE=1 bash tools/test_gundam_museum.sh /private/tmp/gundam-destiny-asan destiny",
+  "all_models": "for model in rx78 zaku nu sazabi strike destiny; do bash tools/test_gundam_museum.sh /private/tmp/gundam-regression-$model $model; done",
+  "performance": "bash tools/test_gundam_museum_perf.sh /private/tmp/gundam-destiny-perf",
+  "blockout_studies": "bash tools/render_gundam_reference.sh /private/tmp/gundam-destiny-g3 destiny blockout",
+  "identity_studies": "bash tools/render_gundam_reference.sh /private/tmp/gundam-destiny-g4-final destiny identity",
+  "final_studies": "bash tools/render_gundam_reference.sh /private/tmp/gundam-destiny-final-study destiny final",
+  "build": "source /Users/xudanyang/Documents/stopwatch/esp-idf/export.sh && idf.py build",
+  "flash": "not run; no authorization in this request"
+}

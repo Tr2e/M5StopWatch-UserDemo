@@ -1,0 +1,10 @@
+{
+  "strike_source_sha256": "67a86932885f6da91ae25fe045d09ec8c59006355058f3a13bc9b7b9a7aa4ee3",
+  "strike_frames_compared": 60,
+  "strike_frames_changed": 0,
+  "strike_equipped_before_sha256": "66a48aedb4548afa25802ee7a67f8fb719bd7e51e1f77180fe361db12888d169",
+  "strike_equipped_after_sha256": "66a48aedb4548afa25802ee7a67f8fb719bd7e51e1f77180fe361db12888d169",
+  "destiny_source_sha256": "f3008e098afa20a33fbe16ec2341d959e72f6582bbfe13c605f4bdceec14fa41",
+  "destiny_header_sha256": "05e827e4c34303ff8bf64c585729a467090b6eee25f02d7e06ae1cc91d9c8ff7",
+  "destiny_equipped_ppm_sha256": "d25a9f2effbfcc4d88b9416956c52eac520c8da50400b20d37dbe2afe9d52eb8"
+}

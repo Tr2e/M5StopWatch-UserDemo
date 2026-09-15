@@ -1,0 +1,7 @@
+Six-model optimized/reference framebuffer comparison: 6720 pixel-identical cases.
+Transforms before: 35012100
+Transforms after: 7244007
+Destiny 65%: reference mean 1029.53 us, p95 1478.21 us; optimized mean 969.422 us, p95 1371.96 us.
+Destiny 90%: reference mean 1458.38 us, p95 2123.08 us; optimized mean 1371.35 us, p95 1969.12 us.
+Destiny 100%: reference mean 1643.38 us, p95 2443.92 us; optimized mean 1542.33 us, p95 2322.08 us.
+Destiny unique vertices: 2292.

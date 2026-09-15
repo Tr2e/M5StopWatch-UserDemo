@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "checked_at": "2026-09-15",
+  "exact_product": "SDEX Standard 009 ZGMF-X42S Destiny Gundam",
+  "product_page": "https://www.bandaispirits.co.jp/products/search/detail.php?grp_id=5325&prd_id=4549660078548000",
+  "release_date": "2017-03-18",
+  "price_jpy": 660,
+  "references": [
+    {
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000113529_1.jpg",
+      "role": "standing front-quarter proportions, colors, rifle, open left hand, deployed wings"
+    },
+    {
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000113529_2.jpg",
+      "role": "Arondight anti-ship sword identity and colors; pose perspective not used as dimensions"
+    },
+    {
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000113529_3.jpg",
+      "role": "neutral front silhouette, head-body ratio, feet and deployed-wing envelope"
+    },
+    {
+      "url": "https://bandai-a.akamaihd.net/bc/img/model/b/1000113529_4.jpg",
+      "role": "box-art identity only; no perspective measurements"
+    }
+  ],
+  "policy": "All references are official Bandai product imagery. They were visually inspected but are not copied into distributable evidence. No AI render is used as evidence."
+}

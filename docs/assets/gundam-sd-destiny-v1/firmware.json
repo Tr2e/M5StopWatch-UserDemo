@@ -1,0 +1,16 @@
+{
+  "idf_version": "5.5.4",
+  "target": "esp32s3",
+  "binary": "build/StopWatch-UserDemo.bin",
+  "binary_size_bytes": 3998048,
+  "binary_size_hex": "0x3d0160",
+  "binary_sha256": "c313506529a01ff7a6ea6a9d53cc8bf1ef43cb5436017c316018d869fced9405",
+  "elf_size_bytes": 46955432,
+  "elf_sha256": "cb49cac6fd9e0e6931ba4b4b4f7ceac3c19123c3274986dfd367b92fc24878e5",
+  "smallest_app_partition_bytes": 5177344,
+  "free_bytes": 1179296,
+  "free_hex": "0x11fea0",
+  "free_percent": 23,
+  "build_result": "passed",
+  "flashed": false
+}
