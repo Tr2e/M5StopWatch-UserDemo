@@ -48,7 +48,13 @@ void body(Builder& b,bool detail){
     }
 }
 void head(Builder& b,bool detail,SazabiAssembly* a){
-    b.at(Part::Head);if(a)a->crown.begin=b.m.count;
+    b.at(Part::Head);
+    // An internal post overlaps the torso collar below and the helmet cup
+    // above. Its dark material remains visible as the intended short neck.
+    if(a)a->headMount.begin=b.m.count;
+    b.tube({0,2.05f,-.04f},{0,2.32f,-.04f},.145f,.17f,frame,false,6);
+    if(a)a->headMount.end=b.m.count;
+    if(a)a->crown.begin=b.m.count;
     b.shell({{2.57f,.52f,.44f,-.06f},{2.69f,.49f,.43f,-.08f},{2.82f,.40f,.35f,-.09f},{2.93f,.27f,.24f,-.10f},{2.98f,.09f,.09f,-.10f}},red,20);
     if(a)a->crown.end=b.m.count;
     sd_curved::arc(b,{{2.13f,.36f,.32f,-.04f},{2.30f,.49f,.43f,-.04f},{2.57f,.52f,.44f,-.06f}},red,1.08f,2*sd_model::pi-1.08f,16);
@@ -59,9 +65,16 @@ void head(Builder& b,bool detail,SazabiAssembly* a){
             b.face(p,q,{q.x,q.y-.037f,q.z+.005f},{p.x,p.y-.037f,p.z+.005f},black,{0,0,1},true);
             for(int j=0;j<3;++j)b.face(brow(t,j/3.f),brow(u,j/3.f),brow(u,(j+1)/3.f),brow(t,(j+1)/3.f),red,{s*.2f,.2f,1},true);
         }
-        b.cover({{s*.35f,2.54f,.38f},{s*.49f,2.46f,.24f},{s*.54f,2.17f,.20f},{s*.36f,2.14f,.38f},{s*.23f,2.32f,.49f}},.055f,bright,.006f);
+        b.cover({{s*.35f,2.54f,.38f},{s*.49f,2.46f,.24f},{s*.54f,2.17f,.20f},{s*.36f,2.14f,.38f},{s*.22f,2.37f,.47f}},.055f,bright,.006f);
     }
+    if(a)a->mask.begin=b.m.count;
+    // The mask now has a physical chain: helmet post -> internal face beam ->
+    // backing plate -> red face armor. The old red diamond touched at one
+    // screen point only and read as a floating decoration in rotation.
+    b.tube({0,2.27f,.05f},{0,2.27f,.43f},.06f,.075f,deep,false,6);
+    b.cover({{-.30f,2.39f,.435f},{.30f,2.39f,.435f},{.25f,2.14f,.405f},{-.25f,2.14f,.405f}},.035f,deep,.004f,true);
     b.cover({{-.22f,2.37f,.47f},{0,2.41f,.58f},{.22f,2.37f,.47f},{0,2.12f,.57f}},.045f,red,.012f);
+    if(a)a->mask.end=b.m.count;
     b.tube({0,2.410f,.557f},{0,2.410f,.577f},.027f,.025f,green,false,12);
     // All three prongs are red; gold belongs to the vents and waist pipes.
     b.cover({{-.065f,2.82f,.31f},{.065f,2.82f,.31f},{.025f,3.54f,.02f},{0,3.59f,0},{-.025f,3.54f,.02f}},.065f,bright,.006f);

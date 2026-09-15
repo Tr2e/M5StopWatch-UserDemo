@@ -30,7 +30,16 @@ inline void reportRange(const Mesh& m,SazabiAssembly::Range r,std::initializer_l
 }
 inline void check(const Mesh& production){
     auto m=std::make_unique<Mesh>();SazabiAssembly a;buildSazabi(*m,{},SazabiStage::Final,&a);assert(!m->overflowed&&m->count==production.count);
-    assert(a.rifle.end>a.rifle.begin&&a.shield.end>a.shield.begin);for(auto r:a.funnels)assert(r.end>r.begin+20);for(auto r:a.shoulders)assert(r.end>r.begin+30);for(auto r:a.palms)assert(r.end>r.begin);
+    assert(a.rifle.end>a.rifle.begin&&a.shield.end>a.shield.begin&&a.headMount.end>a.headMount.begin&&a.mask.end>a.mask.begin);for(auto r:a.funnels)assert(r.end>r.begin+20);for(auto r:a.shoulders)assert(r.end>r.begin+30);for(auto r:a.palms)assert(r.end>r.begin);
+    auto bounds=[&](SazabiAssembly::Range r){Point lo{100,100,100},hi{-100,-100,-100};for(size_t i=r.begin;i<r.end;++i)for(auto p:m->panels[i].point){lo.x=std::min(lo.x,p.x);lo.y=std::min(lo.y,p.y);lo.z=std::min(lo.z,p.z);hi.x=std::max(hi.x,p.x);hi.y=std::max(hi.y,p.y);hi.z=std::max(hi.z,p.z);}return std::pair<Point,Point>{lo,hi};};
+    const auto headMount=bounds(a.headMount),mask=bounds(a.mask);
+    assert(headMount.first.y<2.14f&&headMount.second.y>2.30f&&headMount.first.z<-.17f&&headMount.second.z>.12f);
+    assert(mask.first.x<-.29f&&mask.second.x>.29f&&mask.first.y<2.15f&&mask.second.y>2.40f&&mask.first.z<.06f&&mask.first.z<headMount.second.z&&mask.second.z>.57f);
+    auto detached=*m;for(size_t i=a.headMount.begin;i<a.headMount.end;++i)for(auto& p:detached.panels[i].point)p.y+=.40f;
+    float detachedNeckBottom=100;for(size_t i=a.headMount.begin;i<a.headMount.end;++i)for(auto p:detached.panels[i].point)detachedNeckBottom=std::min(detachedNeckBottom,p.y);
+    for(size_t i=a.mask.begin;i<a.mask.end;++i)for(auto& p:detached.panels[i].point)p.z+=.35f;
+    float detachedMaskRear=100;for(size_t i=a.mask.begin;i<a.mask.end;++i)for(auto p:detached.panels[i].point)detachedMaskRear=std::min(detachedMaskRear,p.z);
+    assert(detachedNeckBottom>2.14f&&detachedMaskRear>headMount.second.z);std::cout<<"sazabi_support_negatives_detected=2\n";
     unsigned funnelPairs=0,funnelBody=0;for(size_t i=0;i<a.funnels.size();++i){
         funnelBody+=strictContacts(*m,a.funnels[i],{{a.funnels[i],a.containers[i/3]}});
         for(size_t j=i+1;j<a.funnels.size();++j)funnelPairs+=between(*m,a.funnels[i],a.funnels[j]);
@@ -46,7 +55,7 @@ inline void check(const Mesh& production){
     for(size_t i=0;i<m->count;++i){
         if(m->parts[i]==Part::Feet){auto p=m->panels[i].point;bool floor=true;for(auto q:p){assert(q.y>=.0249f);floor&=std::abs(q.y-.025f)<.0001f;}if(floor)for(int t=0;t<2;++t){auto n=cross(subtract(p[t+1],p[0]),subtract(p[t+2],p[0]));floorArea[p[0].x>0]+=.5f*std::sqrt(dot(n,n));}}
         if(m->parts[i]==Part::Shoulders)for(auto p:m->panels[i].point){shoulderMin=std::min(shoulderMin,p.x);shoulderMax=std::max(shoulderMax,p.x);}
-        if(m->parts[i]==Part::Head)for(auto p:m->panels[i].point)if(p.y<3.05f){crown=std::max(crown,p.y);chin=std::min(chin,p.y);width=std::max(width,std::abs(p.x)*2);zmin=std::min(zmin,p.z);zmax=std::max(zmax,p.z);}
+        if(m->parts[i]==Part::Head&&!(i>=a.headMount.begin&&i<a.headMount.end))for(auto p:m->panels[i].point)if(p.y<3.05f){crown=std::max(crown,p.y);chin=std::min(chin,p.y);width=std::max(width,std::abs(p.x)*2);zmin=std::min(zmin,p.z);zmax=std::max(zmax,p.z);}
     }
     const float ratio=(crown-.025f)/(crown-chin),depth=(zmax-zmin)/width;
     std::cout<<"sd_sazabi panels="<<m->count<<" helmet_body_ratio="<<ratio<<" depth_width="<<depth<<" shoulder_span="<<shoulderMax-shoulderMin<<" sole_area="<<floorArea[0]<<','<<floorArea[1]<<'\n';
