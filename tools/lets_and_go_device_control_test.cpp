@@ -187,6 +187,25 @@ int main() {
     controls.setScreen(GameScreen::CarSelect);controls.presentScreen(GameScreen::CarSelect);
     auto cleared=controls.consume(true);
     check(cleared.resultAction==-1&&!cleared.input.confirmPressed,"old result action crossed screen");
+    show(GameScreen::ArenaPlay);
+    controls.touch(true,234,300);
+    auto arena=controls.consume(true);
+    check(arena.input.viewAxis>0.4f && std::abs(arena.input.steer)<.08f,"arena forward stick failed");
+    controls.touch(true,380,363);
+    arena=controls.consume(true);
+    check(arena.input.steer>0.4f,"arena turn stick failed");
+    controls.touch(false,0,0);
+    arena=controls.consume(true);
+    check(arena.input.steer==0 && arena.input.viewAxis==0,"arena stick release stuck");
+    controls.touch(true,234,90);controls.touch(true,250,100);
+    arena=controls.consume(true);
+    check(arena.preview.active && arena.input.steer==0 && arena.input.viewAxis==0,"arena orbit stole locomotion");
+    check(menuTouchTarget(GameScreen::ArenaPlay,32,233)==TouchAction::Previous,"arena pose arrows lost");
+    show(GameScreen::Racing);
+    controls.touch(true,374,240);
+    auto race=controls.consume(true);
+    check(race.input.steer==1.f && race.input.viewAxis==0,
+          "racing steer leaked arena forward axis");
     if(ok)std::cout<<"Device controls: precise targets, release taps, settling/drag cancellation, read failure, presentation/release gates, slow GPIO, steering, chord and results passed\n";
     return ok?0:1;
 }

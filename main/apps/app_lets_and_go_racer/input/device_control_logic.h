@@ -54,7 +54,7 @@ public:
     }
     void presentScreen(GameScreen screen) { if(screen==_screen)_presented=true; }
     void invalidateTouch() {
-        _gestureCanceled=true;_touchArmed=false;_frame.input.steer=0;
+        _gestureCanceled=true;_touchArmed=false;_frame.input.steer=0;_frame.input.viewAxis=0;
         if (_frame.preview.active) {_frame.preview.active=false;_frame.preview.changed=true;}
         _orbitGesture=false;
     }
@@ -77,6 +77,10 @@ public:
         if (_buttonsArmed) {
             if (_screen == GameScreen::Paused) {
                 _frame.input.pausePressed |= b.clicked;
+            } else if (_screen == GameScreen::ArenaPlay) {
+                _frame.input.confirmPressed |= b.clicked;
+                _frame.input.boostHeld = _buttonsArmed && a.pressed && !b.pressed;
+                _frame.input.pausePressed |= b.holdStarted;
             } else if (_screen != GameScreen::Racing) {
                 if (a.clicked) _frame.navigation = 1;
                 _frame.input.confirmPressed |= b.clicked;
@@ -100,7 +104,7 @@ public:
                 _frame.touchTrace={true,_screen,_startX,_startY,_lastX,_lastY,_candidate,accepted};
             }
             _touchDown=false;_touchArmed=_presented;_candidate=TouchAction::None;
-            _gestureCanceled=false;_frame.input.steer=0;
+            _gestureCanceled=false;_frame.input.steer=0;_frame.input.viewAxis=0;
             return;
         }
         _lastX=x;_lastY=y;
@@ -108,9 +112,10 @@ public:
             _startX=x;_startY=y;
             _candidate=menuTouchTarget(_screen,x,y);
             _gestureCanceled=!_touchArmed || !_presented;
-            _orbitGesture=(_screen==GameScreen::CarSelect || _screen==GameScreen::CarInspect || _screen==GameScreen::MuseumInspect) && !_gestureCanceled &&
+            _orbitGesture=(_screen==GameScreen::CarSelect || _screen==GameScreen::CarInspect || _screen==GameScreen::MuseumInspect || _screen==GameScreen::ArenaPlay) && !_gestureCanceled &&
                 (_screen!=GameScreen::CarSelect ? touchOnDisplay(x,y) : home_layout::carOrbit.contains(x,y)) &&
-                _candidate==TouchAction::None;
+                _candidate==TouchAction::None &&
+                (_screen!=GameScreen::ArenaPlay || y<266);
             if (_orbitGesture) {
                 ++_orbitId;
                 _frame.preview={_orbitId,0,0,false,false};
@@ -124,10 +129,15 @@ public:
             _touchDown=true;return;
         }
         if(_touchArmed && _presented) {
-            if(_screen==GameScreen::Racing) {
+            if(_screen==GameScreen::Racing || _screen==GameScreen::ArenaPlay) {
                 if(!_touchDown)_steeringGesture=y>=130;
-                if(_steeringGesture)_frame.input.steer=std::clamp((x-234)/140.f,-1.f,1.f);
-                else if(!_touchDown)_frame.input.pausePressed=true;
+                if(_screen==GameScreen::ArenaPlay)_steeringGesture=y>=266;
+                if(_steeringGesture){
+                    _frame.input.steer=std::clamp((x-234)/140.f,-1.f,1.f);
+                    if(_screen==GameScreen::ArenaPlay)
+                        _frame.input.viewAxis=std::clamp((363-y)/90.f,-1.f,1.f);
+                }
+                else if(!_touchDown && _screen==GameScreen::Racing)_frame.input.pausePressed=true;
             } else if(_touchDown && !_gestureCanceled) {
                 const auto target=menuTouchTarget(_screen,x,y);
                 // Allow a small settling motion at contact, but never drag from
@@ -144,7 +154,7 @@ public:
         auto result = _frame;
         result.input.valid = healthy;
         if (!healthy || result.input.exitPressed) result.preview.active=false;
-        if (!healthy) result.input.steer = 0;
+        if (!healthy) { result.input.steer = 0; result.input.viewAxis = 0; }
         if (result.input.exitPressed) {
             result.input.confirmPressed = result.input.cancelPressed = false;
             result.input.pausePressed = result.input.brakeHeld = result.input.boostHeld = false;

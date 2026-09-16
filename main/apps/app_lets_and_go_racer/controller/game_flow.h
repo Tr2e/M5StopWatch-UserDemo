@@ -22,6 +22,7 @@ enum class GameScreen : uint8_t {
     ExitRequested,
     CarInspect,
     MuseumInspect, // Separate touch context; Racer keeps its existing controls.
+    ArenaPlay,
 };
 
 struct RaceSetup {
