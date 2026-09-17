@@ -4,6 +4,13 @@
 World positions are recovered with CHANNELS order ZXY applied as Rz*Rx*Ry.
 Spine and toes are folded away; limb angles come from the same sagittal
 two-bone IK Arena already uses, then clamped with limitOf().
+
+Hip height is scaled to K_HIP_Y, but IK still solves from a *fixed* hip at
+K_HIP_Y. That throws away source hip drop (crouch/land). Do not copy the
+resulting joint angles onto SD and call it a squat — plant the feet, sink
+Root.y, then IK. Jump height is a fraction of SD body height, not human
+metres. Short limbs (arms, aerial tuck) also need SD-readable exaggeration;
+human-mapped arm swing looks like a walk. See docs/Gundam-Arena-技术文档.md §6.5.
 """
 from __future__ import annotations
 

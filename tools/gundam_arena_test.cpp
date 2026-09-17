@@ -185,20 +185,30 @@ int main(int argc,char** argv){
         stepCharacter(c,in,kStep);
         assert(c.grounded && c.action==Action::Jump);
     }
-    assert(c.pose.anim[int(BoneId::LThigh)].pitch<-.25f);
-    assert(c.pose.anim[int(BoneId::RThigh)].pitch<-.25f);
-    assert(c.pose.anim[int(BoneId::LShin)].pitch>.60f);
+    assert(c.pose.anim[int(BoneId::LThigh)].pitch<-.50f);
+    assert(c.pose.anim[int(BoneId::RThigh)].pitch<-.50f);
+    assert(c.pose.anim[int(BoneId::LShin)].pitch>.80f);
+    assert(c.pose.anim[int(BoneId::Pelvis)].pitch>.05f);
+    assert(c.pose.anim[int(BoneId::Chest)].pitch>.04f);
+    assert(c.pose.root.y<-.08f);
+    assert(c.pose.anim[int(BoneId::LUpperArm)].pitch<-.40f);
     float minThigh=c.pose.anim[int(BoneId::LThigh)].pitch;
     float minShin=c.pose.anim[int(BoneId::LShin)].pitch;
     float maxArm=c.pose.anim[int(BoneId::LUpperArm)].pitch;
+    float jumpPeak=0.f;
     bool leftPad=false,sawFall=false,sawLand=false;
     for(int i=0;i<180;++i){
         stepCharacter(c,in,kStep);
-        if(!c.grounded)leftPad=true;
+        if(!c.grounded){
+            leftPad=true;
+            jumpPeak=std::max(jumpPeak,c.y);
+        }
         if(!c.grounded && (c.action==Action::Jump||c.action==Action::Fall)){
             assert(c.pose.anim[int(BoneId::LThigh)].pitch<.05f);
             assert(c.pose.anim[int(BoneId::RThigh)].pitch<.05f);
             assert(c.pose.anim[int(BoneId::LShin)].pitch>.10f);
+            assert(c.pose.anim[int(BoneId::Pelvis)].pitch>=0.f);
+            assert(c.pose.anim[int(BoneId::Chest)].pitch>=0.f);
             minThigh=std::min(minThigh,c.pose.anim[int(BoneId::LThigh)].pitch);
             minShin=std::min(minShin,c.pose.anim[int(BoneId::LShin)].pitch);
             maxArm=std::max(maxArm,c.pose.anim[int(BoneId::LUpperArm)].pitch);
@@ -208,13 +218,16 @@ int main(int argc,char** argv){
             if(!sawLand){
                 assert(c.pose.anim[int(BoneId::LThigh)].pitch<0.f);
                 assert(c.pose.anim[int(BoneId::LShin)].pitch>.40f);
+                assert(c.pose.anim[int(BoneId::Pelvis)].pitch>0.f);
+                assert(c.pose.root.y<-.04f);
             }
             sawLand=true;
         }
         if(c.grounded && c.action==Action::Idle && sawLand)break;
     }
     assert(leftPad && sawFall && sawLand && c.grounded);
-    assert(minShin<.40f && maxArm>.20f);
+    assert(minShin<.40f && maxArm>.55f);
+    assert(jumpPeak>.20f && jumpPeak<.70f);
 
     c={};resetCharacter(c);
     in={};in.valid=true;in.forward=1;

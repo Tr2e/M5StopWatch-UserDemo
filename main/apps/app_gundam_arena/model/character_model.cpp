@@ -107,65 +107,80 @@ void applyWalk(CharacterModel& c,float move){
 
 float smooth01(float t){t=clampf(t,0.f,1.f);return t*t*(3.f-2.f*t);}
 
-void writeJumpKeys(CharacterModel& c,float thigh,float shin,float arm,float fore,
-                   float shoulder,float pelvis,float chest){
-    c.pose.anim[int(BoneId::LThigh)].pitch=thigh-.03f;
-    c.pose.anim[int(BoneId::RThigh)].pitch=thigh+.02f;
-    c.pose.anim[int(BoneId::LShin)].pitch=shin;
-    c.pose.anim[int(BoneId::RShin)].pitch=shin+.04f;
-    c.pose.anim[int(BoneId::LUpperArm)].pitch=arm;
-    c.pose.anim[int(BoneId::RUpperArm)].pitch=arm-.06f;
-    c.pose.anim[int(BoneId::LForearm)].pitch=fore;
-    c.pose.anim[int(BoneId::RForearm)].pitch=fore-.08f;
-    c.pose.anim[int(BoneId::LShoulder)].pitch=shoulder;
-    c.pose.anim[int(BoneId::RShoulder)].pitch=shoulder;
-    c.pose.anim[int(BoneId::Pelvis)].pitch=pelvis;
-    c.pose.anim[int(BoneId::Chest)].pitch=chest;
-    plantFeet(c,thigh-.03f,shin,thigh+.02f,shin+.04f);
+struct JumpKey {
+    float thigh,shin,arm,fore,shoulder,pelvis,chest;
+};
+
+// 腿：地面由钉地 IK + Root 下沉。臂/空中膝按 SD 可读幅度，不抄 CMU 映射角。
+constexpr JumpKey kJumpCrouchKey{-.34f,.58f,-.85f,-.75f,.20f,.16f,.12f};
+constexpr JumpKey kJumpExtendKey{-.12f,.20f,.80f,-.18f,-.28f,.06f,.04f};
+constexpr JumpKey kJumpApexKey{-.55f,1.10f,.35f,-.62f,-.12f,.02f,.02f};
+constexpr JumpKey kJumpDropKey{-.32f,.70f,.12f,-.40f,-.06f,.08f,.06f};
+constexpr JumpKey kJumpLandKey{-.28f,.60f,-.35f,-.55f,.08f,.12f,.08f};
+
+JumpKey mixJumpKey(const JumpKey& a,const JumpKey& b,float t){
+    t=clampf(t,0.f,1.f);
+    return {a.thigh+(b.thigh-a.thigh)*t,a.shin+(b.shin-a.shin)*t,
+            a.arm+(b.arm-a.arm)*t,a.fore+(b.fore-a.fore)*t,
+            a.shoulder+(b.shoulder-a.shoulder)*t,
+            a.pelvis+(b.pelvis-a.pelvis)*t,a.chest+(b.chest-a.chest)*t};
+}
+
+JumpKey scaleJumpKey(const JumpKey& k,float s){
+    return mixJumpKey({},k,s);
+}
+
+void writeJumpKeys(CharacterModel& c,const JumpKey& k){
+    c.pose.anim[int(BoneId::LThigh)].pitch=k.thigh-.03f;
+    c.pose.anim[int(BoneId::RThigh)].pitch=k.thigh+.02f;
+    c.pose.anim[int(BoneId::LShin)].pitch=k.shin;
+    c.pose.anim[int(BoneId::RShin)].pitch=k.shin+.04f;
+    c.pose.anim[int(BoneId::LUpperArm)].pitch=k.arm;
+    c.pose.anim[int(BoneId::RUpperArm)].pitch=k.arm-.06f;
+    c.pose.anim[int(BoneId::LForearm)].pitch=k.fore;
+    c.pose.anim[int(BoneId::RForearm)].pitch=k.fore-.08f;
+    c.pose.anim[int(BoneId::LShoulder)].pitch=k.shoulder;
+    c.pose.anim[int(BoneId::RShoulder)].pitch=k.shoulder;
+    c.pose.anim[int(BoneId::Pelvis)].pitch=k.pelvis;
+    c.pose.anim[int(BoneId::Chest)].pitch=k.chest;
+    plantFeet(c,k.thigh-.03f,k.shin,k.thigh+.02f,k.shin+.04f);
+}
+
+JumpKey squatKey(const JumpKey& body,float dip,float bodyW){
+    JumpKey k=scaleJumpKey(body,bodyW);
+    twoBonePitch(0.f,kHipY,0.f,kPlantAnkleY+dip,kThighLen,kShinLen,k.thigh,k.shin);
+    return k;
 }
 
 void applyJumpPose(CharacterModel& c){
     c.leftPlanted=c.rightPlanted=false;
     if(c.grounded){
         const float load=smooth01(c.clipT/kJumpDip);
-        writeJumpKeys(c,-.52f*load,.98f*load,-.48f*load,-.72f*load,.12f*load,-.18f*load,-.12f*load);
+        const float dip=kJumpSquatY*load;
+        writeJumpKeys(c,squatKey(kJumpCrouchKey,dip,load));
+        c.pose.root.y=c.y-dip;
         return;
     }
-    const float rise=smooth01(c.clipT/.14f);
+    const float rise=smooth01(c.clipT/.08f);
+    const JumpKey coiled=squatKey(kJumpCrouchKey,kJumpSquatY,1.f);
+    c.pose.root.y=c.y-kJumpSquatY*(1.f-rise);
+    if(rise<1.f){
+        writeJumpKeys(c,mixJumpKey(coiled,kJumpExtendKey,rise));
+        return;
+    }
     const float s=clampf(.5f-.5f*(c.vy/kJumpVel),0.f,1.f);
     const float a=s<.5f?smooth01(s*2.f):smooth01((s-.5f)*2.f);
-    const float thigh0=s<.5f?(-.08f+(-.52f+.08f)*a):(-.52f+(-.14f+.52f)*a);
-    const float shin0=s<.5f?(.14f+(.90f-.14f)*a):(.90f+(.28f-.90f)*a);
-    const float arm0=s<.5f?(.78f+(.50f-.78f)*a):(.50f+(.18f-.50f)*a);
-    const float fore0=s<.5f?(-.25f+(-.55f+.25f)*a):(-.55f+(-.35f+.55f)*a);
-    const float pel0=s<.5f?(-.04f+(.06f+.04f)*a):(.06f+(-.08f-.06f)*a);
-    const float chest0=s<.5f?(-.02f+(.08f+.02f)*a):(.08f+(-.04f-.08f)*a);
-    const float crouch=1.f-rise;
-    writeJumpKeys(c,
-        crouch*-.52f+(1.f-crouch)*thigh0,
-        crouch*.98f+(1.f-crouch)*shin0,
-        crouch*-.48f+(1.f-crouch)*arm0,
-        crouch*-.72f+(1.f-crouch)*fore0,
-        crouch*.12f+(1.f-crouch)*(-.32f+.22f*s),
-        crouch*-.18f+(1.f-crouch)*pel0,
-        crouch*-.12f+(1.f-crouch)*chest0);
+    const JumpKey ballistic=s<.5f?mixJumpKey(kJumpExtendKey,kJumpApexKey,a)
+                                 :mixJumpKey(kJumpApexKey,kJumpDropKey,a);
+    writeJumpKeys(c,ballistic);
 }
 
 void applyLandPose(CharacterModel& c){
     c.leftPlanted=c.rightPlanted=false;
     const float w=smooth01(clampf(c.landT/kJumpLand,0.f,1.f));
-    const float thigh=-.36f*w,shin=.72f*w,arm=-.10f*w,fore=-.42f*w;
-    c.pose.anim[int(BoneId::LThigh)].pitch=thigh;
-    c.pose.anim[int(BoneId::RThigh)].pitch=thigh+.03f;
-    c.pose.anim[int(BoneId::LShin)].pitch=shin;
-    c.pose.anim[int(BoneId::RShin)].pitch=shin-.04f;
-    c.pose.anim[int(BoneId::LUpperArm)].pitch=arm;
-    c.pose.anim[int(BoneId::RUpperArm)].pitch=arm-.04f;
-    c.pose.anim[int(BoneId::LForearm)].pitch=fore;
-    c.pose.anim[int(BoneId::RForearm)].pitch=fore;
-    c.pose.anim[int(BoneId::Pelvis)].pitch=-.16f*w;
-    c.pose.anim[int(BoneId::Chest)].pitch=-.10f*w;
-    plantFeet(c,thigh,shin,thigh+.03f,shin-.04f);
+    const float dip=kJumpLandY*w;
+    writeJumpKeys(c,squatKey(kJumpLandKey,dip,w));
+    c.pose.root.y=c.y-dip;
 }
 
 void applyRoot(CharacterModel& c){
