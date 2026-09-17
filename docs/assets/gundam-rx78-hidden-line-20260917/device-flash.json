@@ -1,0 +1,43 @@
+{
+  "recorded_at": "2026-09-17T23:26:40+08:00",
+  "base_head": "ef4d9371c3079e59004defff617e85dbcd0f5272",
+  "working_tree_dirty": true,
+  "scope": "RX-78 hidden-line display; Char Zaku, Sazabi and Destiny removed from browse cycle",
+  "port": "/dev/cu.usbmodem83401",
+  "macos_usb_device": "Espressif USB JTAG/serial debug unit",
+  "usb_vid_pid": "303a:1001",
+  "usb_serial": "44:1B:F6:C1:8A:00",
+  "actively_verified_mac": "44:1B:F6:C1:8A:00",
+  "other_enumerated_device_not_flashed": {
+    "port": "/dev/cu.usbmodem83301",
+    "usb_serial": "80:45:6B:4D:E2:5C"
+  },
+  "chip": "ESP32-S3 QFN56 rev 0.2",
+  "baud": 460800,
+  "flash_mode": "dio",
+  "flash_frequency": "80m",
+  "flash_size": "16MB",
+  "images": [
+    {"offset": "0x0", "file": "build/bootloader/bootloader.bin", "verified": true},
+    {"offset": "0x20000", "file": "build/StopWatch-UserDemo.bin", "bytes": 4023552, "sha256": "26aee12c754348f8545ba810320d5e5de239306c62be7f77620f8b6b51bfe8de", "verified": true},
+    {"offset": "0x8000", "file": "build/partition_table/partition-table.bin", "verified": true},
+    {"offset": "0xd000", "file": "build/ota_data_initial.bin", "verified": true}
+  ],
+  "elf_sha256": "d32287371293b30777170177bcdc8dd25d9397ab4d5fee05472c25f4c8d660d5",
+  "app_size": "0x3d6500",
+  "partition_free": "0x119b00",
+  "partition_free_percent": 22,
+  "flash_result": "All four segments Hash of data verified; hard reset completed",
+  "boot_observation": {
+    "duration_seconds": 16,
+    "app_version": "ef4d937-dirty",
+    "compile_time": "Sep 17 2026 00:32:46",
+    "reported_elf_sha256_prefix": "d32287371",
+    "psram_test": "SPI SRAM memory test OK",
+    "launcher": "on create, on open, LauncherView init observed",
+    "panic_or_restart_loop_observed": false,
+    "diagnostic_notes": "i2c.master port-not-initialized message was followed by successful i2c1 initialization. This is not a claim of an error-free boot log.",
+    "serial_capture_completed_and_port_closed": true
+  },
+  "acceptance_boundary": "Write verification and bounded launcher startup only; museum appearance and frame rate await user inspection."
+}

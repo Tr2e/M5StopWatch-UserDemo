@@ -1,0 +1,10 @@
+working_bytes=1274184 panels=3288 omitted=12 submitted=2288 culled=1000
+rx78_eye_sockets five_corners=2 recess=.064 forward_and_cap_negatives=4
+sd_volume depth_width=1.25152 blade_width_ratio=0.457747 blade_depth_ratio=0.57918
+sd_geometry heads=2.55246 head_shoulder=0.476113 sole_y=0.025,0.025 contact_area=0.489538,0.489538 mask_z=0.431321 brow_z=0.522098 tip_faces=12,12
+sd_equipment unintended_surface_pairs=0 permitted_peg_pairs=6
+first_cull_case 1 0 0.7 0 pixels=2
+cases=864 cull_pixel_diff=46 buried_pixel_diff=0 coverage_diff=46 interior_diff=0 max_diff=2 partial_diff=0 culled_ratio=0.170194
+full_exhibit circle_edge=0 viewport_edge=0
+space_composition_cases=36 covered_grid=48292 visible_grid=261438 ink_colored_model=0 gutter_changes=31088 cube_contains_model=1 model_pixels_unchanged=1 mixed_partial_exact=1 clip_restored=1
+Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed

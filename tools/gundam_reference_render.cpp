@@ -1,6 +1,7 @@
 // Structural inspection only: same authored asset and production raster, larger
 // host tile. These frames are not native device screenshots or FPS evidence.
 #include "../main/apps/app_gundam_museum/view/museum_renderer.h"
+#include "../main/apps/app_gundam_museum/view/museum_wireframe.h"
 #include "../main/apps/app_gundam_museum/model/nu_gundam.h"
 #include "../main/apps/app_gundam_museum/model/strike_gundam.h"
 #include "../main/apps/app_gundam_museum/model/char_zaku.h"
@@ -209,8 +210,26 @@ int main(int argc,char** argv){
             if(!mesh->twoSided[i] && facing<-.035f)continue;
             lets_and_go::PreparedCarPanel panel{};
             lets_and_go::prepareCarPanel(panel,camera,mesh->panels[i],transform);
-            if(panel.visibility && panel.right>=0 && panel.left<640 && panel.bottom>=0 && panel.top<640)raster->preparedPanel(camera,panel);
+            if(panel.visibility && panel.right>=0 && panel.left<640 && panel.bottom>=0 && panel.top<640){
+                if(nu)prepareHiddenLineFill(panel);
+                raster->preparedPanel(camera,panel);
+            }
         }
+        if(nu)
+            for(size_t i=0;i<mesh->count;++i){
+                if(s.only!=Part::Count && (mesh->parts[i]<s.only || mesh->parts[i]>(s.through==Part::Count?s.only:s.through)))continue;
+                if(s.limb){
+                    float x=0;for(auto p:mesh->panels[i].point)x+=p.x;
+                    if(x*s.limb<=0)continue;
+                }
+                const float facing=dot(mesh->normals[i],subtract(eye,mesh->panels[i].point[0]));
+                if(facing<=0 && !mesh->twoSided[i])continue;
+                if(!mesh->twoSided[i] && facing<-.035f)continue;
+                lets_and_go::PreparedCarPanel panel{};
+                lets_and_go::prepareCarPanel(panel,camera,mesh->panels[i],transform);
+                if(panel.visibility && panel.right>=0 && panel.left<640 && panel.bottom>=0 && panel.top<640)
+                    strokeHiddenLinePanel(*raster,camera,panel);
+            }
         raster->blitScaled(canvas,0,0,640,640);
         canvas.setTextColor(0xef5d,0x1083);canvas.setTextSize(1);
         canvas.drawString(destiny?"SD ZGMF-X42S DESTINY / SDEX 009 / SAME ASSET + RASTER":strike?"SD AILE STRIKE / SDEX 002 / SAME ASSET + RASTER":nu?"SD RX-93 NU / BB 387 / SAME ASSET + RASTER":zaku?"SD MS-06S CHAR ZAKU II / SAME ASSET + RASTER":sazabi?"SD MSN-04 SAZABI / SDEX 017 / SAME ASSET + RASTER":"SD RX-78-2 / POSE V5 / SAME ASSET + RASTER",320,18);

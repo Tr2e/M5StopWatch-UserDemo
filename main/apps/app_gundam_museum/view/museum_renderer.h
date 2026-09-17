@@ -2,6 +2,7 @@
 #include "../model/rx78.h"
 #include "../../app_lets_and_go_racer/view/car_surface_raster.h"
 #include "museum_projection_cache.h"
+#include "museum_wireframe.h"
 #include <memory>
 
 namespace gundam_museum {
@@ -32,11 +33,14 @@ public:
     // Diagnostic coverage of the last render, in active raster coordinates.
     // Callers must keep x/y inside that render's internal sampling dimensions.
     bool modelSampleCovered(int x,int y) const{return _surface && _surface->raster.depthAt(x,y)!=0;}
+    int sampleWidth() const{return _surface?_surface->raster.width():0;}
+    int sampleHeight() const{return _surface?_surface->raster.height():0;}
 private:
     struct Surface {
         Mesh mesh;
         lets_and_go::CarSurfaceRaster<424,424> raster;
         MuseumProjectionCache projection;
+        EdgeFilter edges;
     };
     std::unique_ptr<Surface> _surface;
     RenderStats _stats{};

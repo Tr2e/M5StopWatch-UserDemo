@@ -10,7 +10,11 @@ public:
     void reset(){*this={};}
     const View& view()const{return _view;}
     bool exitRequested()const{return _exit;}
-    int percent(uint32_t now)const{return (_touch || now-_lastMotion<180?65:100);}
+    int percent(uint32_t now)const{
+        // Nu hidden-line drag fills a 65% Z-buffer; strokes are expanded to 1px.
+        if(_view.model==ModelId::NuGundam)return _touch?65:100;
+        return (_touch || now-_lastMotion<180?65:100);
+    }
     bool update(const lets_and_go::DeviceControlFrame& input,uint32_t now){
         bool dirty=false;
         // Exit remains usable when the touchscreen is invalid/stale.
@@ -18,7 +22,16 @@ public:
         if(input.input.valid){
             if(input.navigation){
                 // One complete exhibit per model; study views remain host-only.
-                constexpr ModelId models[]={ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::DestinyGundam};
+                // Zaku, Sazabi, Strike and Destiny stay in the renderer for
+                // host tests, but are not in the product browse cycle.
+                constexpr ModelId models[]={
+                    ModelId::Rx78,
+                    // ModelId::CharZaku,
+                    ModelId::NuGundam,
+                    // ModelId::Sazabi,
+                    // ModelId::StrikeGundam,
+                    // ModelId::DestinyGundam,
+                };
                 constexpr int count=int(sizeof(models)/sizeof(models[0]));
                 _mode=(_mode+(input.navigation>0?1:count-1))%count;
                 _view.model=models[_mode];

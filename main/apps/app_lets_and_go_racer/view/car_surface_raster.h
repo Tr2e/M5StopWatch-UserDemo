@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <algorithm>
+#include <cstring>
 #include <new>
 
 namespace lets_and_go {
@@ -94,6 +95,25 @@ public:
         _x=x;_y=y;
         _width=std::clamp(width,1,Width);_height=std::clamp(height,1,Height);
         std::memset(depthData(),0,_width*_height*sizeof(uint16_t));
+    }
+    // Nearest-expand the packed active tile to the full template size in
+    // place. Source rows are read before dest rows overwrite them.
+    void upsampleNearestToFull() {
+        if(_width==Width && _height==Height)return;
+        const int srcW=_width,srcH=_height;
+        auto* depth=depthData();auto* color=colorData();
+        std::array<uint16_t,Width> depthRow{},colorRow{};
+        for(int y=Height-1;y>=0;--y){
+            const int sy=(2*y+1)*srcH/(2*Height);
+            for(int x=0;x<Width;++x){
+                const int sx=(2*x+1)*srcW/(2*Width);
+                const int s=sy*srcW+sx;
+                depthRow[x]=depth[s];colorRow[x]=color[s];
+            }
+            std::memcpy(depth+std::size_t(y)*Width,depthRow.data(),sizeof(depthRow));
+            std::memcpy(color+std::size_t(y)*Width,colorRow.data(),sizeof(colorRow));
+        }
+        _width=Width;_height=Height;
     }
     void triangle(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
@@ -256,6 +276,43 @@ public:
             cameraTriangle(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light);
         }
     }
+    // Hidden-line stroke: keep a surface only when its depth matches the filled
+    // buffer. Empty pixels stay empty so far-side edges cannot leak around the
+    // silhouette. Bias absorbs Q13 quantization against the parent panel.
+    void stroke(CarScreenVertex a,CarScreenVertex b,uint16_t color,uint16_t bias=8,bool writeEmpty=false) {
+        auto* depthBuffer=depthData();auto* colorBuffer=colorData();
+        if(!std::isfinite(a.x)||!std::isfinite(a.y)||!std::isfinite(b.x)||!std::isfinite(b.y))return;
+        if(!(a.depth>0)||!(b.depth>0)||!std::isfinite(a.depth)||!std::isfinite(b.depth))return;
+        const int x0=int(std::lround(a.x)),y0=int(std::lround(a.y));
+        const int x1=int(std::lround(b.x)),y1=int(std::lround(b.y));
+        const int steps=std::max(std::abs(x1-x0),std::abs(y1-y0));
+        if(steps<0)return;
+        const float inverse=steps==0?0.f:1.f/float(steps);
+        for(int i=0;i<=steps;++i) {
+            const float t=float(i)*inverse;
+            const int x=x0+int(std::lround((x1-x0)*t)),y=y0+int(std::lround((y1-y0)*t));
+            if(x<_x||x>=_x+_width||y<_y||y>=_y+_height)continue;
+            const float depth=a.depth+(b.depth-a.depth)*t;
+            if(!(depth>0)||!std::isfinite(depth))continue;
+            const auto d=uint16_t(std::clamp(depth*8192.f,1.f,65535.f));
+            const auto index=std::size_t(y-_y)*_width+(x-_x);
+            if(depthBuffer[index]==0){
+                if(!writeEmpty)continue;
+                depthBuffer[index]=d;colorBuffer[index]=color;continue;
+            }
+            if(uint32_t(d)+bias<depthBuffer[index])continue;
+            colorBuffer[index]=color;
+        }
+    }
+    void strokeCamera(const TrackCamera& camera,CarSurfaceVertex a,CarSurfaceVertex b,uint16_t color,bool writeEmpty=false) {
+        if(a.z<kTrackNearPlane && b.z<kTrackNearPlane)return;
+        if((a.z<kTrackNearPlane)!=(b.z<kTrackNearPlane)) {
+            const float t=(kTrackNearPlane-a.z)/(b.z-a.z);
+            const CarSurfaceVertex cut{a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,kTrackNearPlane,0,0};
+            if(a.z<kTrackNearPlane)a=cut;else b=cut;
+        }
+        stroke(projectCarSurface(camera,a),projectCarSurface(camera,b),color,8,writeEmpty);
+    }
     void blit(lgfx::LGFXBase& canvas,const PencilOcclusion* occlusion=nullptr,float occlusionScale=1.f,
               bool filterRows=true,CarBlitWork* work=nullptr) const {
         const auto* depthBuffer=depthData();const auto* colorBuffer=colorData();
@@ -360,6 +417,8 @@ private:
         }
     }
 public:
+    int width() const {return _width;}
+    int height() const {return _height;}
     uint16_t depthAt(int x,int y) const {return depthData()[std::size_t(y)*_width+x];}
 private:
     const RacePaintAtlas* _paintAtlas=nullptr;

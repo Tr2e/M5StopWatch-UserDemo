@@ -1,5 +1,6 @@
 #include "../main/apps/app_gundam_museum/view/museum_renderer.h"
 #include "../main/apps/app_gundam_museum/view/museum_space.h"
+#include "../main/apps/app_gundam_museum/view/museum_wireframe.h"
 #include "../main/apps/app_gundam_museum/controller/museum_controller.h"
 #include <algorithm>
 #include <cassert>
@@ -30,15 +31,15 @@ void controls(){
     f.input.valid=false;c.update(f,1300);const auto interrupted=c.view();
     f.input.valid=true;f.preview.dx=100;c.update(f,1310);assert(c.view().yaw==interrupted.yaw);
     f.preview={};f.navigation=1;
-    for(ModelId expected:{ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::DestinyGundam,ModelId::Rx78}){
+    for(ModelId expected:{ModelId::NuGundam,ModelId::Rx78}){
         c.update(f,1320);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
     }
     f.navigation=-1;
-    for(ModelId expected:{ModelId::DestinyGundam,ModelId::StrikeGundam,ModelId::Sazabi,ModelId::NuGundam,ModelId::CharZaku,ModelId::Rx78}){
+    for(ModelId expected:{ModelId::NuGundam,ModelId::Rx78}){
         c.update(f,1330);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
     }
     f.navigation=1;c.update(f,1340);f.navigation=0;f.input.confirmPressed=true;c.update(f,1346);
-    assert(c.view().model==ModelId::CharZaku && c.view().equipment && !c.view().detail);
+    assert(c.view().model==ModelId::NuGundam && c.view().equipment && !c.view().detail);
     f.input.confirmPressed=false;
     f.navigation=0;f.autoToggle=true;c.update(f,1350);f.autoToggle=false;
     const float start=c.view().yaw;c.update(f,2350);assert(!c.view().automatic && c.view().yaw==start);
@@ -63,7 +64,7 @@ void controls(){
     assert(lets_and_go::menuTouchTarget(GameScreen::CarInspect,298,414)==TouchAction::Confirm);
     logic.touch(true,436,233);logic.touch(false,436,233);
     auto click=logic.consume(true);assert(click.navigation==1);c.update(click,500);
-    assert(c.view().model==ModelId::CharZaku);
+    assert(c.view().model==ModelId::NuGundam);
     assert(logic.consume(true).navigation==0);
     logic.touch(true,32,233);logic.touch(true,100,233);logic.touch(false,100,233);
     assert(logic.consume(true).navigation==0);
@@ -89,6 +90,10 @@ int main(int argc,char** argv){
     const std::string prefix=destiny?"destiny":strike?"strike":nu?"nu":zaku?"zaku":sazabi?"sazabi":"rx78";
     const auto save=[&](const std::string& name){canvas.save(out+"/"+(name.rfind("rx78-",0)==0?prefix+name.substr(4):name)+".ppm");};
     renderer.render(canvas,view);save("rx78-equipped");
+    if(nu){
+        unsigned ink=0;for(auto pixel:canvas.frame())ink+=pixel==hiddenLineInk;
+        assert(ink>800);
+    }
     std::cout<<"working_bytes="<<renderer.workingBytes()<<" panels="<<renderer.mesh().count
              <<" omitted="<<renderer.mesh().buriedOmitted<<" submitted="<<renderer.stats().submitted
              <<" culled="<<renderer.stats().culled<<'\n';
@@ -193,6 +198,15 @@ int main(int argc,char** argv){
     renderer.render(canvas,original);renderer.render(canvas,moved,100,true,false,false,true);
     assert(canvas.frame()==movedFull);
     for(int i=0;i<10;++i){renderer.close();assert(!renderer.ready());assert(renderer.open());renderer.render(canvas,original);assert(canvas.frame()==identity);}
+    if(!strike && !zaku && !sazabi && !destiny){
+        for(int percent:{65,100})for(float pitch:{-.2f,.1f,.7f}){
+            View sample;sample.model=model;sample.pitch=pitch;sample.yaw=-.4f;
+            renderer.setOptimizations(false);renderer.render(canvas,sample,percent);const auto reference=canvas.frame();
+            renderer.setOptimizations(true);renderer.render(canvas,sample,percent);
+            assert(canvas.frame()==reference);
+        }
+        renderer.setOptimizations(true);
+    }
     LGFX_Sprite room;room.createSprite(468,466);room.fillScreen(space::background);
     View roomView;roomView.model=model;
     space::draw(room,roomView);room.save(out+"/space-empty.ppm");
@@ -224,8 +238,8 @@ int main(int argc,char** argv){
         room.fillScreen(space::background);space::draw(room,scene);const auto backdrop=room.frame();
         for(size_t p=0;p<flat.size();++p){
             const int x=int(p%468)-22,y=int(p/468)-layout::top;
-            const int active=(layout::side*percent+50)/100;
-            const bool covered=x>=0 && x<layout::side && y>=0 && y<layout::side &&
+            const int active=renderer.sampleWidth();
+            const bool covered=x>=0 && x<layout::side && y>=0 && y<layout::side && active>0 &&
                 renderer.modelSampleCovered((2*x+1)*active/(2*layout::side),(2*y+1)*active/(2*layout::side));
             // Nu's shaded navy can equal the ink background exactly. Depth,
             // not a color key, distinguishes opaque armor from empty space.
@@ -236,7 +250,7 @@ int main(int argc,char** argv){
             visibleGrid+=!modelPixel && backdrop[p]!=space::background;
         }
         View previous=scene;previous.yaw+=.8f;previous.pitch=.6f;
-        previous.model=model==ModelId::Rx78?ModelId::Sazabi:ModelId::Rx78;
+        previous.model=model==ModelId::Rx78?ModelId::NuGundam:ModelId::Rx78;
         renderer.render(canvas,previous,percent==65?100:65);
         const auto beforePartial=canvas.frame();
         renderer.render(canvas,scene,percent,true,false,false,true);

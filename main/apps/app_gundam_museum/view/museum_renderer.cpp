@@ -6,6 +6,7 @@
 #include "../model/destiny_gundam.h"
 #include "museum_layout.h"
 #include "museum_space.h"
+#include "museum_wireframe.h"
 #include <algorithm>
 #include <cmath>
 #include <new>
@@ -16,6 +17,7 @@
 #endif
 
 namespace gundam_museum {
+static_assert(hiddenLinePaper==space::background && hiddenLineInk==space::navigation);
 namespace {
 uint64_t micros(){
 #ifdef ESP_PLATFORM
@@ -43,6 +45,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(_spaceEnabled)space::draw(canvas,view);
     if(!_surface){label(canvas,"MODEL MEMORY UNAVAILABLE",canvas.width()/2,220,1);return;}
     const bool nu=view.model==ModelId::NuGundam,strike=view.model==ModelId::StrikeGundam,destiny=view.model==ModelId::DestinyGundam,zaku=view.model==ModelId::CharZaku,sazabi=view.model==ModelId::Sazabi;
+    const bool hiddenLine=view.model==ModelId::NuGundam;
     if(!_cached || _model!=view.model || _equipment!=view.equipment || _gray!=gray || _buried!=keepBuried || _pose!=view.pose){
         if(destiny)buildDestinyGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         else if(strike)buildStrikeGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
@@ -57,11 +60,15 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     }
     // One fixed envelope per exhibit, no angle-dependent auto-fit breathing.
     const MuseumCamera transform(view);const auto eye=transform.eye();
+    // Hidden-line keeps the Z-buffer while orbiting. Drag fills a cheaper
+    // paper pass, then nearest-expands so ink is still 1px native.
+    const bool drag=hiddenLine && percent<100;
     const int p=std::clamp(percent,50,100),w=(424*p+50)/100,h=(424*p+50)/100;
     auto& raster=_surface->raster;
     // Keep exact barycentric interpolation. View Car's incremental mode
     // changes thin SD panels at some continuous angles (see performance log).
     raster.setSolidFastPath(_optimizations);raster.begin(0,0,w,h);
+    if(hiddenLine)_surface->edges.begin();
     const auto clearUs=micros();
     lets_and_go::TrackCamera camera{};
     camera.principalX=w*.5f;camera.principalY=h*.5f;
@@ -101,7 +108,39 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         if(_optimizations)projection.panel(prepared,camera,face,i,project);
         else {lets_and_go::prepareCarPanel(prepared,camera,face,project);_stats.transformed+=4;}
         if(!prepared.visibility || prepared.right<0 || prepared.left>=w || prepared.bottom<0 || prepared.top>=h){++_stats.offscreen;continue;}
+        if(hiddenLine)prepareHiddenLineFill(prepared);
         raster.preparedPanel(camera,prepared);++_stats.submitted;
+    }
+    if(hiddenLine && drag){
+        raster.upsampleNearestToFull();
+        const float sx=float(raster.width())/float(w),sy=float(raster.height())/float(h);
+        for(std::size_t i=0;i<projection.count;++i){
+            if(!projection.ready[i])continue;
+            projection.projected[i].x*=sx;projection.projected[i].y*=sy;
+        }
+        camera.principalX=raster.width()*.5f;camera.principalY=raster.height()*.5f;
+        camera.focalLength=scale*7.f;
+    }
+    const int strokeW=raster.width(),strokeH=raster.height();
+    if(hiddenLine)for(std::size_t i=0;i<_surface->mesh.count;++i){
+        const auto& face=_surface->mesh.panels[i];
+        float facing=0;
+        if(_optimizations){
+            if(projection.passes[i]<0)continue;
+            facing=projection.passes[i]==1?1.f:-1.f;
+        }else{
+            if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
+            facing=dot(_surface->mesh.normals[i],subtract(eye,face.point[0]));
+            if(cull && !_surface->mesh.twoSided[i] && facing<-.035f)continue;
+        }
+        // Far-side panels still fill depth when culling is off; stroking them
+        // would draw the reverse mesh. Keep two-sided lips that were filled.
+        if(facing<=0 && !_surface->mesh.twoSided[i])continue;
+        lets_and_go::PreparedCarPanel prepared{};
+        if(_optimizations)projection.panel(prepared,camera,face,i,project);
+        else lets_and_go::prepareCarPanel(prepared,camera,face,project);
+        if(!prepared.visibility || prepared.right<0 || prepared.left>=strokeW || prepared.bottom<0 || prepared.top>=strokeH)continue;
+        strokeHiddenLinePanel(raster,camera,prepared,&_surface->edges,&projection.indices[i*4]);
     }
     const auto rasterUs=micros();
     raster.blitScaled(canvas,(canvas.width()-layout::side)/2,layout::top,layout::side,layout::side);
