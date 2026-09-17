@@ -7,6 +7,7 @@
 namespace gundam_arena {
 inline constexpr float kAutonDelay=.80f;
 inline constexpr float kKickAttend=1.20f;
+inline constexpr float kStrikeThink=.60f;
 inline constexpr float kStanceRetarget=.55f;
 inline constexpr float kMissInhibit=2.f;
 inline constexpr float kMissInhibitCap=.20f;
@@ -60,6 +61,8 @@ struct IdlePilot {
     float lastStrikeRecent=0;
     float playInhibit=0;
     float playCap=1.f;
+    float thinkT=0;
+    uint32_t autonTick=0;
     bool kickConnected=false;
 };
 
@@ -129,13 +132,22 @@ inline float approachExp(float cur,float target,float dt,float tauRise,float tau
     return cur+(target-cur)*(1.f-std::exp(-dt/tau));
 }
 
+inline bool ballStill(const CharacterModel& c){
+    return ballHorizSpeed(c)<.15f && !ballAir(c);
+}
+
 inline float playDesire(const IdlePilot& p,const CharacterModel& c){
     float desire=.10f;
     const bool inArena=std::fabs(c.ball.x)<=kArenaHalfExtent && std::fabs(c.ball.z)<=kArenaHalfExtent;
-    if(!ballAir(c) && inArena)desire=1.f;
-    else if(ballAir(c) && ballHorizDist(c)<kLeapDist)desire=1.f;
+    if(!ballAir(c) && inArena)desire=inStrikeRange(c)?.72f:.85f;
+    else if(ballAir(c) && ballHorizDist(c)<kLeapDist)desire=.60f;
     if(p.playInhibit>0.f)desire=std::min(desire,p.playCap);
     return desire;
+}
+
+inline float skillJitter(uint32_t tick,int i){
+    const uint32_t h=tick*374761393u+uint32_t(i)*668265263u;
+    return (float((h>>8)&255u)/255.f-.5f)*.04f;
 }
 
 inline void goPilot(IdlePilot& p,CharacterModel& c){
@@ -146,6 +158,8 @@ inline void goPilot(IdlePilot& p,CharacterModel& c){
     p.haveSeek=false;
     p.skillAge=0;
     p.skillScore=0;
+    p.thinkT=0;
+    p.autonTick=0;
     p.vigilance=p.curiosity=p.play=p.social=p.composure=0;
     clearLookAt(c);
     clearSeek(c);
@@ -179,11 +193,12 @@ inline void attendBall(IdlePilot& p,CharacterModel& c,const ArenaView* view=null
     lookBall(c);
 }
 
-inline void holdIdle(IdlePilot& p,CharacterModel& c){
+inline void holdIdle(IdlePilot& p,CharacterModel& c,const ArenaView* view=nullptr){
     adoptSkill(p,AutonSkill::Hold,p.skillScore);
     p.haveSeek=false;
     clearSeek(c);
-    if(std::fabs(ballBearing(c))>kHoldLook)lookBall(c);
+    if(ballStill(c) && operatorPresent(p) && view)lookCamera(c,view);
+    else if(std::fabs(ballBearing(c))>kHoldLook)lookBall(c);
     else c.lookEnabled=false;
 }
 
@@ -264,8 +279,8 @@ inline void updateDrives(IdlePilot& p,const CharacterModel& c,float dt,bool ente
         const float radial=(dx*c.ball.vx+dz*c.ball.vz)/dist;
         incoming=std::max(0.f,-radial);
     }
-    const float vigT=std::clamp(speed/2.5f+incoming/2.f,0.f,1.f);
-    p.vigilance=approachExp(p.vigilance,vigT,dt,kVigilanceRise,kVigilanceFall);
+    float vigT=std::clamp(speed/2.5f+incoming/2.f,0.f,1.f);
+    if(ballAir(c) && dist<kLeapDist)vigT=std::max(vigT,.70f);
 
     const float err=std::fabs(ballBearing(c));
     const bool moving=ballSpeed3(c)>.15f || p.struckRecent>0.f;
@@ -274,25 +289,33 @@ inline void updateDrives(IdlePilot& p,const CharacterModel& c,float dt,bool ente
     else if(err<.25f)curT=.20f;
     else curT=.55f;
     if(p.idleAge>2.f)curT=std::max(curT,.65f);
-    p.curiosity=approachExp(p.curiosity,curT,dt,kCuriosityTau,kCuriosityTau);
 
     const float desire=playDesire(p,c);
-    p.play=approachExp(p.play,desire,dt,kPlayRise,kPlayFall);
-
     float socialT=0.f;
     if(p.signalCooldown<=0.f && operatorPresent(p))
         socialT=std::clamp(p.operatorMemory/kOperatorMemory,0.f,1.f);
-    if(entered && operatorPresent(p))p.social=1.f;
-    else if(socialT>p.social)p.social=socialT;
-    else p.social=approachExp(p.social,socialT,dt,.40f,.80f);
 
+    if(entered){
+        p.vigilance=vigT;
+        p.curiosity=curT;
+        p.play=0.f;
+        p.composure=0.f;
+        p.thinkT=0.f;
+        p.social=operatorPresent(p)?1.f:0.f;
+        return;
+    }
+
+    p.vigilance=approachExp(p.vigilance,vigT,dt,kVigilanceRise,kVigilanceFall);
+    p.curiosity=approachExp(p.curiosity,curT,dt,kCuriosityTau,kCuriosityTau);
+    p.play=approachExp(p.play,desire,dt,kPlayRise,kPlayFall);
+    if(socialT>p.social)p.social=socialT;
+    else p.social=approachExp(p.social,socialT,dt,.40f,.80f);
     p.composure=approachExp(p.composure,0.f,dt,kComposureFall,kComposureFall);
 }
 
 inline SkillScores scoreAutonSkills(const IdlePilot& p,const CharacterModel& c){
     SkillScores s{};
     const float cu=p.curiosity,vi=p.vigilance,pl=p.play,so=p.social,co=p.composure;
-    const float desire=playDesire(p,c);
     const float align=std::fabs(kickAlignErr(c));
     s[AutonSkill::Attend]=.70f*cu+.50f*vi;
     if(!ballAir(c) && align>kStrikeFaceTol){
@@ -305,19 +328,28 @@ inline SkillScores scoreAutonSkills(const IdlePilot& p,const CharacterModel& c){
     }
     if(!ballAir(c) && !inStrikeRange(c))
         s[AutonSkill::Approach]=.80f*pl+.40f*cu;
-    if(inStrikeRange(c))s[AutonSkill::Strike]=.95f*desire;
-    if(inLeapTrigger(p,c))s[AutonSkill::Leap]=.75f*desire+.45f*cu+.20f*vi;
+    if(inStrikeRange(c) && p.thinkT>=kStrikeThink)s[AutonSkill::Strike]=.95f*pl;
+    if(inLeapTrigger(p,c))s[AutonSkill::Leap]=.75f*pl+.45f*cu+.20f*vi+.40f;
     if(operatorPresent(p) && p.signalCooldown<=0.f)
         s[AutonSkill::Signal]=std::max(0.f,.85f*so-.50f*pl);
-    if(celebrateSignal(p,c))s[AutonSkill::Signal]+=kCelebrateBoost;
+    if(so>.70f && pl<.35f)s[AutonSkill::Signal]+=.40f;
+    if(celebrateSignal(p,c)){
+        s[AutonSkill::Signal]=std::max(s[AutonSkill::Signal]+kCelebrateBoost,1.05f);
+        s[AutonSkill::Attend]*=.70f;
+        s[AutonSkill::Approach]*=.50f;
+    }
     s[AutonSkill::Hold]=.60f*co+.25f*(1.f-cu)+.20f*(1.f-pl);
-    for(int i=0;i<kSkillCount;++i)s.v[i]+=.003f*float(i);
+    for(int i=0;i<kSkillCount;++i){
+        s.v[i]+=.003f*float(i);
+        if(s.v[i]>.01f)s.v[i]+=skillJitter(p.autonTick,i);
+    }
     const bool chase=s[AutonSkill::Strike]>.40f ||
         (s[AutonSkill::Approach]>.40f && p.playInhibit<=0.f && !ballAir(c));
     if(chase && p.struckRecent<=0.f){
         s[AutonSkill::Signal]*=.40f;
         s[AutonSkill::Leap]*=.30f;
     }
+    if(inLeapTrigger(p,c))s[AutonSkill::Signal]*=.35f;
     if(s[AutonSkill::Hold]>.50f){
         s[AutonSkill::Approach]*=.70f;
         s[AutonSkill::Strike]*=.70f;
@@ -353,7 +385,7 @@ inline AutonSkill electSkill(const IdlePilot& p,const SkillScores& scores,const 
 
 inline void applySkill(IdlePilot& p,CharacterModel& c,const ArenaView* view,AutonSkill s){
     switch(s){
-    case AutonSkill::Hold: holdIdle(p,c); break;
+    case AutonSkill::Hold: holdIdle(p,c,view); break;
     case AutonSkill::Attend: attendBall(p,c,view); break;
     case AutonSkill::Face: faceBall(p,c); break;
     case AutonSkill::Approach: approachStance(p,c); break;
@@ -382,6 +414,7 @@ inline void finishStrike(IdlePilot& p,CharacterModel& c,const ArenaView* view){
         p.kickConnected=false;
     }
     p.composure=1.f;
+    p.thinkT=0;
     p.attendKickT=kKickAttend;
     p.skill=AutonSkill::Attend;
     p.skillAge=0;
@@ -401,12 +434,12 @@ inline void finishLeap(IdlePilot& p,CharacterModel& c,const ArenaView* view){
     attendBall(p,c,view);
 }
 
-inline void finishSignal(IdlePilot& p,CharacterModel& c){
+inline void finishSignal(IdlePilot& p,CharacterModel& c,const ArenaView* view){
     p.signalCooldown=kSignalCooldown;
     p.social=0.f;
     p.skill=AutonSkill::Hold;
     p.skillAge=0;
-    holdIdle(p,c);
+    holdIdle(p,c,view);
 }
 
 inline void autonAct(IdlePilot& p,CharacterModel& c,float dt,const ArenaView* view,bool entered=false){
@@ -433,35 +466,18 @@ inline void autonAct(IdlePilot& p,CharacterModel& c,float dt,const ArenaView* vi
         return;
     }
     if(p.skill==AutonSkill::Signal){
-        finishSignal(p,c);
+        finishSignal(p,c,view);
         return;
-    }
-    if(entered){
-        if(inLeapTrigger(p,c)){
-            startLeap(p,c);
-            return;
-        }
-        if(p.signalCooldown<=0.f){
-            playSignal(p,c,view,false);
-            return;
-        }
     }
     p.skillAge+=dt;
     if(p.attendKickT>0.f){
-        if(inLeapTrigger(p,c)){
-            p.attendKickT=0;
-            startLeap(p,c);
-            return;
-        }
-        const bool last=p.attendKickT<=dt;
-        p.attendKickT=last?0.f:p.attendKickT-dt;
-        if(last && celebrateSignal(p,c)){
-            playSignal(p,c,view,true);
-            return;
-        }
+        p.attendKickT=p.attendKickT>dt?p.attendKickT-dt:0.f;
         attendBall(p,c,view);
         return;
     }
+    if(p.skill==AutonSkill::Attend || p.skill==AutonSkill::Face || p.skill==AutonSkill::Approach)
+        p.thinkT+=dt;
+    ++p.autonTick;
     const SkillScores scores=scoreAutonSkills(p,c);
     applySkill(p,c,view,electSkill(p,scores,c));
 }

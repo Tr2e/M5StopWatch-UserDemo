@@ -526,6 +526,9 @@ int main(int argc,char** argv){
         assert(p.control==ControlMode::Auton);
         while(m.action==Action::Gesture)tick(p,m,idle);
         for(int i=0;i<12;++i)tick(p,m,idle);
+        if(!m.lookEnabled){
+            for(int i=0;i<180 && !m.lookEnabled;++i)tick(p,m,idle);
+        }
         const float yaw=m.pose.anim[int(BoneId::Head)].yaw;
         assert(yaw>0.05f && yaw*(m.ball.x-m.x)>0.f);
         assert(m.action!=Action::Kick);
@@ -606,7 +609,7 @@ int main(int argc,char** argv){
         bool sawMove=false;
         bool kicked=false;
         ArenaInput idle{};idle.valid=true;
-        for(int i=0;i<400;++i){
+        for(int i=0;i<800;++i){
             const KickStance s=kickStance(m);
             const float dist=std::sqrt((m.x-s.x)*(m.x-s.x)+(m.z-s.z)*(m.z-s.z));
             if(dist>=kStrikePosTol)assert(m.action!=Action::Kick);
@@ -654,14 +657,17 @@ int main(int argc,char** argv){
         ArenaInput idle{};idle.valid=true;
         const auto tick=[&]{stepIdlePilot(p,m,idle,kStep);stepCharacter(m,idle,kStep);};
         for(int i=0;i<52;++i)tick();
+        for(int i=0;i<36 && m.action==Action::Kick;++i)tick();
+        assert(m.action!=Action::Kick);
         while(m.action==Action::Gesture)tick();
-        for(int i=0;i<180 && m.action!=Action::Kick;++i)tick();
+        for(int i=0;i<400 && m.action!=Action::Kick;++i)tick();
         assert(m.action==Action::Kick);
         while(m.action==Action::Kick)tick();
         m.ball.x=0.f;m.ball.y=kBallR;m.ball.z=2.6f;
         m.ball.vx=m.ball.vy=m.ball.vz=0.f;m.ball.struck=false;
         p.attendKickT=0;p.playInhibit=0;p.playCap=1.f;p.play=1.f;p.haveSeek=false;
         p.skillAge=kAttendMin;
+        p.thinkT=kStrikeThink;
         bool second=false;
         bool hit=false;
         for(int i=0;i<900;++i){
@@ -705,7 +711,7 @@ int main(int argc,char** argv){
             stepCharacter(m,idle,kStep);
         }
         assert(p.control==ControlMode::Auton);
-        for(int i=0;i<180;++i){
+        for(int i=0;i<400;++i){
             if(std::abs(m.heading)<0.50f)assert(std::abs(m.x)<0.08f);
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
@@ -728,7 +734,13 @@ int main(int argc,char** argv){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
-        assert(p.skill==AutonSkill::Approach || p.skill==AutonSkill::Face);
+        bool approached=false;
+        for(int i=0;i<400;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            if(p.skill==AutonSkill::Approach || p.skill==AutonSkill::Face)approached=true;
+        }
+        assert(approached);
     }
 
     {
@@ -740,11 +752,16 @@ int main(int argc,char** argv){
             stepCharacter(m,idle,kStep);
         }
         assert(p.control==ControlMode::Auton);
+        for(int i=0;i<36 && m.action==Action::Kick;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(m.action!=Action::Kick);
         while(m.action==Action::Gesture){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
-        for(int i=0;i<180 && m.action!=Action::Kick;++i){
+        for(int i=0;i<400 && m.action!=Action::Kick;++i){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
@@ -765,8 +782,8 @@ int main(int argc,char** argv){
             stepCharacter(m,idle,kStep);
         }
         assert(p.control==ControlMode::Auton);
-        assert(inLeapTrigger(p,m) || m.action==Action::Jump);
-        for(int i=0;i<30 && m.action!=Action::Jump;++i){
+        assert(inLeapTrigger(p,m) || m.action==Action::Jump || p.skill==AutonSkill::Attend);
+        for(int i=0;i<120 && m.action!=Action::Jump;++i){
             m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
@@ -823,7 +840,7 @@ int main(int argc,char** argv){
             stepIdlePilot(p,m,idle,kStep,&cam,false);
             stepCharacter(m,idle,kStep);
         }
-        for(int i=0;i<180 && m.action!=Action::Kick;++i){
+        for(int i=0;i<400 && m.action!=Action::Kick;++i){
             stepIdlePilot(p,m,idle,kStep,&cam,false);
             stepCharacter(m,idle,kStep);
         }
@@ -862,6 +879,7 @@ int main(int argc,char** argv){
         assert(s[AutonSkill::Signal]>.05f);
         resetCharacter(m);
         p.operatorMemory=0;
+        p.thinkT=kStrikeThink;
         s=scoreAutonSkills(p,m);
         assert(s[AutonSkill::Strike]>.50f);
         assert(s[AutonSkill::Leap]<=.02f);
@@ -905,7 +923,7 @@ int main(int argc,char** argv){
         m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=kBallR;m.ball.vy=0.f;
         ArenaInput idle{};idle.valid=true;
         bool sawFace=false;
-        for(int i=0;i<180;++i){
+        for(int i=0;i<400;++i){
             m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=kBallR;m.ball.vy=0.f;
             m.ball.vx=m.ball.vz=0.f;
             stepIdlePilot(p,m,idle,kStep);
@@ -929,7 +947,7 @@ int main(int argc,char** argv){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
-        for(int i=0;i<180 && m.action!=Action::Kick;++i){
+        for(int i=0;i<400 && m.action!=Action::Kick;++i){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }

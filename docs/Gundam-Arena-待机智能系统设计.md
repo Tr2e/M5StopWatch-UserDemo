@@ -1,6 +1,6 @@
 # Gundam Arena：RX-78 待机智能系统设计
 
-> 状态：**草案修订。§13 动作层已落地。Auton 四刀已落地（主机测试）；已烧录 `c3c18d8`，真机观感待用户看。**
+> 状态：**草案修订。§13 动作层已落地。Auton 四刀已落地；真机已能踢中。动机改为竞争选举，不再走强制动作链。**
 >
 > 本文只描述待机智能的运行约定。已落地的沙盒行为仍以 [Gundam Arena 技术文档](Gundam-Arena-技术文档.md) 为准。两者冲突时，以技术文档中的代码事实为准，本文再改。
 >
@@ -203,8 +203,8 @@ Leap 是「球在附近天上、踢不着时跳着看」，不是随机蹦。地
 Attend    = 0.70*curiosity + 0.50*vigilance
 Face      = Attend，且 |facingErr| > 0.35 时再 +0.25
 Approach  = 0.80*play + 0.40*curiosity，且球在地面且 not inStrikeRange
-Strike    = 0.95*play，且 inStrikeRange；否则 0
-Leap      = 0.75*play + 0.45*curiosity + 0.20*vigilance，且 inLeapTrigger；否则 0
+Strike    = 0.95*play，且 inStrikeRange 且已注视 ≥0.6s；否则 0
+Leap      = 0.75*play + 0.45*curiosity + 0.20*vigilance + 0.40，且 inLeapTrigger；否则 0
 Signal    = 0.85*social - 0.50*play
 Hold      = 0.60*composure + 0.25*(1-curiosity) + 0.20*(1-play)
 ```
