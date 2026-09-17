@@ -105,15 +105,67 @@ void applyWalk(CharacterModel& c,float move){
     c.pose.anim[int(BoneId::RForearm)].pitch=-.25f;
 }
 
-void applyJumpPose(CharacterModel& c,bool rising){
+float smooth01(float t){t=clampf(t,0.f,1.f);return t*t*(3.f-2.f*t);}
+
+void writeJumpKeys(CharacterModel& c,float thigh,float shin,float arm,float fore,
+                   float shoulder,float pelvis,float chest){
+    c.pose.anim[int(BoneId::LThigh)].pitch=thigh-.03f;
+    c.pose.anim[int(BoneId::RThigh)].pitch=thigh+.02f;
+    c.pose.anim[int(BoneId::LShin)].pitch=shin;
+    c.pose.anim[int(BoneId::RShin)].pitch=shin+.04f;
+    c.pose.anim[int(BoneId::LUpperArm)].pitch=arm;
+    c.pose.anim[int(BoneId::RUpperArm)].pitch=arm-.06f;
+    c.pose.anim[int(BoneId::LForearm)].pitch=fore;
+    c.pose.anim[int(BoneId::RForearm)].pitch=fore-.08f;
+    c.pose.anim[int(BoneId::LShoulder)].pitch=shoulder;
+    c.pose.anim[int(BoneId::RShoulder)].pitch=shoulder;
+    c.pose.anim[int(BoneId::Pelvis)].pitch=pelvis;
+    c.pose.anim[int(BoneId::Chest)].pitch=chest;
+    plantFeet(c,thigh-.03f,shin,thigh+.02f,shin+.04f);
+}
+
+void applyJumpPose(CharacterModel& c){
     c.leftPlanted=c.rightPlanted=false;
-    const float tuck=rising?.55f:.20f;
-    c.pose.anim[int(BoneId::LThigh)].pitch=.45f;
-    c.pose.anim[int(BoneId::RThigh)].pitch=.35f;
-    c.pose.anim[int(BoneId::LShin)].pitch=tuck;
-    c.pose.anim[int(BoneId::RShin)].pitch=tuck+.08f;
-    c.pose.anim[int(BoneId::LUpperArm)].pitch=-.55f;
-    c.pose.anim[int(BoneId::RUpperArm)].pitch=-.40f;
+    if(c.grounded){
+        const float load=smooth01(c.clipT/kJumpDip);
+        writeJumpKeys(c,-.52f*load,.98f*load,-.48f*load,-.72f*load,.12f*load,-.18f*load,-.12f*load);
+        return;
+    }
+    const float rise=smooth01(c.clipT/.14f);
+    const float s=clampf(.5f-.5f*(c.vy/kJumpVel),0.f,1.f);
+    const float a=s<.5f?smooth01(s*2.f):smooth01((s-.5f)*2.f);
+    const float thigh0=s<.5f?(-.08f+(-.52f+.08f)*a):(-.52f+(-.14f+.52f)*a);
+    const float shin0=s<.5f?(.14f+(.90f-.14f)*a):(.90f+(.28f-.90f)*a);
+    const float arm0=s<.5f?(.78f+(.50f-.78f)*a):(.50f+(.18f-.50f)*a);
+    const float fore0=s<.5f?(-.25f+(-.55f+.25f)*a):(-.55f+(-.35f+.55f)*a);
+    const float pel0=s<.5f?(-.04f+(.06f+.04f)*a):(.06f+(-.08f-.06f)*a);
+    const float chest0=s<.5f?(-.02f+(.08f+.02f)*a):(.08f+(-.04f-.08f)*a);
+    const float crouch=1.f-rise;
+    writeJumpKeys(c,
+        crouch*-.52f+(1.f-crouch)*thigh0,
+        crouch*.98f+(1.f-crouch)*shin0,
+        crouch*-.48f+(1.f-crouch)*arm0,
+        crouch*-.72f+(1.f-crouch)*fore0,
+        crouch*.12f+(1.f-crouch)*(-.32f+.22f*s),
+        crouch*-.18f+(1.f-crouch)*pel0,
+        crouch*-.12f+(1.f-crouch)*chest0);
+}
+
+void applyLandPose(CharacterModel& c){
+    c.leftPlanted=c.rightPlanted=false;
+    const float w=smooth01(clampf(c.landT/kJumpLand,0.f,1.f));
+    const float thigh=-.36f*w,shin=.72f*w,arm=-.10f*w,fore=-.42f*w;
+    c.pose.anim[int(BoneId::LThigh)].pitch=thigh;
+    c.pose.anim[int(BoneId::RThigh)].pitch=thigh+.03f;
+    c.pose.anim[int(BoneId::LShin)].pitch=shin;
+    c.pose.anim[int(BoneId::RShin)].pitch=shin-.04f;
+    c.pose.anim[int(BoneId::LUpperArm)].pitch=arm;
+    c.pose.anim[int(BoneId::RUpperArm)].pitch=arm-.04f;
+    c.pose.anim[int(BoneId::LForearm)].pitch=fore;
+    c.pose.anim[int(BoneId::RForearm)].pitch=fore;
+    c.pose.anim[int(BoneId::Pelvis)].pitch=-.16f*w;
+    c.pose.anim[int(BoneId::Chest)].pitch=-.10f*w;
+    plantFeet(c,thigh,shin,thigh+.03f,shin-.04f);
 }
 
 void applyRoot(CharacterModel& c){
@@ -244,7 +296,8 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
         return;
     }
 
-    const bool busy=c.action==Action::Land||c.action==Action::Kick;
+    const bool coiled=c.action==Action::Jump&&c.grounded;
+    const bool busy=c.action==Action::Land||c.action==Action::Kick||coiled;
     if(c.action==Action::Land){
         c.landT-=dt;if(c.landT<=0)c.action=Action::Idle;
     }
@@ -255,7 +308,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
         if(in.kick && c.grounded){
             c.action=Action::Kick;c.clipT=0;c.walkPhase=0;c.ball.struck=false;c.kickToeHad=false;
         }else if(in.jump && c.grounded){
-            c.grounded=false;c.vy=kJumpVel;c.action=Action::Jump;
+            c.action=Action::Jump;c.clipT=0;c.walkPhase=0;c.vy=0;
         }else if(c.grounded){
             if(std::abs(forward)>.18f)c.action=Action::Walk;
             else if(std::abs(turn)>.18f)c.action=Action::Turn;
@@ -263,10 +316,15 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
         }
     }
 
+    if(c.action==Action::Jump&&c.grounded){
+        c.clipT+=dt;
+        if(c.clipT>=kJumpCrouch){c.grounded=false;c.vy=kJumpVel;c.clipT=0;}
+    }
+
     const float air=c.grounded?1.f:.45f;
     c.forwardSpeed=(c.grounded||in.valid)?forward*kWalkSpeed*air:c.forwardSpeed*.98f;
     c.angularSpeed=turn*kTurnSpeed*(c.grounded?1.f:.6f);
-    if(c.action!=Action::Kick){
+    if(c.action!=Action::Kick && !(c.action==Action::Jump&&c.grounded)){
         c.heading=std::remainder(c.heading+c.angularSpeed*dt,2.f*kPi);
         c.x=clampf(c.x+std::sin(c.heading)*c.forwardSpeed*dt,-kArenaHalfExtent,kArenaHalfExtent);
         c.z=clampf(c.z+std::cos(c.heading)*c.forwardSpeed*dt,-kArenaHalfExtent,kArenaHalfExtent);
@@ -274,7 +332,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     if(!c.grounded){
         c.vy-=kGravity*dt;
         c.y+=c.vy*dt;
-        if(c.y<=0){c.y=0;c.vy=0;c.grounded=true;c.action=Action::Land;c.landT=.10f;}
+        if(c.y<=0){c.y=0;c.vy=0;c.grounded=true;c.action=Action::Land;c.landT=kJumpLand;}
         else c.action=c.vy>0?Action::Jump:Action::Fall;
     }
 
@@ -283,14 +341,11 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     if(c.action==Action::Kick)applyKick(c,dt);
     else if(c.action==Action::Walk)applyWalk(c,forward==0.f?1.f:forward);
     else if(c.action==Action::Turn)applyWalk(c,turn>=0.f?.35f:-.35f);
-    else if(c.action==Action::Jump||c.action==Action::Fall)applyJumpPose(c,c.vy>0);
-    else if(c.action==Action::Land){
-        c.leftPlanted=c.rightPlanted=false;
-        c.pose.anim[int(BoneId::LThigh)].pitch=.20f;
-        c.pose.anim[int(BoneId::RThigh)].pitch=.16f;
-        c.pose.anim[int(BoneId::LShin)].pitch=.55f;
-        c.pose.anim[int(BoneId::RShin)].pitch=.50f;
-    }else applyIdleIk(c);
+    else if(c.action==Action::Jump||c.action==Action::Fall){
+        applyJumpPose(c);
+        if(!c.grounded)c.clipT+=dt;
+    }else if(c.action==Action::Land)applyLandPose(c);
+    else applyIdleIk(c);
     if(c.action!=Action::Kick)applyTurnFollow(c);
     c.pose.anim[int(BoneId::Head)].yaw=clampf(c.pose.anim[int(BoneId::Head)].yaw,-.87f,.87f);
     stepBall(c,dt);

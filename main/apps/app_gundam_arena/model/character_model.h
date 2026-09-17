@@ -7,6 +7,7 @@ enum class Action : uint8_t { Idle, Walk, Turn, Jump, Fall, Land, Kick };
 
 inline constexpr float kArenaHalfExtent=16.f;
 inline constexpr float kGravity=18.f,kJumpVel=6.2f,kWalkSpeed=2.0f,kTurnSpeed=1.8f;
+inline constexpr float kJumpCrouch=.20f,kJumpDip=.12f,kJumpLand=.20f;
 inline constexpr float kStep=1.f/60.f;
 inline constexpr float kBallR=.16f,kFootR=.14f;
 inline constexpr float kFootToeY=-.18f,kFootToeZ=.20f;

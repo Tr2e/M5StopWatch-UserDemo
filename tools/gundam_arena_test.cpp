@@ -180,7 +180,41 @@ int main(int argc,char** argv){
     c={};resetCharacter(c);
     in={};in.valid=true;in.jump=true;
     stepCharacter(c,in,kStep);in.jump=false;
-    assert(c.action==Action::Jump && !c.grounded);
+    assert(c.action==Action::Jump && c.grounded);
+    for(int i=0;i<8;++i){
+        stepCharacter(c,in,kStep);
+        assert(c.grounded && c.action==Action::Jump);
+    }
+    assert(c.pose.anim[int(BoneId::LThigh)].pitch<-.25f);
+    assert(c.pose.anim[int(BoneId::RThigh)].pitch<-.25f);
+    assert(c.pose.anim[int(BoneId::LShin)].pitch>.60f);
+    float minThigh=c.pose.anim[int(BoneId::LThigh)].pitch;
+    float minShin=c.pose.anim[int(BoneId::LShin)].pitch;
+    float maxArm=c.pose.anim[int(BoneId::LUpperArm)].pitch;
+    bool leftPad=false,sawFall=false,sawLand=false;
+    for(int i=0;i<180;++i){
+        stepCharacter(c,in,kStep);
+        if(!c.grounded)leftPad=true;
+        if(!c.grounded && (c.action==Action::Jump||c.action==Action::Fall)){
+            assert(c.pose.anim[int(BoneId::LThigh)].pitch<.05f);
+            assert(c.pose.anim[int(BoneId::RThigh)].pitch<.05f);
+            assert(c.pose.anim[int(BoneId::LShin)].pitch>.10f);
+            minThigh=std::min(minThigh,c.pose.anim[int(BoneId::LThigh)].pitch);
+            minShin=std::min(minShin,c.pose.anim[int(BoneId::LShin)].pitch);
+            maxArm=std::max(maxArm,c.pose.anim[int(BoneId::LUpperArm)].pitch);
+        }
+        if(c.action==Action::Fall)sawFall=true;
+        if(c.action==Action::Land){
+            if(!sawLand){
+                assert(c.pose.anim[int(BoneId::LThigh)].pitch<0.f);
+                assert(c.pose.anim[int(BoneId::LShin)].pitch>.40f);
+            }
+            sawLand=true;
+        }
+        if(c.grounded && c.action==Action::Idle && sawLand)break;
+    }
+    assert(leftPad && sawFall && sawLand && c.grounded);
+    assert(minShin<.40f && maxArm>.20f);
 
     c={};resetCharacter(c);
     in={};in.valid=true;in.forward=1;
@@ -188,6 +222,8 @@ int main(int argc,char** argv){
     assert(c.action==Action::Walk);
     assert(c.walkPhase>0.f);
     in.jump=true;stepCharacter(c,in,kStep);in.jump=false;
+    assert(c.action==Action::Jump && c.grounded);
+    for(int i=0;i<20 && c.grounded;++i)stepCharacter(c,in,kStep);
     assert(c.action==Action::Jump && !c.grounded);
 
     c={};resetCharacter(c);
@@ -314,7 +350,8 @@ int main(int argc,char** argv){
     in={};in.forward=1;in.valid=true;
     for(int i=0;i<12;++i)stepCharacter(live,in,kStep);
     in.jump=true;stepCharacter(live,in,kStep);in.jump=false;
-    for(int i=0;i<20;++i){
+    for(int i=0;i<24 && live.grounded;++i)stepCharacter(live,in,kStep);
+    for(int i=0;i<18;++i){
         stepCharacter(live,in,kStep);
         updateFollowView(view,live,kStep);
     }
@@ -405,6 +442,10 @@ int main(int argc,char** argv){
     lets_and_go::DeviceControlFrame bClick{};
     bClick.input.confirmPressed=true;
     for(int i=0;i<3;++i)bodyJump.update(bClick,16u*(i+1));
+    assert(bodyJump.character().action==Action::Jump);
+    lets_and_go::DeviceControlFrame rest{};
+    rest.input.valid=true;
+    for(int i=3;i<24;++i)bodyJump.update(rest,16u*(i+1));
     assert(bodyJump.character().action==Action::Jump && !bodyJump.character().grounded);
 
     renderer.render(canvas,live,lookUp.view());
