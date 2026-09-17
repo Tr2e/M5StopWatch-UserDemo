@@ -10,7 +10,9 @@ K_HIP_Y. That throws away source hip drop (crouch/land). Do not copy the
 resulting joint angles onto SD and call it a squat — plant the feet, sink
 Root.y, then IK. Jump height is a fraction of SD body height, not human
 metres. Short limbs (arms, aerial tuck) also need SD-readable exaggeration;
-human-mapped arm swing looks like a walk. See docs/Gundam-Arena-技术文档.md §6.5.
+human-mapped arm swing looks like a walk. Kick/punch arms must not copy
+human balance pumps; drive them from the active limb. See
+docs/Gundam-Arena-技术文档.md §6.5.
 """
 from __future__ import annotations
 
@@ -260,6 +262,8 @@ def retarget_frame(world: dict[str, tuple[float, float, float]], yaw: float,
     neck = loc["Neck"]
     spine_pitch = math.atan2(chest[2], max(chest[1], 1e-4))
     spine_yaw = math.atan2(chest[0], max(chest[1], 1e-4))
+    # +spine_pitch is forward lean (Arena pelvis/chest +pitch → +Z). Kick
+    # post-process strips the human back-lean; do not negate this sign.
     pose["Pelvis"] = (0.0, 0.35 * spine_pitch, 0.35 * spine_yaw)
     pose["Chest"] = (0.0, 0.65 * spine_pitch, 0.65 * spine_yaw)
     head_pitch = math.atan2(head[2] - neck[2], max(head[1] - neck[1], 1e-4))
@@ -402,8 +406,83 @@ def clamp_pose(pose: dict[str, tuple[float, float, float]]) -> dict[str, tuple[f
     return out
 
 
-# +pitch is behind the character. Chamber the kicking (left) leg before the
-# Bandai forward swing, then settle without playing the source recovery.
+def sd_kick_torso(pose: dict[str, tuple[float, float, float]]
+                  ) -> dict[str, tuple[float, float, float]]:
+    """Arena pelvis/chest +pitch is forward lean.
+
+    Bandai's kick counterbalances a forward leg with a rear torso. That is a
+    small human angle; on SD it reads as 后仰 (same pit as the jump). Keep the
+    torso upright or leaning into the kick, and pull neck/head out of the
+    back-lean. See docs/Gundam-Arena-技术文档.md §6.5.
+    """
+    pr, pp, py = pose["Pelvis"]
+    cr, cp, cy = pose["Chest"]
+    nr, np, ny = pose["Neck"]
+    hr, hp, hy = pose["Head"]
+    pp = max(pp, 0.04)
+    cp = max(cp, 0.06)
+    swing = pose["LThigh"][1]
+    if swing < 0.0:
+        t = min(1.0, -swing / 0.55)
+        pp = max(pp, 0.08 + 0.08 * t)
+        cp = max(cp, 0.10 + 0.08 * t)
+    np = max(np, -0.04)
+    hp = max(hp, -0.06)
+    out = dict(pose)
+    out["Pelvis"] = (pr, pp, py)
+    out["Chest"] = (cr, cp, cy)
+    out["Neck"] = (nr, np, ny)
+    out["Head"] = (hr, hp, hy)
+    return clamp_pose(out)
+
+
+ARM_BONES = (
+    "LShoulder", "RShoulder", "LUpperArm", "RUpperArm",
+    "LForearm", "RForearm", "LHand", "RHand",
+)
+
+
+def with_arms(pose: dict[str, tuple[float, float, float]],
+              arms: dict[str, tuple[float, float, float]]
+              ) -> dict[str, tuple[float, float, float]]:
+    out = dict(pose)
+    for name in ARM_BONES:
+        out[name] = arms[name]
+    return out
+
+
+def sd_kick_arm_keys() -> tuple[dict[str, tuple[float, float, float]],
+                                 dict[str, tuple[float, float, float]]]:
+    """Authored kick arm keys. Do not copy Bandai hand IK.
+
+    Human kicks pump both arms and fold the elbows to stay balanced. After
+    L/R swap the clip still copies that: chamber is quiet, then the kicking
+    upper arm swings forward (−0.56) and back (+0.32) while both forearms
+    hit −1.80. On SD that reads as extra flailing. Driving arms from thigh
+    pitch is also wrong: the chamber→strike blend sends the thigh through 0,
+    so the arms collapse to idle and pop back up. Hold one chamber pose and
+    one strike pose; blend those two. See docs §6.5.
+    """
+    idle = rest_pose()
+    chamber = {
+        **idle,
+        "LUpperArm": (0.0, 0.18, 0.0),
+        "RUpperArm": (0.0, -0.48, 0.0),
+        "LForearm": (0.0, -0.32, 0.0),
+        "RForearm": (0.0, -0.50, 0.0),
+    }
+    strike = {
+        **idle,
+        "LUpperArm": (0.0, 0.08, 0.0),
+        "RUpperArm": (0.0, -0.55, 0.0),
+        "LForearm": (0.0, -0.28, 0.0),
+        "RForearm": (0.0, -0.42, 0.0),
+    }
+    return clamp_pose(chamber), clamp_pose(strike)
+
+
+# Chamber the kicking (left) leg behind the character (thigh +pitch = foot back)
+# then Bandai forward swing, then settle without playing the source recovery.
 CHAMBER_POSE = clamp_pose({
     **rest_pose(),
     "LThigh": (0.0, 0.62, 0.0),
@@ -412,10 +491,6 @@ CHAMBER_POSE = clamp_pose({
     "RThigh": (0.0, -0.06, 0.0),
     "RShin": (0.0, 0.20, 0.0),
     "RFoot": (0.0, -0.10, 0.0),
-    "LUpperArm": (0.0, 0.20, 0.0),
-    "RUpperArm": (0.0, -0.50, 0.0),
-    "LForearm": (0.0, -0.35, 0.0),
-    "RForearm": (0.0, -0.55, 0.0),
     "Chest": (0.0, 0.06, 0.0),
     "Pelvis": (0.0, 0.04, 0.0),
 })
@@ -425,18 +500,22 @@ def compose_kick(strike: list[dict[str, tuple[float, float, float]]]
                  ) -> list[dict[str, tuple[float, float, float]]]:
     rest = rest_pose()
     chamber = CHAMBER_POSE
+    chamber_arms, strike_arms = sd_kick_arm_keys()
     out: list[dict[str, tuple[float, float, float]]] = []
     for i in range(KICK_CHAMBER_IN):
-        out.append(lerp_pose(rest, chamber, smoothstep((i + 1) / KICK_CHAMBER_IN)))
-    out.extend(chamber for _ in range(KICK_CHAMBER_HOLD))
+        t = smoothstep((i + 1) / KICK_CHAMBER_IN)
+        out.append(with_arms(lerp_pose(rest, chamber, t), lerp_pose(rest, chamber_arms, t)))
+    out.extend(with_arms(chamber, chamber_arms) for _ in range(KICK_CHAMBER_HOLD))
     first = strike[0]
     for i in range(KICK_BLEND):
-        out.append(lerp_pose(chamber, first, smoothstep((i + 1) / KICK_BLEND)))
-    out.extend(strike)
+        t = smoothstep((i + 1) / KICK_BLEND)
+        out.append(with_arms(lerp_pose(chamber, first, t), lerp_pose(chamber_arms, strike_arms, t)))
+    out.extend(with_arms(pose, strike_arms) for pose in strike)
     last = strike[-1]
     for i in range(KICK_SETTLE):
-        out.append(lerp_pose(last, rest, smoothstep((i + 1) / KICK_SETTLE)))
-    return out
+        t = smoothstep((i + 1) / KICK_SETTLE)
+        out.append(with_arms(lerp_pose(last, rest, t), lerp_pose(strike_arms, rest, t)))
+    return [sd_kick_torso(pose) for pose in out]
 
 
 def main() -> None:
@@ -457,6 +536,25 @@ def main() -> None:
             f"kick should swing LThigh forward (ball side); Lmin={min_l:.3f} Rmin={min_r:.3f}")
     if late > 0.22:
         raise SystemExit(f"kick recovers with a back-swing; late LThigh={late:.3f}")
+    min_pel = min(pose["Pelvis"][1] for pose in kick)
+    min_chest = min(pose["Chest"][1] for pose in kick)
+    if min_pel < -1e-4 or min_chest < -1e-4:
+        raise SystemExit(f"kick torso leans back; pel={min_pel:.3f} chest={min_chest:.3f}")
+    lua_min = min(pose["LUpperArm"][1] for pose in kick)
+    lfa_min = min(pose["LForearm"][1] for pose in kick)
+    rfa_min = min(pose["RForearm"][1] for pose in kick)
+    if lua_min < -0.02:
+        raise SystemExit(f"kicking-side arm pumped forward; lua={lua_min:.3f}")
+    if lfa_min < -0.55 or rfa_min < -0.55:
+        raise SystemExit(f"kick elbow folded; L={lfa_min:.3f} R={rfa_min:.3f}")
+    strike0 = KICK_CHAMBER_IN + KICK_CHAMBER_HOLD + KICK_BLEND
+    strike1 = strike0 + len(strike)
+    for a, b in zip(kick[strike0:strike1], kick[strike0 + 1:strike1]):
+        if abs(a["RUpperArm"][1] - b["RUpperArm"][1]) > 1e-4:
+            raise SystemExit("kick arms must hold still through the forward swing")
+    for pose in kick:
+        if pose["LThigh"][1] < -0.50 and pose["RUpperArm"][1] > -0.30:
+            raise SystemExit("support arm should stay back on the forward swing")
     note = (
         f"Chamber+hold+blend then Bandai frames {KICK_STRIKE_START}-{KICK_STRIKE_END} "
         f"@ 30fps, settle to idle. License: CC BY-NC 4.0."

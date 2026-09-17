@@ -45,6 +45,19 @@ int main(int argc,char** argv){
     const std::string out=argc>1?argv[1]:"/tmp/gundam-arena";
     static_assert(kWalkFrames==60,"walk comparison clip window drifted");
     static_assert(kKickFrames==44,"kick clip window drifted");
+    const auto kickPitch=[](int frame,BoneId bone){
+        return kKickJoints[frame*18*3+(int(bone)-1)*3+1];
+    };
+    const float strikeRua=kickPitch(21,BoneId::RUpperArm);
+    const float strikeLua=kickPitch(21,BoneId::LUpperArm);
+    assert(strikeLua>-.02f && strikeLua<.12f);
+    assert(strikeRua<-.50f);
+    for(int f=22;f<=35;++f){
+        assert(std::abs(kickPitch(f,BoneId::RUpperArm)-strikeRua)<1e-4f);
+        assert(std::abs(kickPitch(f,BoneId::LUpperArm)-strikeLua)<1e-4f);
+        assert(kickPitch(f,BoneId::LForearm)>-.55f);
+        assert(kickPitch(f,BoneId::RForearm)>-.55f);
+    }
     Mesh mesh;Skeleton bind;
     buildRx78Rigged(mesh,bind);
     assert(!mesh.overflowed && mesh.count>400 && mesh.count<Mesh::capacity);
@@ -123,7 +136,8 @@ int main(int argc,char** argv){
     in={};in.valid=true;in.kick=true;
     stepCharacter(c,in,kStep);in.kick=false;
     assert(c.action==Action::Kick && c.grounded);
-    float minLeft=0,minRight=0,chamber=0;
+    float minLeft=0,minRight=0,chamber=0,minPelvis=9,minChest=9;
+    float minLua=9,minLfa=9,minRfa=9,minRua=9;
     bool finished=false;
     const float ballX0=c.ball.x,ballZ0=c.ball.z;
     int hits=0;
@@ -134,6 +148,17 @@ int main(int argc,char** argv){
         stepCharacter(c,in,kStep);
         minRight=std::min(minRight,c.pose.anim[int(BoneId::RThigh)].pitch);
         minLeft=std::min(minLeft,c.pose.anim[int(BoneId::LThigh)].pitch);
+        minPelvis=std::min(minPelvis,c.pose.anim[int(BoneId::Pelvis)].pitch);
+        minChest=std::min(minChest,c.pose.anim[int(BoneId::Chest)].pitch);
+        minLua=std::min(minLua,c.pose.anim[int(BoneId::LUpperArm)].pitch);
+        minRua=std::min(minRua,c.pose.anim[int(BoneId::RUpperArm)].pitch);
+        minLfa=std::min(minLfa,c.pose.anim[int(BoneId::LForearm)].pitch);
+        minRfa=std::min(minRfa,c.pose.anim[int(BoneId::RForearm)].pitch);
+        if(c.pose.anim[int(BoneId::LThigh)].pitch<-.50f){
+            assert(c.pose.anim[int(BoneId::Pelvis)].pitch>.05f);
+            assert(c.pose.anim[int(BoneId::Chest)].pitch>.05f);
+            assert(c.pose.anim[int(BoneId::RUpperArm)].pitch<-.30f);
+        }
         if(c.clipT<.40f)chamber=std::max(chamber,c.pose.anim[int(BoneId::LThigh)].pitch);
         peakY=std::max(peakY,c.ball.y);
         if(c.clipT<.55f)assert(!c.ball.struck);
@@ -143,6 +168,8 @@ int main(int argc,char** argv){
     }
     assert(finished && minLeft<-.50f && minLeft<minRight-0.15f);
     assert(chamber>.40f);
+    assert(minPelvis>.03f && minChest>.05f);
+    assert(minLua>-.02f && minLfa>-.55f && minRfa>-.55f && minRua<-.30f);
     assert(hits==1 && hitT>=.55f);
     assert(peakY>kBallR+.12f);
     const float fly=std::hypot(c.ball.x-ballX0,c.ball.z-ballZ0);
