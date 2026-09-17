@@ -655,10 +655,113 @@ int main(int argc,char** argv){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
             assert(m.action!=Action::Kick);
+            assert(m.action!=Action::Jump);
+            assert(m.action!=Action::Gesture);
             assert(!inStrikeRange(m));
         }
         assert(p.control==ControlMode::Auton);
         assert(p.skill==AutonSkill::Approach);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        assert(m.action==Action::Kick);
+        assert(m.action!=Action::Jump);
+        assert(m.clipIndex==kPlayClipNone);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
+        const int ring=m.clipIndex;
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        assert(inLeapTrigger(p,m) || m.action==Action::Jump);
+        for(int i=0;i<30 && m.action!=Action::Jump;++i){
+            m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(m.action==Action::Jump);
+        assert(p.skill==AutonSkill::Leap);
+        assert(m.clipIndex==ring);
+        while(characterBusy(m)){
+            m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
+        stepIdlePilot(p,m,idle,kStep);
+        stepCharacter(m,idle,kStep);
+        assert(p.leapCooldown>0.f);
+        for(int i=0;i<int(kLeapCooldown/kStep)-2;++i){
+            m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            assert(m.action!=Action::Jump);
+        }
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=8.f;m.ball.z=8.f;
+        ArenaInput go{};go.valid=true;go.forward=1.f;
+        stepIdlePilot(p,m,go,kStep);
+        stepCharacter(m,go,kStep);
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        assert(m.action==Action::Gesture);
+        assert(p.skill==AutonSkill::Signal);
+        assert(m.clipIndex==kPlayClipNone);
+        assert(m.playGestureId==0 || m.playGestureId==1);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        ArenaView cam{};
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep,&cam,false);
+            stepCharacter(m,idle,kStep);
+        }
+        while(m.action==Action::Kick){
+            stepIdlePilot(p,m,idle,kStep,&cam,false);
+            stepCharacter(m,idle,kStep);
+        }
+        for(int i=0;i<int(kKickAttend/kStep)+2;++i){
+            stepIdlePilot(p,m,idle,kStep,&cam,false);
+            stepCharacter(m,idle,kStep);
+        }
+        m.ball.x=6.f;m.ball.z=6.f;m.ball.y=1.1f;m.ball.vy=-.4f;
+        m.ball.vx=2.5f;m.ball.vz=2.5f;m.ball.struck=true;
+        p.struckRecent=kStruckRecent;
+        p.operatorMemory=kOperatorMemory;
+        p.signalCooldown=0;
+        p.attendKickT=0;
+        stepIdlePilot(p,m,idle,kStep,&cam,false);
+        stepCharacter(m,idle,kStep);
+        assert(m.action==Action::Gesture);
+        assert(m.playGestureId==5);
+        assert(m.clipIndex==kPlayClipNone);
     }
 
     c={};resetCharacter(c);

@@ -437,6 +437,13 @@ bash tools/test_gundam_arena.sh [输出目录]
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
 
+### 2026-09-17 · Auton 第三刀（Leap + Signal）
+
+- **范围：** Auton 在 `inLeapTrigger` 时 `playJump()`（附近空中球、冷却 4s）；`operatorPresent` 时才 `playGesture`（进 Auton 打招呼 WAVE L/R，踢中且球仍快则 UP 2，冷却 12s）。注视相机仅 Signal。不上五维动机。
+- **代码：** `idle_pilot.h` 增加 Leap/Signal 与操作者记忆；`ArenaController` 把跟随相机和环视 cue 传进 `stepIdlePilot`。智能跳/手势不写 `clipStep`。
+- **已验证：** `bash tools/test_gundam_arena.sh`；地面球不跳、够踢不跳、附近下落球跳且圈不变、Land 后 4s 内不连跳、无操作者不挥手、先推杆再 Auton 挥手、踢中后 UP 2。
+- **未验证：** 五维动机、真机跳/挥手观感、烧录与设备 FPS。
+
 ### 2026-09-17 · Auton 第二刀（走到站位再踢）
 
 - **范围：** Auton 用固定优先级 Attend / Approach / Strike：球在地面则 `walkTo(kickStance)`，仅 `inStrikeRange` 时 `playKick()`。踢完强制看球 1.2s。回 Pilot 时清 `lookAt` 和 `walkTo`。不请 Jump、不做 Signal、不上五维动机。

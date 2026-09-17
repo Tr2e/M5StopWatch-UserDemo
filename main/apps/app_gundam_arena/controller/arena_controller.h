@@ -68,12 +68,13 @@ public:
             _lastDx=input.preview.dx;_lastDy=input.preview.dy;
             if(!input.preview.active)_lastDx=_lastDy=0;
         }else{in.forward=0;in.turn=0;}
+        const bool orbitCue=play && input.preview.changed && input.preview.active;
         const uint32_t elapsed=_last==0?16:std::min<uint32_t>(now-_last,80);
         _last=now;
         _accumulator+=elapsed*.001f;
         int steps=0;
         while(_accumulator>=kStep && steps<5){
-            stepIdlePilot(_idle,_character,in,kStep);
+            stepIdlePilot(_idle,_character,in,kStep,&_view,orbitCue);
             stepCharacter(_character,in,kStep);
             updateFollowView(_view,_character,kStep);
             in.clipStep=0;in.toggleMode=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
