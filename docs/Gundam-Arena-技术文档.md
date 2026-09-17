@@ -437,6 +437,13 @@ bash tools/test_gundam_arena.sh [输出目录]
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
 
+### 2026-09-17 · 动作层前置（M1–M5）
+
+- **范围：** 只补待机智能所需的动作层：独立播放入口、注视、寻路原语、踢球站位查询、`busy` 导出。不写 Auton / 动机层。不改 `ArenaController` 输入映射，玩家沙盒路径仍是 `clipStep` + 摇杆。
+- **代码：** `clipIndex` 只表示玩家 A/B 圈；`playKick` / `playJump` / `playGesture(id)` 不拨圈。`characterBusy()` 覆盖 Kick / Gesture / 蓄力跳 / 空中 / Land，与 `stepCharacter` 共用。`lookAt` 仅 Idle/Walk/Turn 叠头；Kick/Jump/手势/落地不叠；`None` 当帧回正。`kickStance` 按当前朝向反解出生点局部偏移 `(-0.42, 0.74)`；`inStrikeRange` 用站位距离 0.22，不用球方位角门闩。玩家 `clipStep` 踢球不加该门闩。`faceYaw` / `walkTo` 在无过死区摇杆且非 busy 时收成内部前进/转向；busy 不移根；玩家一推杆清寻路目标。
+- **已验证：** `bash tools/test_gundam_arena.sh`；`tools/gundam_arena_test.cpp` 含设计文档 §13.3 八条主机测试。现有 A/B 圈 `playSlot` 断言保持。
+- **未验证：** Auton / 动机选举、松杆 0.8s 交接、Leap 冷却、空中注视、真机动作层观感、烧录与设备 FPS。
+
 ### 2026-09-17 · 首版沙盒（`3983c53`）
 
 - **范围：** 新增 `app_gundam_arena`，共享输入增加 `ArenaPlay`，注册 Launcher App。

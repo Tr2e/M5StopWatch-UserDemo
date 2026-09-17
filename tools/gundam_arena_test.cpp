@@ -379,6 +379,138 @@ int main(int argc,char** argv){
         if(g==2 || g==5)assert(!(lh.x>-.08f && rh.x<.08f));
     }
 
+    {
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        playSlot(m,2);
+        assert(m.action==Action::Gesture && m.clipIndex==2);
+        playKick(m);
+        assert(m.action==Action::Kick && m.clipIndex==2);
+        for(int i=0;i<90;++i)stepCharacter(m,idle,kStep);
+        assert(m.action==Action::Idle && m.clipIndex==2);
+        idle.clipStep=1;stepCharacter(m,idle,kStep);idle.clipStep=0;
+        assert(m.action==Action::Gesture && m.clipIndex==3);
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        setLookAt(m,{3.f,1.7f,0.f});
+        stepCharacter(m,idle,kStep);
+        const float lookYaw=m.pose.anim[int(BoneId::Head)].yaw;
+        assert(lookYaw>0.05f && lookYaw*3.f>0.f);
+        clearLookAt(m);
+        stepCharacter(m,idle,kStep);
+        assert(std::abs(m.pose.anim[int(BoneId::Head)].yaw)<1e-4f);
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        ArenaInput go{};go.valid=true;go.forward=1.f;
+        setLookAt(m,{-4.f,1.7f,8.f});
+        for(int i=0;i<40;++i)stepCharacter(m,go,kStep);
+        assert(m.action==Action::Walk);
+        assert(m.pose.anim[int(BoneId::Head)].yaw<0.f);
+        assert(m.z>0.6f);
+        assert(std::abs(m.x)<0.12f);
+    }
+
+    {
+        CharacterModel kickA;resetCharacter(kickA);
+        CharacterModel kickB=kickA;
+        playKick(kickA);playKick(kickB);
+        setLookAt(kickB,{5.f,2.f,0.f});
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<12;++i){
+            stepCharacter(kickA,idle,kStep);
+            stepCharacter(kickB,idle,kStep);
+        }
+        assert(kickA.action==Action::Kick && kickB.action==Action::Kick);
+        assert(std::abs(kickA.pose.anim[int(BoneId::Head)].yaw-kickB.pose.anim[int(BoneId::Head)].yaw)<1e-5f);
+        assert(std::abs(kickA.pose.anim[int(BoneId::Head)].pitch-kickB.pose.anim[int(BoneId::Head)].pitch)<1e-5f);
+
+        CharacterModel jumpA;resetCharacter(jumpA);
+        CharacterModel jumpB=jumpA;
+        playJump(jumpA);playJump(jumpB);
+        setLookAt(jumpB,{5.f,2.f,0.f});
+        for(int i=0;i<8;++i){
+            stepCharacter(jumpA,idle,kStep);
+            stepCharacter(jumpB,idle,kStep);
+            assert(jumpA.grounded && jumpB.grounded);
+        }
+        assert(std::abs(jumpA.pose.anim[int(BoneId::Head)].yaw-jumpB.pose.anim[int(BoneId::Head)].yaw)<1e-5f);
+        assert(std::abs(jumpA.pose.anim[int(BoneId::Head)].pitch-jumpB.pose.anim[int(BoneId::Head)].pitch)<1e-5f);
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        assert(inStrikeRange(m));
+        ArenaInput idle{};idle.valid=true;
+        m.x=3.f;m.z=-1.5f;
+        const KickStance stance=kickStance(m);
+        const float startDist=std::sqrt((m.x-stance.x)*(m.x-stance.x)+(m.z-stance.z)*(m.z-stance.z));
+        assert(startDist>2.8f);
+        walkTo(m,stance.x,stance.z);
+        bool turnedFirst=false;
+        bool walkedAfterFace=false;
+        for(int i=0;i<360 && m.hasWalkTo;++i){
+            const float dx=stance.x-m.x,dz=stance.z-m.z;
+            const float want=std::atan2(dx,dz);
+            const float err=std::remainder(want-m.heading,2.f*kPi);
+            stepCharacter(m,idle,kStep);
+            if(std::abs(err)>kTurnThenWalk){
+                assert(std::abs(m.forwardSpeed)<1e-4f);
+                turnedFirst=true;
+            }else if(m.hasWalkTo)walkedAfterFace=true;
+        }
+        assert(turnedFirst && walkedAfterFace);
+        assert(!m.hasWalkTo);
+        assert(m.action==Action::Idle);
+        const float endDist=std::sqrt((m.x-stance.x)*(m.x-stance.x)+(m.z-stance.z)*(m.z-stance.z));
+        assert(endDist<kWalkArrive);
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=0.f;m.ball.z=-3.f;
+        ArenaInput idle{};idle.valid=true;
+        const KickStance stance=kickStance(m);
+        walkTo(m,stance.x,stance.z);
+        for(int i=0;i<360 && m.hasWalkTo;++i){
+            if(std::abs(m.heading)<0.50f)assert(std::abs(m.x)<0.08f);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(!m.hasWalkTo);
+        const float endDist=std::sqrt((m.x-stance.x)*(m.x-stance.x)+(m.z-stance.z)*(m.z-stance.z));
+        assert(endDist<kWalkArrive);
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        playKick(m);
+        const float x0=m.x,z0=m.z,h0=m.heading;
+        walkTo(m,4.f,4.f);
+        assert(characterBusy(m));
+        for(int i=0;i<20;++i){
+            stepCharacter(m,idle,kStep);
+            assert(m.action==Action::Kick);
+            assert(std::abs(m.x-x0)<1e-5f && std::abs(m.z-z0)<1e-5f);
+            assert(std::abs(std::remainder(m.heading-h0,2.f*kPi))<1e-5f);
+        }
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=8.f;m.ball.z=8.f;
+        assert(!inStrikeRange(m));
+        ArenaInput kick{};kick.valid=true;kick.clipStep=1;
+        stepCharacter(m,kick,kStep);
+        assert(m.action==Action::Kick);
+        assert(m.clipIndex==0);
+        assert(!inStrikeRange(m));
+    }
+
     c={};resetCharacter(c);
     c.mode=Mode::Pose;c.selected=BoneId::Head;
     in={};in.poseYaw=.5f;stepCharacter(c,in,kStep);

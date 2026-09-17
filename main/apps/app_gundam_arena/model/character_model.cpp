@@ -6,7 +6,10 @@
 
 namespace gundam_arena {
 namespace {
+constexpr float kLookNeckShare=.25f;
+
 float clampf(float v,float lo,float hi){return v<lo?lo:v>hi?hi:v;}
+float wrapPi(float a){return std::remainder(a,2.f*kPi);}
 
 void twoBonePitch(float hipX,float hipY,float targetX,float targetY,float l1,float l2,
                   float& thighPitch,float& shinPitch){
@@ -224,12 +227,7 @@ void applyKick(CharacterModel& c,float dt){
 }
 
 void applyGesture(CharacterModel& c,float dt){
-    const int g=c.clipIndex-2;
-    if(g<0||g>=kGestureCount){
-        c.action=Action::Idle;
-        c.clipT=0;
-        return;
-    }
+    const int g=std::clamp(c.playGestureId,0,kGestureCount-1);
     sampleClip(c,kGestureJoints+kGestureOffset[g],kGestureFrames[g],kGestureFps);
     if(advanceClip(c,dt,kGestureFrames[g],kGestureFps)){
         c.action=Action::Idle;
@@ -244,21 +242,11 @@ int nextPlayClip(int index,int step){
     return (index+(step>0?1:n-1))%n;
 }
 
-void startPlayClip(CharacterModel& c,int slot){
+void beginRingClip(CharacterModel& c,int slot){
     c.clipIndex=slot;
-    c.clipT=0;
-    c.walkPhase=0;
-    c.leftPlanted=c.rightPlanted=false;
-    if(slot==0){
-        c.action=Action::Kick;
-        c.ball.struck=false;
-        c.kickToeHad=false;
-    }else if(slot==1){
-        c.action=Action::Jump;
-        c.vy=0;
-        c.grounded=true;
-        c.y=0;
-    }else c.action=Action::Gesture;
+    if(slot==0)playKick(c);
+    else if(slot==1)playJump(c);
+    else playGesture(c,slot-2);
 }
 
 Point closestOnSeg(Point a,Point b,Point p){
@@ -330,6 +318,52 @@ void applyTurnFollow(CharacterModel& c){
     c.pose.anim[int(BoneId::Chest)].yaw=yaw;
     c.pose.anim[int(BoneId::Head)].yaw=clampf(yaw*1.15f,-.87f,.87f);
 }
+
+void applyLookAt(CharacterModel& c){
+    if(!c.lookEnabled)return;
+    if(c.action!=Action::Idle && c.action!=Action::Walk && c.action!=Action::Turn)return;
+    auto& sk=collisionSkeleton();
+    evaluateSkeleton(sk,c.pose);
+    const Point head=sk.world[int(BoneId::Head)].t;
+    const float dx=c.lookX-head.x,dy=c.lookY-head.y,dz=c.lookZ-head.z;
+    const float cy=std::cos(c.heading),sy=std::sin(c.heading);
+    const float localX=dx*cy+dz*(-sy);
+    const float localZ=dx*sy+dz*cy;
+    const float horiz=std::sqrt(localX*localX+localZ*localZ);
+    if(horiz<.02f && std::fabs(dy)<.02f)return;
+    const JointLimit headL=limitOf(BoneId::Head);
+    const JointLimit neckL=limitOf(BoneId::Neck);
+    const float yaw=clampf(std::atan2(localX,localZ),headL.yawMin,headL.yawMax);
+    const float pitch=clampf(std::atan2(-dy,std::max(horiz,.001f)),headL.pitchMin,headL.pitchMax);
+    c.pose.anim[int(BoneId::Head)].yaw=yaw;
+    c.pose.anim[int(BoneId::Head)].pitch=pitch;
+    c.pose.anim[int(BoneId::Neck)].yaw=clampf(yaw*kLookNeckShare,neckL.yawMin,neckL.yawMax);
+}
+
+void seekAxes(CharacterModel& c,float& forward,float& turn){
+    float targetYaw=c.heading;
+    if(c.hasWalkTo){
+        const float dx=c.walkToX-c.x,dz=c.walkToZ-c.z;
+        const float dist=std::sqrt(dx*dx+dz*dz);
+        if(dist<kWalkArrive){
+            clearSeek(c);
+            forward=0;
+            turn=0;
+            return;
+        }
+        targetYaw=std::atan2(dx,dz);
+    }else if(c.hasFaceYaw)targetYaw=c.faceYaw;
+    else return;
+    const float err=wrapPi(targetYaw-c.heading);
+    if(c.hasFaceYaw && !c.hasWalkTo && std::fabs(err)<kFaceArrive){
+        clearSeek(c);
+        forward=0;
+        turn=0;
+        return;
+    }
+    turn=clampf(err/.60f,-1.f,1.f);
+    forward=(c.hasWalkTo && std::fabs(err)<kTurnThenWalk)?1.f:0.f;
+}
 }
 
 void resetCharacter(CharacterModel& c){
@@ -340,6 +374,87 @@ void resetCharacter(CharacterModel& c){
 }
 
 Point boneWorld(const Skeleton& sk,BoneId bone){return sk.world[int(bone)].t;}
+
+void playKick(CharacterModel& c){
+    c.clipT=0;
+    c.walkPhase=0;
+    c.leftPlanted=c.rightPlanted=false;
+    c.action=Action::Kick;
+    c.ball.struck=false;
+    c.kickToeHad=false;
+}
+
+void playJump(CharacterModel& c){
+    c.clipT=0;
+    c.walkPhase=0;
+    c.leftPlanted=c.rightPlanted=false;
+    c.action=Action::Jump;
+    c.vy=0;
+    c.grounded=true;
+    c.y=0;
+}
+
+void playGesture(CharacterModel& c,int id){
+    c.playGestureId=std::clamp(id,0,kGestureCount-1);
+    c.clipT=0;
+    c.walkPhase=0;
+    c.leftPlanted=c.rightPlanted=false;
+    c.action=Action::Gesture;
+}
+
+bool characterBusy(const CharacterModel& c){
+    if(!c.grounded)return true;
+    if(c.action==Action::Kick || c.action==Action::Gesture || c.action==Action::Land)
+        return true;
+    if(c.action==Action::Jump)return true;
+    return false;
+}
+
+void setLookAt(CharacterModel& c,Point world){
+    c.lookEnabled=true;
+    c.lookX=world.x;
+    c.lookY=world.y;
+    c.lookZ=world.z;
+}
+
+void clearLookAt(CharacterModel& c){ c.lookEnabled=false; }
+
+void faceYaw(CharacterModel& c,float yaw){
+    c.hasFaceYaw=true;
+    c.faceYaw=yaw;
+    c.hasWalkTo=false;
+}
+
+void walkTo(CharacterModel& c,float x,float z){
+    c.hasWalkTo=true;
+    c.walkToX=std::clamp(x,-kArenaHalfExtent,kArenaHalfExtent);
+    c.walkToZ=std::clamp(z,-kArenaHalfExtent,kArenaHalfExtent);
+    c.hasFaceYaw=false;
+}
+
+void clearSeek(CharacterModel& c){
+    c.hasWalkTo=false;
+    c.hasFaceYaw=false;
+}
+
+KickStance kickStance(const CharacterModel& c){
+    const float h=c.heading;
+    const float ox=kBallSpawnX,oz=kBallSpawnZ;
+    const float exX=std::cos(h),exZ=-std::sin(h);
+    const float ezX=std::sin(h),ezZ=std::cos(h);
+    KickStance s{};
+    s.x=std::clamp(c.ball.x-ox*exX-oz*ezX,-kArenaHalfExtent,kArenaHalfExtent);
+    s.z=std::clamp(c.ball.z-ox*exZ-oz*ezZ,-kArenaHalfExtent,kArenaHalfExtent);
+    return s;
+}
+
+bool inStrikeRange(const CharacterModel& c){
+    if(characterBusy(c))return false;
+    if(c.ball.y>kBallR+.04f)return false;
+    const KickStance s=kickStance(c);
+    const float dx=c.x-s.x,dz=c.z-s.z;
+    return dx*dx+dz*dz<kStrikePosTol*kStrikePosTol;
+}
 
 void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     if(in.toggleMode){
@@ -359,16 +474,21 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
         return;
     }
 
-    const bool coiled=c.action==Action::Jump&&c.grounded;
-    const bool clipHold=c.action==Action::Land||c.action==Action::Kick||c.action==Action::Gesture||coiled;
+    const bool clipHold=characterBusy(c);
     if(c.action==Action::Land){
         c.landT-=dt;if(c.landT<=0)c.action=Action::Idle;
     }
 
-    const float forward=in.valid?clampf(in.forward,-1.f,1.f):0.f;
-    const float turn=in.valid?clampf(in.turn,-1.f,1.f):0.f;
+    const float stickF=in.valid?clampf(in.forward,-1.f,1.f):0.f;
+    const float stickT=in.valid?clampf(in.turn,-1.f,1.f):0.f;
+    const bool playerStick=std::fabs(stickF)>kStickDeadzone || std::fabs(stickT)>kStickDeadzone;
+    if(playerStick)clearSeek(c);
+    float forward=stickF,turn=stickT;
+    if(!playerStick && !characterBusy(c) && (c.hasWalkTo || c.hasFaceYaw))
+        seekAxes(c,forward,turn);
+
     if(c.grounded && in.clipStep){
-        startPlayClip(c,nextPlayClip(c.clipIndex,in.clipStep));
+        beginRingClip(c,nextPlayClip(c.clipIndex,in.clipStep));
     }else if(!clipHold && c.grounded){
         if(std::abs(forward)>.18f)c.action=Action::Walk;
         else if(std::abs(turn)>.18f)c.action=Action::Turn;
@@ -407,6 +527,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     }else if(c.action==Action::Land)applyLandPose(c);
     else applyIdleIk(c);
     if(c.action!=Action::Kick && c.action!=Action::Gesture)applyTurnFollow(c);
+    applyLookAt(c);
     c.pose.anim[int(BoneId::Head)].yaw=clampf(c.pose.anim[int(BoneId::Head)].yaw,-.87f,.87f);
     stepBall(c,dt);
 }

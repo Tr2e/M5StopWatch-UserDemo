@@ -15,6 +15,11 @@ inline constexpr float kFootToeY=-.18f,kFootToeZ=.20f;
 inline constexpr float kBallSpawnX=-.42f,kBallSpawnZ=.74f;
 inline constexpr int kPlayClipCount=8;
 inline constexpr int kPlayClipNone=8;
+inline constexpr float kStrikePosTol=.22f;
+inline constexpr float kWalkArrive=kStrikePosTol;
+inline constexpr float kFaceArrive=.20f;
+inline constexpr float kTurnThenWalk=.80f;
+inline constexpr float kStickDeadzone=.18f;
 
 inline const char* playClipHud(int index){
     static constexpr const char* names[]={
@@ -38,6 +43,10 @@ struct ArenaBall {
     bool struck=false;
 };
 
+struct KickStance {
+    float x=0,z=0;
+};
+
 struct CharacterModel {
     Mode mode=Mode::Play;
     Action action=Action::Idle;
@@ -46,6 +55,7 @@ struct CharacterModel {
     bool grounded=true;
     float walkPhase=0,landT=0,clipT=0;
     int clipIndex=kPlayClipNone;
+    int playGestureId=0;
     bool leftPlanted=false,rightPlanted=false;
     float leftPlantX=0,leftPlantZ=0,rightPlantX=0,rightPlantZ=0;
     BoneId selected=BoneId::Head;
@@ -53,10 +63,28 @@ struct CharacterModel {
     ArenaBall ball{};
     Point kickToe{};
     bool kickToeHad=false;
+    bool lookEnabled=false;
+    float lookX=0,lookY=0,lookZ=0;
+    bool hasWalkTo=false;
+    float walkToX=0,walkToZ=0;
+    bool hasFaceYaw=false;
+    float faceYaw=0;
     uint32_t meshBuilds=0;
 };
 
 void resetCharacter(CharacterModel& c);
 void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt);
 Point boneWorld(const Skeleton& sk,BoneId bone);
+
+void playKick(CharacterModel& c);
+void playJump(CharacterModel& c);
+void playGesture(CharacterModel& c,int id);
+bool characterBusy(const CharacterModel& c);
+void setLookAt(CharacterModel& c,Point world);
+void clearLookAt(CharacterModel& c);
+void faceYaw(CharacterModel& c,float yaw);
+void walkTo(CharacterModel& c,float x,float z);
+void clearSeek(CharacterModel& c);
+KickStance kickStance(const CharacterModel& c);
+bool inStrikeRange(const CharacterModel& c);
 } // namespace gundam_arena
