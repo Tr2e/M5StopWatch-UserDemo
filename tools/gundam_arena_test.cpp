@@ -764,6 +764,87 @@ int main(int argc,char** argv){
         assert(m.clipIndex==kPlayClipNone);
     }
 
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        p.play=1.f;p.curiosity=1.f;p.vigilance=1.f;p.social=1.f;
+        m.ball.x=8.f;m.ball.z=8.f;
+        SkillScores s=scoreAutonSkills(p,m);
+        assert(s[AutonSkill::Strike]<=.02f);
+        assert(s[AutonSkill::Leap]<=.02f);
+        assert(s[AutonSkill::Signal]<=.02f);
+        p.operatorMemory=kOperatorMemory;
+        s=scoreAutonSkills(p,m);
+        assert(s[AutonSkill::Signal]>.05f);
+        resetCharacter(m);
+        p.operatorMemory=0;
+        s=scoreAutonSkills(p,m);
+        assert(s[AutonSkill::Strike]>.50f);
+        assert(s[AutonSkill::Leap]<=.02f);
+        m.ball.x=.20f;m.ball.z=.20f;m.ball.y=.80f;m.ball.vy=-1.2f;
+        s=scoreAutonSkills(p,m);
+        assert(s[AutonSkill::Strike]<=.02f);
+        assert(s[AutonSkill::Leap]>.50f);
+        p.leapCooldown=kLeapCooldown;
+        s=scoreAutonSkills(p,m);
+        assert(s[AutonSkill::Leap]<=.02f);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=.80f;m.ball.vy=0.f;
+        ArenaInput idle{};idle.valid=true;
+        bool sawFace=false;
+        for(int i=0;i<180;++i){
+            m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=.80f;m.ball.vy=0.f;
+            m.ball.vx=m.ball.vz=0.f;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            if(p.skill==AutonSkill::Face && m.hasFaceYaw)sawFace=true;
+            assert(m.action!=Action::Kick);
+            assert(m.action!=Action::Jump);
+        }
+        assert(p.control==ControlMode::Auton);
+        assert(sawFace);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(m.action==Action::Kick);
+        while(m.action==Action::Kick){
+            m.ball.x=kBallSpawnX;m.ball.z=kBallSpawnZ;m.ball.y=kBallR;
+            m.ball.vx=m.ball.vy=m.ball.vz=0;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        for(int i=0;i<int(kKickAttend/kStep)+2;++i){
+            m.ball.x=kBallSpawnX;m.ball.z=kBallSpawnZ;m.ball.y=kBallR;
+            m.ball.vx=m.ball.vy=m.ball.vz=0;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        p.attendKickT=0;
+        p.skillAge=kAttendMin;
+        p.lastStrikeRecent=kDoubleStrikeWindow;
+        p.playInhibit=kDoubleStrikeInhibit;
+        p.playCap=kDoubleStrikeCap;
+        p.play=kDoubleStrikeCap;
+        for(int i=0;i<int(kDoubleStrikeInhibit/kStep)-2;++i){
+            m.ball.x=kBallSpawnX;m.ball.z=kBallSpawnZ;m.ball.y=kBallR;
+            m.ball.vx=m.ball.vy=m.ball.vz=0;
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            assert(m.action!=Action::Kick);
+        }
+    }
+
     c={};resetCharacter(c);
     c.mode=Mode::Pose;c.selected=BoneId::Head;
     in={};in.poseYaw=.5f;stepCharacter(c,in,kStep);

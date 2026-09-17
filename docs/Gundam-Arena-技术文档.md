@@ -437,6 +437,13 @@ bash tools/test_gundam_arena.sh [输出目录]
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
 
+### 2026-09-17 · Auton 第四刀（五维动机）
+
+- **范围：** Auton 用 vigilance / curiosity / play / social / composure 打分选举 Hold / Attend / Face / Approach / Strike / Leap / Signal。侧抑制与最短时间迟滞按设计 §5。`inStrikeRange` / `inLeapTrigger` / `operatorPresent` 仍是硬门闩。Kick 结束后强制 Attend 1.2s；Signal 结束后进 Hold。
+- **代码：** `idle_pilot.h` 的 `updateDrives` / `scoreAutonSkills` / `electSkill`；Face 走已有 `faceYaw`。不改 `ArenaController`，不改玩家圈。
+- **已验证：** `bash tools/test_gundam_arena.sh`；Strike/Leap/Signal 分为 0 时不请对应马达；身后球先 Face；两次 Strike 后短时间不连踢；第三刀门闩用例仍过。
+- **未验证：** 真机五维观感、烧录与设备 FPS。
+
 ### 2026-09-17 · Auton 第三刀（Leap + Signal）
 
 - **范围：** Auton 在 `inLeapTrigger` 时 `playJump()`（附近空中球、冷却 4s）；`operatorPresent` 时才 `playGesture`（进 Auton 打招呼 WAVE L/R，踢中且球仍快则 UP 2，冷却 12s）。注视相机仅 Signal。不上五维动机。
