@@ -2,9 +2,9 @@
 
 > 本文是 Gundam Arena 的**持续技术记录**。项目简介、当前实现、技术细节、验证边界和后续迭代都写在这里，不另开平行主文档。
 >
-> 当前代码基线：`feat/gundam-arena` @ `3983c53`（2026-09-17）。相对 `feat/gundam-museum` 仅此一个提交。
+> 当前代码基线：`feat/gundam-arena` @ `043f882`（文档提交；功能提交仍为 `3983c53`，2026-09-17）。
 >
-> 本文记录代码事实与主机测试承诺；**不代表真机外观验收、设备帧率或外设故障场景已经完成。**
+> 用户已于 2026-09-17 完成真机验收。本文仍不虚构固件哈希、设备帧率或外设故障矩阵。
 
 ---
 
@@ -32,11 +32,13 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 
 ## 2. 当前状态
 
+用户已于 **2026-09-17 完成真机验收**。代码与 `3983c53` 沙盒一致，仓库未补烧录证据。
+
 已实现、可在主机测试验证：
 
 - 独立 App 注册，进入后停 LVGL、直绘或画布回读
 - 19 骨骨架、绑定网格、每帧蒙皮求值
-- Play：走、转、跳、落地；支撑脚钉地 IK、对侧摆臂
+- Play：走、转、跳、落地、原地踢球；支撑脚钉地 IK、对侧摆臂
 - Pose：循环选关节、拖动欧拉角、单关节复位、角度限位
 - 第三人称跟随相机；Play 模式触屏上半区环视
 - 触屏虚拟摇杆 + 机身键 + 可选 Joystick2 / Dual Button
@@ -44,7 +46,7 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 
 明确未做：
 
-- 真机烧录记录、设备 FPS、用户视觉验收
+- 固件哈希、烧录日志、设备 FPS 数值（用户已完成真机验收，但这些测量未写入仓库）
 - 武器、碰撞体、AI、对战、音效、独立图标
 - 与博物馆 `buildRx78()` 网格的运行时共用（Arena 有一份绑定版生成器）
 - 完整外设故障矩阵（总线超时、电源失败、长期重入）的 Arena 专项验收
@@ -64,7 +66,8 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 | Idle | 前进/转向死区 ≤0.18，且着地 | 双脚放下，相位清零 |
 | Walk | 前进轴 \|f\| > 0.18 | 速度 2.0，相位随位移前进 |
 | Turn | 几乎不前进但在转向 | 原地踏步，步幅系数 ±0.35 |
-| Jump | 确认键且着地 | 起跳速度 6.2，重力 18 |
+| Jump | B 短按且着地 | 起跳速度 6.2，重力 18 |
+| Kick | A 短按且着地 | 收腿再前踢（约 1.47s），期间不走不跳；脚向前碰到球才给速度 |
 | Fall | 空中且 `vy≤0` | 收腿姿势略放松 |
 | Land | 落地后 0.10s | 屈膝缓冲，期间不响应新走/跳 |
 
@@ -89,8 +92,9 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 | 前进/后退 | 下半区，`viewAxis=(363-y)/90` | — | 摇杆 Y → `viewAxis` |
 | 转向 | 下半区，`steer=(x-234)/140` | — | 摇杆 X → `steer`，控制器再取负 |
 | 环视（仅 Play） | 上半区拖，灵敏度 0.012 / 0.008 | — | 预览拖动手势 |
-| 跳 / 复位关节 | — | B 短按 = confirm | Dual Button B 短按 |
-| 切 Play/Pose | — | B 长按 = pause | Dual Button B 长按 |
+| 踢球 | — | **A 短按** = `cancelPressed` | Dual Button 红键短按 |
+| 跳 / 复位关节 | — | **B 短按** = `confirmPressed`（Play=跳；Pose=复位关节） | Dual Button 蓝键短按 |
+| 切 Play/Pose | — | **B 长按** = pause | Dual Button 红键长按 |
 | 选关节 | 左右箭头 `previous`/`next` | — | Pose 时水平导航步进 |
 | 退出 App | — | A+B 和弦 | 外设退出和弦 |
 | 回 Launcher | 机身 Home（`KeyManager::GoHome`） | 同左 | — |
@@ -229,9 +233,28 @@ Root
 
 ### 6.3 跳跃姿势
 
-上升收腿更紧（小腿 tuck 0.55），下落 0.20；双臂后摆。落地屈膝约 0.16–0.20 / 0.50–0.55。
+跳跃**没有**接入 mocap。Bandai Motiondataset-1 没有 jump 文件。B 短按仍是原来的程序姿势：根骨抛起，上升收腿更紧（小腿 tuck 0.55），下落 0.20；双臂后摆。落地屈膝约 0.16–0.20 / 0.50–0.55。真机观感会与接入踢球 clip 之前几乎相同。
 
-### 6.4 相机
+### 6.4 踢球 clip
+
+走路仍用 §6.1 的程序 IK（无限循环、钉地）。踢球不走强化学习。离线把 Bandai `dataset-1_kick_normal_001.bvh` 第一条踢的**前摆**（第 48–62 帧）重定向到 19 骨，前面接收腿蓄力、后面收到 Idle，**丢掉源数据踢完后的后收**。烘焙时四肢 L/R 对调到 `-X` / `LThigh`；矢状面用 `-footZ`，让 BVH 前踢对上 Arena `+Z`。
+
+设备上只播 `arena_kick_clip.h`：`kKickFrames=44`，按 `clipT * 30` 在相邻帧间线性插值。顺序是收腿 → 前摆踢球 → 收回站立。Kick 期间 Root 位移/朝向锁住。机身 **A 短按**进入踢球。切 Pose 会取消 clip。
+
+开局在机体 `-X` 前方（`kBallSpawnX=-0.42, kBallSpawnZ=0.74`）放一个半径 `0.16` 的小球。每帧用 `LFoot` 踝→趾胶囊扫掠相交，且脚须向前摆（相对朝向速度 > 1.5）才给一次冲量，避免收腿阶段误碰。球画进机体同一套光栅/深度，按透视遮挡，不再是屏幕 overlay。Pose 模式也继续积球。不重建网格。
+
+走路默认仍是 §6.1 程序 IK。Bandai walk 只烤成 `tools/arena_motion/arena_walk_clip.h` 作对照，不在设备上播放。
+
+重定向规则见 §13。生成命令：
+
+```bash
+python3 tools/arena_motion/fetch_bandai.py
+python3 tools/arena_motion/retarget_bandai.py
+```
+
+BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行前要另选数据或取得授权。
+
+### 6.5 相机
 
 ```
 look 以 7 的指数平滑跟机体 (x, 0.35y+1.18, z)
@@ -248,13 +271,13 @@ Play 光栅比例 70%，Pose 100%。70% 时主机测量机体在圆形取景中�
 
 路径与博物馆/赛车相同：CPU 软件光栅，RGB565，无纹理 PBR、无实时阴影。
 
-1. 清屏黑底 `0x0000`
+1. 清屏暗石板底 `0x298A`（约 `#293152`，不是纯黑）
 2. 画 32 分割地面网格，半边长 20；近平面 0.20 裁线后投影
 3. `evaluateSkeleton(pose)`
 4. 按骨骼变换后的法线做背面剔除（阈值 −0.035）；双面面不剔
 5. 两遍提交：背面 pass 0，正面 pass 1（减轻逆深度边缘翻面）
 6. `MuseumProjectionCache` 按「同位置 + 同骨骼」共享顶点；近平面失败则回退逐顶点 `prepareCarPanel`
-7. `CarSurfaceRaster<424,424>` 开 `setSolidFastPath(true)`，再 `blitScaled` 到 `( (W-424)/2 , 21 , 424, 424 )`
+7. `CarSurfaceRaster<424,424>` 开 `setSolidFastPath(true)`；黄球用同一套相机做成朝向镜头的圆盘写入深度缓冲，再 `blitScaled` 到 `( (W-424)/2 , 21 , 424, 424 )`
 8. 叠 HUD 字
 
 Arena 地面是平面网格，不是博物馆的 8³ 线框盒。空间相机焦距 `88*7`，主点在画布中心偏上（`top + side/2`）。机体投影另用光栅主点在 70%/100% 缓冲中心，并用 `w/h` 校正横纵比。
@@ -299,10 +322,11 @@ Arena 地面是平面网格，不是博物馆的 8³ 线框盒。空间相机焦
 main/apps/app_gundam_arena/
   app_gundam_arena.{h,cpp}           App 生命周期、供电、帧循环
   controller/arena_controller.h      输入翻译、固定步进、相机跟随
-  model/character_model.{h,cpp}      模式/动作状态机、走路 IK
+  model/character_model.{h,cpp}      模式/动作状态机、走路 IK、Kick clip 播放
   model/rx78_bones.h                 骨、限位、仿射、姿态类型
   model/rx78_skeleton.cpp            绑定、FK、网格局部化
   model/rx78_rigged.cpp              素体网格 + 骨标签
+  model/arena_kick_clip.h            Bandai kick 离线烘焙（生成文件）
   view/arena_space.h                 相机、地面网格
   view/arena_renderer.{h,cpp}        剔除、投影、光栅、HUD
 
@@ -317,6 +341,7 @@ main/apps/app_gundam_arena/
   tools/gundam_arena_test.cpp
   tools/test_gundam_arena.sh
   tools/lets_and_go_device_control_test.cpp   Arena 触区回归
+  tools/arena_motion/                    Bandai 拉取与 22→19 重定向
 ```
 
 复用但未改实现：博物馆 `rx78.h` 网格类型、`sd_eye_socket`、`museum_projection_cache`、`museum_layout`、`museum_space::clipLine`；赛车 `CarSurfaceRaster`、`HardwareRacerInputProvider`、`DeviceControlSource`、`DisplayFrameScope`。
@@ -335,13 +360,14 @@ bash tools/test_gundam_arena.sh [输出目录]
 
 断言包括：绑定网格完整、转头不掉胸、屈肘带动手、Idle 脚接近地面、前进/后退/转向/跳跃、20 步对侧摆臂与支撑钉地、Pose 限位、网格不重建、空闲占比、触屏分区、外设合并、右转使 heading 减小、俯视下限能看到地面。
 
-输出 PPM（生产 renderer，不是设备截屏）：`arena-idle.ppm`、`arena-head.ppm`、`arena-walk.ppm`、`arena-turn.ppm`、`arena-far.ppm`、`arena-jump.ppm`、`arena-lookup.ppm`。
+输出 PPM（生产 renderer，不是设备截屏）：`arena-idle.ppm`、`arena-head.ppm`、`arena-walk.ppm`、`arena-turn.ppm`、`arena-far.ppm`、`arena-jump.ppm`、`arena-kick.ppm`、`arena-lookup.ppm`。
 
 共享触控回归：`tools/lets_and_go_device_control_test.cpp` 在 `ArenaPlay` 下检查前进轴、转向、松手回中、环视不抢移动、左右箭头仍在；并确认 Racing 不会漏进 Arena 的前进轴。
 
 ### 10.2 目标构建与真机
 
-本基线提交**没有**写入固件哈希、烧录日志或设备帧率。需要真机时按仓库常规 `idf.py build` / `idf.py flash`，验收不得用主机 PPM 或测试通过代替。
+- **2026-09-17：** 用户完成真机验收。本条是用户口头确认，仓库里仍没有固件哈希、烧录日志、设备帧率或操作录像。
+- 主机 PPM / 单元测试不能替代上述设备证据。若后续要归档，补 `firmware.json`、flash 日志和帧率即可。
 
 外设路径遵循 [外设输入接入与故障排查规范](外设输入接入与故障排查规范.md)。Arena 已做供电、独立采样任务、失联中性轴、退出和弦和切模式 present，但规范里的总线超时注入、电源失败清理、长期重入等 **Arena 尚未单独记为完成**。
 
@@ -362,6 +388,7 @@ bash tools/test_gundam_arena.sh [输出目录]
 - 无武器、无手持约束、无足部全 6DoF
 - 转向不带动相机，容易出现「侧面跟着走」
 - Pose 与 Play 的动画姿态不混叠，切换会立刻清零走路 IK
+- 踢球是原地 clip，有一颗深度测试小球；没有篮球尺寸、没有手持约束
 - 没有独立 Launcher 图标
 - `rx78_assembly.h` 悬空包含
 - 未做 Arena 专属视觉制作卡；机体外形若要按官方板件精修，应另开节点，并说明与博物馆网格是否继续分叉
@@ -377,5 +404,148 @@ bash tools/test_gundam_arena.sh [输出目录]
 - **范围：** 新增 `app_gundam_arena`，共享输入增加 `ArenaPlay`，注册 Launcher App。
 - **代码：** 绑定 RX-78 素体、Play/Pose、跟随相机、触屏分区、可选 Grove 手柄、主机测试与 PPM。
 - **已验证：** `tools/gundam_arena_test.cpp` 与 device control 中的 Arena 用例（以该提交所含测试为准）。本轮文档撰写未重新跑测试。
-- **未验证：** 目标构建、烧录、真机操作、外设故障、用户外观验收、设备帧率。
+- **未验证（当时）：** 目标构建、烧录、真机操作、外设故障、用户外观验收、设备帧率。
 - **文档：** 建立本文，并在根 README 加入项目简介入口。
+
+### 2026-09-17 · 真机验收（用户确认）
+
+- **范围：** 用户完成 Arena 真机验收。代码未改。
+- **已验证：** 用户在设备上验收通过。具体操作项、外观评语、帧率未另述，本文不补写。
+- **未验证 / 未入库：** 固件哈希、烧录日志、设备 FPS、外设故障矩阵。
+- **后续调研：** 对照 Pollen Robotics Microduck 的可获取运动数据（静态关节关键帧、官方 ONNX 策略、第三方仿真轨迹）。清单见对话记录，尚未接入 Arena。鸭子 14 舵机数据不匹配 19 骨，未采用。
+
+### 2026-09-17 · Bandai 22 骨重定向与原地踢球
+
+- **范围：** 选定 Bandai-Namco-Research-Motiondataset-1；离线 22→19 重定向；Play 增加 `Action::Kick`。
+- **代码：** `tools/arena_motion/` 拉取/转换脚本；生成 `arena_kick_clip.h`；`stepCharacter` 在 Idle+confirm 播 clip，走/转+confirm 仍跳；HUD 显示 `KICK`；主机测试增加踢球峰值、走中起跳、`arena-kick.ppm`。
+- **已验证：** 实际 BVH 层级为 22 节点（`joint_Root`…`Toes_R`）；转换器自检该层级；`retarget_bandai.py` 右大腿峰值 pitch 顶到限位 0.90，限位命中 3/738；`bash tools/test_gundam_arena.sh` 通过（`gundam_arena ok`，含 Kick 峰值、走中起跳、`arena-kick.ppm`）。
+- **未验证：** 真机踢球观感、用户外观验收、walk clip 替换 IK、目标构建/烧录。
+
+### 2026-09-17 · 机身 A/B 映射与小球
+
+- **范围：** P5 小球；StopWatch 机身键可触发踢球/跳跃，不依赖 Joystick2 / Dual Button。
+- **代码：** ArenaPlay 下 A 短按=`cancelPressed`→Kick，B 短按=`confirmPressed`→Jump，B 长按仍切 Pose；数字键在 `valid=false` 时仍生效。机体右前方 overlay 小球，踢中给一次前上冲量。HUD 待机显示 `A KICK  B JUMP`。
+- **已验证：** `bash tools/test_gundam_arena.sh` 通过；device_control 测试确认 Arena 下 A 短按=`cancelPressed`、B 短按=`confirmPressed`。
+- **未验证：** 真机 A/B 手感、球与脚的遮挡精度。
+
+### 2026-09-17 · P5 两轮自检与 P6 walk 对照
+
+- **P5 第1轮：** Pose 会冻球；冲量只沿朝向飞向默认相机；接触锥不用右脚；深度裁剪会把待机球裁掉。
+- **P5 修复：** Pose 也 `stepBall`；接触相对右脚；冲量沿球相对骨盆方向；待机球在右前方；overlay 不再按骨盆深度裁掉。
+- **P5 第2轮：** 击中一次、身后不中、落地回半径、Pose 中球继续飞、idle/kick PPM 有橙色像素、occupancy 仍 0.45–0.55。`gundam_arena ok`。
+- **P6：** `arena_walk_clip.h`（60 帧）只给主机对照，固件 `Walk` 仍用 `walkPhase` IK。转换器 walk 限位命中 0/1080。
+- **未验证：** P7 真机。
+
+### 2026-09-17 · 烧录查看（P7 写入）
+
+- **范围：** 用户要求烧录当前 Arena 踢球/小球固件。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3e3d90` B（约 4,078,992），余量 21%。esptool `Hash of data verified`，RTS 重启。
+- **启动：** PSRAM test OK，ELF SHA256 `3cb1c6bc9…`，`Sep 17 2026 11:05:49`，进入 Launcher。串口已释放。
+- **未验证：** 用户踢球观感、A/B 手感、设备 FPS。
+
+### 2026-09-17 · P7 真机：抬脚与球不同侧；跳跃无 mocap
+
+- **现象：** 球在画面右脚前，clip 抬的是另一只脚。跳跃观感与接入踢球前相同。
+- **原因：** 球在 Arena `-X`（`LThigh`），烘焙把 BVH 右腿写到 `RThigh`。跳跃从未接 clip；Bandai 集 1 没有 jump 文件，`applyJumpPose` 仍是程序收腿。
+- **修正：** `retarget_bandai.py` 烘焙后对调四肢 L/R，踢腿落到 `LThigh`；主机断言改为左大腿峰值更高。跳跃仍不改。
+- **已验证：** 转换器自检左大腿 pitch 高于右大腿；`bash tools/test_gundam_arena.sh` 通过（`gundam_arena ok`，occupancy=0.450644）。
+- **未验证：** 用户再看踢球是否同脚。跳跃若要更明显需另做程序起跳。
+
+### 2026-09-17 · 烧录查看（左右脚对调后）
+
+- **范围：** 用户要求烧录对调踢腿后的固件。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3e3d90` B（约 4,078,992），余量 21%。esptool `Hash of data verified`，RTS 重启。
+- **镜像：** `V0.5-210-g043f882-dirty`，ELF SHA256 `39728067c211291b…`，编译日 `Sep 17 2026`。
+- **未验证：** 用户踢球是否同脚。
+
+### 2026-09-17 · P7 真机：脚未碰到球就飞
+
+- **现象：** 左右对了之后，脚还没碰到球，球已经飞走。
+- **原因：** 接触用 clip 时间窗 0.42–0.85 + 假想脚点，半径 0.90；真实 `LFoot` 当时还在身后。`+pitch` 还会把 BVH 前踢甩向 `-Z`，球却在 `+Z`。
+- **修正：** 重定向矢状面取 `-footZ`；球移到踢腿轨迹 `(-0.42, 0.74)`；每帧用左脚踝→趾胶囊扫掠相交，碰到才给冲量。主机断言 `clipT<0.50` 时尚未击中。
+- **已验证：** `bash tools/test_gundam_arena.sh` 通过（`gundam_arena ok`，occupancy=0.450644）；`clipT<0.50` 时未击中。
+- **未验证：** 用户看脚是否真正碰到再飞。
+
+### 2026-09-17 · 烧录查看（脚球碰撞）
+
+- **范围：** 用户要求烧录真实脚球碰撞固件。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3e4d30` B（约 4,082,992），余量 21%。esptool `Hash of data verified`，RTS 重启。
+- **镜像：** `V0.5-210-g043f882-dirty`，ELF SHA256 `7288a1a9ed695d19…`，编译日 `Sep 17 2026`。
+- **未验证：** 用户看脚是否碰到再飞。
+
+### 2026-09-17 · 背景不再纯黑
+
+- **范围：** 用户觉得 Arena 纯黑太暗。
+- **修正：** 清屏改为暗石板蓝灰 `0x298A`；网格/边线改为 `0x8410` / `0x9CD3`，避免在浅一点的底上过亮。机体 blit 仍只覆盖有深度的像素。
+- **已验证：** `bash tools/test_gundam_arena.sh` 通过（`gundam_arena ok`，occupancy=0.450644）。
+- **未验证：** 用户观感。
+
+### 2026-09-17 · 踢球改为先收腿再前踢
+
+- **现象：** 前摆就把球踢走，随后后收，不像真实踢球。
+- **原因：** 窗口 40–80 几乎没有蓄力，却包含踢完后的后收；碰撞又打在第一次前摆上。
+- **修正：** clip 改成收腿蓄力 → Bandai 48–62 前摆 → 收到站立；碰撞要求脚向前摆。`kKickFrames=44`。
+- **已验证：** `bash tools/test_gundam_arena.sh` 通过（`gundam_arena ok`）；收腿阶段 `LThigh` 峰值 > 0.40，且 `clipT<0.55` 时未击中。
+- **未验证：** 用户踢球节奏。
+
+### 2026-09-17 · 烧录查看（先收腿再前踢）
+
+- **范围：** 用户要求烧录收腿后前踢固件。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3e5040` B（约 4,083,776），余量 21%。esptool `Hash of data verified`，RTS 重启。
+- **镜像：** `V0.5-210-g043f882-dirty`，ELF SHA256 `51ff8162f2cf8da1…`，编译日 `Sep 17 2026`。
+- **未验证：** 用户踢球节奏。
+
+### 2026-09-17 · 黄球透视遮挡
+
+- **现象：** 黄球是机体 blit 之后的 `fillCircle`，不考虑深度，叠在机体上。
+- **修正：** 球用机体同一相机做成朝向镜头的圆盘，写入 `CarSurfaceRaster` 深度缓冲后再 blit。
+- **已验证：** `bash tools/test_gundam_arena.sh` 通过（`gundam_arena ok`，occupancy=0.450644）；机体近侧球比躯干后球橙色像素更多。
+- **未验证：** 用户真机遮挡观感。
+
+---
+
+## 13. Bandai → Arena 运动计划
+
+目标：用与 19 骨最接近的公开人形 mocap，先让 RX-78 **原地踢一脚**。不改骨架拓扑，不在设备上解析 BVH，不上 PPO。
+
+### 13.1 冻结规格
+
+| 项 | 决定 |
+|---|---|
+| 数据 | 集 1，`dataset-1_kick_normal_001.bvh` + 对照用 `walk_normal_001`（walk 不替换 IK） |
+| 骨架 | Arena 19 骨不变 |
+| Bandai 22 节点 | `joint_Root, Hips, Spine, Chest, Neck, Head, Shoulder/UpperArm/LowerArm/Hand L+R, UpperLeg/LowerLeg/Foot/Toes L+R` |
+| 丢掉 | `joint_Root` 占位；`Spine` 折进 Chest/Pelvis；`Toes_*` 折进 Foot |
+| 一对一 | Hips→Pelvis，Chest，Neck，Head，肩臂手，大腿/小腿/脚 |
+| 通道 | BVH 每关节 6 通道；旋转序 `ZXY`，FK 为 `Rz*Rx*Ry`（已用站立脚高/踢腿峰值核对） |
+| 休息姿势 | 不抄 BVH 欧拉。先 FK 出世界坐标，再按 Arena 矢状面双骨 IK 求解 |
+| 比例 | 髋高缩到 `kHipY=1.02`；开踢帧左右髋对齐朝向；四肢 L/R 对调到球侧 `LThigh`；矢状面用 `-footZ` 使前踢对上 Arena `+Z` |
+| 限位 | 写入前 `limitOf()`；SD 踢腿会被大腿 pitch 0.90 钳住 |
+| 运行时 | `帧 × 18 关节 × 3 欧拉` 的 C 数组，30 fps 插值到 60 Hz 步进 |
+| 许可 | CC BY-NC 4.0；`tools/arena_motion/raw/` gitignore |
+
+### 13.2 阶段
+
+| 阶段 | 内容 | 状态 |
+|---|---|---|
+| P0 规格 | 骨对照、折叠、clip 格式、许可 | 完成 |
+| P1 数据 | 拉取 kick/walk BVH，核 22 骨 | 完成（仅本地 `raw/`） |
+| P2 转换器 | `retarget_bandai.py`：收腿 + Bandai 48–62 前摆，丢掉后收 | 完成 |
+| P3 播放 | `Action::Kick`，Idle+B 触发，HUD `KICK` | 完成 |
+| P4 回归 | 主机测试 + `arena-kick.ppm` | 完成 |
+| P5 球道具 | 小半径球体、踢球瞬间给速度 | 完成（两轮自检） |
+| P6 可选 walk clip | 仅对照，默认仍 IK | 完成 |
+| P7 真机 | 用户验收踢球剪影与 A/B 操作 | 进行中：已按反馈对调踢腿；跳跃仍为程序姿势 |
+
+### 13.3 明确不做
+
+- 不把 Microduck ONNX/CSV 接到 Gundam
+- 不在 ESP32 上跑 BVH/PPO
+- 不增加 Spine/Toes 骨
+- 不把 Bandai walk 替换钉地 IK（walk 会滑步）
+- 不把 BVH 原件推进 git
+
+### 13.4 重做 clip
+
+改窗口或映射后只跑 `retarget_bandai.py`，再跑 `tools/test_gundam_arena.sh`。不要手改 `arena_kick_clip.h`。
+

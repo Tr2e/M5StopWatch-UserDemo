@@ -17,15 +17,15 @@ inline void updateFollowView(ArenaView& view,const CharacterModel& c,float dt){
 
 inline void mergeExternalPad(lets_and_go::DeviceControlFrame& device,const lets_and_go::RacerInput& pad){
     device.input.confirmPressed|=pad.confirmPressed;
+    device.input.cancelPressed|=pad.cancelPressed;
     device.input.pausePressed|=pad.pausePressed;
     device.input.exitPressed|=pad.exitPressed;
-    device.input.cancelPressed|=pad.cancelPressed;
     if(pad.navigationStep)device.navigation=pad.navigationStep;
     if(pad.valid){
         device.input.steer=pad.steer;
         device.input.viewAxis=pad.viewAxis;
         device.input.valid=true;
-    }else if(pad.confirmPressed||pad.pausePressed||pad.exitPressed)device.input.valid=true;
+    }else if(pad.confirmPressed||pad.cancelPressed||pad.pausePressed||pad.exitPressed)device.input.valid=true;
 }
 
 class ArenaController {
@@ -39,13 +39,14 @@ public:
     bool update(const lets_and_go::DeviceControlFrame& input,uint32_t now){
         if(input.input.exitPressed){_exit=true;return false;}
         ArenaInput in{};
+        in.kick=input.input.cancelPressed;
+        in.jump=input.input.confirmPressed;
+        in.toggleMode=input.input.pausePressed;
         in.valid=input.input.valid;
         if(in.valid){
             in.turn=-input.input.steer;
             in.forward=input.input.viewAxis;
             if(_character.mode==Mode::Play){
-                in.jump=input.input.confirmPressed;
-                if(input.input.pausePressed)in.toggleMode=true;
                 if(input.preview.changed && input.preview.active){
                     _view.orbit=std::remainder(_view.orbit+(input.preview.dx-_lastDx)*.012f,2.f*kPi);
                     _view.pitch=std::clamp(_view.pitch+(input.preview.dy-_lastDy)*.008f,-75.f*kPi/180.f,.55f);
@@ -57,7 +58,6 @@ public:
                     in.posePitch=-(input.preview.dy-_lastDy)*.010f;
                 }
                 in.poseReset=input.input.confirmPressed;
-                if(input.input.pausePressed)in.toggleMode=true;
             }
             _lastDx=input.preview.dx;_lastDy=input.preview.dy;
             if(!input.preview.active)_lastDx=_lastDy=0;
@@ -69,7 +69,7 @@ public:
         while(_accumulator>=kStep && steps<5){
             stepCharacter(_character,in,kStep);
             updateFollowView(_view,_character,kStep);
-            in.jump=false;in.toggleMode=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
+            in.jump=false;in.kick=false;in.toggleMode=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
             _accumulator-=kStep;++steps;
         }
         if(steps==5)_accumulator=0;

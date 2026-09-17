@@ -78,8 +78,8 @@ public:
             if (_screen == GameScreen::Paused) {
                 _frame.input.pausePressed |= b.clicked;
             } else if (_screen == GameScreen::ArenaPlay) {
+                _frame.input.cancelPressed |= a.clicked;
                 _frame.input.confirmPressed |= b.clicked;
-                _frame.input.boostHeld = _buttonsArmed && a.pressed && !b.pressed;
                 _frame.input.pausePressed |= b.holdStarted;
             } else if (_screen != GameScreen::Racing) {
                 if (a.clicked) _frame.navigation = 1;

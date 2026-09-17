@@ -6,6 +6,28 @@
 #include <new>
 
 namespace gundam_arena {
+namespace {
+void rasterizeBall(lets_and_go::CarSurfaceRaster<424,424>& raster,
+                   const lets_and_go::TrackCamera& camera,
+                   lets_and_go::TrackCameraPoint v,float radius){
+    constexpr float near=lets_and_go::kTrackNearPlane;
+    if(!(v.z>near) || !std::isfinite(v.x) || !std::isfinite(v.y) || !std::isfinite(v.z))return;
+    constexpr int n=16;
+    const lets_and_go::CarSurfaceVertex center{v.x,v.y,v.z,0,0};
+    lets_and_go::CarSurfaceVertex rim[n];
+    const auto fan=[&](float scale,uint16_t color){
+        for(int i=0;i<n;++i){
+            const float a=float(i)*(2.f*kPi)/n;
+            rim[i]={v.x+radius*scale*std::cos(a),v.y+radius*scale*std::sin(a),v.z,0,0};
+        }
+        for(int i=0;i<n;++i)
+            raster.cameraTriangle(camera,center,rim[i],rim[(i+1)%n],color,lets_and_go::CarPaint::Solid,255);
+    };
+    fan(1.12f,space::ballRim);
+    fan(1.f,space::ball);
+}
+}
+
 bool ArenaRenderer::open(){
     close();
     _surface.reset(new(std::nothrow) Surface{});
@@ -64,6 +86,11 @@ void ArenaRenderer::render(lgfx::LGFXBase& canvas,const CharacterModel& characte
             ++_stats.offscreen;continue;}
         raster.preparedPanel(camera,prepared);++_stats.submitted;
     }
+    {
+        auto v=cam({character.ball.x,character.ball.y,character.ball.z});
+        v.x*=correction;
+        rasterizeBall(raster,camera,v,kBallR);
+    }
     raster.blitScaled(canvas,(canvas.width()-side)/2,top,side,side);
     canvas.setTextDatum(textdatum_t::middle_center);
     canvas.setTextColor(space::navigation,space::background);
@@ -80,8 +107,10 @@ void ArenaRenderer::render(lgfx::LGFXBase& canvas,const CharacterModel& characte
                 canvas.drawLine(x+sign*4+d,y,x-sign*4+d,y+9,space::navigation);
             }
         }
-    }else if(view.padHint==1)canvas.drawString("CAL",canvas.width()/2,18);
+    }else if(character.action==Action::Kick)canvas.drawString("KICK",canvas.width()/2,18);
+    else if(view.padHint==1)canvas.drawString("CAL",canvas.width()/2,18);
     else if(view.padHint==2)canvas.drawString("PAD",canvas.width()/2,18);
     else if(view.padHint==3)canvas.drawString("PAD FAULT",canvas.width()/2,18);
+    else canvas.drawString("A KICK  B JUMP",canvas.width()/2,18);
 }
 } // namespace gundam_arena

@@ -30,7 +30,7 @@ struct ArenaCamera {
 };
 
 namespace space {
-inline constexpr uint16_t background=0x0000,grid=0xc618,seam=0xce79,navigation=0xc618;
+inline constexpr uint16_t background=0x298A,grid=0x8410,seam=0x9CD3,navigation=0xc618,ball=0xfd20,ballRim=0xc2a0;
 inline constexpr float kHalf=20.f,kFocal=88.f;
 inline constexpr int kDiv=32;
 

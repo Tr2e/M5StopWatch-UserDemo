@@ -50,6 +50,9 @@ managed_components/
 # Python virtual environment
 .venv/
 
+# Bandai Namco mocap originals (CC BY-NC); fetch with tools/arena_motion/fetch_bandai.py
+tools/arena_motion/raw/
+
 # Debug / Release files
 Debug/
 debug/

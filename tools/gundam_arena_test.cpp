@@ -1,5 +1,7 @@
 #include "../main/apps/app_gundam_arena/view/arena_renderer.h"
 #include "../main/apps/app_gundam_arena/controller/arena_controller.h"
+#include "../main/apps/app_gundam_arena/model/arena_kick_clip.h"
+#include "../tools/arena_motion/arena_walk_clip.h"
 #include "../main/apps/app_lets_and_go_racer/input/device_control_logic.h"
 #include <algorithm>
 #include <array>
@@ -32,7 +34,8 @@ static float robotScreenHeight(const LGFX_Sprite& canvas){
         const int dx=x-cx,dy=y-cy;
         if(dx*dx+dy*dy>=r*r)continue;
         const auto p=pixelAt(canvas,x,y);
-        if(p==space::background||p==space::grid||p==space::seam||p==space::navigation)continue;
+        if(p==space::background||p==space::grid||p==space::seam||p==space::navigation||
+           p==space::ball||p==space::ballRim)continue;
         top=std::min(top,y);bottom=std::max(bottom,y);
     }
     return bottom>=top?float(bottom-top+1)/float(2*r):0.f;
@@ -40,6 +43,8 @@ static float robotScreenHeight(const LGFX_Sprite& canvas){
 
 int main(int argc,char** argv){
     const std::string out=argc>1?argv[1]:"/tmp/gundam-arena";
+    static_assert(kWalkFrames==60,"walk comparison clip window drifted");
+    static_assert(kKickFrames==44,"kick clip window drifted");
     Mesh mesh;Skeleton bind;
     buildRx78Rigged(mesh,bind);
     assert(!mesh.overflowed && mesh.count>400 && mesh.count<Mesh::capacity);
@@ -78,6 +83,7 @@ int main(int argc,char** argv){
     assert(std::abs(chest1.x-chest2.x)<1e-5f);
 
     CharacterModel c;resetCharacter(c);
+    assert(c.ball.z>.5f && std::abs(c.ball.y-kBallR)<1e-4f);
     ArenaInput in{};in.valid=true;
     for(int i=0;i<12;++i)stepCharacter(c,in,kStep);
     assert(c.action==Action::Idle);
@@ -112,6 +118,77 @@ int main(int argc,char** argv){
     bool leftGround=false;
     for(int i=0;i<180;++i){stepCharacter(c,in,kStep);if(!c.grounded)leftGround=true;}
     assert(leftGround && c.grounded && c.y>-1e-4f);
+
+    c={};resetCharacter(c);
+    in={};in.valid=true;in.kick=true;
+    stepCharacter(c,in,kStep);in.kick=false;
+    assert(c.action==Action::Kick && c.grounded);
+    float minLeft=0,minRight=0,chamber=0;
+    bool finished=false;
+    const float ballX0=c.ball.x,ballZ0=c.ball.z;
+    int hits=0;
+    float peakY=c.ball.y;
+    bool wasStruck=false;
+    float hitT=-1;
+    for(int i=0;i<180;++i){
+        stepCharacter(c,in,kStep);
+        minRight=std::min(minRight,c.pose.anim[int(BoneId::RThigh)].pitch);
+        minLeft=std::min(minLeft,c.pose.anim[int(BoneId::LThigh)].pitch);
+        if(c.clipT<.40f)chamber=std::max(chamber,c.pose.anim[int(BoneId::LThigh)].pitch);
+        peakY=std::max(peakY,c.ball.y);
+        if(c.clipT<.55f)assert(!c.ball.struck);
+        if(c.ball.struck && !wasStruck){++hits;hitT=c.clipT;}
+        wasStruck=c.ball.struck;
+        if(c.action==Action::Idle && i>10){finished=true;break;}
+    }
+    assert(finished && minLeft<-.50f && minLeft<minRight-0.15f);
+    assert(chamber>.40f);
+    assert(hits==1 && hitT>=.55f);
+    assert(peakY>kBallR+.12f);
+    const float fly=std::hypot(c.ball.x-ballX0,c.ball.z-ballZ0);
+    assert(fly>.40f);
+    assert(c.pose.anim[int(BoneId::LShin)].pitch>=-1e-4f);
+    assert(c.pose.anim[int(BoneId::RShin)].pitch>=-1e-4f);
+    for(int i=0;i<240;++i)stepCharacter(c,in,kStep);
+    assert(std::abs(c.ball.y-kBallR)<.02f);
+    assert(std::abs(c.ball.x)<=kArenaHalfExtent && std::abs(c.ball.z)<=kArenaHalfExtent);
+
+    c={};resetCharacter(c);
+    const auto idleBall=c.ball;
+    in={};in.valid=true;
+    for(int i=0;i<60;++i)stepCharacter(c,in,kStep);
+    assert(std::abs(c.ball.x-idleBall.x)<1e-5f && std::abs(c.ball.z-idleBall.z)<1e-5f);
+
+    c={};resetCharacter(c);
+    c.ball.x=0;c.ball.z=-1.2f;c.ball.y=kBallR;
+    in={};in.valid=true;in.kick=true;
+    stepCharacter(c,in,kStep);in.kick=false;
+    for(int i=0;i<90;++i)stepCharacter(c,in,kStep);
+    assert(!c.ball.struck && std::abs(c.ball.z+1.2f)<.02f);
+
+    c={};resetCharacter(c);
+    in={};in.valid=true;in.kick=true;
+    stepCharacter(c,in,kStep);in.kick=false;
+    for(int i=0;i<80;++i)stepCharacter(c,in,kStep);
+    assert(c.ball.struck);
+    const float airZ=c.ball.z,airY=c.ball.y;
+    in.toggleMode=true;stepCharacter(c,in,kStep);in.toggleMode=false;
+    assert(c.mode==Mode::Pose);
+    for(int i=0;i<20;++i)stepCharacter(c,in,kStep);
+    assert(std::abs(c.ball.z-airZ)>1e-4f || std::abs(c.ball.y-airY)>1e-4f);
+
+    c={};resetCharacter(c);
+    in={};in.valid=true;in.jump=true;
+    stepCharacter(c,in,kStep);in.jump=false;
+    assert(c.action==Action::Jump && !c.grounded);
+
+    c={};resetCharacter(c);
+    in={};in.valid=true;in.forward=1;
+    for(int i=0;i<12;++i)stepCharacter(c,in,kStep);
+    assert(c.action==Action::Walk);
+    assert(c.walkPhase>0.f);
+    in.jump=true;stepCharacter(c,in,kStep);in.jump=false;
+    assert(c.action==Action::Jump && !c.grounded);
 
     c={};resetCharacter(c);
     in={};in.forward=1;in.valid=true;
@@ -165,6 +242,35 @@ int main(int argc,char** argv){
     canvas.save(out+"/arena-idle.ppm");
     const float occupancy=robotScreenHeight(canvas);
     assert(occupancy>=.45f && occupancy<=.55f);
+    int ballPixels=0;
+    for(int y=0;y<canvas.height();++y)for(int x=0;x<canvas.width();++x){
+        const auto p=pixelAt(canvas,x,y);
+        if(p==space::ball||p==space::ballRim)++ballPixels;
+    }
+    assert(ballPixels>15);
+
+    {
+        const auto countBall=[&](const CharacterModel& model){
+            renderer.render(canvas,model,view);
+            int n=0;
+            for(int y=0;y<canvas.height();++y)for(int x=0;x<canvas.width();++x){
+                const auto p=pixelAt(canvas,x,y);
+                if(p==space::ball||p==space::ballRim)++n;
+            }
+            return n;
+        };
+        CharacterModel hid=live;
+        hid.ball.x=0;hid.ball.y=1.08f;hid.ball.z=.18f;
+        const int hidden=countBall(hid);
+        CharacterModel near=live;
+        near.ball.x=0;near.ball.y=1.08f;near.ball.z=-1.15f;
+        const int front=countBall(near);
+        CharacterModel side=live;
+        side.ball.x=-2.4f;side.ball.y=kBallR;side.ball.z=0;
+        const int shown=countBall(side);
+        assert(front>hidden+20);
+        assert(shown>hidden+15);
+    }
 
     in={};in.forward=1;in.valid=true;
     for(int i=0;i<24;++i){
@@ -205,14 +311,35 @@ int main(int argc,char** argv){
     assert(std::abs(live.z)<=kArenaHalfExtent);
 
     live={};resetCharacter(live);view={};
-    in={};in.jump=true;in.valid=true;
-    stepCharacter(live,in,kStep);in.jump=false;
+    in={};in.forward=1;in.valid=true;
+    for(int i=0;i<12;++i)stepCharacter(live,in,kStep);
+    in.jump=true;stepCharacter(live,in,kStep);in.jump=false;
     for(int i=0;i<20;++i){
         stepCharacter(live,in,kStep);
         updateFollowView(view,live,kStep);
     }
     renderer.render(canvas,live,view);
     canvas.save(out+"/arena-jump.ppm");
+    assert(!live.grounded || live.action==Action::Land || live.action==Action::Jump);
+    assert(renderer.meshBuilds()==builds && renderer.indexBuilds()==indexes);
+
+    live={};resetCharacter(live);view={};
+    in={};in.kick=true;in.valid=true;
+    stepCharacter(live,in,kStep);in.kick=false;
+    assert(live.action==Action::Kick);
+    for(int i=0;i<36;++i){
+        stepCharacter(live,in,kStep);
+        updateFollowView(view,live,kStep);
+    }
+    renderer.render(canvas,live,view);
+    canvas.save(out+"/arena-kick.ppm");
+    assert(live.action==Action::Kick);
+    int kickBall=0;
+    for(int y=0;y<canvas.height();++y)for(int x=0;x<canvas.width();++x){
+        const auto p=pixelAt(canvas,x,y);
+        if(p==space::ball||p==space::ballRim)++kickBall;
+    }
+    assert(kickBall>20);
     assert(renderer.meshBuilds()==builds && renderer.indexBuilds()==indexes);
 
     lets_and_go::DeviceControlLogic logic;
@@ -266,6 +393,20 @@ int main(int argc,char** argv){
     orbit.preview.dy=-400;
     lookUp.update(orbit,16);
     assert(lookUp.view().pitch<=-75.f*kPi/180.f+1e-4f);
+
+    ArenaController bodyKick;
+    bodyKick.reset();
+    lets_and_go::DeviceControlFrame aClick{};
+    aClick.input.cancelPressed=true;
+    for(int i=0;i<3;++i)bodyKick.update(aClick,16u*(i+1));
+    assert(bodyKick.character().action==Action::Kick);
+    ArenaController bodyJump;
+    bodyJump.reset();
+    lets_and_go::DeviceControlFrame bClick{};
+    bClick.input.confirmPressed=true;
+    for(int i=0;i<3;++i)bodyJump.update(bClick,16u*(i+1));
+    assert(bodyJump.character().action==Action::Jump && !bodyJump.character().grounded);
+
     renderer.render(canvas,live,lookUp.view());
     canvas.save(out+"/arena-lookup.ppm");
     int floorPixels=0;
