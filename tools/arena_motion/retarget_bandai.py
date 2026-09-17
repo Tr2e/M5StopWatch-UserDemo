@@ -61,10 +61,12 @@ LIMITS = {
 }
 
 KICK_SOURCE = "dataset-1_kick_normal_001.bvh"
-# Strike only: BVH first kick's forward swing. Recovery 64+ is a back-swing
-# and is dropped. Chamber is authored, then blended into this window.
+# Bandai 48-62 after IK is a knee whip: shin folds, extends, folds again.
+# That reads as 半途回退 then a small second kick. Do not play it. Chamber
+# and strike poses are authored; source is only a hierarchy/fps check.
 KICK_STRIKE_START, KICK_STRIKE_END = 48, 62
-KICK_CHAMBER_IN, KICK_CHAMBER_HOLD, KICK_BLEND, KICK_SETTLE = 10, 5, 6, 8
+KICK_CHAMBER_IN, KICK_CHAMBER_HOLD, KICK_BLEND = 10, 5, 10
+KICK_STRIKE_HOLD, KICK_SETTLE = 6, 8
 # Arena ball sits at -X (screen-right foot = LThigh). Swap limbs after IK so
 # that kick lands on the same foot the ball is in front of.
 LR_PAIRS = (
@@ -78,6 +80,35 @@ LR_PAIRS = (
 )
 WALK_SOURCE = "dataset-1_walk_normal_001.bvh"
 WALK_START, WALK_END = 0, 59  # 2s in-place comparison clip; not used at runtime
+GESTURE_H = ROOT / "main/apps/app_gundam_arena/model/arena_gesture_clips.h"
+K_PLANT = 0.26
+GESTURE_IN, GESTURE_OUT, GESTURE_WINDOW = 6, 8, 36
+# Firmware still holds one clip per HUD slot. Style takes are scored offline;
+# only a strictly better, non-rejected take replaces normal.
+GESTURE_SLOTS = [
+    ("WAVE L", "dataset-2_wave-left-hand_normal_001.bvh",
+     ["dataset-2_wave-left-hand_active_001.bvh"]),
+    ("WAVE R", "dataset-2_wave-right-hand_normal_001.bvh",
+     ["dataset-2_wave-right-hand_active_001.bvh"]),
+    ("WAVE 2", "dataset-2_wave-both-hands_normal_001.bvh",
+     ["dataset-2_wave-both-hands_youthful_001.bvh"]),
+    ("UP L", "dataset-2_raise-up-left-hand_normal_001.bvh", []),
+    ("UP R", "dataset-2_raise-up-right-hand_normal_001.bvh", []),
+    ("UP 2", "dataset-2_raise-up-both-hands_normal_001.bvh",
+     ["dataset-2_raise-up-both-hands_active_001.bvh"]),
+]
+PREVIEW_LOCO = [
+    ("dataset-2_walk_normal_001.bvh", "walk"),
+    ("dataset-2_walk_active_001.bvh", "walk-active"),
+    ("dataset-2_walk_youthful_001.bvh", "walk-youthful"),
+    ("dataset-2_run_normal_001.bvh", "run"),
+    ("dataset-2_run_active_001.bvh", "run-active"),
+    ("dataset-2_run_youthful_001.bvh", "run-youthful"),
+    ("dataset-2_walk-turn-left_normal_001.bvh", "walk-turn-left"),
+    ("dataset-2_walk-turn-left_active_001.bvh", "walk-turn-left-active"),
+    ("dataset-2_walk-turn-right_normal_001.bvh", "walk-turn-right"),
+    ("dataset-2_walk-turn-right_active_001.bvh", "walk-turn-right-active"),
+]
 EXPECTED_JOINTS = [
     "joint_Root", "Hips", "Spine", "Chest", "Neck", "Head",
     "Shoulder_L", "UpperArm_L", "LowerArm_L", "Hand_L",
@@ -481,8 +512,8 @@ def sd_kick_arm_keys() -> tuple[dict[str, tuple[float, float, float]],
     return clamp_pose(chamber), clamp_pose(strike)
 
 
-# Chamber the kicking (left) leg behind the character (thigh +pitch = foot back)
-# then Bandai forward swing, then settle without playing the source recovery.
+# Chamber: kicking (left) foot back. Strike: one extension, shin never
+# re-folds. Support leg stays close to idle so the kick is a standing snap.
 CHAMBER_POSE = clamp_pose({
     **rest_pose(),
     "LThigh": (0.0, 0.62, 0.0),
@@ -494,28 +525,269 @@ CHAMBER_POSE = clamp_pose({
     "Chest": (0.0, 0.06, 0.0),
     "Pelvis": (0.0, 0.04, 0.0),
 })
+STRIKE_POSE = clamp_pose({
+    **rest_pose(),
+    "LThigh": (0.0, -0.80, 0.0),
+    "LShin": (0.0, 0.50, 0.0),
+    "LFoot": (0.0, -0.20, 0.0),
+    "RThigh": (0.0, -0.08, 0.0),
+    "RShin": (0.0, 0.22, 0.0),
+    "RFoot": (0.0, -0.10, 0.0),
+    "Chest": (0.0, 0.16, 0.0),
+    "Pelvis": (0.0, 0.12, 0.0),
+})
 
 
-def compose_kick(strike: list[dict[str, tuple[float, float, float]]]
-                 ) -> list[dict[str, tuple[float, float, float]]]:
+def compose_kick() -> list[dict[str, tuple[float, float, float]]]:
     rest = rest_pose()
     chamber = CHAMBER_POSE
+    strike = STRIKE_POSE
     chamber_arms, strike_arms = sd_kick_arm_keys()
     out: list[dict[str, tuple[float, float, float]]] = []
     for i in range(KICK_CHAMBER_IN):
         t = smoothstep((i + 1) / KICK_CHAMBER_IN)
         out.append(with_arms(lerp_pose(rest, chamber, t), lerp_pose(rest, chamber_arms, t)))
     out.extend(with_arms(chamber, chamber_arms) for _ in range(KICK_CHAMBER_HOLD))
-    first = strike[0]
     for i in range(KICK_BLEND):
         t = smoothstep((i + 1) / KICK_BLEND)
-        out.append(with_arms(lerp_pose(chamber, first, t), lerp_pose(chamber_arms, strike_arms, t)))
-    out.extend(with_arms(pose, strike_arms) for pose in strike)
-    last = strike[-1]
+        out.append(with_arms(lerp_pose(chamber, strike, t), lerp_pose(chamber_arms, strike_arms, t)))
+    out.extend(with_arms(strike, strike_arms) for _ in range(KICK_STRIKE_HOLD))
     for i in range(KICK_SETTLE):
         t = smoothstep((i + 1) / KICK_SETTLE)
-        out.append(with_arms(lerp_pose(last, rest, t), lerp_pose(strike_arms, rest, t)))
+        out.append(with_arms(lerp_pose(strike, rest, t), lerp_pose(strike_arms, rest, t)))
     return [sd_kick_torso(pose) for pose in out]
+
+
+def plant_legs(pose: dict[str, tuple[float, float, float]]
+               ) -> dict[str, tuple[float, float, float]]:
+    lt, ls = two_bone_pitch(-K_HIP_X, K_HIP_Y, -K_HIP_X, K_PLANT, K_THIGH, K_SHIN, -.80, .90)
+    rt, rs = two_bone_pitch(K_HIP_X, K_HIP_Y, K_HIP_X, K_PLANT, K_THIGH, K_SHIN, -.80, .90)
+    out = dict(pose)
+    out["LThigh"] = (0.0, lt, 0.0)
+    out["LShin"] = (0.0, ls, 0.0)
+    out["LFoot"] = (0.0, clamp(-(lt + ls), -.45, .35), 0.0)
+    out["RThigh"] = (0.0, rt, 0.0)
+    out["RShin"] = (0.0, rs, 0.0)
+    out["RFoot"] = (0.0, clamp(-(rt + rs), -.45, .35), 0.0)
+    return out
+
+
+def sd_gesture_torso(pose: dict[str, tuple[float, float, float]]
+                     ) -> dict[str, tuple[float, float, float]]:
+    pr, pp, py = pose["Pelvis"]
+    cr, cp, cy = pose["Chest"]
+    nr, np, ny = pose["Neck"]
+    hr, hp, hy = pose["Head"]
+    out = dict(pose)
+    out["Pelvis"] = (pr, max(pp, 0.02), py)
+    out["Chest"] = (cr, max(cp, 0.04), cy)
+    out["Neck"] = (nr, max(np, -0.04), ny)
+    out["Head"] = (hr, max(hp, -0.06), hy)
+    return clamp_pose(out)
+
+
+def sd_gesture_arms(pose: dict[str, tuple[float, float, float]], scale: float
+                    ) -> dict[str, tuple[float, float, float]]:
+    out = dict(pose)
+    for name in ("LUpperArm", "RUpperArm"):
+        r, p, y = pose[name]
+        out[name] = (r, p * scale, y)
+    for name in ("LForearm", "RForearm"):
+        r, p, y = pose[name]
+        out[name] = (r, p * 1.20 if p < 0.0 else p, y)
+    for name in ("LShoulder", "RShoulder"):
+        r, p, y = pose[name]
+        out[name] = (r, p * 1.30, y)
+    return clamp_pose(out)
+
+
+def arm_energy(pose: dict[str, tuple[float, float, float]]) -> float:
+    return (
+        abs(pose["LUpperArm"][1]) + abs(pose["RUpperArm"][1])
+        + 0.5 * (abs(pose["LForearm"][1]) + abs(pose["RForearm"][1]))
+        + abs(pose["LShoulder"][1]) + abs(pose["RShoulder"][1])
+    )
+
+
+def pick_window(frames: list[dict[str, tuple[float, float, float]]], width: int
+                ) -> tuple[int, int]:
+    n = len(frames)
+    if n <= width:
+        return 0, n - 1
+    best_i, best_e = 0, -1.0
+    for i in range(0, n - width + 1):
+        e = sum(arm_energy(frames[i + k]) for k in range(width))
+        if e > best_e:
+            best_e = e
+            best_i = i
+    return best_i, best_i + width - 1
+
+
+def compose_gesture(raw: list[dict[str, tuple[float, float, float]]]
+                    ) -> list[dict[str, tuple[float, float, float]]]:
+    start, end = pick_window(raw, GESTURE_WINDOW)
+    body = [plant_legs(frame) for frame in raw[start:end + 1]]
+    scale = 1.45
+    peak = max(arm_energy(sd_gesture_arms(frame, scale)) for frame in body)
+    if peak < 0.55:
+        scale = 1.80
+    rest = plant_legs(rest_pose())
+    out: list[dict[str, tuple[float, float, float]]] = []
+    first = sd_gesture_arms(body[0], scale)
+    last = sd_gesture_arms(body[-1], scale)
+    for i in range(GESTURE_IN):
+        t = smoothstep((i + 1) / GESTURE_IN)
+        out.append(sd_gesture_torso(lerp_pose(rest, first, t)))
+    for frame in body:
+        out.append(sd_gesture_torso(sd_gesture_arms(frame, scale)))
+    for i in range(GESTURE_OUT):
+        t = smoothstep((i + 1) / GESTURE_OUT)
+        out.append(sd_gesture_torso(lerp_pose(last, rest, t)))
+    return out
+
+
+def at_limit(name: str, axis: int, pose: dict[str, tuple[float, float, float]]) -> bool:
+    lim = LIMITS[name]
+    v = pose[name][axis]
+    lo, hi = lim[axis * 2], lim[axis * 2 + 1]
+    return abs(v - lo) < 0.02 or abs(v - hi) < 0.02
+
+
+def score_clip(clip: list[dict[str, tuple[float, float, float]]], sat: int, total: int
+               ) -> dict[str, float | int | bool]:
+    peak = max(arm_energy(pose) for pose in clip)
+    min_pel = min(pose["Pelvis"][1] for pose in clip)
+    min_chest = min(pose["Chest"][1] for pose in clip)
+    n = len(clip)
+    sh_lim = sum(
+        1 for pose in clip
+        if at_limit("LShoulder", 1, pose) or at_limit("RShoulder", 1, pose))
+    ua_lim = sum(
+        1 for pose in clip
+        if at_limit("LUpperArm", 1, pose) or at_limit("RUpperArm", 1, pose))
+    both_up = sum(
+        1 for pose in clip
+        if at_limit("LUpperArm", 1, pose) and at_limit("RUpperArm", 1, pose))
+    head_sh = sum(
+        1 for pose in clip
+        if at_limit("Head", 1, pose) and (
+            at_limit("LShoulder", 1, pose) or at_limit("RShoulder", 1, pose)))
+    return {
+        "peak": peak,
+        "clamp": (sat / total) if total else 0.0,
+        "sat": sat,
+        "total": total,
+        "back": min_pel < -1e-4 or min_chest < -1e-4,
+        "shoulder_lim": sh_lim / n,
+        "upper_lim": ua_lim / n,
+        "both_up": both_up / n,
+        "head_sh": head_sh / n,
+        "flash": n * 18 * 3 * 4,
+        "frames": n,
+    }
+
+
+def reject_reason(hud: str, score: dict[str, float | int | bool]) -> str | None:
+    if score["back"]:
+        return "torso back-lean"
+    if float(score["shoulder_lim"]) > 0.20:
+        return "over-shoulder limit"
+    if float(score["head_sh"]) > 0.10:
+        return "head/shoulder collide proxy"
+    if hud in ("WAVE 2", "UP 2") and float(score["both_up"]) > 0.25:
+        return "hands collapse together"
+    return None
+
+
+def style_beats(hud: str, style: dict[str, float | int | bool],
+                normal: dict[str, float | int | bool]) -> tuple[bool, str]:
+    reason = reject_reason(hud, style)
+    if reason:
+        return False, f"reject: {reason}"
+    if float(style["peak"]) < float(normal["peak"]) + 0.08:
+        return False, "not more readable"
+    if float(style["clamp"]) > float(normal["clamp"]) + 0.03:
+        return False, "more clamp"
+    if float(style["shoulder_lim"]) > float(normal["shoulder_lim"]) + 0.05:
+        return False, "more shoulder saturation"
+    return True, "higher peak, limits ok"
+
+
+def load_gesture(source: str) -> tuple[list[dict[str, tuple[float, float, float]]], int, int, float]:
+    src = RAW / source
+    if not src.exists():
+        raise SystemExit(f"missing {source}; run fetch_bandai2.py")
+    _root, frames, dt = parse_bvh(src)
+    raw, sat, total, _, _ = bake(src, 0, len(frames) - 1)
+    clip = compose_gesture(raw)
+    plant_lt, plant_ls = two_bone_pitch(
+        -K_HIP_X, K_HIP_Y, -K_HIP_X, K_PLANT, K_THIGH, K_SHIN, -.80, .90)
+    mid = clip[len(clip) // 2]
+    if abs(mid["LThigh"][1] - plant_lt) > 0.04 or abs(mid["LShin"][1] - plant_ls) > 0.04:
+        raise SystemExit(f"{source} feet not planted")
+    peak = max(arm_energy(pose) for pose in clip)
+    if peak < 0.35:
+        raise SystemExit(f"{source} arm motion too small; peak={peak:.3f}")
+    min_pel = min(pose["Pelvis"][1] for pose in clip)
+    min_chest = min(pose["Chest"][1] for pose in clip)
+    if min_pel < -1e-4 or min_chest < -1e-4:
+        raise SystemExit(f"{source} torso leans back; pel={min_pel:.3f} chest={min_chest:.3f}")
+    return clip, sat, total, dt
+
+
+def fmt_score(score: dict[str, float | int | bool]) -> str:
+    return (
+        f"frames={score['frames']} flash={score['flash']}B peak={float(score['peak']):.2f} "
+        f"clamp={int(score['sat'])}/{int(score['total'])} "
+        f"sh_lim={float(score['shoulder_lim']):.2f} ua_lim={float(score['upper_lim']):.2f} "
+        f"both_up={float(score['both_up']):.2f} head_sh={float(score['head_sh']):.2f}"
+    )
+
+
+def write_gesture_bank(path: Path, clips: list[tuple[str, str, list[dict[str, tuple[float, float, float]]], int, int]]
+                       ) -> None:
+    offsets = []
+    packed: list[str] = []
+    cursor = 0
+    for _hud, _src, frames, _sat, _total in clips:
+        offsets.append(cursor)
+        for pose in frames:
+            vals = []
+            for name in BONES:
+                r, p, y = pose[name]
+                vals.extend((r, p, y))
+            packed.append("    " + ", ".join(f"{v:.5f}f" for v in vals) + ",")
+            cursor += 18 * 3
+    if packed:
+        packed[-1] = packed[-1].rstrip(",")
+    lines = [
+        "#pragma once",
+        "// Generated by tools/arena_motion/retarget_bandai.py. Do not edit.",
+        "// Bandai-Namco-Research-Motiondataset-2 P5 winners, feet planted. CC BY-NC 4.0.",
+        "// Limbs L/R swapped to the same Arena -X convention as the kick clip.",
+        "#include <cstdint>",
+        "namespace gundam_arena {",
+        f"inline constexpr int kGestureCount={len(clips)};",
+        "inline constexpr float kGestureFps=30.f;",
+        "inline constexpr int kGestureFrames[" + str(len(clips)) + "]={"
+        + ", ".join(str(len(c[2])) for c in clips) + "};",
+        "inline constexpr int kGestureOffset[" + str(len(clips)) + "]={"
+        + ", ".join(str(o) for o in offsets) + "};",
+        "inline constexpr int kGestureFlashBytes[" + str(len(clips)) + "]={"
+        + ", ".join(str(len(c[2]) * 18 * 3 * 4) for c in clips) + "};",
+        "inline constexpr const char* kGestureHud[" + str(len(clips)) + "]={"
+        + ", ".join(f'"{c[0]}"' for c in clips) + "};",
+        "inline constexpr const char* kGestureSource[" + str(len(clips)) + "]={"
+        + ", ".join(f'"{c[1]}"' for c in clips) + "};",
+        f"inline constexpr float kGestureJoints[{cursor}]={{",
+    ]
+    lines.extend(packed)
+    lines.extend([
+        "};",
+        "} // namespace gundam_arena",
+        "",
+    ])
+    path.write_text("\n".join(lines))
 
 
 def main() -> None:
@@ -523,8 +795,11 @@ def main() -> None:
     walk_src = RAW / WALK_SOURCE
     if not kick_src.exists() or not walk_src.exists():
         raise SystemExit("missing BVH; run fetch_bandai.py")
-    strike, sat, total, dt, yaw = bake(kick_src, KICK_STRIKE_START, KICK_STRIKE_END, align=40)
-    kick = compose_kick(strike)
+    _, _, dt = parse_bvh(kick_src)
+    _ref, _sat, _total, _dt, yaw = bake(kick_src, 56, 56, align=40)
+    kick = compose_kick()
+    sat = 0
+    total = len(kick) * 18
     early = max(pose["LThigh"][1] for pose in kick[:KICK_CHAMBER_IN + KICK_CHAMBER_HOLD])
     min_l = min(pose["LThigh"][1] for pose in kick)
     min_r = min(pose["RThigh"][1] for pose in kick)
@@ -547,17 +822,25 @@ def main() -> None:
         raise SystemExit(f"kicking-side arm pumped forward; lua={lua_min:.3f}")
     if lfa_min < -0.55 or rfa_min < -0.55:
         raise SystemExit(f"kick elbow folded; L={lfa_min:.3f} R={rfa_min:.3f}")
-    strike0 = KICK_CHAMBER_IN + KICK_CHAMBER_HOLD + KICK_BLEND
-    strike1 = strike0 + len(strike)
-    for a, b in zip(kick[strike0:strike1], kick[strike0 + 1:strike1]):
+    swing0 = KICK_CHAMBER_IN + KICK_CHAMBER_HOLD
+    swing1 = swing0 + KICK_BLEND + KICK_STRIKE_HOLD
+    for a, b in zip(kick[swing0:swing1], kick[swing0 + 1:swing1]):
+        if b["LShin"][1] > a["LShin"][1] + 0.04:
+            raise SystemExit(
+                f"kick shin folded mid-swing; {a['LShin'][1]:.3f} -> {b['LShin'][1]:.3f}")
+        if b["LThigh"][1] > a["LThigh"][1] + 0.04:
+            raise SystemExit(
+                f"kick thigh retracted mid-swing; {a['LThigh'][1]:.3f} -> {b['LThigh'][1]:.3f}")
+    hold0 = swing0 + KICK_BLEND
+    for a, b in zip(kick[hold0:swing1], kick[hold0 + 1:swing1]):
         if abs(a["RUpperArm"][1] - b["RUpperArm"][1]) > 1e-4:
-            raise SystemExit("kick arms must hold still through the forward swing")
+            raise SystemExit("kick arms must hold still through the strike")
     for pose in kick:
         if pose["LThigh"][1] < -0.50 and pose["RUpperArm"][1] > -0.30:
             raise SystemExit("support arm should stay back on the forward swing")
     note = (
-        f"Chamber+hold+blend then Bandai frames {KICK_STRIKE_START}-{KICK_STRIKE_END} "
-        f"@ 30fps, settle to idle. License: CC BY-NC 4.0."
+        "Authored chamber then one extension to idle. Bandai 48-62 knee-whip dropped. "
+        "License: CC BY-NC 4.0."
     )
     write_clip(CLIP_H, kick, KICK_SOURCE, KICK_STRIKE_START, KICK_STRIKE_END, sat, total, "Kick", note)
     print(f"wrote {CLIP_H} frames={len(kick)} dt={dt:.4f} yaw={math.degrees(yaw):.1f}deg clamp {sat}/{total} chamber={early:.2f} strike={min_l:.2f}")
@@ -565,6 +848,56 @@ def main() -> None:
     write_clip(WALK_H, walk, WALK_SOURCE, WALK_START, WALK_END, wsat, wtotal, "Walk")
     print(f"wrote {WALK_H} frames={len(walk)} dt={wdt:.4f} yaw={math.degrees(wyaw):.1f}deg clamp {wsat}/{wtotal}")
     print("runtime walk remains IK; walk clip is comparison-only")
+
+    baked: list[tuple[str, str, list[dict[str, tuple[float, float, float]]], int, int]] = []
+    style_lines = [
+        "Bandai 2 P5 style compare (firmware keeps one take per slot)",
+        "Clip flash bytes are frames*18*3*4. Host raster us comes from gundam_arena_test.",
+        "Device FPS is not measured in this script.",
+        "",
+    ]
+    for hud, normal_src, alts in GESTURE_SLOTS:
+        clip, sat, total, dt = load_gesture(normal_src)
+        best_src, best_clip, best_sat, best_total = normal_src, clip, sat, total
+        normal_score = score_clip(clip, sat, total)
+        style_lines.append(f"{hud} normal {normal_src} {fmt_score(normal_score)}")
+        print(f"gesture {hud} {normal_src} {fmt_score(normal_score)} dt={dt:.4f}")
+        chosen = "normal"
+        note = "keep normal"
+        for alt in alts:
+            alt_clip, alt_sat, alt_total, alt_dt = load_gesture(alt)
+            alt_score = score_clip(alt_clip, alt_sat, alt_total)
+            win, why = style_beats(hud, alt_score, normal_score)
+            style_lines.append(f"  vs {alt} {fmt_score(alt_score)} -> {why}")
+            print(f"  vs {alt} {fmt_score(alt_score)} -> {why} dt={alt_dt:.4f}")
+            if win:
+                best_src, best_clip, best_sat, best_total = alt, alt_clip, alt_sat, alt_total
+                chosen = alt
+                note = why
+        style_lines.append(f"  keep {chosen} ({note})")
+        style_lines.append("")
+        baked.append((hud, best_src, best_clip, best_sat, best_total))
+    write_gesture_bank(GESTURE_H, baked)
+    print(f"wrote {GESTURE_H}")
+
+    report = Path(__file__).resolve().parent / "dataset2_preview.txt"
+    lines = ["Bandai 2 locomotion preview (not in firmware)", ""]
+    for source, label in PREVIEW_LOCO:
+        src = RAW / source
+        if not src.exists():
+            lines.append(f"{label}: missing {source}")
+            continue
+        root, frames, dt = parse_bvh(src)
+        raw, sat, total, _, yaw = bake(src, 0, min(59, len(frames) - 1))
+        lines.append(
+            f"{label}: {source} src_frames={len(frames)} preview={len(raw)} "
+            f"fps={1.0 / dt:.1f} clamp={sat}/{total} yaw={math.degrees(yaw):.1f}deg")
+    report.write_text("\n".join(lines) + "\n")
+    print(f"wrote {report}")
+
+    style_report = Path(__file__).resolve().parent / "dataset2_style_report.txt"
+    style_report.write_text("\n".join(style_lines))
+    print(f"wrote {style_report}")
 
 
 if __name__ == "__main__":

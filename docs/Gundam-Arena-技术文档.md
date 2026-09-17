@@ -38,7 +38,7 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 
 - 独立 App 注册，进入后停 LVGL、直绘或画布回读
 - 19 骨骨架、绑定网格、每帧蒙皮求值
-- Play：走、转、跳、落地、原地踢球；支撑脚钉地 IK、对侧摆臂
+- Play：走、转、跳、落地、原地踢球；A/B 循环 Kick/Jump/六手势（WAVE L/R 为 Bandai 2 `active`）；支撑脚钉地 IK、对侧摆臂
 - Pose：循环选关节、拖动欧拉角、单关节复位、角度限位
 - 第三人称跟随相机；Play 模式触屏上半区环视
 - 触屏虚拟摇杆 + 机身键 + 可选 Joystick2 / Dual Button
@@ -66,10 +66,13 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 | Idle | 前进/转向死区 ≤0.18，且着地 | 双脚放下，相位清零 |
 | Walk | 前进轴 \|f\| > 0.18 | 速度 2.0，相位随位移前进 |
 | Turn | 几乎不前进但在转向 | 原地踏步，步幅系数 ±0.35 |
-| Jump | B 短按且着地 | 先地面下蹲 0.20s，再以 6.2 起跳，重力 18 |
-| Kick | A 短按且着地 | 收腿再前踢（约 1.47s），期间不走不跳；脚向前碰到球才给速度 |
+| Jump | 圈内槽 1，着地短按切到该项 | 先地面下蹲 0.20s，再以 4.0 起跳，重力 18 |
+| Kick | 圈内槽 0，着地短按切到该项 | 收腿再一次前踢（约 1.27s）；脚向前碰到球才给速度 |
+| Gesture | 圈内槽 2–7 | Bandai 2 六手势 clip（WAVE L/R 为 `active`），脚钉地，播完回 Idle |
 | Fall | 空中且 `vy≤0` | 伸腿准备落地 |
-| Land | 落地后 0.20s | 屈膝缓冲并收回，期间不响应新走/跳 |
+| Land | 落地后 0.20s | 屈膝缓冲并收回；着地时 A/B 可打断 |
+
+Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2`。开局未播过：第一次 A 是踢球，第一次 B 是双手举起。着地可打断当前 clip/蓄力跳/走/落地；空中切条忽略。走/转仍用触屏摇杆，不进圈。
 
 空中前进为地面的 45%，转向为 60%。未着地且输入失效时前进速度每步衰减到 98%。位置钳在 `±16`。
 
@@ -92,8 +95,8 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 | 前进/后退 | 下半区，`viewAxis=(363-y)/90` | — | 摇杆 Y → `viewAxis` |
 | 转向 | 下半区，`steer=(x-234)/140` | — | 摇杆 X → `steer`，控制器再取负 |
 | 环视（仅 Play） | 上半区拖，灵敏度 0.012 / 0.008 | — | 预览拖动手势 |
-| 踢球 | — | **A 短按** = `cancelPressed` | Dual Button 红键短按 |
-| 跳 / 复位关节 | — | **B 短按** = `confirmPressed`（Play=跳；Pose=复位关节） | Dual Button 蓝键短按 |
+| 下一动作并播放 | — | **A 短按** = `cancelPressed` | Dual Button 红键短按 |
+| 上一动作并播放 / 复位关节 | — | **B 短按** = `confirmPressed`（Play=上一槽；Pose=复位关节） | Dual Button 蓝键短按 |
 | 切 Play/Pose | — | **B 长按** = pause | Dual Button 红键长按 |
 | 选关节 | 左右箭头 `previous`/`next` | — | Pose 时水平导航步进 |
 | 退出 App | — | A+B 和弦 | 外设退出和弦 |
@@ -108,7 +111,7 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 
 手柄合并 `mergeExternalPad`：外设有效时覆盖 `steer`/`viewAxis`；确认/暂停/退出做或；导航步进有值才覆盖。Grove 5V 打不开则只走触控，日志警告。
 
-顶部状态字：校准中 `CAL`，就绪 `PAD`，故障 `PAD FAULT`。Pose 模式覆盖为关节名。
+顶部状态字：未播过显示 `A/B CLIP`，播过显示当前槽短名；校准中 `CAL`，就绪 `PAD`，故障 `PAD FAULT`。Pose 模式覆盖为关节名。
 
 ---
 
@@ -239,9 +242,9 @@ Root
 
 ### 6.4 踢球 clip
 
-走路仍用 §6.1 的程序 IK（无限循环、钉地）。踢球不走强化学习。离线把 Bandai `dataset-1_kick_normal_001.bvh` 第一条踢的**前摆**（第 48–62 帧）重定向到 19 骨，前面接收腿蓄力、后面收到 Idle，**丢掉源数据踢完后的后收**。烘焙时四肢 L/R 对调到 `-X` / `LThigh`；矢状面用 `-footZ`，让 BVH 前踢对上 Arena `+Z`。Bandai 原踢在出脚时会后仰配平，并用双臂摆动、大幅屈肘找平衡；SD 上那就是后仰和多余挥舞。烘焙后骨盆/胸钳成前倾（出脚时约 +0.16 / +0.18）。手臂不抄手部 IK，也不跟大腿过零点：收腿、出脚各锁一个臂姿（支撑臂后收约 −0.48/−0.55，踢腿侧几乎不动，肘常屈 −0.28～−0.50），出脚全程保持不动。
+走路仍用 §6.1 的程序 IK（无限循环、钉地）。踢球不走强化学习。Bandai `dataset-1_kick_normal_001.bvh` 第 48–62 帧经 IK 后是膝鞭：小腿先折再弹再折，看起来就是半途回抽再小踢一下。设备 clip **不再播这段**。改成作者写的收腿蓄力 → 一次伸直前踢 → 收回 Idle。烘焙时四肢 L/R 对调到 `-X` / `LThigh`。骨盆/胸钳成前倾（出脚时约 +0.12 / +0.16）。手臂不抄手部 IK：收腿、出脚各锁一个臂姿（支撑臂后收约 −0.48/−0.55，踢腿侧几乎不动，肘常屈 −0.28～−0.50），出脚全程保持不动。
 
-设备上只播 `arena_kick_clip.h`：`kKickFrames=44`，按 `clipT * 30` 在相邻帧间线性插值。顺序是收腿 → 前摆踢球 → 收回站立。Kick 期间 Root 位移/朝向锁住。机身 **A 短按**进入踢球。切 Pose 会取消 clip。
+设备上只播 `arena_kick_clip.h`：`kKickFrames=39`，按 `clipT * 30` 在相邻帧间线性插值。顺序是收腿 → 一次前踢 → 收回站立。Kick 期间 Root 位移/朝向锁住。机身 **A 短按**切到踢球槽并播放。切 Pose 会取消 clip。
 
 开局在机体 `-X` 前方（`kBallSpawnX=-0.42, kBallSpawnZ=0.74`）放一个半径 `0.16` 的小球。每帧用 `LFoot` 踝→趾胶囊扫掠相交，且脚须向前摆（相对朝向速度 > 1.5）才给一次冲量，避免收腿阶段误碰。球画进机体同一套光栅/深度，按透视遮挡，不再是屏幕 overlay。Pose 模式也继续积球。不重建网格。
 
@@ -251,14 +254,21 @@ Root
 
 ```bash
 python3 tools/arena_motion/fetch_bandai.py
+python3 tools/arena_motion/fetch_bandai2.py
 python3 tools/arena_motion/retarget_bandai.py
 ```
 
 BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行前要另选数据或取得授权。
 
+### 6.4.2 Bandai 2 空手手势
+
+六段进 `arena_gesture_clips.h`（每段 50 帧 / **10800 B** `.rodata`，短淡入 + 能量窗 + 淡出）。P5 只留更好的风格：`WAVE L` / `WAVE R` 用 `active_001`，`WAVE 2` / `UP L` / `UP R` / `UP 2` 仍用 `normal_001`。`youthful` 双手挥和 `active` 双手举因双臂同时打满上限被拒。脚钉 `kPlantAnkleY`，上肢按 §6.5 放大后 `limitOf()`。L/R 对调与踢球相同。walk/run/turn 只离线预览，不进固件、不进 A/B 圈。集 2 与集 1 同为 22 骨、`ZXY` / `Rz*Rx*Ry`。
+
+主机软件光栅中位耗时（8 次，非设备 FPS）：WAVE L 738 µs，WAVE R 759 µs，WAVE 2 737 µs，UP L 724 µs，UP R 716 µs，UP 2 728 µs。设备帧率未测（本轮不烧录）。
+
 ### 6.5 人体 mocap → SD 尺度（冻结，所有动作）
 
-2026-09-17 跳跃专项踩过两次：先把 CMU 关节角 1:1 写进 SD，蓄力几乎没蹲、整机却弹到约 0.6 个身长；再按映射角写臂和空中膝，摆臂只比走路大一点。踢球又踩了同一类：**人体配平 1:1 写进 SD**（出脚后仰、双臂泵摆屈肘）。人身上那是小角度找平衡，SD 头大肢短，看起来就是后仰和多余挥舞。后续任何走、跳、踢、挥、落地都按这条。
+2026-09-17 跳跃专项踩过两次：先把 CMU 关节角 1:1 写进 SD，蓄力几乎没蹲、整机却弹到约 0.6 个身长；再按映射角写臂和空中膝，摆臂只比走路大一点。踢球又踩了同一类：**人体配平 1:1 写进 SD**（出脚后仰、双臂泵摆屈肘）。人身上那是小角度找平衡，SD 头大肢短，看起来就是后仰和多余挥舞。再后接 Bandai 踢的「前摆窗」：源数据是膝上提再鞭踢，双骨 IK 之后变成小腿先折到 1.63、弹到 0.46、再折到 1.80。真机就是抬腿没问题、往前踢半途收回、再一小踢。后续任何走、跳、踢、挥、落地都按这条。
 
 **禁止**
 
@@ -268,6 +278,7 @@ BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行
 - 把人体 IK 求出的臂角、空中膝角当最终值。SD 肢短，同样世界位移对应的角偏小，看起来会像走路。
 - 把人体踢/打时的后仰配平写进骨盆/胸。人身上是小角度，SD 头大，看起来就是后仰。
 - 把人体踢/打时的手臂配平（前摆后摆、大幅屈肘）写进上臂/前臂。人用胳膊找平衡；SD 上就是多余的挥舞。
+- 把人体踢的膝鞭（折膝→弹直→再折）当「前摆窗」播出去。自检只看大腿有没有前摆、有没有后仰，看不出小腿打了两下。真机就是半途回抽。
 
 **必须**
 
@@ -277,8 +288,9 @@ BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行
 - 短肢动作按 SD 可读幅度放大：臂后摆/前摆要明显大于走路（当前 −0.85 / +0.80）；空中收腿约 −0.55 / 1.10。
 - 踢球/出拳的手臂跟主动作分段锁姿势，不要抄手部世界坐标的双骨 IK，也不要按大腿符号过零点。当前踢：收腿支撑臂 −0.48、出脚锁 −0.55，踢腿侧上臂 0.18→0.08，肘常屈 −0.28～−0.50，出脚段不再摆。
 - 顶点团身不要打满大腿 −0.80 / 小腿 1.80：那是短腿硬折人体姿势，剪影会缩成一团。地面蹲深已接近大腿上限就不要再拧。
+- 一次踢只有一次伸：收腿后大腿单调前摆、小腿单调伸开，再收回站立。源窗若小腿有第二峰就丢掉，改作者出脚姿势。烘焙要断言前摆段 `LShin` 不得回升；主机测试同样断言。出脚终点还要让脚在高速段扫过球（`fwd>1.5`），不要在平滑末端才贴上球——那时速度已经掉没，击不飞。
 
-核对口诀：蹲完头/髋有没有明显下降；跳起来是不是大约四分之一个机体；摆臂是否明显大于走路；空中收腿看得出但没缩成一团；踢/打时骨盆胸是不是前倾而不是后仰；踢的时候胳膊是不是一条干净的配平，而不是来回挥。有一项不对，就是尺度又错了。
+核对口诀：蹲完头/髋有没有明显下降；跳起来是不是大约四分之一个机体；摆臂是否明显大于走路；空中收腿看得出但没缩成一团；踢/打时骨盆胸是不是前倾而不是后仰；踢的时候胳膊是不是一条干净的配平，而不是来回挥；**前踢是不是一下踢完，中间有没有收回再踢。** 有一项不对，就是尺度又错了。
 
 ### 6.6 相机
 
@@ -636,6 +648,70 @@ bash tools/test_gundam_arena.sh [输出目录]
 - **镜像：** `V0.5-213-g8d5784a-dirty`，ELF SHA256 `a2debb39701e1f14…`，编译日 `Sep 17 2026`。
 - **已验证：** 用户真机确认胳膊不再来回甩。
 
+### 2026-09-17 · 站球移动 P0 + Bandai 2 标签 P1.1
+
+- **范围：** 默认玩法改为站在加大后的球顶上滚走（microduck-basketball 合同，程序约束）；Kick 降为关 `onBall` 才测的 clip。并行只拉 Bandai 2 cfg 标签，不下 BVH。不烧录（P0.6 无摇杆挂起）。
+- **代码：** `kBallR=0.50`，`kBallWalkSpeed=1.4`，开局 `ball=(0,R,0)`、`onBall=true`、Root `kBallRootY`。输入驱动球 xz，机体跟顶点；`applyBallStance` 双脚上半球 IK；`stepBall` 站球时跳过扫掠/抛体；A/B 站球忽略。HUD `BALL`。主机 `groundPlay()` 关站球测走/跳/踢 clip。新增 `arena-ball-top.ppm` / `arena-ball-side.ppm`。`tools/arena_motion/fetch_bandai2_index.py` 拉 `cfg/content_label.txt`、`style_label.txt` 到 gitignore 的 `raw/`。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`，occupancy=0.450644。出生在球顶、直行滚走、零输入停、转向不掉、站球 A 不进 Kick、关 onBall 仍能播踢 clip。
+- **Bandai 2 标签（权威 cfg，不是 README Contents）：** 10 内容 × 7 风格。内容：`walk`、`walk-turn-left`、`walk-turn-right`、`run`、`wave-both-hands`、`wave-left-hand`、`wave-right-hand`、`raise-up-both-hands`、`raise-up-left-hand`、`raise-up-right-hand`。风格：`active`、`elderly`、`exhausted`、`feminine`、`masculine`、`normal`、`youthful`。README Contents 把第 9/10 类都写成 `raise-up-right-hand`；cfg 与 Visualization 一致，第 9 类是 **`raise-up-left-hand`**，第 10 类是 `raise-up-right-hand`。歧义消除。本轮未下 `data.zip` / BVH。
+
+### 2026-09-17 · 烧录查看（站球开局）
+
+- **范围：** 用户要求烧录站球默认玩法，看人是否站在加大后的球顶上。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3e5a40` B（4,086,336），余量 21%。esptool `Hash of data verified`，RTS 重启。
+- **镜像：** `V0.5-214-ge09ef64-dirty`。
+- **已验证：** 写入与重启成功。
+- **未验证：** 用户真机站球观感；无 Joystick2 时走/转可用触屏虚拟摇杆。站球时 A/B 不踢不跳。
+
+### 2026-09-17 · 放弃踩球，改回踢球
+
+- **范围：** 用户明确放弃站在球上滚走。运行时、测试、HUD 从 `e09ef64` 踢球实现恢复：`kBallR=0.16`，出生点脚前 `kBallSpawnX/Z`，A 短按 Kick 且脚碰球才击飞，B 短按跳。
+- **计划：** `docs/Gundam-Arena-Bandai2-动作库与踩球计划.md` 工作流 B / P0 / P3 全部取消，不再推进。Bandai 2 的 10+10 动作库（工作流 A）仍有效；P1.1 标签结论保留。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`，occupancy=0.450644。踢球回归（出生脚前小球、A 进 Kick、脚碰球才击飞）已恢复。
+
+### 2026-09-17 · 烧录查看（改回踢球）
+
+- **范围：** 用户要求把踢球固件烧回去，覆盖上一版站球镜像。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3e5780` B（4,085,632），余量 21%。esptool `Hash of data verified`，RTS 重启。
+- **已验证：** 写入与重启成功。
+- **未验证：** 用户真机踢球观感。
+
+### 2026-09-17 · A/B 循环 + Bandai 2 六手势
+
+- **范围：** P1.2 下 10+10 条 BVH；P1.3 确认集 2 与集 1 同 22 骨 / ZXY；P2.1 通用烘焙；P4 六手势进固件。Play 下 A 下一个、B 上一个，圈内 Kick/Jump/六手势。不烧录。
+- **代码：** `fetch_bandai2.py`、`arena_gesture_clips.h`（6×50 帧）、`clipStep` 边沿、HUD 槽名。walk/run/turn 仅 `dataset2_preview.txt`。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`，occupancy=0.450644；device-control A/B 仍是 cancel/confirm。
+- **未验证：** 用户真机手势观感。
+
+### 2026-09-17 · P5 风格变体（不烧录）
+
+- **范围：** 对比计划里的风格备选，只把更好的写进固件手势库。walk/run/turn 风格只进离线报告。不烧录。
+- **取舍：** WAVE L/R 换成 `active`（峰值能量 2.40→3.32、2.36→3.14，限位未变差）。WAVE 2 `youthful`、UP 2 `active` 因双臂同时打满上限拒绝。UP L/R 没有风格备选。
+- **体积 / 帧时：** 每段 50 帧 = 10800 B；主机渲染中位 716–759 µs。设备 FPS / 固件哈希未测。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`，occupancy=0.450644；中段手掌距头 >0.16、肩距 >0.90、脚 y <0.40。
+- **未验证：** 用户真机风格观感。
+
+### 2026-09-17 · 烧录查看（A/B 循环 + P5 手势）
+
+- **范围：** 用户要求烧录当前 A/B 循环圈和六手势（WAVE L/R 为 `active`）固件，看真机效果。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3f56f0` B（4,151,024），余量 20%。相对上一版踢球固件 `0x3e5780` 大约多 65 KiB（六段手势数组）。esptool `Hash of data verified`，RTS 重启。
+- **镜像：** `V0.5-214-ge09ef64-dirty`，ELF SHA256 `ec0f292b3c826307…`，编译日 `Sep 17 2026`。
+- **已验证：** 写入与重启成功。
+- **未验证：** 用户真机 A/B 循环与手势观感；设备 FPS。
+
+### 2026-09-17 · 踢球去掉半途回抽
+
+- **范围：** 真机反馈前踢半途收回再小踢。核对 clip：Bandai 48–62 经 IK 后小腿先折到 1.63 再弹到 0.46 再折到 1.80。
+- **修正：** 丢掉这段膝鞭。收腿后作者姿势一次伸到 `LThigh=-0.80` / `LShin=0.50`，前摆小腿不得再折。`kKickFrames=39`。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`，occupancy=0.450644；前摆小腿单调伸开，脚碰球仍击飞一次。用户 2026-09-17 确认真机踢球连贯。
+
+### 2026-09-17 · 烧录查看（一次前踢）
+
+- **范围：** 用户要求烧录去掉半途回抽后的踢球固件。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3f52b0` B（4,149,936），余量 20%。esptool `Hash of data verified`，RTS 重启。
+- **镜像：** `V0.5-214-ge09ef64-dirty`，ELF SHA256 `4b6746db43159630…`，编译日 `Sep 17 2026`。
+- **已验证：** 写入与重启成功。用户 2026-09-17 确认真机踢球连贯。
+
 ---
 
 ## 13. Bandai → Arena 运动计划
@@ -664,7 +740,7 @@ bash tools/test_gundam_arena.sh [输出目录]
 |---|---|---|
 | P0 规格 | 骨对照、折叠、clip 格式、许可 | 完成 |
 | P1 数据 | 拉取 kick/walk BVH，核 22 骨 | 完成（仅本地 `raw/`） |
-| P2 转换器 | `retarget_bandai.py`：收腿 + Bandai 48–62 前摆，丢掉后收 | 完成 |
+| P2 转换器 | `retarget_bandai.py`：收腿 + 一次作者前踢；Bandai 48–62 膝鞭丢弃 | 完成 |
 | P3 播放 | `Action::Kick`，Idle+B 触发，HUD `KICK` | 完成 |
 | P4 回归 | 主机测试 + `arena-kick.ppm` | 完成 |
 | P5 球道具 | 小半径球体、踢球瞬间给速度 | 完成（两轮自检） |

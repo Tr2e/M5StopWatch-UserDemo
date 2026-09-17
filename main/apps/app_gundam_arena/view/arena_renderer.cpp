@@ -107,10 +107,12 @@ void ArenaRenderer::render(lgfx::LGFXBase& canvas,const CharacterModel& characte
                 canvas.drawLine(x+sign*4+d,y,x-sign*4+d,y+9,space::navigation);
             }
         }
-    }else if(character.action==Action::Kick)canvas.drawString("KICK",canvas.width()/2,18);
-    else if(view.padHint==1)canvas.drawString("CAL",canvas.width()/2,18);
+    }else if(character.action==Action::Kick||character.action==Action::Jump||
+             character.action==Action::Gesture||character.clipIndex<kPlayClipCount){
+        canvas.drawString(playClipHud(character.clipIndex),canvas.width()/2,18);
+    }else if(view.padHint==1)canvas.drawString("CAL",canvas.width()/2,18);
     else if(view.padHint==2)canvas.drawString("PAD",canvas.width()/2,18);
     else if(view.padHint==3)canvas.drawString("PAD FAULT",canvas.width()/2,18);
-    else canvas.drawString("A KICK  B JUMP",canvas.width()/2,18);
+    else canvas.drawString("A/B CLIP",canvas.width()/2,18);
 }
 } // namespace gundam_arena

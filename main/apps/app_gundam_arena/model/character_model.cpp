@@ -1,5 +1,6 @@
 #include "character_model.h"
 #include "arena_kick_clip.h"
+#include "arena_gesture_clips.h"
 #include <algorithm>
 #include <cmath>
 
@@ -188,9 +189,9 @@ void applyRoot(CharacterModel& c){
     c.pose.rootYaw=c.heading;
 }
 
-void applyKick(CharacterModel& c,float dt){
-    const int last=kKickFrames-1;
-    const float t=clampf(c.clipT*kKickFps,0.f,float(last));
+void sampleClip(CharacterModel& c,const float* joints,int frames,float fps){
+    const int last=std::max(0,frames-1);
+    const float t=clampf(c.clipT*fps,0.f,float(last));
     const int i0=int(t);
     const int i1=i0>=last?last:i0+1;
     const float u=t-float(i0);
@@ -198,19 +199,66 @@ void applyKick(CharacterModel& c,float dt){
         const int a0=(i0*18+(b-1))*3;
         const int a1=(i1*18+(b-1))*3;
         JointEuler e{
-            kKickJoints[a0]+(kKickJoints[a1]-kKickJoints[a0])*u,
-            kKickJoints[a0+1]+(kKickJoints[a1+1]-kKickJoints[a0+1])*u,
-            kKickJoints[a0+2]+(kKickJoints[a1+2]-kKickJoints[a0+2])*u};
+            joints[a0]+(joints[a1]-joints[a0])*u,
+            joints[a0+1]+(joints[a1+1]-joints[a0+1])*u,
+            joints[a0+2]+(joints[a1+2]-joints[a0+2])*u};
         c.pose.anim[b]=clampJoint(BoneId(b),e);
     }
+}
+
+bool advanceClip(CharacterModel& c,float dt,int frames,float fps){
     c.clipT+=dt;
-    if(c.clipT>=float(last)/kKickFps){
+    if(frames<=1)return true;
+    return c.clipT>=float(frames-1)/fps;
+}
+
+void applyKick(CharacterModel& c,float dt){
+    sampleClip(c,kKickJoints,kKickFrames,kKickFps);
+    if(advanceClip(c,dt,kKickFrames,kKickFps)){
         c.action=Action::Idle;
         c.clipT=0;
         c.leftPlanted=c.rightPlanted=false;
         c.ball.struck=false;
         c.kickToeHad=false;
     }
+}
+
+void applyGesture(CharacterModel& c,float dt){
+    const int g=c.clipIndex-2;
+    if(g<0||g>=kGestureCount){
+        c.action=Action::Idle;
+        c.clipT=0;
+        return;
+    }
+    sampleClip(c,kGestureJoints+kGestureOffset[g],kGestureFrames[g],kGestureFps);
+    if(advanceClip(c,dt,kGestureFrames[g],kGestureFps)){
+        c.action=Action::Idle;
+        c.clipT=0;
+        c.leftPlanted=c.rightPlanted=false;
+    }
+}
+
+int nextPlayClip(int index,int step){
+    if(index==kPlayClipNone)return step>0?0:kPlayClipCount-1;
+    const int n=kPlayClipCount;
+    return (index+(step>0?1:n-1))%n;
+}
+
+void startPlayClip(CharacterModel& c,int slot){
+    c.clipIndex=slot;
+    c.clipT=0;
+    c.walkPhase=0;
+    c.leftPlanted=c.rightPlanted=false;
+    if(slot==0){
+        c.action=Action::Kick;
+        c.ball.struck=false;
+        c.kickToeHad=false;
+    }else if(slot==1){
+        c.action=Action::Jump;
+        c.vy=0;
+        c.grounded=true;
+        c.y=0;
+    }else c.action=Action::Gesture;
 }
 
 Point closestOnSeg(Point a,Point b,Point p){
@@ -312,23 +360,19 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     }
 
     const bool coiled=c.action==Action::Jump&&c.grounded;
-    const bool busy=c.action==Action::Land||c.action==Action::Kick||coiled;
+    const bool clipHold=c.action==Action::Land||c.action==Action::Kick||c.action==Action::Gesture||coiled;
     if(c.action==Action::Land){
         c.landT-=dt;if(c.landT<=0)c.action=Action::Idle;
     }
 
     const float forward=in.valid?clampf(in.forward,-1.f,1.f):0.f;
     const float turn=in.valid?clampf(in.turn,-1.f,1.f):0.f;
-    if(!busy){
-        if(in.kick && c.grounded){
-            c.action=Action::Kick;c.clipT=0;c.walkPhase=0;c.ball.struck=false;c.kickToeHad=false;
-        }else if(in.jump && c.grounded){
-            c.action=Action::Jump;c.clipT=0;c.walkPhase=0;c.vy=0;
-        }else if(c.grounded){
-            if(std::abs(forward)>.18f)c.action=Action::Walk;
-            else if(std::abs(turn)>.18f)c.action=Action::Turn;
-            else {c.action=Action::Idle;c.walkPhase=0;}
-        }
+    if(c.grounded && in.clipStep){
+        startPlayClip(c,nextPlayClip(c.clipIndex,in.clipStep));
+    }else if(!clipHold && c.grounded){
+        if(std::abs(forward)>.18f)c.action=Action::Walk;
+        else if(std::abs(turn)>.18f)c.action=Action::Turn;
+        else {c.action=Action::Idle;c.walkPhase=0;}
     }
 
     if(c.action==Action::Jump&&c.grounded){
@@ -339,7 +383,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     const float air=c.grounded?1.f:.45f;
     c.forwardSpeed=(c.grounded||in.valid)?forward*kWalkSpeed*air:c.forwardSpeed*.98f;
     c.angularSpeed=turn*kTurnSpeed*(c.grounded?1.f:.6f);
-    if(c.action!=Action::Kick && !(c.action==Action::Jump&&c.grounded)){
+    if(c.action!=Action::Kick && c.action!=Action::Gesture && !(c.action==Action::Jump&&c.grounded)){
         c.heading=std::remainder(c.heading+c.angularSpeed*dt,2.f*kPi);
         c.x=clampf(c.x+std::sin(c.heading)*c.forwardSpeed*dt,-kArenaHalfExtent,kArenaHalfExtent);
         c.z=clampf(c.z+std::cos(c.heading)*c.forwardSpeed*dt,-kArenaHalfExtent,kArenaHalfExtent);
@@ -354,6 +398,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     c.pose.anim={};
     applyRoot(c);
     if(c.action==Action::Kick)applyKick(c,dt);
+    else if(c.action==Action::Gesture)applyGesture(c,dt);
     else if(c.action==Action::Walk)applyWalk(c,forward==0.f?1.f:forward);
     else if(c.action==Action::Turn)applyWalk(c,turn>=0.f?.35f:-.35f);
     else if(c.action==Action::Jump||c.action==Action::Fall){
@@ -361,7 +406,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
         if(!c.grounded)c.clipT+=dt;
     }else if(c.action==Action::Land)applyLandPose(c);
     else applyIdleIk(c);
-    if(c.action!=Action::Kick)applyTurnFollow(c);
+    if(c.action!=Action::Kick && c.action!=Action::Gesture)applyTurnFollow(c);
     c.pose.anim[int(BoneId::Head)].yaw=clampf(c.pose.anim[int(BoneId::Head)].yaw,-.87f,.87f);
     stepBall(c,dt);
 }

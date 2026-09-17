@@ -1,0 +1,12 @@
+Bandai 2 locomotion preview (not in firmware)
+
+walk: dataset-2_walk_normal_001.bvh src_frames=273 preview=60 fps=30.0 clamp=0/1080 yaw=6.5deg
+walk-active: dataset-2_walk_active_001.bvh src_frames=207 preview=60 fps=30.0 clamp=0/1080 yaw=-0.2deg
+walk-youthful: dataset-2_walk_youthful_001.bvh src_frames=210 preview=60 fps=30.0 clamp=0/1080 yaw=-178.3deg
+run: dataset-2_run_normal_001.bvh src_frames=68 preview=60 fps=30.0 clamp=16/1080 yaw=-4.5deg
+run-active: dataset-2_run_active_001.bvh src_frames=68 preview=60 fps=30.0 clamp=34/1080 yaw=177.4deg
+run-youthful: dataset-2_run_youthful_001.bvh src_frames=98 preview=60 fps=30.0 clamp=2/1080 yaw=-178.6deg
+walk-turn-left: dataset-2_walk-turn-left_normal_001.bvh src_frames=102 preview=60 fps=30.0 clamp=0/1080 yaw=-78.0deg
+walk-turn-left-active: dataset-2_walk-turn-left_active_001.bvh src_frames=130 preview=60 fps=30.0 clamp=0/1080 yaw=-84.1deg
+walk-turn-right: dataset-2_walk-turn-right_normal_001.bvh src_frames=100 preview=60 fps=30.0 clamp=0/1080 yaw=-4.9deg
+walk-turn-right-active: dataset-2_walk-turn-right_active_001.bvh src_frames=133 preview=60 fps=30.0 clamp=0/1080 yaw=-6.6deg

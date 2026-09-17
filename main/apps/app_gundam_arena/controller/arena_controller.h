@@ -39,8 +39,12 @@ public:
     bool update(const lets_and_go::DeviceControlFrame& input,uint32_t now){
         if(input.input.exitPressed){_exit=true;return false;}
         ArenaInput in{};
-        in.kick=input.input.cancelPressed;
-        in.jump=input.input.confirmPressed;
+        const bool play=_character.mode==Mode::Play;
+        if(play && input.input.cancelPressed && !_hadCancel)_pendingClip=1;
+        else if(play && input.input.confirmPressed && !_hadConfirm)_pendingClip=-1;
+        _hadCancel=input.input.cancelPressed;
+        _hadConfirm=input.input.confirmPressed;
+        in.clipStep=_pendingClip;
         in.toggleMode=input.input.pausePressed;
         in.valid=input.input.valid;
         if(in.valid){
@@ -69,7 +73,8 @@ public:
         while(_accumulator>=kStep && steps<5){
             stepCharacter(_character,in,kStep);
             updateFollowView(_view,_character,kStep);
-            in.jump=false;in.kick=false;in.toggleMode=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
+            in.clipStep=0;in.toggleMode=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
+            _pendingClip=0;
             _accumulator-=kStep;++steps;
         }
         if(steps==5)_accumulator=0;
@@ -83,5 +88,7 @@ private:
     float _accumulator=0;
     int _lastDx=0,_lastDy=0;
     bool _exit=false;
+    bool _hadCancel=false,_hadConfirm=false;
+    int _pendingClip=0;
 };
 } // namespace gundam_arena

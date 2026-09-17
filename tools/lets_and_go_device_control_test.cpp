@@ -203,10 +203,10 @@ int main() {
     check(menuTouchTarget(GameScreen::ArenaPlay,32,233)==TouchAction::Previous,"arena pose arrows lost");
     for(uint32_t t=0;t<=400;t+=10)controls.buttons(t>=50&&t<150,false,t);
     auto arenaA=controls.consume(true);
-    check(arenaA.input.cancelPressed && !arenaA.input.confirmPressed,"arena A click did not map to kick");
+    check(arenaA.input.cancelPressed && !arenaA.input.confirmPressed,"arena A click did not map to cancel");
     for(uint32_t t=410;t<=810;t+=10)controls.buttons(false,t>=460&&t<560,t);
     auto arenaB=controls.consume(true);
-    check(arenaB.input.confirmPressed && !arenaB.input.cancelPressed,"arena B click did not map to jump");
+    check(arenaB.input.confirmPressed && !arenaB.input.cancelPressed,"arena B click did not map to confirm");
     show(GameScreen::Racing);
     controls.touch(true,374,240);
     auto race=controls.consume(true);

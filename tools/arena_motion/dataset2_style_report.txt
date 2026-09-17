@@ -1,0 +1,31 @@
+Bandai 2 P5 style compare (firmware keeps one take per slot)
+
+Host software-raster median of 8 frames after warmup (not device FPS):
+WAVE L 10800B / 738us
+WAVE R 10800B / 759us
+WAVE 2 10800B / 737us
+UP L 10800B / 724us
+UP R 10800B / 716us
+UP 2 10800B / 728us
+
+WAVE L normal dataset-2_wave-left-hand_normal_001.bvh frames=50 flash=10800B peak=2.40 clamp=0/3546 sh_lim=0.00 ua_lim=0.74 both_up=0.00 head_sh=0.00
+  vs dataset-2_wave-left-hand_active_001.bvh frames=50 flash=10800B peak=3.32 clamp=0/3258 sh_lim=0.00 ua_lim=0.58 both_up=0.00 head_sh=0.00 -> higher peak, limits ok
+  keep dataset-2_wave-left-hand_active_001.bvh
+
+WAVE R normal dataset-2_wave-right-hand_normal_001.bvh frames=50 flash=10800B peak=2.36 clamp=0/3366 sh_lim=0.00 ua_lim=0.52 both_up=0.00 head_sh=0.00
+  vs dataset-2_wave-right-hand_active_001.bvh frames=50 flash=10800B peak=3.14 clamp=0/3240 sh_lim=0.00 ua_lim=0.74 both_up=0.00 head_sh=0.00 -> higher peak, limits ok
+  keep dataset-2_wave-right-hand_active_001.bvh
+
+WAVE 2 normal dataset-2_wave-both-hands_normal_001.bvh frames=50 flash=10800B peak=2.86 clamp=0/3618 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
+  vs dataset-2_wave-both-hands_youthful_001.bvh frames=50 flash=10800B peak=4.96 clamp=0/4626 sh_lim=0.00 ua_lim=0.72 both_up=0.58 head_sh=0.00 -> reject: hands collapse together
+  keep normal
+
+UP L normal dataset-2_raise-up-left-hand_normal_001.bvh frames=50 flash=10800B peak=2.36 clamp=0/990 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
+  keep normal (no style candidate in the 10+10)
+
+UP R normal dataset-2_raise-up-right-hand_normal_001.bvh frames=50 flash=10800B peak=2.15 clamp=0/1062 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
+  keep normal (no style candidate in the 10+10)
+
+UP 2 normal dataset-2_raise-up-both-hands_normal_001.bvh frames=50 flash=10800B peak=2.88 clamp=0/918 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
+  vs dataset-2_raise-up-both-hands_active_001.bvh frames=50 flash=10800B peak=4.96 clamp=0/684 sh_lim=0.00 ua_lim=0.36 both_up=0.34 head_sh=0.00 -> reject: hands collapse together
+  keep normal

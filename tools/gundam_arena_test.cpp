@@ -1,11 +1,13 @@
 #include "../main/apps/app_gundam_arena/view/arena_renderer.h"
 #include "../main/apps/app_gundam_arena/controller/arena_controller.h"
 #include "../main/apps/app_gundam_arena/model/arena_kick_clip.h"
+#include "../main/apps/app_gundam_arena/model/arena_gesture_clips.h"
 #include "../tools/arena_motion/arena_walk_clip.h"
 #include "../main/apps/app_lets_and_go_racer/input/device_control_logic.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -27,6 +29,12 @@ static int countChanged(const LGFX_Sprite& a,const LGFX_Sprite& b){
     return n;
 }
 
+static void playSlot(CharacterModel& c,int slot){
+    c.clipIndex=slot<=0?kPlayClipNone:slot-1;
+    ArenaInput in{};in.valid=true;in.clipStep=1;
+    stepCharacter(c,in,kStep);
+}
+
 static float robotScreenHeight(const LGFX_Sprite& canvas){
     const int cx=canvas.width()/2,cy=canvas.height()/2,r=std::min(canvas.width(),canvas.height())/2;
     int top=canvas.height(),bottom=-1;
@@ -44,19 +52,35 @@ static float robotScreenHeight(const LGFX_Sprite& canvas){
 int main(int argc,char** argv){
     const std::string out=argc>1?argv[1]:"/tmp/gundam-arena";
     static_assert(kWalkFrames==60,"walk comparison clip window drifted");
-    static_assert(kKickFrames==44,"kick clip window drifted");
+    static_assert(kKickFrames==39,"kick clip window drifted");
+    static_assert(kGestureCount==6 && kGestureFrames[0]==50,"gesture bank drifted");
+    static_assert(kGestureFlashBytes[0]==10800 && kGestureFlashBytes[5]==10800,"gesture flash size drifted");
     const auto kickPitch=[](int frame,BoneId bone){
         return kKickJoints[frame*18*3+(int(bone)-1)*3+1];
     };
-    const float strikeRua=kickPitch(21,BoneId::RUpperArm);
-    const float strikeLua=kickPitch(21,BoneId::LUpperArm);
+    const float strikeRua=kickPitch(25,BoneId::RUpperArm);
+    const float strikeLua=kickPitch(25,BoneId::LUpperArm);
     assert(strikeLua>-.02f && strikeLua<.12f);
     assert(strikeRua<-.50f);
-    for(int f=22;f<=35;++f){
+    for(int f=26;f<=30;++f){
         assert(std::abs(kickPitch(f,BoneId::RUpperArm)-strikeRua)<1e-4f);
         assert(std::abs(kickPitch(f,BoneId::LUpperArm)-strikeLua)<1e-4f);
         assert(kickPitch(f,BoneId::LForearm)>-.55f);
         assert(kickPitch(f,BoneId::RForearm)>-.55f);
+    }
+    float prevThigh=kickPitch(0,BoneId::LThigh);
+    float prevShin=kickPitch(0,BoneId::LShin);
+    bool afterChamber=false;
+    for(int f=1;f<kKickFrames;++f){
+        const float lt=kickPitch(f,BoneId::LThigh);
+        const float ls=kickPitch(f,BoneId::LShin);
+        if(prevThigh>.50f)afterChamber=true;
+        if(afterChamber && lt<prevThigh-0.01f){
+            assert(ls<=prevShin+0.04f);
+            assert(lt<=prevThigh+0.02f);
+        }
+        prevThigh=lt;
+        prevShin=ls;
     }
     Mesh mesh;Skeleton bind;
     buildRx78Rigged(mesh,bind);
@@ -127,14 +151,13 @@ int main(int argc,char** argv){
     }
     assert(std::abs(std::remainder(c.heading-heading0,2.f*kPi))>.2f);
     assert(std::abs(std::remainder(locked.camYaw-cam0,2.f*kPi))<.05f);
-    in.turn=0;in.jump=true;stepCharacter(c,in,kStep);in.jump=false;
+    in.turn=0;playSlot(c,1);
     bool leftGround=false;
     for(int i=0;i<180;++i){stepCharacter(c,in,kStep);if(!c.grounded)leftGround=true;}
     assert(leftGround && c.grounded && c.y>-1e-4f);
 
     c={};resetCharacter(c);
-    in={};in.valid=true;in.kick=true;
-    stepCharacter(c,in,kStep);in.kick=false;
+    playSlot(c,0);
     assert(c.action==Action::Kick && c.grounded);
     float minLeft=0,minRight=0,chamber=0,minPelvis=9,minChest=9;
     float minLua=9,minLfa=9,minRfa=9,minRua=9;
@@ -188,15 +211,13 @@ int main(int argc,char** argv){
 
     c={};resetCharacter(c);
     c.ball.x=0;c.ball.z=-1.2f;c.ball.y=kBallR;
-    in={};in.valid=true;in.kick=true;
-    stepCharacter(c,in,kStep);in.kick=false;
+    playSlot(c,0);
     for(int i=0;i<90;++i)stepCharacter(c,in,kStep);
     assert(!c.ball.struck && std::abs(c.ball.z+1.2f)<.02f);
 
     c={};resetCharacter(c);
-    in={};in.valid=true;in.kick=true;
-    stepCharacter(c,in,kStep);in.kick=false;
-    for(int i=0;i<80;++i)stepCharacter(c,in,kStep);
+    playSlot(c,0);
+    for(int i=0;i<60;++i)stepCharacter(c,in,kStep);
     assert(c.ball.struck);
     const float airZ=c.ball.z,airY=c.ball.y;
     in.toggleMode=true;stepCharacter(c,in,kStep);in.toggleMode=false;
@@ -205,8 +226,7 @@ int main(int argc,char** argv){
     assert(std::abs(c.ball.z-airZ)>1e-4f || std::abs(c.ball.y-airY)>1e-4f);
 
     c={};resetCharacter(c);
-    in={};in.valid=true;in.jump=true;
-    stepCharacter(c,in,kStep);in.jump=false;
+    playSlot(c,1);
     assert(c.action==Action::Jump && c.grounded);
     for(int i=0;i<8;++i){
         stepCharacter(c,in,kStep);
@@ -261,7 +281,7 @@ int main(int argc,char** argv){
     for(int i=0;i<12;++i)stepCharacter(c,in,kStep);
     assert(c.action==Action::Walk);
     assert(c.walkPhase>0.f);
-    in.jump=true;stepCharacter(c,in,kStep);in.jump=false;
+    playSlot(c,1);
     assert(c.action==Action::Jump && c.grounded);
     for(int i=0;i<20 && c.grounded;++i)stepCharacter(c,in,kStep);
     assert(c.action==Action::Jump && !c.grounded);
@@ -300,6 +320,66 @@ int main(int argc,char** argv){
     assert(wraps>=20 && samples>100 && ipsilateral==0);
     assert(stanceSpan<.45f);
 
+    c={};resetCharacter(c);
+    in={};in.valid=true;
+    Action seen[kPlayClipCount]{};
+    for(int n=0;n<kPlayClipCount;++n){
+        in.clipStep=1;stepCharacter(c,in,kStep);in.clipStep=0;
+        seen[n]=c.action;
+        assert(c.clipIndex==n);
+    }
+    assert(seen[0]==Action::Kick);
+    assert(seen[1]==Action::Jump);
+    for(int n=2;n<kPlayClipCount;++n)assert(seen[n]==Action::Gesture);
+    in.clipStep=1;stepCharacter(c,in,kStep);in.clipStep=0;
+    assert(c.action==Action::Kick && c.clipIndex==0);
+    c={};resetCharacter(c);
+    in={};in.valid=true;in.clipStep=-1;
+    stepCharacter(c,in,kStep);in.clipStep=0;
+    assert(c.action==Action::Gesture && c.clipIndex==kPlayClipCount-1);
+    playSlot(c,2);
+    assert(c.action==Action::Gesture && c.clipIndex==2);
+    in.clipStep=1;stepCharacter(c,in,kStep);in.clipStep=0;
+    assert(c.action==Action::Gesture && c.clipIndex==3);
+    playSlot(c,2);
+    for(int i=0;i<18;++i)stepCharacter(c,in,kStep);
+    assert(c.action==Action::Gesture);
+    assert(std::abs(c.pose.anim[int(BoneId::LUpperArm)].pitch)
+           +std::abs(c.pose.anim[int(BoneId::RUpperArm)].pitch)>.20f);
+    playSlot(c,1);
+    for(int i=0;i<24 && c.grounded;++i)stepCharacter(c,in,kStep);
+    assert(!c.grounded);
+    in.clipStep=1;stepCharacter(c,in,kStep);in.clipStep=0;
+    assert(c.action==Action::Jump || c.action==Action::Fall);
+    assert(!c.grounded);
+
+    const char* wantSrc[]={
+        "wave-left-hand_active","wave-right-hand_active","wave-both-hands_normal",
+        "raise-up-left-hand_normal","raise-up-right-hand_normal","raise-up-both-hands_normal"};
+    for(int g=0;g<kGestureCount;++g){
+        const std::string src=kGestureSource[g];
+        assert(src.find(wantSrc[g])!=std::string::npos);
+        c={};resetCharacter(c);
+        in={};in.valid=true;
+        playSlot(c,2+g);
+        for(int i=0;i<50;++i)stepCharacter(c,in,kStep);
+        assert(c.action==Action::Gesture);
+        evaluateSkeleton(sk,c.pose);
+        const Point head=sk.world[int(BoneId::Head)].t;
+        const Point lh=sk.world[int(BoneId::LHand)].t;
+        const Point rh=sk.world[int(BoneId::RHand)].t;
+        const Point ls=sk.world[int(BoneId::LShoulder)].t;
+        const Point rs=sk.world[int(BoneId::RShoulder)].t;
+        const Point lf=sk.world[int(BoneId::LFoot)].t;
+        const Point rf=sk.world[int(BoneId::RFoot)].t;
+        assert(lf.y<.40f && rf.y<.40f);
+        assert(length(subtract(ls,rs))>.90f);
+        assert(length(subtract(lh,head))>.16f);
+        assert(length(subtract(rh,head))>.16f);
+        if(g==2 || g==5)assert(!(lh.x>-.08f && rh.x<.08f));
+    }
+
+    c={};resetCharacter(c);
     c.mode=Mode::Pose;c.selected=BoneId::Head;
     in={};in.poseYaw=.5f;stepCharacter(c,in,kStep);
     assert(std::abs(c.pose.anim[int(BoneId::Head)].yaw)>.2f);
@@ -389,7 +469,7 @@ int main(int argc,char** argv){
     live={};resetCharacter(live);view={};
     in={};in.forward=1;in.valid=true;
     for(int i=0;i<12;++i)stepCharacter(live,in,kStep);
-    in.jump=true;stepCharacter(live,in,kStep);in.jump=false;
+    playSlot(live,1);
     for(int i=0;i<24 && live.grounded;++i)stepCharacter(live,in,kStep);
     for(int i=0;i<18;++i){
         stepCharacter(live,in,kStep);
@@ -401,8 +481,7 @@ int main(int argc,char** argv){
     assert(renderer.meshBuilds()==builds && renderer.indexBuilds()==indexes);
 
     live={};resetCharacter(live);view={};
-    in={};in.kick=true;in.valid=true;
-    stepCharacter(live,in,kStep);in.kick=false;
+    playSlot(live,0);
     assert(live.action==Action::Kick);
     for(int i=0;i<36;++i){
         stepCharacter(live,in,kStep);
@@ -418,6 +497,32 @@ int main(int argc,char** argv){
     }
     assert(kickBall>20);
     assert(renderer.meshBuilds()==builds && renderer.indexBuilds()==indexes);
+
+    std::cout<<"p5";
+    for(int g=0;g<kGestureCount;++g){
+        live={};resetCharacter(live);view={};
+        in={};in.valid=true;
+        playSlot(live,2+g);
+        for(int i=0;i<50;++i){
+            stepCharacter(live,in,kStep);
+            updateFollowView(view,live,kStep);
+        }
+        renderer.render(canvas,live,view);
+        std::array<double,8> samples{};
+        for(int s=0;s<8;++s){
+            const auto t0=std::chrono::steady_clock::now();
+            renderer.render(canvas,live,view);
+            const auto t1=std::chrono::steady_clock::now();
+            samples[s]=std::chrono::duration<double,std::micro>(t1-t0).count();
+        }
+        std::sort(samples.begin(),samples.end());
+        const double hostUs=.5*(samples[3]+samples[4]);
+        std::cout<<" "<<kGestureHud[g]<<"="<<kGestureFlashBytes[g]<<"B/"<<int(hostUs+.5)<<"us";
+        if(g==0)canvas.save(out+"/arena-wave-l.ppm");
+        if(g==2)canvas.save(out+"/arena-wave2.ppm");
+        if(g==5)canvas.save(out+"/arena-up2.ppm");
+    }
+    std::cout<<"\n";
 
     lets_and_go::DeviceControlLogic logic;
     logic.setScreen(lets_and_go::GameScreen::ArenaPlay);
@@ -482,11 +587,22 @@ int main(int argc,char** argv){
     lets_and_go::DeviceControlFrame bClick{};
     bClick.input.confirmPressed=true;
     for(int i=0;i<3;++i)bodyJump.update(bClick,16u*(i+1));
-    assert(bodyJump.character().action==Action::Jump);
+    assert(bodyJump.character().action==Action::Gesture);
+    assert(bodyJump.character().clipIndex==kPlayClipCount-1);
+    ArenaController bodyHop;
+    bodyHop.reset();
+    lets_and_go::DeviceControlFrame aOnce{};
+    aOnce.input.cancelPressed=true;
+    bodyHop.update(aOnce,16);
+    aOnce.input.cancelPressed=false;
+    bodyHop.update(aOnce,32);
+    aOnce.input.cancelPressed=true;
+    bodyHop.update(aOnce,48);
+    assert(bodyHop.character().action==Action::Jump);
     lets_and_go::DeviceControlFrame rest{};
     rest.input.valid=true;
-    for(int i=3;i<24;++i)bodyJump.update(rest,16u*(i+1));
-    assert(bodyJump.character().action==Action::Jump && !bodyJump.character().grounded);
+    for(int i=3;i<24;++i)bodyHop.update(rest,16u*(i+1));
+    assert(bodyHop.character().action==Action::Jump && !bodyHop.character().grounded);
 
     renderer.render(canvas,live,lookUp.view());
     canvas.save(out+"/arena-lookup.ppm");
