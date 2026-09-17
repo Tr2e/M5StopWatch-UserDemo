@@ -83,6 +83,7 @@ public:
         }
         if(steps==5)_accumulator=0;
         _view.percent=_character.mode==Mode::Pose?100:70;
+        _view.skillHud=_idle.control==ControlMode::Auton?uint8_t(_idle.skill)+1:0;
         return true;
     }
 private:

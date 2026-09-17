@@ -1,12 +1,14 @@
 #include "character_model.h"
 #include "arena_kick_clip.h"
 #include "arena_gesture_clips.h"
+#include "arena_log.h"
 #include <algorithm>
 #include <cmath>
 
 namespace gundam_arena {
 namespace {
 constexpr float kLookNeckShare=.25f;
+constexpr float kLookBlendFloor=.001f;
 
 float clampf(float v,float lo,float hi){return v<lo?lo:v>hi?hi:v;}
 float wrapPi(float a){return std::remainder(a,2.f*kPi);}
@@ -283,8 +285,12 @@ void stepBall(CharacterModel& c,float dt){
         }
         c.kickToe=toe;
         c.kickToeHad=true;
+        float fwd=0.f;
+        if(c.kickToeHad && dt>1e-6f)fwd=vel.x*std::sin(c.heading)+vel.z*std::cos(c.heading);
+        if(gap<c.kickMinGap)c.kickMinGap=gap;
+        if(fwd>c.kickMaxFwd)c.kickMaxFwd=fwd;
+        if(fwd>1.5f && gap<c.kickMinGapFwd)c.kickMinGapFwd=gap;
         if(gap<kBallR+kFootR){
-            const float fwd=vel.x*std::sin(c.heading)+vel.z*std::cos(c.heading);
             if(fwd>1.5f){
                 Point n=subtract(center,hit);
                 const float nl=length(n);
@@ -293,9 +299,11 @@ void stepBall(CharacterModel& c,float dt){
                 }else n=scale(n,1.f/nl);
                 const float along=std::max(4.8f,dot(vel,n));
                 b.vx+=n.x*along;
-                b.vy+=std::max(2.6f,n.y*along);
+                b.vy+=std::max(kKickMinLift,n.y*along);
                 b.vz+=n.z*along;
                 b.struck=true;
+                arenaKickLog("hit gap={} fwd={} along={} ball={},{},{} toe={},{},{}",
+                    gap,fwd,along,b.x,b.y,b.z,toe.x,toe.y,toe.z);
             }
         }
     }else c.kickToeHad=false;
@@ -319,25 +327,41 @@ void applyTurnFollow(CharacterModel& c){
     c.pose.anim[int(BoneId::Head)].yaw=clampf(yaw*1.15f,-.87f,.87f);
 }
 
-void applyLookAt(CharacterModel& c){
-    if(!c.lookEnabled)return;
-    if(c.action!=Action::Idle && c.action!=Action::Walk && c.action!=Action::Turn)return;
-    auto& sk=collisionSkeleton();
-    evaluateSkeleton(sk,c.pose);
-    const Point head=sk.world[int(BoneId::Head)].t;
-    const float dx=c.lookX-head.x,dy=c.lookY-head.y,dz=c.lookZ-head.z;
-    const float cy=std::cos(c.heading),sy=std::sin(c.heading);
-    const float localX=dx*cy+dz*(-sy);
-    const float localZ=dx*sy+dz*cy;
-    const float horiz=std::sqrt(localX*localX+localZ*localZ);
-    if(horiz<.02f && std::fabs(dy)<.02f)return;
-    const JointLimit headL=limitOf(BoneId::Head);
+void applyLookAt(CharacterModel& c,float dt){
+    if(c.action!=Action::Idle && c.action!=Action::Walk && c.action!=Action::Turn){
+        c.lookYaw=c.pose.anim[int(BoneId::Head)].yaw;
+        c.lookPitch=c.pose.anim[int(BoneId::Head)].pitch;
+        c.lookNeck=c.pose.anim[int(BoneId::Neck)].yaw;
+        return;
+    }
+    float yawT=0.f,pitchT=0.f;
+    if(c.lookEnabled){
+        auto& sk=collisionSkeleton();
+        evaluateSkeleton(sk,c.pose);
+        const Point head=sk.world[int(BoneId::Head)].t;
+        const float dx=c.lookX-head.x,dy=c.lookY-head.y,dz=c.lookZ-head.z;
+        const float cy=std::cos(c.heading),sy=std::sin(c.heading);
+        const float localX=dx*cy+dz*(-sy);
+        const float localZ=dx*sy+dz*cy;
+        const float horiz=std::sqrt(localX*localX+localZ*localZ);
+        if(horiz>=.02f || std::fabs(dy)>=.02f){
+            const JointLimit headL=limitOf(BoneId::Head);
+            yawT=clampf(std::atan2(localX,localZ),headL.yawMin,headL.yawMax);
+            pitchT=clampf(std::atan2(-dy,std::max(horiz,.001f)),headL.pitchMin,headL.pitchMax);
+        }
+    }
+    const float a=1.f-std::exp(-dt/kLookTau);
+    c.lookYaw+=(yawT-c.lookYaw)*a;
+    c.lookPitch+=(pitchT-c.lookPitch)*a;
+    c.lookNeck+=(yawT*kLookNeckShare-c.lookNeck)*a;
+    if(!c.lookEnabled && std::fabs(c.lookYaw)<kLookBlendFloor && std::fabs(c.lookPitch)<kLookBlendFloor){
+        c.lookYaw=c.lookPitch=c.lookNeck=0;
+        return;
+    }
     const JointLimit neckL=limitOf(BoneId::Neck);
-    const float yaw=clampf(std::atan2(localX,localZ),headL.yawMin,headL.yawMax);
-    const float pitch=clampf(std::atan2(-dy,std::max(horiz,.001f)),headL.pitchMin,headL.pitchMax);
-    c.pose.anim[int(BoneId::Head)].yaw=yaw;
-    c.pose.anim[int(BoneId::Head)].pitch=pitch;
-    c.pose.anim[int(BoneId::Neck)].yaw=clampf(yaw*kLookNeckShare,neckL.yawMin,neckL.yawMax);
+    c.pose.anim[int(BoneId::Head)].yaw=c.lookYaw;
+    c.pose.anim[int(BoneId::Head)].pitch=c.lookPitch;
+    c.pose.anim[int(BoneId::Neck)].yaw=clampf(c.lookNeck,neckL.yawMin,neckL.yawMax);
 }
 
 void seekAxes(CharacterModel& c,float& forward,float& turn){
@@ -382,6 +406,9 @@ void playKick(CharacterModel& c){
     c.action=Action::Kick;
     c.ball.struck=false;
     c.kickToeHad=false;
+    c.kickMinGap=9.f;
+    c.kickMaxFwd=-9.f;
+    c.kickMinGapFwd=9.f;
 }
 
 void playJump(CharacterModel& c){
@@ -417,7 +444,10 @@ void setLookAt(CharacterModel& c,Point world){
     c.lookZ=world.z;
 }
 
-void clearLookAt(CharacterModel& c){ c.lookEnabled=false; }
+void clearLookAt(CharacterModel& c){
+    c.lookEnabled=false;
+    c.lookYaw=c.lookPitch=c.lookNeck=0;
+}
 
 void faceYaw(CharacterModel& c,float yaw){
     c.hasFaceYaw=true;
@@ -437,23 +467,36 @@ void clearSeek(CharacterModel& c){
     c.hasFaceYaw=false;
 }
 
-KickStance kickStance(const CharacterModel& c){
-    const float h=c.heading;
+KickStance kickStanceAt(const CharacterModel& c,float heading){
     const float ox=kBallSpawnX,oz=kBallSpawnZ;
-    const float exX=std::cos(h),exZ=-std::sin(h);
-    const float ezX=std::sin(h),ezZ=std::cos(h);
+    const float exX=std::cos(heading),exZ=-std::sin(heading);
+    const float ezX=std::sin(heading),ezZ=std::cos(heading);
     KickStance s{};
     s.x=std::clamp(c.ball.x-ox*exX-oz*ezX,-kArenaHalfExtent,kArenaHalfExtent);
     s.z=std::clamp(c.ball.z-ox*exZ-oz*ezZ,-kArenaHalfExtent,kArenaHalfExtent);
     return s;
 }
 
+KickStance kickStance(const CharacterModel& c){ return kickStanceAt(c,c.heading); }
+
+float kickHeading(const CharacterModel& c){
+    const float toBall=std::atan2(c.ball.x-c.x,c.ball.z-c.z);
+    const float local=std::atan2(kBallSpawnX,kBallSpawnZ);
+    return std::remainder(toBall-local,2.f*kPi);
+}
+
+float kickAlignErr(const CharacterModel& c){
+    return std::remainder(c.heading-kickHeading(c),2.f*kPi);
+}
+
 bool inStrikeRange(const CharacterModel& c){
     if(characterBusy(c))return false;
+    if(c.hasWalkTo || c.hasFaceYaw)return false;
     if(c.ball.y>kBallR+.04f)return false;
     const KickStance s=kickStance(c);
     const float dx=c.x-s.x,dz=c.z-s.z;
-    return dx*dx+dz*dz<kStrikePosTol*kStrikePosTol;
+    if(dx*dx+dz*dz>=kStrikePosTol*kStrikePosTol)return false;
+    return std::fabs(kickAlignErr(c))<kStrikeFaceTol;
 }
 
 void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
@@ -527,7 +570,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     }else if(c.action==Action::Land)applyLandPose(c);
     else applyIdleIk(c);
     if(c.action!=Action::Kick && c.action!=Action::Gesture)applyTurnFollow(c);
-    applyLookAt(c);
+    applyLookAt(c,dt);
     c.pose.anim[int(BoneId::Head)].yaw=clampf(c.pose.anim[int(BoneId::Head)].yaw,-.87f,.87f);
     stepBall(c,dt);
 }

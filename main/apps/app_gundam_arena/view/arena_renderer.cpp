@@ -108,8 +108,13 @@ void ArenaRenderer::render(lgfx::LGFXBase& canvas,const CharacterModel& characte
             }
         }
     }else if(character.action==Action::Kick||character.action==Action::Jump||
-             character.action==Action::Gesture||character.clipIndex<kPlayClipCount){
+             character.action==Action::Fall||character.action==Action::Land||
+             character.action==Action::Gesture){
+        canvas.drawString(playActionHud(character),canvas.width()/2,18);
+    }else if(character.clipIndex<kPlayClipCount){
         canvas.drawString(playClipHud(character.clipIndex),canvas.width()/2,18);
+    }else if(const char* skill=autonSkillHud(view.skillHud)){
+        canvas.drawString(skill,canvas.width()/2,18);
     }else if(view.padHint==1)canvas.drawString("CAL",canvas.width()/2,18);
     else if(view.padHint==2)canvas.drawString("PAD",canvas.width()/2,18);
     else if(view.padHint==3)canvas.drawString("PAD FAULT",canvas.width()/2,18);

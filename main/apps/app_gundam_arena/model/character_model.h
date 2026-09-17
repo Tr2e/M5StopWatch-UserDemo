@@ -10,16 +10,19 @@ inline constexpr float kGravity=18.f,kJumpVel=4.f,kWalkSpeed=2.0f,kTurnSpeed=1.8
 inline constexpr float kJumpCrouch=.20f,kJumpDip=.12f,kJumpLand=.20f;
 inline constexpr float kJumpSquatY=.14f,kJumpLandY=.10f,kPlantAnkleY=.26f;
 inline constexpr float kStep=1.f/60.f;
-inline constexpr float kBallR=.16f,kFootR=.14f;
+inline constexpr float kBallR=.16f,kFootR=.20f;
 inline constexpr float kFootToeY=-.18f,kFootToeZ=.20f;
 inline constexpr float kBallSpawnX=-.42f,kBallSpawnZ=.74f;
 inline constexpr int kPlayClipCount=8;
 inline constexpr int kPlayClipNone=8;
-inline constexpr float kStrikePosTol=.22f;
-inline constexpr float kWalkArrive=kStrikePosTol;
-inline constexpr float kFaceArrive=.20f;
+inline constexpr float kStrikePosTol=.05f;
+inline constexpr float kStrikeFaceTol=.05f;
+inline constexpr float kWalkArrive=.03f;
+inline constexpr float kFaceArrive=.04f;
 inline constexpr float kTurnThenWalk=.80f;
 inline constexpr float kStickDeadzone=.18f;
+inline constexpr float kLookTau=.15f;
+inline constexpr float kKickMinLift=5.f;
 
 inline const char* playClipHud(int index){
     static constexpr const char* names[]={
@@ -65,11 +68,15 @@ struct CharacterModel {
     bool kickToeHad=false;
     bool lookEnabled=false;
     float lookX=0,lookY=0,lookZ=0;
+    float lookYaw=0,lookPitch=0,lookNeck=0;
     bool hasWalkTo=false;
     float walkToX=0,walkToZ=0;
     bool hasFaceYaw=false;
     float faceYaw=0;
     uint32_t meshBuilds=0;
+    float kickMinGap=9.f;
+    float kickMaxFwd=-9.f;
+    float kickMinGapFwd=9.f;
 };
 
 void resetCharacter(CharacterModel& c);
@@ -86,5 +93,15 @@ void faceYaw(CharacterModel& c,float yaw);
 void walkTo(CharacterModel& c,float x,float z);
 void clearSeek(CharacterModel& c);
 KickStance kickStance(const CharacterModel& c);
+KickStance kickStanceAt(const CharacterModel& c,float heading);
+float kickHeading(const CharacterModel& c);
+float kickAlignErr(const CharacterModel& c);
 bool inStrikeRange(const CharacterModel& c);
+
+inline const char* playActionHud(const CharacterModel& c){
+    if(c.action==Action::Kick)return "KICK";
+    if(c.action==Action::Jump || c.action==Action::Fall || c.action==Action::Land)return "JUMP";
+    if(c.action==Action::Gesture)return playClipHud(c.playGestureId+2);
+    return playClipHud(c.clipIndex);
+}
 } // namespace gundam_arena

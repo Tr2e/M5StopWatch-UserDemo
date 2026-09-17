@@ -11,7 +11,14 @@ struct ArenaView {
     float distance=9.2f;
     int percent=70;
     uint8_t padHint=0;
+    uint8_t skillHud=0;
 };
+
+inline const char* autonSkillHud(uint8_t skillHud){
+    static constexpr const char* names[]={"HOLD","LOOK","FACE","WALK","KICK","JUMP","WAVE"};
+    if(skillHud>=1 && skillHud<=7)return names[skillHud-1];
+    return nullptr;
+}
 
 struct ArenaCamera {
     float cy,sy,cp,sp,lookX,lookY,lookZ,distance;

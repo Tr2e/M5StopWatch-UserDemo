@@ -524,6 +524,8 @@ int main(int argc,char** argv){
         assert(p.control==ControlMode::Pilot);
         for(int i=0;i<12;++i)tick(p,m,idle);
         assert(p.control==ControlMode::Auton);
+        while(m.action==Action::Gesture)tick(p,m,idle);
+        for(int i=0;i<12;++i)tick(p,m,idle);
         const float yaw=m.pose.anim[int(BoneId::Head)].yaw;
         assert(yaw>0.05f && yaw*(m.ball.x-m.x)>0.f);
         assert(m.action!=Action::Kick);
@@ -630,6 +632,70 @@ int main(int argc,char** argv){
     }
 
     {
+        {
+            CharacterModel posed;resetCharacter(posed);
+            posed.ball.x=0.f;posed.ball.y=kBallR;posed.ball.z=2.6f;
+            const float h=kickHeading(posed);
+            const KickStance s=kickStanceAt(posed,h);
+            posed.x=s.x;posed.z=s.z;posed.heading=h;
+            assert(inStrikeRange(posed));
+            playKick(posed);
+            ArenaInput idle{};idle.valid=true;
+            bool posedHit=false;
+            while(posed.action==Action::Kick){
+                stepCharacter(posed,idle,kStep);
+                if(posed.ball.struck)posedHit=true;
+            }
+            assert(posedHit);
+        }
+
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        const auto tick=[&]{stepIdlePilot(p,m,idle,kStep);stepCharacter(m,idle,kStep);};
+        for(int i=0;i<52;++i)tick();
+        while(m.action==Action::Gesture)tick();
+        for(int i=0;i<180 && m.action!=Action::Kick;++i)tick();
+        assert(m.action==Action::Kick);
+        while(m.action==Action::Kick)tick();
+        m.ball.x=0.f;m.ball.y=kBallR;m.ball.z=2.6f;
+        m.ball.vx=m.ball.vy=m.ball.vz=0.f;m.ball.struck=false;
+        p.attendKickT=0;p.playInhibit=0;p.playCap=1.f;p.play=1.f;p.haveSeek=false;
+        p.skillAge=kAttendMin;
+        bool second=false;
+        bool hit=false;
+        for(int i=0;i<900;++i){
+            const KickStance s=kickStance(m);
+            const float dist=std::sqrt((m.x-s.x)*(m.x-s.x)+(m.z-s.z)*(m.z-s.z));
+            if(dist>=kStrikePosTol)assert(m.action!=Action::Kick);
+            tick();
+            if(m.action==Action::Kick){second=true;break;}
+        }
+        assert(second);
+        while(m.action==Action::Kick){
+            if(m.ball.struck)hit=true;
+            tick();
+            if(m.ball.struck)hit=true;
+        }
+        assert(hit);
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        m.x=-.656f;m.z=3.770f;m.heading=.302f;
+        m.ball.x=-.817f;m.ball.y=kBallR;m.ball.z=4.633f;
+        m.ball.vx=m.ball.vy=m.ball.vz=0.f;
+        playKick(m);
+        ArenaInput idle{};idle.valid=true;
+        bool devicePoseHit=false;
+        while(m.action==Action::Kick){
+            stepCharacter(m,idle,kStep);
+            if(m.ball.struck)devicePoseHit=true;
+        }
+        assert(devicePoseHit);
+    }
+
+    {
         IdlePilot p;resetIdlePilot(p);
         CharacterModel m;resetCharacter(m);
         m.ball.x=0.f;m.ball.z=-3.f;
@@ -651,16 +717,18 @@ int main(int argc,char** argv){
         CharacterModel m;resetCharacter(m);
         m.ball.x=8.f;m.ball.z=8.f;
         ArenaInput idle{};idle.valid=true;
-        for(int i=0;i<90;++i){
+        for(int i=0;i<200;++i){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
             assert(m.action!=Action::Kick);
             assert(m.action!=Action::Jump);
-            assert(m.action!=Action::Gesture);
-            assert(!inStrikeRange(m));
         }
         assert(p.control==ControlMode::Auton);
-        assert(p.skill==AutonSkill::Approach);
+        while(m.action==Action::Gesture){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.skill==AutonSkill::Approach || p.skill==AutonSkill::Face);
     }
 
     {
@@ -672,6 +740,14 @@ int main(int argc,char** argv){
             stepCharacter(m,idle,kStep);
         }
         assert(p.control==ControlMode::Auton);
+        while(m.action==Action::Gesture){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        for(int i=0;i<180 && m.action!=Action::Kick;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
         assert(m.action==Action::Kick);
         assert(m.action!=Action::Jump);
         assert(m.clipIndex==kPlayClipNone);
@@ -743,6 +819,14 @@ int main(int argc,char** argv){
             stepIdlePilot(p,m,idle,kStep,&cam,false);
             stepCharacter(m,idle,kStep);
         }
+        while(m.action==Action::Gesture){
+            stepIdlePilot(p,m,idle,kStep,&cam,false);
+            stepCharacter(m,idle,kStep);
+        }
+        for(int i=0;i<180 && m.action!=Action::Kick;++i){
+            stepIdlePilot(p,m,idle,kStep,&cam,false);
+            stepCharacter(m,idle,kStep);
+        }
         while(m.action==Action::Kick){
             stepIdlePilot(p,m,idle,kStep,&cam,false);
             stepCharacter(m,idle,kStep);
@@ -791,18 +875,42 @@ int main(int argc,char** argv){
     }
 
     {
+        CharacterModel m;resetCharacter(m);
+        assert(inStrikeRange(m));
+        m.heading=.22f;
+        assert(!inStrikeRange(m));
+        m.heading=1.f;
+        assert(!inStrikeRange(m));
+        const KickStance s=kickStanceAt(m,kickHeading(m));
+        m.x=s.x;m.z=s.z;m.heading=kickHeading(m);
+        assert(inStrikeRange(m));
+        m.heading=kickHeading(m)+.80f;
+        assert(!inStrikeRange(m));
+    }
+
+    {
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        setLookAt(m,{3.f,1.7f,0.f});
+        stepCharacter(m,idle,kStep);
+        const float yaw1=m.pose.anim[int(BoneId::Head)].yaw;
+        for(int i=0;i<40;++i)stepCharacter(m,idle,kStep);
+        const float yaw2=m.pose.anim[int(BoneId::Head)].yaw;
+        assert(yaw1>0.05f && yaw2>yaw1+0.05f);
+    }
+
+    {
         IdlePilot p;resetIdlePilot(p);
         CharacterModel m;resetCharacter(m);
-        m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=.80f;m.ball.vy=0.f;
+        m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=kBallR;m.ball.vy=0.f;
         ArenaInput idle{};idle.valid=true;
         bool sawFace=false;
         for(int i=0;i<180;++i){
-            m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=.80f;m.ball.vy=0.f;
+            m.ball.x=0.f;m.ball.z=-3.f;m.ball.y=kBallR;m.ball.vy=0.f;
             m.ball.vx=m.ball.vz=0.f;
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
             if(p.skill==AutonSkill::Face && m.hasFaceYaw)sawFace=true;
-            assert(m.action!=Action::Kick);
             assert(m.action!=Action::Jump);
         }
         assert(p.control==ControlMode::Auton);
@@ -814,6 +922,14 @@ int main(int argc,char** argv){
         CharacterModel m;resetCharacter(m);
         ArenaInput idle{};idle.valid=true;
         for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        while(m.action==Action::Gesture){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        for(int i=0;i<180 && m.action!=Action::Kick;++i){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }

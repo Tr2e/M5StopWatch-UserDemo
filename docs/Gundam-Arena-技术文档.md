@@ -111,7 +111,7 @@ Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈
 
 手柄合并 `mergeExternalPad`：外设有效时覆盖 `steer`/`viewAxis`；确认/暂停/退出做或；导航步进有值才覆盖。Grove 5V 打不开则只走触控，日志警告。
 
-顶部状态字：未播过显示 `A/B CLIP`，播过显示当前槽短名；校准中 `CAL`，就绪 `PAD`，故障 `PAD FAULT`。Pose 模式覆盖为关节名。
+顶部状态字：Pose 为关节名；正在播 Kick/Jump/手势时显示该动作短名（智能 Kick 也写 `KICK`，不写 `A/B CLIP`）。Auton 待机显示技能短名 `HOLD/LOOK/FACE/WALK/KICK/JUMP/WAVE`。否则校准中 `CAL`，手柄就绪 `PAD`，故障 `PAD FAULT`，未播过 `A/B CLIP`。`PAD FAULT` 只表示摇杆失联，不是踢球失败。
 
 ---
 
@@ -436,6 +436,42 @@ bash tools/test_gundam_arena.sh [输出目录]
 ## 12. 迭代记录
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
+
+### 2026-09-17 · 烧录查看（Auton 四刀）
+
+- **范围：** 用户确认 §12 数值与三条公式偏差全部保留，要求烧录当前 Auton 四刀固件。
+- **代码：** `c3c18d8`（五维动机）加设计文待批勾选；构建版本 `V0.5-220-gc3c18d8-dirty`（dirty 仅为设计文档勾选）。
+- **写入：** `/dev/cu.usbmodem83301`，MAC `44:1b:f6:c1:8a:00`，仅 app 分区 `0x20000`，`0x3f67f0` B（4,155,376），余量 20%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `6cbb53fc6dbe37db9843e0953e6e580ee9f64c39ba0c6afc63931eebc7e72052`。ELF SHA-256 前缀 `28d882aac` 与启动日志一致。
+- **已验证：** PSRAM `SPI SRAM memory test OK`；`Launcher` on create / on open / `LauncherView` init；无 panic/重启循环。串口已释放。
+- **未验证：** 真机五维观感、设备 FPS。
+
+### 2026-09-17 · 真机（踢中后只会连踢）
+
+- **范围：** 能踢中后不再挥手/跳/举手。进 Auton 出生点立刻 Strike；摇杆 Fault 无 operator 则 Signal 永 0；球 4.8m/s 飞出 1.8 跳圈；Approach 侧抑制 Leap。
+- **代码：** 进 Auton 先 WAVE；`kLeapDist=4`；刚踢飞不压 Leap；看球 1.2s 结束若球仍快则 UP 2，不要求摇杆记忆。
+- **已验证：** 主机测试通过；已烧录。
+- **未验证：** 真机挥手/跳/举手。
+
+### 2026-09-17 · 真机日志（空踢间隙）
+
+- **范围：** 串口 `ArenaKick`：走开后同一站位连踢三次 `hit=false`，`minGapFwd=0.313>0.30`；出生点 `hit=true`，`minGapFwd=0.277`。站位 dist=0.038 已过门闩，前踢接触余量只有约 2cm。
+- **代码：** `kFootR` 0.14→0.20（接触半径 0.36）；主机回放真机空踢位姿应踢中。保留 `ArenaKick` 日志。
+- **已验证：** `bash tools/test_gundam_arena.sh`；回放真机空踢位姿 `struck`。写入 `/dev/cu.usbmodem83301` Hash verified。
+- **未验证：** 真机第二脚。
+
+### 2026-09-17 · 真机修正（空踢循环 / PAD FAULT）
+
+- **范围：** 第一脚踢走后循环空踢、抬头闪、其它技能看不见。根因是 `inStrikeRange` 量到「按 `kickHeading` 反求的站位」，朝向一偏距离仍为 0；公差 0.22/0.28 空踢后仍过门闩，立刻再 Strike。`PAD FAULT` 是摇杆故障字，Auton 空档被盖住。
+- **代码：** `inStrikeRange` 改为当前朝向的 `kickStance` 距离 0.12；走到快照站位后转到快照朝向；空踢 2s 抑制连踢；clip 结束把头角接到注视；Auton HUD 显示技能名，动作中显示 `KICK`。
+- **已验证：** `bash tools/test_gundam_arena.sh`；当前朝向站位 0.05 外不进 Kick；对准 0.22 rad 不够踢；走到 2.6m 外的球第二脚 `struck`；精确站位能踢中。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` app 分区 `0x3f6b50` B，Hash verified，Launcher 已起。
+- **未验证：** 真机第二脚是否踢中、头是否还闪、挥手/跳/UP。
+
+### 2026-09-17 · 真机修正（隔空踢 / 头闪 / 上抛）
+
+- **范围：** 真机反馈踢走后隔空踢、头瞬切盯镜头、球不上天、看不见跳/挥手/UP。走近按朝向球锁定站位；`inStrikeRange` 加对准门闩；空踢不进玩心抑制；注视 0.15s 跟上；Attend 不看相机；踢完看球时附近空中球可 Leap；`struckRecent` 3s；踢球最小上抛 5。
+- **代码：** `character_model.cpp` 的 `kickStanceAt` / `kickHeading` / `applyLookAt`；`idle_pilot.h` 的 Approach 快照与 attend 中 Leap。
+- **已验证：** `bash tools/test_gundam_arena.sh`；未对准不进 `inStrikeRange`；注视首帧小于稳态；第三刀/四刀门闩用例仍过。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` app 分区 `0x3f69a0` B，Hash verified，Launcher 已起。
+- **未验证：** 用户再看真机隔空踢/头闪/上抛/跳/UP。
 
 ### 2026-09-17 · Auton 第四刀（五维动机）
 

@@ -1,12 +1,12 @@
 # Gundam Arena：RX-78 待机智能系统设计
 
-> 状态：**草案修订。§13 动作层已落地。Auton 四刀（交接注视、走到踢球、Leap/Signal、五维动机）已落地（主机测试）；未烧录。**
+> 状态：**草案修订。§13 动作层已落地。Auton 四刀已落地（主机测试）；已烧录 `c3c18d8`，真机观感待用户看。**
 >
 > 本文只描述待机智能的运行约定。已落地的沙盒行为仍以 [Gundam Arena 技术文档](Gundam-Arena-技术文档.md) 为准。两者冲突时，以技术文档中的代码事实为准，本文再改。
 >
-> **2026-09-17 审核已决：** Jump 交给智能；玩家 A/B 圈指针与智能请求分开；回 Pilot 时头立刻回正。
+> **2026-09-17 审核已决：** Jump 交给智能；玩家 A/B 圈指针与智能请求分开；回 Pilot 时头立刻回正。§12 数值与门闩用户确认保留。
 >
-> **实现顺序：** Auton 技能门闩与五维打分已做主机测试。未烧录。
+> **实现顺序：** Auton 四刀已做主机测试。真机观感待用户看。
 
 ---
 
@@ -145,10 +145,13 @@ Fall / Land 仍由跳跃物理强制。Auton 可以请求 Jump，请求之后的
 
 `inStrikeRange` 同时成立才允许 Strike：
 
-1. 根 xz 到 `kickStance` 的距离 `< kStrikePosTol`（建议 0.22）
-2. `|facingErr| < kStrikeFaceTol`（建议 0.28 rad，约 16°）
-3. `grounded` 且球在地面（`!ballAir`）
-4. 不 `busy`
+1. 根 xz 到 **当前朝向** 的 `kickStance` 的距离 `< kStrikePosTol`（0.05）。这等于：球在机体局部 xz 上靠近出生点 `(-0.42, 0.74)`。不得用「按 `kickHeading` 反求的理想站位」当距离——那会在朝向还偏着时把距离算成 0，原地空踢。
+2. `|kickAlignErr| < kStrikeFaceTol`（0.05）
+3. 没有未完成的 `walkTo` / `faceYaw`
+4. 球在地面（`!ballAir`）
+5. 不 `busy`
+
+`kWalkArrive=0.03`、`kFaceArrive=0.04`：先走到快照站位，再转到快照朝向，未对准不得 Strike。空踢结束禁止立刻再 Strike，先重新走近。
 
 数值可改，门闩本身不可删。否则 Auton 会复现「原地隔空踢」。
 
@@ -157,7 +160,7 @@ Fall / Land 仍由跳跃物理强制。Auton 可以请求 Jump，请求之后的
 1. `grounded` 且不 `busy`
 2. 非 `inStrikeRange`（地面够得着踢时，踢优先，不跳）
 3. `ballAir`
-4. `ballDist < kLeapDist`（建议 1.8）
+4. `ballDist < kLeapDist`（4.0；踢飞后球飞得快，1.8 会立刻出圈）
 5. 球在下落（`ball.vy < 0`）或刚被踢飞仍在升段但已离开脚（`ballStruckRecent`）
 6. 距上一次 Land 结束 ≥ `kLeapCooldown`（建议 4s）
 
@@ -467,23 +470,23 @@ Auton 合成的 `clip` 请求必须写成「请求槽 N」，不要写成 `clipS
 
 ## 12. 审核清单
 
-已决：
+已决（2026-09-17 用户确认保留）：
 
 - [x] §0 四句产品行为（Jump 交给智能）
 - [x] 玩家圈指针与智能请求分开
 - [x] 回 Pilot 时头立刻回正
+- [x] 松杆延迟 0.80s
+- [x] 踢球必须先到 `kickStance`，禁止隔空踢（Auton 站位 0.05 且对准 0.05，按当前朝向局部偏移；空踢后重寻）
+- [x] 踢完强制看球 ≥1.2s
+- [x] Leap 仅 `inLeapTrigger`（附近空中球），冷却 4s，`kLeapDist=4.0`
+- [x] 注视只叠头/颈，不进 Kick/Gesture/跳
+- [x] Signal 只对操作者，默认挥手，踢中才双手举
+- [x] 失联中性轴保持 Auton（§3.2）
+- [x] Face：`|facingErr|≤0.35` 时分为 0，否则 Attend+0.25
+- [x] Strike / Leap 用即时 `playDesire`，不用正在爬升的 `play`
+- [x] 庆祝 Signal 另加 +0.55
 
-仍待批（保留 / 改值 / 删除）：
-
-- [ ] 松杆延迟 0.80s
-- [ ] 踢球必须先到 `kickStance`，禁止隔空踢
-- [ ] 踢完强制看球 ≥1.2s
-- [ ] Leap 仅 `inLeapTrigger`（附近空中球），冷却 4s，`kLeapDist=1.8`
-- [ ] 注视只叠头/颈，不进 Kick/Gesture/跳
-- [ ] Signal 只对操作者，默认挥手，踢中才双手举
-- [ ] 失联中性轴保持 Auton（§3.2）
-
-本文件其余条目收口后，按 **§13 动作层 → 待机智能** 的顺序改代码。未通过前，Arena 行为仍以技术文档中的玩家沙盒为准。
+真机观感待用户看，不以主机测试代替。
 
 ---
 
