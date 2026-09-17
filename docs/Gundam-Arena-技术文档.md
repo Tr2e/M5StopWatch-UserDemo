@@ -437,6 +437,13 @@ bash tools/test_gundam_arena.sh [输出目录]
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
 
+### 2026-09-17 · Auton 第二刀（走到站位再踢）
+
+- **范围：** Auton 用固定优先级 Attend / Approach / Strike：球在地面则 `walkTo(kickStance)`，仅 `inStrikeRange` 时 `playKick()`。踢完强制看球 1.2s。回 Pilot 时清 `lookAt` 和 `walkTo`。不请 Jump、不做 Signal、不上五维动机。
+- **代码：** `idle_pilot.h` 的 `autonAct`；站位目标在球移动或到达后才重设，避免每帧围着球转。智能踢球不写 `clipStep`。
+- **已验证：** `bash tools/test_gundam_arena.sh`；约 3m 外先走/转再踢、身后先转不侧步、够不着不踢、Kick 期间保持 Strike、`clipIndex` 不变、踢完 1.2s 不连踢。
+- **未验证：** Leap / Signal、真机自己走到踢球、烧录与设备 FPS。
+
 ### 2026-09-17 · Auton 第一刀（交接 + 注视球）
 
 - **范围：** Play 下松杆 0.80s 进入 Auton，只把注视对准球心。推杆、着地 A/B、Pose 立刻回 Pilot 并清 `lookAt`。不请 Kick/Jump/手势，不走 `walkTo`，不上五维动机。

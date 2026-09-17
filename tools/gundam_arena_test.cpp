@@ -519,16 +519,14 @@ int main(int argc,char** argv){
         IdlePilot p;resetIdlePilot(p);
         CharacterModel m;resetCharacter(m);
         ArenaInput idle{};idle.valid=true;
+        m.ball.x=2.5f;m.ball.y=kBallR;m.ball.z=.20f;
         for(int i=0;i<40;++i)tick(p,m,idle);
         assert(p.control==ControlMode::Pilot);
         for(int i=0;i<12;++i)tick(p,m,idle);
         assert(p.control==ControlMode::Auton);
-
-        m.ball.x=2.5f;m.ball.y=kBallR;m.ball.z=.20f;
-        tick(p,m,idle);
         const float yaw=m.pose.anim[int(BoneId::Head)].yaw;
-        assert(p.control==ControlMode::Auton);
         assert(yaw>0.05f && yaw*(m.ball.x-m.x)>0.f);
+        assert(m.action!=Action::Kick);
 
         ArenaInput go=idle;go.forward=1.f;
         tick(p,m,go);
@@ -585,6 +583,82 @@ int main(int argc,char** argv){
         assert(m.clipIndex==(ring==kPlayClipNone?0:ring+1));
         assert(m.action==Action::Kick);
         assert(!m.lookEnabled);
+    }
+
+    {
+        const auto tick=[&](IdlePilot& p,CharacterModel& m,ArenaInput in){
+            stepIdlePilot(p,m,in,kStep);
+            stepCharacter(m,in,kStep);
+        };
+        const auto waitAuton=[&](IdlePilot& p,CharacterModel& m){
+            ArenaInput idle{};idle.valid=true;
+            for(int i=0;i<52;++i)tick(p,m,idle);
+            assert(p.control==ControlMode::Auton);
+        };
+
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=kBallSpawnX;m.ball.z=kBallSpawnZ+3.f;
+        waitAuton(p,m);
+        const int ring=m.clipIndex;
+        bool sawMove=false;
+        bool kicked=false;
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<400;++i){
+            const KickStance s=kickStance(m);
+            const float dist=std::sqrt((m.x-s.x)*(m.x-s.x)+(m.z-s.z)*(m.z-s.z));
+            if(dist>=kStrikePosTol)assert(m.action!=Action::Kick);
+            if(m.action==Action::Walk || m.action==Action::Turn)sawMove=true;
+            tick(p,m,idle);
+            if(m.action==Action::Kick){kicked=true;break;}
+        }
+        assert(sawMove && kicked);
+        assert(p.skill==AutonSkill::Strike);
+        assert(m.clipIndex==ring);
+        for(int i=0;i<20;++i){
+            assert(m.action==Action::Kick);
+            assert(p.skill==AutonSkill::Strike);
+            tick(p,m,idle);
+        }
+        while(m.action==Action::Kick)tick(p,m,idle);
+        tick(p,m,idle);
+        assert(p.skill==AutonSkill::Attend);
+        for(int i=0;i<int(kKickAttend/kStep)-1;++i){
+            tick(p,m,idle);
+            assert(m.action!=Action::Kick);
+        }
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=0.f;m.ball.z=-3.f;
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        for(int i=0;i<180;++i){
+            if(std::abs(m.heading)<0.50f)assert(std::abs(m.x)<0.08f);
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=8.f;m.ball.z=8.f;
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<90;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            assert(m.action!=Action::Kick);
+            assert(!inStrikeRange(m));
+        }
+        assert(p.control==ControlMode::Auton);
+        assert(p.skill==AutonSkill::Approach);
     }
 
     c={};resetCharacter(c);
