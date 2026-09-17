@@ -1,5 +1,6 @@
 #pragma once
 #include "../model/character_model.h"
+#include "../model/idle_pilot.h"
 #include "../view/arena_renderer.h"
 #include "../../app_lets_and_go_racer/input/device_control_logic.h"
 #include <algorithm>
@@ -30,9 +31,10 @@ inline void mergeExternalPad(lets_and_go::DeviceControlFrame& device,const lets_
 
 class ArenaController {
 public:
-    void reset(){*this={};resetCharacter(_character);}
+    void reset(){*this={};resetCharacter(_character);resetIdlePilot(_idle);}
     CharacterModel& character(){return _character;}
     const CharacterModel& character()const{return _character;}
+    ControlMode control()const{return _idle.control;}
     const ArenaView& view()const{return _view;}
     bool exitRequested()const{return _exit;}
     void setPadHint(uint8_t hint){_view.padHint=hint;}
@@ -71,6 +73,7 @@ public:
         _accumulator+=elapsed*.001f;
         int steps=0;
         while(_accumulator>=kStep && steps<5){
+            stepIdlePilot(_idle,_character,in,kStep);
             stepCharacter(_character,in,kStep);
             updateFollowView(_view,_character,kStep);
             in.clipStep=0;in.toggleMode=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
@@ -83,6 +86,7 @@ public:
     }
 private:
     CharacterModel _character{};
+    IdlePilot _idle{};
     ArenaView _view{};
     uint32_t _last=0;
     float _accumulator=0;

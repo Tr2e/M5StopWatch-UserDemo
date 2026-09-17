@@ -511,6 +511,82 @@ int main(int argc,char** argv){
         assert(!inStrikeRange(m));
     }
 
+    {
+        const auto tick=[&](IdlePilot& p,CharacterModel& m,ArenaInput in){
+            stepIdlePilot(p,m,in,kStep);
+            stepCharacter(m,in,kStep);
+        };
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<40;++i)tick(p,m,idle);
+        assert(p.control==ControlMode::Pilot);
+        for(int i=0;i<12;++i)tick(p,m,idle);
+        assert(p.control==ControlMode::Auton);
+
+        m.ball.x=2.5f;m.ball.y=kBallR;m.ball.z=.20f;
+        tick(p,m,idle);
+        const float yaw=m.pose.anim[int(BoneId::Head)].yaw;
+        assert(p.control==ControlMode::Auton);
+        assert(yaw>0.05f && yaw*(m.ball.x-m.x)>0.f);
+
+        ArenaInput go=idle;go.forward=1.f;
+        tick(p,m,go);
+        assert(p.control==ControlMode::Pilot);
+        assert(std::abs(m.pose.anim[int(BoneId::Head)].yaw)<1e-4f);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.mode=Mode::Pose;
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<60;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Pilot);
+        assert(!m.lookEnabled);
+        assert(std::abs(m.pose.anim[int(BoneId::Head)].yaw)<1e-4f);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        idle.valid=false;idle.forward=0;idle.turn=0;
+        for(int i=0;i<10;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        assert(m.lookEnabled);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        const int ring=m.clipIndex;
+        idle.clipStep=1;
+        stepIdlePilot(p,m,idle,kStep);
+        stepCharacter(m,idle,kStep);
+        assert(p.control==ControlMode::Pilot);
+        assert(m.clipIndex==(ring==kPlayClipNone?0:ring+1));
+        assert(m.action==Action::Kick);
+        assert(!m.lookEnabled);
+    }
+
     c={};resetCharacter(c);
     c.mode=Mode::Pose;c.selected=BoneId::Head;
     in={};in.poseYaw=.5f;stepCharacter(c,in,kStep);

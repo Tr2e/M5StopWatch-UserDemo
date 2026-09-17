@@ -437,6 +437,13 @@ bash tools/test_gundam_arena.sh [输出目录]
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
 
+### 2026-09-17 · Auton 第一刀（交接 + 注视球）
+
+- **范围：** Play 下松杆 0.80s 进入 Auton，只把注视对准球心。推杆、着地 A/B、Pose 立刻回 Pilot 并清 `lookAt`。不请 Kick/Jump/手势，不走 `walkTo`，不上五维动机。
+- **代码：** `idle_pilot.h` 的 `ControlMode` 与 `stepIdlePilot`；`ArenaController` 定步循环在 `stepCharacter` 之前调用。`valid==false` 且轴清零不回 Pilot。Auton 不改 `forward` / `turn` / `clipStep`。
+- **已验证：** `bash tools/test_gundam_arena.sh`；主机测试覆盖未满 0.8s 仍 Pilot、侧面球头 yaw 同号、推杆当帧回正、Pose 无 Auton、失联保持 Auton、着地 `clipStep` 回 Pilot 且圈按玩家前进。
+- **未验证：** Approach / Strike / Leap / Signal、真机松杆注视、烧录与设备 FPS。
+
 ### 2026-09-17 · 动作层前置（M1–M5）
 
 - **范围：** 只补待机智能所需的动作层：独立播放入口、注视、寻路原语、踢球站位查询、`busy` 导出。不写 Auton / 动机层。不改 `ArenaController` 输入映射，玩家沙盒路径仍是 `clipStep` + 摇杆。
