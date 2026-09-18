@@ -81,13 +81,26 @@ LR_PAIRS = (
 WALK_SOURCE = "dataset-1_walk_normal_001.bvh"
 WALK_START, WALK_END = 0, 59  # 2s in-place comparison clip; not used at runtime
 GESTURE_H = ROOT / "main/apps/app_gundam_arena/model/arena_gesture_clips.h"
+DANCE_H = ROOT / "main/apps/app_gundam_arena/model/arena_dance_clips.h"
+DANCE_SCALE = 10000
 K_PLANT = 0.26
 GESTURE_IN, GESTURE_OUT, GESTURE_WINDOW = 6, 8, 36
 # Chest/hips world-Y is ~1.3; bow then reads as ~3deg. Use hip-relative
 # direction and SD-readable gain so a real bow hits Chest +0.20.
 TORSO_PITCH_GAIN = 1.8
 DANCE_DIP_GAIN = 1.35
-DANCE_DIP_MAX = 0.14
+DANCE_DIP_MAX = 0.18
+DANCE_HOP_GAIN = 2.8
+DANCE_HOP_MAX = 0.40
+DANCE_AIR_FOOT = 0.03
+DANCE_STEP_LIFT = 2.2
+DANCE_STEP_LIFT_MAX = 0.32
+DANCE_YAW_AMP = 0.42
+DANCE_YAW_RAD = 18
+DANCE_STAND_RAD = 45
+DANCE_RAISE_KEEP = 0.88
+DANCE_LOOP_PREROLL = 20
+DANCE_LOOP_MIN_S = 8.0
 PUNCH_CHAMBER_IN, PUNCH_CHAMBER_HOLD, PUNCH_BLEND = 6, 8, 12
 PUNCH_STRIKE_HOLD, PUNCH_SETTLE = 8, 16
 # Firmware still holds one clip per HUD slot. Style takes are scored offline;
@@ -110,10 +123,12 @@ REVIEW_GESTURE_SLOTS = [
     ("BYE2", "dataset-1_byebye_normal_001.bvh", []),
     ("GUIDE", "dataset-1_guide_normal_001.bvh", []),
     ("PUNCH", "dataset-1_punch_normal_001.bvh", []),
-    ("DNC L", "dataset-1_dance-long_normal_001.bvh", []),
-    ("DNC S", "dataset-1_dance-short_normal_001.bvh", []),
     ("RUN", "dataset-1_run_normal_001.bvh", []),
     ("DASH", "dataset-1_dash_normal_001.bvh", []),
+]
+DANCE_SLOTS = [
+    ("DNC L", "dataset-1_dance-long_normal_001.bvh"),
+    ("DNC S", "dataset-1_dance-short_normal_001.bvh"),
 ]
 PREVIEW_LOCO = [
     ("dataset-2_walk_normal_001.bvh", "walk"),
@@ -581,6 +596,13 @@ def compose_kick() -> list[dict[str, tuple[float, float, float]]]:
     return [sd_kick_torso(pose) for pose in out]
 
 
+def set_leg(pose: dict[str, tuple[float, float, float]], side: str,
+            thigh: float, shin: float) -> None:
+    pose[f"{side}Thigh"] = (0.0, thigh, 0.0)
+    pose[f"{side}Shin"] = (0.0, shin, 0.0)
+    pose[f"{side}Foot"] = (0.0, clamp(-(thigh + shin), -.45, .35), 0.0)
+
+
 def plant_legs(pose: dict[str, tuple[float, float, float]], dip: float = 0.0
                ) -> dict[str, tuple[float, float, float]]:
     dip = max(0.0, dip)
@@ -588,13 +610,23 @@ def plant_legs(pose: dict[str, tuple[float, float, float]], dip: float = 0.0
     lt, ls = two_bone_pitch(-K_HIP_X, K_HIP_Y, -K_HIP_X, ankle, K_THIGH, K_SHIN, -.80, .90)
     rt, rs = two_bone_pitch(K_HIP_X, K_HIP_Y, K_HIP_X, ankle, K_THIGH, K_SHIN, -.80, .90)
     out = dict(pose)
-    out["LThigh"] = (0.0, lt, 0.0)
-    out["LShin"] = (0.0, ls, 0.0)
-    out["LFoot"] = (0.0, clamp(-(lt + ls), -.45, .35), 0.0)
-    out["RThigh"] = (0.0, rt, 0.0)
-    out["RShin"] = (0.0, rs, 0.0)
-    out["RFoot"] = (0.0, clamp(-(rt + rs), -.45, .35), 0.0)
+    set_leg(out, "L", lt, ls)
+    set_leg(out, "R", rt, rs)
     return out
+
+
+def hop_leg(air: float, bias: float) -> tuple[float, float]:
+    air = clamp(air, 0.0, 1.0)
+    ankle = K_PLANT
+    t0, s0 = two_bone_pitch(0.0, K_HIP_Y, 0.0, ankle, K_THIGH, K_SHIN, -.80, .90)
+    t1, s1 = -0.62 + bias, 1.22
+    return t0 + (t1 - t0) * air, s0 + (s1 - s0) * air
+
+
+def step_leg(hip_x: float, foot_z: float, lift: float, dip: float) -> tuple[float, float]:
+    sag = clamp(foot_z, -0.36, 0.36)
+    ankle = K_PLANT + max(0.0, dip) + clamp(lift * DANCE_STEP_LIFT, 0.0, DANCE_STEP_LIFT_MAX)
+    return two_bone_pitch(hip_x, K_HIP_Y, hip_x + sag, ankle, K_THIGH, K_SHIN, -.80, .90)
 
 
 def sd_gesture_torso(pose: dict[str, tuple[float, float, float]]
@@ -734,12 +766,82 @@ def x_travel(track: list[dict], start: int, width: int, side: str) -> float:
     return max(xs) - min(xs)
 
 
-def yaw_from_xs(xs: list[float], amp: float) -> list[float]:
+def yaw_from_xs(xs: list[float], amp: float, min_span: float = 0.0) -> list[float]:
     mu = sum(xs) / max(1, len(xs))
     d = [x - mu for x in xs]
     span = max((abs(v) for v in d), default=0.0)
-    gain = amp / span if span > 1e-4 else 0.0
+    floor = max(span, min_span) if min_span > 0.0 else span
+    gain = amp / floor if floor > 1e-4 else 0.0
     return [clamp(v * gain, -amp, amp) for v in d]
+
+
+def rolling_high(xs: list[float], rad: int, q: float = 0.85) -> list[float]:
+    n = len(xs)
+    out = [0.0] * n
+    for i in range(n):
+        w = xs[max(0, i - rad):min(n, i + rad + 1)]
+        s = sorted(w)
+        out[i] = s[int((len(s) - 1) * q)]
+    return out
+
+
+def rolling_yaw(track: list[dict], side: str, amp: float, rad: int) -> list[float]:
+    xs = [p[side][0] for p in track]
+    n = len(xs)
+    out = [0.0] * n
+    for i in range(n):
+        lo, hi = max(0, i - rad), min(n, i + rad + 1)
+        chunk = yaw_from_xs(xs[lo:hi], amp, min_span=0.06)
+        out[i] = chunk[i - lo]
+    return out
+
+
+def dance_pose_delta(a: dict[str, tuple[float, float, float]],
+                     b: dict[str, tuple[float, float, float]]) -> float:
+    e = 0.0
+    for name in ("LUpperArm", "RUpperArm", "LThigh", "RThigh", "LShoulder", "RShoulder"):
+        e += abs(a[name][1] - b[name][1]) + abs(a[name][2] - b[name][2])
+    return e
+
+
+def dance_loop_range(clip: list[dict[str, tuple[float, float, float]]],
+                     dips: list[float], fps: float = 30.0) -> tuple[int, int]:
+    # Open on the first hop (or a real step), not on yaw-only raise.
+    # DNC L's source hold plus raised-arm yaw reads as a statue for ~40s.
+    n = len(clip)
+    if n < 2 or len(dips) != n:
+        return 0, n
+
+    def hop_at(i: int) -> bool:
+        return dips[i] < -0.04
+
+    def step_at(i: int, width: int = 30) -> bool:
+        i1 = min(n, i + width)
+        if i1 - i < 8:
+            return False
+        th = [clip[k]["LThigh"][1] for k in range(i, i1)]
+        th += [clip[k]["RThigh"][1] for k in range(i, i1)]
+        return max(th) - min(th) > 0.30
+
+    start = 0
+    first_hop = next((i for i in range(n) if hop_at(i)), None)
+    first_step = next((i for i in range(n) if step_at(i)), None)
+    if first_hop is not None:
+        start = max(0, first_hop - DANCE_LOOP_PREROLL)
+    elif first_step is not None:
+        start = max(0, first_step - DANCE_LOOP_PREROLL)
+
+    end = n
+    last_busy = None
+    for i in range(n - 1, -1, -1):
+        if hop_at(i) or step_at(max(0, i - 29)):
+            last_busy = i
+            break
+    if last_busy is not None:
+        end = min(n, last_busy + DANCE_LOOP_PREROLL + 1)
+    if end - start < int(DANCE_LOOP_MIN_S * fps):
+        return 0, n
+    return start, end
 
 
 def active_src_side(track: list[dict], start: int, end: int, key: str = "y") -> str:
@@ -927,36 +1029,74 @@ def compose_slash_id(track: list[dict]
     return out, [0.0] * len(out)
 
 
-def compose_dance_id(track: list[dict], drops: list[float], window: int
+def lerp3(a: tuple[float, float, float], b: tuple[float, float, float], t: float
+          ) -> tuple[float, float, float]:
+    t = 0.0 if t < 0.0 else 1.0 if t > 1.0 else t
+    return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t)
+
+
+def compose_dance_id(track: list[dict], drops: list[float]
                      ) -> tuple[list[dict[str, tuple[float, float, float]]], list[float]]:
-    n = len(track)
-    def score(i: int) -> float:
-        dip = sum(drops[i + k] for k in range(window))
-        x = x_travel(track, i, window, "L") + x_travel(track, i, window, "R")
-        return dip * 4.0 + x
-    start, end = pick_track_window(n, window, score)
-    window_drops = drops[start:end + 1]
-    peak_drop = max(window_drops) if window_drops else 0.0
+    # Full source timeline. Local WAVE yaw so a held raise still waves.
+    # Local hip stand so crouch does not pin at DANCE_DIP_MAX. drops unused.
+    del drops
+    ls, rs = arena_side("L"), arena_side("R")
+    hip_y = [p["hips"][1] for p in track] if track else [K_HIP_Y]
+    stand = rolling_high(hip_y, DANCE_STAND_RAD)
+    yaw_l = rolling_yaw(track, "L", DANCE_YAW_AMP, DANCE_YAW_RAD)
+    yaw_r = rolling_yaw(track, "R", DANCE_YAW_AMP, DANCE_YAW_RAD)
+
+    def raise_amt(hand_y: float, head_y: float) -> float:
+        lo = head_y - 0.70
+        hi = head_y - 0.08
+        return clamp((hand_y - lo) / max(0.20, hi - lo), 0.0, 1.0) * DANCE_RAISE_KEEP
+
+    def put_arm(pose: dict[str, tuple[float, float, float]], side: str,
+                hand: tuple[float, float, float], head_y: float, wave: float) -> None:
+        amt = raise_amt(hand[1], head_y)
+        fwd = clamp(hand[2] / 0.48, 0.0, 1.0) * (1.0 - 0.55 * amt)
+        sh = lerp3(lerp3(KEY_CHEST_SH, KEY_RAISE_SH, amt), KEY_POINT_SH, fwd)
+        ua_p = (KEY_CHEST_UA[1] + (KEY_RAISE_UA[1] - KEY_CHEST_UA[1]) * amt
+                + (KEY_POINT_UA[1] - KEY_CHEST_UA[1]) * fwd)
+        fa = lerp3(lerp3(KEY_CHEST_FA, KEY_RAISE_FA, amt), KEY_POINT_FA, fwd)
+        set_arm(pose, side, sh, (0.0, ua_p, outward_yaw(side, 0.22 + 0.40 * amt, wave)), fa)
+
     body = []
     body_dips = []
-    for i in range(start, end + 1):
-        dip = sd_dip(drops[i], peak_drop)
-        pose = plant_legs(rest_pose(), dip)
-        ly, ry = track[i]["L"][1], track[i]["R"][1]
-        if ly > ry + 0.06:
-            ls, rs = arena_side("L"), arena_side("R")
-            set_arm(pose, ls, KEY_RAISE_SH, (0.0, KEY_RAISE_UA[1], outward_yaw(ls, 0.55)), KEY_RAISE_FA)
-            set_arm(pose, rs, KEY_CHEST_SH, KEY_CHEST_UA, KEY_CHEST_FA)
-        elif ry > ly + 0.06:
-            ls, rs = arena_side("L"), arena_side("R")
-            set_arm(pose, rs, KEY_RAISE_SH, (0.0, KEY_RAISE_UA[1], outward_yaw(rs, 0.55)), KEY_RAISE_FA)
-            set_arm(pose, ls, KEY_CHEST_SH, KEY_CHEST_UA, KEY_CHEST_FA)
+    for i, hands in enumerate(track):
+        hips_y = hands["hips"][1]
+        signed = stand[i] - hips_y
+        sink = DANCE_DIP_MAX * math.tanh(max(0.0, signed) * 8.0)
+        src_fl, src_fr = hands["FL"], hands["FR"]
+        lift_l = max(0.0, src_fr[1] - K_SOLE_Y)
+        lift_r = max(0.0, src_fl[1] - K_SOLE_Y)
+        both_air = lift_l > DANCE_AIR_FOOT and lift_r > DANCE_AIR_FOOT
+        pose = rest_pose()
+        if both_air:
+            hop = max(-signed, min(lift_l, lift_r))
+            raw = clamp(hop * DANCE_HOP_GAIN / DANCE_HOP_MAX, 0.0, 1.0)
+            air = 0.78 + 0.22 * raw
+            root = -air * DANCE_HOP_MAX
+            lt, ls_ = hop_leg(air, -0.03)
+            rt, rs_ = hop_leg(air, 0.02)
+            set_leg(pose, "L", lt, ls_)
+            set_leg(pose, "R", rt, rs_)
         else:
-            set_arm(pose, "L", KEY_RAISE_SH, (0.0, -1.00, -0.55), KEY_RAISE_FA)
-            set_arm(pose, "R", KEY_RAISE_SH, (0.0, -1.00, 0.55), KEY_RAISE_FA)
-        body.append(clamp_pose(pose))
-        body_dips.append(dip)
-    return envelope(body, body_dips)
+            root = sink
+            lt, ls_ = step_leg(-K_HIP_X, src_fr[2], lift_l, sink)
+            rt, rs_ = step_leg(K_HIP_X, src_fl[2], lift_r, sink)
+            set_leg(pose, "L", lt, ls_)
+            set_leg(pose, "R", rt, rs_)
+        put_arm(pose, ls, hands["L"], hands["H"][1], yaw_l[i])
+        put_arm(pose, rs, hands["R"], hands["H"][1], yaw_r[i])
+        sway = clamp((hands["L"][0] + hands["R"][0]) * 0.45, -0.22, 0.22)
+        twist = clamp((hands["L"][1] - hands["R"][1]) * 0.28, -0.16, 0.16)
+        air_lean = 0.08 if both_air else 0.0
+        pose["Chest"] = (0.0, clamp(0.02 + max(root, 0.0) * 0.50 + air_lean, 0.0, 0.18), sway)
+        pose["Pelvis"] = (0.0, clamp(max(root, 0.0) * 0.55, 0.0, 0.16), -0.55 * sway + twist)
+        body.append(sd_gesture_torso(pose))
+        body_dips.append(root)
+    return body, body_dips
 
 
 def compose_loco_id(kind: str
@@ -1058,7 +1198,10 @@ def source_track(path: Path, frames: list, yaw: float, scale: float, y_shift: fl
             p = w[name]
             x, z = rotate_xz(p[0], p[2], yaw)
             return ((x - hx) * scale, p[1] * scale + y_shift, (z - hz) * scale)
-        out.append({"L": loc("Hand_L"), "R": loc("Hand_R"), "H": loc("Head")})
+        out.append({
+            "L": loc("Hand_L"), "R": loc("Hand_R"), "H": loc("Head"),
+            "FL": loc("Foot_L"), "FR": loc("Foot_R"), "hips": loc("Hips"),
+        })
     return out
 
 
@@ -1089,10 +1232,6 @@ def compose_gesture(raw: list[dict[str, tuple[float, float, float]]], hud: str,
         return compose_hold(track, hud)
     if hud == "PUNCH":
         return compose_punch_id(track)
-    if hud == "DNC L":
-        return compose_dance_id(track, drops, window=76)
-    if hud == "DNC S":
-        return compose_dance_id(track, drops, window=56)
     if hud == "RUN":
         return compose_loco_id("RUN")
     if hud == "DASH":
@@ -1283,6 +1422,80 @@ def write_gesture_bank(path: Path, clips: list[tuple[str, str, list[dict[str, tu
     path.write_text("\n".join(lines))
 
 
+def q16(v: float) -> int:
+    return int(max(-32767, min(32767, round(v * DANCE_SCALE))))
+
+
+def write_dance_bank(path: Path, clips: list[tuple[str, str, list[dict[str, tuple[float, float, float]]], list[float], int, int]]
+                     ) -> None:
+    offsets = []
+    packed: list[str] = []
+    dip_rows: list[str] = []
+    cursor = 0
+    dip_cursor = 0
+    dip_off = []
+    for _hud, _src, frames, dips, _loop0, _loop1 in clips:
+        offsets.append(cursor)
+        dip_off.append(dip_cursor)
+        for pose in frames:
+            vals = []
+            for name in BONES:
+                r, p, y = pose[name]
+                vals.extend((q16(r), q16(p), q16(y)))
+            packed.append("    " + ", ".join(str(v) for v in vals) + ",")
+            cursor += 18 * 3
+        if len(dips) != len(frames):
+            raise SystemExit(f"{_hud} dip count {len(dips)} != frames {len(frames)}")
+        dip_rows.append("    " + ", ".join(str(q16(v)) for v in dips) + ",")
+        dip_cursor += len(dips)
+    if packed:
+        packed[-1] = packed[-1].rstrip(",")
+    if dip_rows:
+        dip_rows[-1] = dip_rows[-1].rstrip(",")
+    n_joint = cursor
+    lines = [
+        "#pragma once",
+        "// Generated by tools/arena_motion/retarget_bandai.py. Do not edit.",
+        "// Full dataset-1 dance-long / dance-short, SD identity keys, int16 / 10000.",
+        "// Playback loops kDanceLoopStart..kDanceLoopEnd (skips source holds).",
+        "// Not part of the player A/B ring. CC BY-NC 4.0.",
+        "#include <cstdint>",
+        "namespace gundam_arena {",
+        f"inline constexpr int kDanceCount={len(clips)};",
+        "inline constexpr float kDanceFps=30.f;",
+        f"inline constexpr int kDanceScale={DANCE_SCALE};",
+        "inline constexpr int kDanceFrames[" + str(len(clips)) + "]={"
+        + ", ".join(str(len(c[2])) for c in clips) + "};",
+        "inline constexpr int kDanceLoopStart[" + str(len(clips)) + "]={"
+        + ", ".join(str(c[4]) for c in clips) + "};",
+        "inline constexpr int kDanceLoopEnd[" + str(len(clips)) + "]={"
+        + ", ".join(str(c[5]) for c in clips) + "};",
+        "inline constexpr int kDanceOffset[" + str(len(clips)) + "]={"
+        + ", ".join(str(o) for o in offsets) + "};",
+        "inline constexpr int kDanceDipOffset[" + str(len(clips)) + "]={"
+        + ", ".join(str(o) for o in dip_off) + "};",
+        "inline constexpr int kDanceFlashBytes[" + str(len(clips)) + "]={"
+        + ", ".join(str(len(c[2]) * 18 * 3 * 2 + len(c[3]) * 2) for c in clips) + "};",
+        "inline constexpr const char* kDanceHud[" + str(len(clips)) + "]={"
+        + ", ".join(f'"{c[0]}"' for c in clips) + "};",
+        "inline constexpr const char* kDanceSource[" + str(len(clips)) + "]={"
+        + ", ".join(f'"{c[1]}"' for c in clips) + "};",
+        f"inline const int16_t kDanceJoints[{n_joint}]={{",
+    ]
+    lines.extend(packed)
+    lines.extend([
+        "};",
+        f"inline const int16_t kDanceRootDip[{dip_cursor}]={{",
+    ])
+    lines.extend(dip_rows)
+    lines.extend([
+        "};",
+        "} // namespace gundam_arena",
+        "",
+    ])
+    path.write_text("\n".join(lines))
+
+
 def main() -> None:
     kick_src = RAW / KICK_SOURCE
     walk_src = RAW / WALK_SOURCE
@@ -1380,6 +1593,59 @@ def main() -> None:
         baked.append((hud, normal_src, clip, dips, sat, total))
     write_gesture_bank(GESTURE_H, baked)
     print(f"wrote {GESTURE_H}")
+
+    dances: list[tuple[str, str, list[dict[str, tuple[float, float, float]]], list[float], int, int]] = []
+    for hud, source in DANCE_SLOTS:
+        src = RAW / source
+        if not src.exists():
+            raise SystemExit(f"missing {source}; run fetch_bandai.py")
+        _root, frames, dt = parse_bvh(src)
+        world0 = fk(_root, frames[0])
+        left, right = world0["UpperLeg_L"], world0["UpperLeg_R"]
+        yaw = math.atan2(left[2] - right[2], left[0] - right[0])
+        scale = K_HIP_Y / world0["Hips"][1]
+        plant = min(world0["Foot_L"][1], world0["Foot_R"][1]) * scale
+        y_shift = K_SOLE_Y - plant
+        track = source_track(src, frames, yaw, scale, y_shift)
+        clip, dips = compose_dance_id(track, [])
+        if len(clip) != len(frames):
+            raise SystemExit(f"{hud} sliced; {len(clip)} vs {len(frames)} source frames")
+        loop0, loop1 = dance_loop_range(clip, dips, 1.0 / dt if dt > 1e-4 else 30.0)
+        if loop1 - loop0 < int(DANCE_LOOP_MIN_S * 30):
+            raise SystemExit(f"{hud} loop too short; {loop0}..{loop1}")
+        peak = max(arm_energy(pose) for pose in clip)
+        max_dip = max(dips) if dips else 0.0
+        min_dip = min(dips) if dips else 0.0
+        thighs = [pose["LThigh"][1] for pose in clip]
+        luas = [pose["LUpperArm"][1] for pose in clip]
+        if peak < 0.35:
+            raise SystemExit(f"{hud} arm motion too small; peak={peak:.3f}")
+        if max_dip < 0.04:
+            raise SystemExit(f"{hud} missing hip dip; max={max_dip:.3f}")
+        if min_dip > -0.04:
+            raise SystemExit(f"{hud} missing hop lift; min={min_dip:.3f}")
+        if max(thighs) - min(thighs) < 0.25:
+            raise SystemExit(f"{hud} legs glued; thigh span={max(thighs)-min(thighs):.3f}")
+        late = luas[400:] if len(luas) > 400 else luas
+        if max(late) - min(late) < 0.18:
+            raise SystemExit(f"{hud} arms frozen after intro; span={max(late)-min(late):.3f}")
+        loop_luas = [pose["LUpperArm"][1] for pose in clip[loop0:loop1]]
+        loop_yaws = [pose["LUpperArm"][2] for pose in clip[loop0:loop1]]
+        if max(loop_yaws) - min(loop_yaws) < 0.16:
+            raise SystemExit(f"{hud} loop yaw frozen; span={max(loop_yaws)-min(loop_yaws):.3f}")
+        if max(loop_luas) - min(loop_luas) < 0.18:
+            raise SystemExit(f"{hud} loop arms frozen; span={max(loop_luas)-min(loop_luas):.3f}")
+        first_hop = next((i for i in range(loop0, loop1) if dips[i] < -0.04), None)
+        if first_hop is None or first_hop - loop0 > int(2.0 * 30):
+            raise SystemExit(f"{hud} loop does not hop in first 2s; hop={first_hop}")
+        score = score_clip(clip, 0, 1)
+        print(f"dance {hud} {source} frames={len(clip)} loop={loop0}..{loop1} "
+              f"flash={len(clip)*54*2+len(dips)*2}B "
+              f"peak={peak:.2f} dip={max_dip:.3f} hop={min_dip:.3f} "
+              f"thigh={max(thighs)-min(thighs):.3f} dt={dt:.4f} {fmt_score(score)}")
+        dances.append((hud, source, clip, dips, loop0, loop1))
+    write_dance_bank(DANCE_H, dances)
+    print(f"wrote {DANCE_H}")
 
     report = Path(__file__).resolve().parent / "dataset2_preview.txt"
     lines = ["Bandai 2 locomotion preview (not in firmware)", ""]

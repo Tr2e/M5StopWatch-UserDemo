@@ -32,7 +32,7 @@ bool validateMapping()
     bool valid = check(mapped.valid && mapped.steer == 1.0f &&
                            !mapped.confirmPressed && !mapped.cancelPressed &&
                            !mapped.brakeHeld && !mapped.boostHeld &&
-                           !mapped.pausePressed && mapped.exitPressed &&
+                           !mapped.pausePressed && !mapped.danceToggle && mapped.exitPressed &&
                            mapped.sequence == 7u && mapped.menuBlocked && mapped.viewAxis==0.f,
                        "valid input mapping failed");
     raw.axesValid = false;
@@ -67,6 +67,11 @@ bool validateMapping()
                    "bad preview Y must not invalidate racing steering");
     raw.steer = std::numeric_limits<float>::quiet_NaN();
     valid &= check(!mapRacerInput(raw, 9u).valid, "NaN steering was accepted");
+    RawRacerInput dance;
+    dance.axesValid = dance.actionsValid = true;
+    dance.blueHoldStarted = true;
+    valid &= check(mapRacerInput(dance, 10u).danceToggle && !mapRacerInput(dance, 10u).pausePressed,
+                   "blue hold did not map to dance toggle");
     return valid;
 }
 

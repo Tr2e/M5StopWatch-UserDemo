@@ -207,6 +207,18 @@ int main() {
     for(uint32_t t=410;t<=810;t+=10)controls.buttons(false,t>=460&&t<560,t);
     auto arenaB=controls.consume(true);
     check(arenaB.input.confirmPressed && !arenaB.input.cancelPressed,"arena B click did not map to confirm");
+    for(uint32_t t=820;t<=900;t+=10)controls.buttons(false,false,t);
+    controls.consume(true);
+    for(uint32_t t=910;t<=1600;t+=10)controls.buttons(true,false,t);
+    auto arenaHoldA=controls.consume(true);
+    check(arenaHoldA.input.pausePressed && !arenaHoldA.input.danceToggle && !arenaHoldA.input.cancelPressed,
+          "arena A hold did not map to Pose");
+    for(uint32_t t=1610;t<=1700;t+=10)controls.buttons(false,false,t);
+    controls.consume(true);
+    for(uint32_t t=1710;t<=2400;t+=10)controls.buttons(false,true,t);
+    auto arenaHoldB=controls.consume(true);
+    check(arenaHoldB.input.danceToggle && !arenaHoldB.input.pausePressed && !arenaHoldB.input.confirmPressed,
+          "arena B hold did not map to dance");
     show(GameScreen::Racing);
     controls.touch(true,374,240);
     auto race=controls.consume(true);

@@ -3,18 +3,19 @@
 
 namespace gundam_arena {
 enum class Mode : uint8_t { Play, Pose };
-enum class Action : uint8_t { Idle, Walk, Turn, Jump, Fall, Land, Kick, Gesture };
+enum class Action : uint8_t { Idle, Walk, Turn, Jump, Fall, Land, Kick, Gesture, Dance };
 
 inline constexpr float kArenaHalfExtent=16.f;
-inline constexpr float kGravity=18.f,kJumpVel=4.f,kWalkSpeed=2.0f,kTurnSpeed=1.8f;
+inline constexpr float kGravity=18.f,kJumpVel=4.f,kWalkSpeed=2.0f,kRunSpeed=4.0f,kDashSpeed=6.5f,kTurnSpeed=1.8f;
 inline constexpr float kJumpCrouch=.20f,kJumpDip=.12f,kJumpLand=.20f;
 inline constexpr float kJumpSquatY=.14f,kJumpLandY=.10f,kPlantAnkleY=.26f;
 inline constexpr float kStep=1.f/60.f;
 inline constexpr float kBallR=.16f,kFootR=.20f;
 inline constexpr float kFootToeY=-.18f,kFootToeZ=.20f;
 inline constexpr float kBallSpawnX=-.42f,kBallSpawnZ=.74f;
-inline constexpr int kPlayClipCount=17;
-inline constexpr int kPlayClipNone=17;
+inline constexpr int kPlayClipCount=15;
+inline constexpr int kPlayClipNone=15;
+inline constexpr int kDanceClipCount=2;
 inline constexpr float kStrikePosTol=.05f;
 inline constexpr float kStrikeFaceTol=.05f;
 inline constexpr float kWalkArrive=.03f;
@@ -23,11 +24,13 @@ inline constexpr float kTurnThenWalk=.80f;
 inline constexpr float kStickDeadzone=.18f;
 inline constexpr float kLookTau=.15f;
 inline constexpr float kKickMinLift=5.f;
+inline constexpr int kGestureRun=11;
+inline constexpr int kGestureDash=12;
 
 inline const char* playClipHud(int index){
     static constexpr const char* names[]={
         "KICK","JUMP","WAVE L","WAVE R","WAVE 2","UP L","UP R","UP 2",
-        "BOW","BYE","BYE2","GUIDE","PUNCH","DNC L","DNC S","RUN","DASH"};
+        "BOW","BYE","BYE2","GUIDE","PUNCH","RUN","DASH"};
     if(index>=0 && index<kPlayClipCount)return names[index];
     return "A/B CLIP";
 }
@@ -38,7 +41,7 @@ struct ArenaInput {
     bool valid=true;
     int jointStep=0;
     float poseYaw=0,posePitch=0;
-    bool poseReset=false,toggleMode=false,exit=false;
+    bool poseReset=false,toggleMode=false,danceToggle=false,exit=false;
 };
 
 struct ArenaBall {
@@ -60,6 +63,8 @@ struct CharacterModel {
     float walkPhase=0,landT=0,clipT=0;
     int clipIndex=kPlayClipNone;
     int playGestureId=0;
+    int danceId=0;
+    bool danceMode=false;
     bool leftPlanted=false,rightPlanted=false;
     float leftPlantX=0,leftPlantZ=0,rightPlantX=0,rightPlantZ=0;
     BoneId selected=BoneId::Head;
@@ -74,6 +79,8 @@ struct CharacterModel {
     float walkToX=0,walkToZ=0;
     bool hasFaceYaw=false;
     float faceYaw=0;
+    float gaitSpeed=0;
+    bool gaitCoast=false;
     uint32_t meshBuilds=0;
     float kickMinGap=9.f;
     float kickMaxFwd=-9.f;
@@ -87,6 +94,11 @@ Point boneWorld(const Skeleton& sk,BoneId bone);
 void playKick(CharacterModel& c);
 void playJump(CharacterModel& c);
 void playGesture(CharacterModel& c,int id);
+void playDance(CharacterModel& c,int id);
+void stopDance(CharacterModel& c);
+bool isLocoGesture(int id);
+bool locoPlaying(const CharacterModel& c);
+void stopLoco(CharacterModel& c);
 bool characterBusy(const CharacterModel& c);
 void setLookAt(CharacterModel& c,Point world);
 void clearLookAt(CharacterModel& c);
@@ -100,6 +112,11 @@ float kickAlignErr(const CharacterModel& c);
 bool inStrikeRange(const CharacterModel& c);
 
 inline const char* playActionHud(const CharacterModel& c){
+    if(c.danceMode || c.action==Action::Dance){
+        static constexpr const char* names[]={"DNC L","DNC S"};
+        if(c.danceId>=0 && c.danceId<kDanceClipCount)return names[c.danceId];
+        return "DNC";
+    }
     if(c.action==Action::Kick)return "KICK";
     if(c.action==Action::Jump || c.action==Action::Fall || c.action==Action::Land)return "JUMP";
     if(c.action==Action::Gesture)return playClipHud(c.playGestureId+2);

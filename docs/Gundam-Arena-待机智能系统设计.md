@@ -1,12 +1,12 @@
 # Gundam Arena：RX-78 待机智能系统设计
 
-> 状态：**草案修订。§13 动作层已落地。Auton 四刀已落地；真机已能踢中。动机改为竞争选举，不再走强制动作链。**
+> 状态：**草案修订。§13 动作层已落地。Auton 四刀已落地；真机已能踢中。动机改为竞争选举，不再走强制动作链。Approach 中远距用 `RUN`/`DASH` 带根位移，切静止技能前必须减速停稳。**
 >
 > 本文只描述待机智能的运行约定。已落地的沙盒行为仍以 [Gundam Arena 技术文档](Gundam-Arena-技术文档.md) 为准。两者冲突时，以技术文档中的代码事实为准，本文再改。
 >
 > **2026-09-17 审核已决：** Jump 交给智能；玩家 A/B 圈指针与智能请求分开；回 Pilot 时头立刻回正。§12 数值与门闩用户确认保留。
 >
-> **实现顺序：** Auton 四刀已做主机测试。真机观感待用户看。
+> **实现顺序：** Auton 四刀已做主机测试。2026-09-18 步态竞争已做主机测试。真机观感待用户看。
 
 ---
 
@@ -224,7 +224,7 @@ Hold      = 0.60*composure + 0.25*(1-curiosity) + 0.20*(1-play)
 |---|---|---|
 | Attend | Attend | 站住，注视球（若球几乎停且 operatorPresent，可注视相机） |
 | Face | Face | 原地踏步转向球，注视球 |
-| Approach | Approach | 走向 `kickStance`，边走边转正，注视球 |
+| Approach | Approach | 去 `kickStance`：近距程序走，中距循环 `RUN`、远距循环 `DASH`，均带根位移；日志 `Approach/WALK|RUN|DASH` |
 | Strike | Strike | 请求 Kick（独立入口，不拨玩家圈） |
 | Leap | Leap | 请求 Jump（独立入口，不拨玩家圈） |
 | Signal | Signal | 请求手势（独立入口），注视相机 |
@@ -248,14 +248,17 @@ Hold      = 0.60*composure + 0.25*(1-curiosity) + 0.20*(1-play)
 
 ### 5.3 手势选用
 
-Signal 不按 A/B 圈下一个槽，按理由选：
+Signal 不按 A/B 圈下一个槽，按理由选，**不拨玩家圈**：
 
 | 条件 | 槽 | HUD |
 |---|---|---|
-| 默认打招呼 | WAVE L 或 WAVE R（对相机左右手更近的一侧） | WAVE L / WAVE R |
-| 刚踢中且 `ballSpeed` 仍较高 | UP 2 | UP 2 |
+| 默认打招呼 | WAVE L 或 WAVE R（对相机更近的那只手） | WAVE L / WAVE R |
+| 刚踢中且球还快 | UP 2 | UP 2 |
+| 操作者记忆正在淡出 | BYE 或 BYE2（更淡用 BYE2） | BYE / BYE2 |
+| Hold 很久且玩心低 | BOW | BOW |
+| 空踢冷却中、玩心还在 | PUNCH（左右各一记，播完再 Hold） | PUNCH |
 
-`WAVE 2` / 单手 UP 首版不由智能选用，仍留给玩家 A/B 圈。
+`WAVE 2` / 单手 UP / GUIDE 首版不由智能选用，仍留给玩家 A/B 圈。
 
 ---
 
@@ -268,12 +271,15 @@ Signal 不按 A/B 圈下一个槽，按理由选：
 | Hold | 0 | 0 | 无 | Ball（若 `|ballBearing| > 0.25`）否则 None | Idle |
 | Attend | 0 | 0 | 无 | Ball；球静止且 operatorPresent 可为 Camera | Idle |
 | Face | 0 | `clamp(facingErr / 0.6, -1, 1)` | 无 | Ball | Turn（过转向死区）或 Idle |
-| Approach | 按到 `kickStance` 的前向分量，钳到 [0, 1]；若 `|facingErr| > 0.8` 则 forward=0 先转 | 同 Face | 无 | Ball | Walk 或 Turn |
+| Approach | 按到 `kickStance` 的前向分量；`|facingErr| > 0.8` 则先转后走。近距 `gaitSpeed=2` 程序 IK；到站位 `> 3` 循环 `RUN`（约 4）；`> 8` 且边距够则循环 `DASH`（约 6.5）。剩约 2.5 强制降到走 | 同 Face | `RUN`/`DASH` 仅 Auton 步态，不进玩家圈指针 | Ball | Walk / Turn，或循环 Gesture（loco） |
 | Strike | 0 | 0 | 请求 Kick | Ball | Kick |
 | Leap | 0 | 0 | 请求 Jump | Ball（请求当帧记下；空中不叠头） | Jump → Fall → Land |
 | Signal | 0 | 0 | 请求对应手势 | Camera | Gesture |
+| Brake | 沿当前朝向收 `gaitSpeed`（冲→跑→走→停） | 可继续转向 | 过渡，不是打分技能 | 保持原注视 | loco 降档或走 IK |
 
-Approach 的转向优先：朝向误差大时先转后走，避免侧着走进踢球点。位移钳位仍是 `±16`。若 `kickStance` 会出界，改到最近合法点；若仍 `inStrikeRange` 失败，降为 Attend，**不得**原地 Kick。
+Approach 的转向优先：朝向误差大时先转后走，避免侧着走进踢球点。位移钳位仍是 `±16`。感知加 `wallAhead`（沿朝向到方场边的剩余距离）；`stopDist ≈ 0.5 * speed * tBrake + 1.2`。边距不够时禁止升档，并 Brake 或先转向场内。若 `kickStance` 会出界，改到最近合法点；若仍 `inStrikeRange` 失败，降为 Attend，**不得**原地 Kick。球已出活动方不追出界。
+
+切到任何需要站住的技能（Kick / Signal / Attend / Hold / Leap / Face）前必须 Brake 到速度约 0，不得从冲刺直接切拳或挥手。Pilot 抢回仍立刻交权，不走 Brake。摇杆 Pilot 仍只走程序 IK，不换跑 clip。
 
 ### 6.1 注视（马达缺口）
 
@@ -355,10 +361,11 @@ Leap 结束后同样进 Attend（看球），并启动 `kLeapCooldown`。落地�
 | 已有 | 用作 |
 |---|---|
 | `Action` 八态 | 马达 |
-| `Walk` / `Turn` IK | Approach / Face |
+| `Walk` / `Turn` IK | Approach 近距 / Face；摇杆 Pilot 仍只用这项 |
+| `Gesture` 的 `RUN`/`DASH` | Approach 中远距循环步态，允许根位移；`characterBusy` 不锁这两条 |
 | `Kick` clip + 左脚胶囊碰撞 | Strike |
 | 程序跳跃（蓄力 / 弹道 / 落地） | Leap |
-| `Gesture` 六段 | Signal |
+| `Gesture` 社交条 | Signal（WAVE / UP 2 / BYE / BOW / PUNCH） |
 | `clipHold` 着地打断 / 空中忽略 | `busy` 与 Pilot 抢回 |
 | 球刚体与场地钳位 | 感知输入 |
 | `kBallSpawnX/Z` | 推导 `kickStance` |
@@ -366,12 +373,13 @@ Leap 结束后同样进 Attend（看球），并启动 `kLeapCooldown`。落地�
 
 ### 8.3 明确不做（本设计范围外）
 
-- 新的 `Action` 枚举值（Look / Seek / Sleep 等）；跳用现有 `Action::Jump`
+- 新的 `Action` 枚举值（Look / Seek / Sleep / Run 等）；跳用现有 `Action::Jump`，跑/冲是 Gesture 上的移动步态例外
 - 无触发条件的连跳、走路过程中无故起跳
-- 用 Bandai walk/run clip 替换现有走路 IK（智能仍走程序 IK）
+- 用 Bandai walk clip 替换摇杆程序走 IK；Auton 近距仍走程序 IK，中远距才叠 `RUN`/`DASH` 根位移
+- 加 walk-back / walk-left / walk-right
 - 障碍、武器、第二颗球、对战
 - 改博物馆展品网格
-- 为智能再扩一整包无标签 clip
+- 为智能再扩一整包无标签 clip；GUIDE / WAVE 2 / 单手 UP 仍留给玩家圈
 
 Idle 就是钉脚站住，需要时转头。不为待机再加一层持续的身体微动。
 
@@ -433,7 +441,7 @@ Auton 合成的 `clip` 请求必须写成「请求槽 N」，不要写成 `clipS
 | 空中 | 物理管落地；Auton 不选举；推杆则立刻 Pilot |
 | Pose | 无智能 |
 
-玩家 A/B 圈序不变：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2`。
+玩家 A/B 圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2 → BOW → BYE → BYE2 → GUIDE → PUNCH → RUN → DASH`。Auton Signal 按 §5.3 选条，不拨这根指针；`RUN`/`DASH` 只作为 Auton Approach 步态循环，不额外做成圈外玩法。整段 `DNC L`/`DNC S` 只在玩家舞蹈模式里播，Auton 不请求。
 
 **已决：圈指针分开。** 智能请求 Kick / Jump / 手势走独立入口，不调用 `nextPlayClip`，也不改玩家的 `clipIndex` 圈位置。玩家下一次 A 仍从上次**玩家自己**停在的槽继续。若马达内部暂时需要一个槽号才能播，用旁路字段，播完恢复玩家圈指针，或根本不写 `clipIndex`。
 
@@ -450,6 +458,8 @@ Auton 合成的 `clip` 请求必须写成「请求槽 N」，不要写成 `clipS
 **第三刀（Leap / Signal，2026-09-17 主机测试已过）：** 9、10、11、智能 Jump 后圈不变。
 
 **第四刀（五维动机，2026-09-17 主机测试已过）：** 技能分门闩、迟滞选举、Face、连踢玩心抑制。Signal 仅在 social 高且 play 仍低时胜出。
+
+**步态竞争（2026-09-18 主机测试已过）：** 远球 Approach 出现 `RUN`/`DASH` 且根位移大于纯走；切 Attend/Signal/Strike 前速度先降到 0；朝墙冲在钳位前收速；Signal 仍不改 `clipIndex`。推杆仍立刻 Pilot。
 
 1. 杆回中 0.8s 内 `control` 仍为 Pilot
 2. 球放在 3m 外正面，Auton 先出现非零 `turn` 或 `forward`，且在 `inStrikeRange` 前不进入 Kick

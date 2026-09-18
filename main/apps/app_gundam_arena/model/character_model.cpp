@@ -1,9 +1,11 @@
 #include "character_model.h"
 #include "arena_kick_clip.h"
 #include "arena_gesture_clips.h"
+#include "arena_dance_clips.h"
 #include "arena_log.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 namespace gundam_arena {
 namespace {
@@ -241,10 +243,62 @@ void applyGesture(CharacterModel& c,float dt){
     const float dip=kGestureRootDip[g][i0]+(kGestureRootDip[g][i1]-kGestureRootDip[g][i0])*u;
     c.pose.root.y=c.y-dip;
     if(advanceClip(c,dt,frames,fps)){
-        c.action=Action::Idle;
-        c.clipT=0;
-        c.leftPlanted=c.rightPlanted=false;
+        if(isLocoGesture(g) && c.gaitSpeed>0.f){
+            const float loop=float(std::max(1,frames-1))/fps;
+            while(c.clipT>=loop)c.clipT-=loop;
+        }else{
+            c.action=Action::Idle;
+            c.clipT=0;
+            c.leftPlanted=c.rightPlanted=false;
+        }
     }
+}
+
+void sampleDance(CharacterModel& c){
+    static_assert(kDanceCount==kDanceClipCount,"dance bank count drifted");
+    const int d=std::clamp(c.danceId,0,kDanceCount-1);
+    const int frames=kDanceFrames[d];
+    const int last=std::max(0,frames-1);
+    const float t=clampf(c.clipT*kDanceFps,0.f,float(last));
+    const int i0=int(t);
+    const int i1=i0>=last?last:i0+1;
+    const float u=t-float(i0);
+    const float s=1.f/float(kDanceScale);
+    const int16_t* joints=kDanceJoints+kDanceOffset[d];
+    for(int b=1;b<kBoneCount;++b){
+        const int a0=(i0*18+(b-1))*3;
+        const int a1=(i1*18+(b-1))*3;
+        JointEuler e{
+            (float(joints[a0])+(float(joints[a1])-float(joints[a0]))*u)*s,
+            (float(joints[a0+1])+(float(joints[a1+1])-float(joints[a0+1]))*u)*s,
+            (float(joints[a0+2])+(float(joints[a1+2])-float(joints[a0+2]))*u)*s};
+        c.pose.anim[b]=clampJoint(BoneId(b),e);
+    }
+    const int16_t* dips=kDanceRootDip+kDanceDipOffset[d];
+    const float dip=(float(dips[i0])+(float(dips[i1])-float(dips[i0]))*u)*s;
+    c.pose.root.y=c.y-dip;
+}
+
+void applyDance(CharacterModel& c,float dt){
+    const int d=std::clamp(c.danceId,0,kDanceCount-1);
+    const int frames=kDanceFrames[d];
+    sampleDance(c);
+    const int start=std::clamp(kDanceLoopStart[d],0,std::max(0,frames-1));
+    const int stop=std::clamp(kDanceLoopEnd[d],start+1,frames);
+    const float t0=float(start)/kDanceFps;
+    const float t1=float(stop)/kDanceFps;
+    c.clipT+=dt;
+    if(c.clipT>=t1){
+        const float span=t1-t0;
+        while(c.clipT>=t1)c.clipT-=span;
+        if(c.clipT<t0)c.clipT=t0;
+    }
+}
+
+int nextDanceClip(int id,int step){
+    const int n=kDanceClipCount;
+    id=std::clamp(id,0,n-1);
+    return (id+(step>0?1:n-1))%n;
 }
 
 int nextPlayClip(int index,int step){
@@ -409,6 +463,7 @@ void resetCharacter(CharacterModel& c){
 Point boneWorld(const Skeleton& sk,BoneId bone){return sk.world[int(bone)].t;}
 
 void playKick(CharacterModel& c){
+    stopDance(c);
     c.clipT=0;
     c.walkPhase=0;
     c.leftPlanted=c.rightPlanted=false;
@@ -421,6 +476,7 @@ void playKick(CharacterModel& c){
 }
 
 void playJump(CharacterModel& c){
+    stopDance(c);
     c.clipT=0;
     c.walkPhase=0;
     c.leftPlanted=c.rightPlanted=false;
@@ -431,6 +487,7 @@ void playJump(CharacterModel& c){
 }
 
 void playGesture(CharacterModel& c,int id){
+    stopDance(c);
     c.playGestureId=std::clamp(id,0,kGestureCount-1);
     c.clipT=0;
     c.walkPhase=0;
@@ -438,10 +495,51 @@ void playGesture(CharacterModel& c,int id){
     c.action=Action::Gesture;
 }
 
+void playDance(CharacterModel& c,int id){
+    stopLoco(c);
+    c.danceId=std::clamp(id,0,kDanceClipCount-1);
+    c.danceMode=true;
+    const int d=c.danceId;
+    const int start=std::clamp(kDanceLoopStart[d],0,std::max(0,kDanceFrames[d]-1));
+    c.clipT=float(start)/kDanceFps;
+    c.walkPhase=0;
+    c.gaitSpeed=0;
+    c.gaitCoast=false;
+    c.leftPlanted=c.rightPlanted=false;
+    c.action=Action::Dance;
+    clearSeek(c);
+}
+
+void stopDance(CharacterModel& c){
+    if(!c.danceMode && c.action!=Action::Dance)return;
+    c.danceMode=false;
+    if(c.action==Action::Dance){
+        c.action=Action::Idle;
+        c.clipT=0;
+        c.leftPlanted=c.rightPlanted=false;
+    }
+}
+
+bool isLocoGesture(int id){
+    return id==kGestureRun || id==kGestureDash;
+}
+
+bool locoPlaying(const CharacterModel& c){
+    return c.action==Action::Gesture && isLocoGesture(c.playGestureId);
+}
+
+void stopLoco(CharacterModel& c){
+    if(!locoPlaying(c))return;
+    c.action=Action::Idle;
+    c.clipT=0;
+    c.leftPlanted=c.rightPlanted=false;
+}
+
 bool characterBusy(const CharacterModel& c){
     if(!c.grounded)return true;
-    if(c.action==Action::Kick || c.action==Action::Gesture || c.action==Action::Land)
-        return true;
+    if(c.danceMode || c.action==Action::Dance)return true;
+    if(c.action==Action::Kick || c.action==Action::Land)return true;
+    if(c.action==Action::Gesture && !isLocoGesture(c.playGestureId))return true;
     if(c.action==Action::Jump)return true;
     return false;
 }
@@ -510,6 +608,7 @@ bool inStrikeRange(const CharacterModel& c){
 
 void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     if(in.toggleMode){
+        if(c.danceMode)stopDance(c);
         c.mode=c.mode==Mode::Play?Mode::Pose:Mode::Play;
         if(c.mode==Mode::Pose){c.action=Action::Idle;c.clipT=0;}
     }
@@ -527,6 +626,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     }
 
     const bool clipHold=characterBusy(c);
+    const bool loco=locoPlaying(c);
     if(c.action==Action::Land){
         c.landT-=dt;if(c.landT<=0)c.action=Action::Idle;
     }
@@ -534,17 +634,33 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     const float stickF=in.valid?clampf(in.forward,-1.f,1.f):0.f;
     const float stickT=in.valid?clampf(in.turn,-1.f,1.f):0.f;
     const bool playerStick=std::fabs(stickF)>kStickDeadzone || std::fabs(stickT)>kStickDeadzone;
-    if(playerStick)clearSeek(c);
+    if(playerStick){
+        clearSeek(c);
+        c.gaitSpeed=0;
+        c.gaitCoast=false;
+        if(c.danceMode)stopDance(c);
+    }
+    if(c.grounded && in.danceToggle && !playerStick){
+        if(c.danceMode)stopDance(c);
+        else playDance(c,c.danceId);
+    }
     float forward=stickF,turn=stickT;
     if(!playerStick && !characterBusy(c) && (c.hasWalkTo || c.hasFaceYaw))
         seekAxes(c,forward,turn);
 
-    if(c.grounded && in.clipStep){
+    if(c.danceMode){
+        if(c.grounded)c.action=Action::Dance;
+        if(c.grounded && in.clipStep)playDance(c,nextDanceClip(c.danceId,in.clipStep));
+    }else if(c.grounded && in.clipStep){
         beginRingClip(c,nextPlayClip(c.clipIndex,in.clipStep));
-    }else if(!clipHold && c.grounded){
-        if(std::abs(forward)>.18f)c.action=Action::Walk;
+        c.gaitSpeed=0;
+        c.gaitCoast=false;
+    }else if(c.grounded && !c.danceMode && !clipHold && (playerStick || !loco)){
+        const bool translating=std::abs(forward)>.18f
+            || (!playerStick && c.gaitCoast && c.gaitSpeed>0.25f);
+        if(translating)c.action=Action::Walk;
         else if(std::abs(turn)>.18f)c.action=Action::Turn;
-        else {c.action=Action::Idle;c.walkPhase=0;}
+        else if(!loco){c.action=Action::Idle;c.walkPhase=0;}
     }
 
     if(c.action==Action::Jump&&c.grounded){
@@ -553,9 +669,36 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     }
 
     const float air=c.grounded?1.f:.45f;
-    c.forwardSpeed=(c.grounded||in.valid)?forward*kWalkSpeed*air:c.forwardSpeed*.98f;
+    float want=forward*kWalkSpeed*air;
+    if(c.gaitSpeed>0.f){
+        if(c.hasWalkTo)want=forward*c.gaitSpeed*air;
+        else if(c.gaitCoast || std::fabs(forward)>kStickDeadzone)want=c.gaitSpeed*air;
+        else want=0.f;
+    }
+    if(c.hasWalkTo){
+        const float dx=c.walkToX-c.x,dz=c.walkToZ-c.z;
+        const float dist=std::sqrt(dx*dx+dz*dz);
+        const float cap=dist/std::max(dt,1e-4f);
+        if(want>cap)want=cap;
+    }
+    if(want>0.f){
+        const float hx=std::sin(c.heading),hz=std::cos(c.heading);
+        float wall=1e9f;
+        if(hx>1e-4f)wall=std::min(wall,(kArenaHalfExtent-c.x)/hx);
+        if(hx<-1e-4f)wall=std::min(wall,(-kArenaHalfExtent-c.x)/hx);
+        if(hz>1e-4f)wall=std::min(wall,(kArenaHalfExtent-c.z)/hz);
+        if(hz<-1e-4f)wall=std::min(wall,(-kArenaHalfExtent-c.z)/hz);
+        wall=std::max(0.f,wall);
+        const float cap=wall/std::max(dt,1e-4f);
+        if(want>cap)want=cap;
+    }
+    c.forwardSpeed=(c.grounded||in.valid)?want:c.forwardSpeed*.98f;
     c.angularSpeed=turn*kTurnSpeed*(c.grounded?1.f:.6f);
-    if(c.action!=Action::Kick && c.action!=Action::Gesture && !(c.action==Action::Jump&&c.grounded)){
+    const bool lockRoot=c.action==Action::Kick
+        || c.action==Action::Dance
+        || (c.action==Action::Gesture && !locoPlaying(c))
+        || (c.action==Action::Jump&&c.grounded);
+    if(!lockRoot){
         c.heading=std::remainder(c.heading+c.angularSpeed*dt,2.f*kPi);
         c.x=clampf(c.x+std::sin(c.heading)*c.forwardSpeed*dt,-kArenaHalfExtent,kArenaHalfExtent);
         c.z=clampf(c.z+std::cos(c.heading)*c.forwardSpeed*dt,-kArenaHalfExtent,kArenaHalfExtent);
@@ -571,6 +714,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
     applyRoot(c);
     if(c.action==Action::Kick)applyKick(c,dt);
     else if(c.action==Action::Gesture)applyGesture(c,dt);
+    else if(c.action==Action::Dance)applyDance(c,dt);
     else if(c.action==Action::Walk)applyWalk(c,forward==0.f?1.f:forward);
     else if(c.action==Action::Turn)applyWalk(c,turn>=0.f?.35f:-.35f);
     else if(c.action==Action::Jump||c.action==Action::Fall){
@@ -578,7 +722,7 @@ void stepCharacter(CharacterModel& c,const ArenaInput& in,float dt){
         if(!c.grounded)c.clipT+=dt;
     }else if(c.action==Action::Land)applyLandPose(c);
     else applyIdleIk(c);
-    if(c.action!=Action::Kick && c.action!=Action::Gesture)applyTurnFollow(c);
+    if(c.action!=Action::Kick && c.action!=Action::Gesture && c.action!=Action::Dance)applyTurnFollow(c);
     applyLookAt(c,dt);
     c.pose.anim[int(BoneId::Head)].yaw=clampf(c.pose.anim[int(BoneId::Head)].yaw,-.87f,.87f);
     stepBall(c,dt);

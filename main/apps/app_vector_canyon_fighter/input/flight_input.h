@@ -12,6 +12,7 @@ enum class FlightAction : uint16_t {
     Recalibrate = 1u << 4,
     ThrottleUp = 1u << 5,
     ThrottleDown = 1u << 6,
+    DanceMode = 1u << 7,
 };
 
 constexpr uint16_t flightActionMask(FlightAction action)
@@ -57,7 +58,8 @@ class TwoButtonFlightActionMapper {
 public:
     FlightActions update(bool primaryPressed, bool secondaryPressed,
                          bool primaryClicked, bool secondaryClicked,
-                         bool primaryHoldStarted, bool secondaryHolding)
+                         bool primaryHoldStarted, bool secondaryHolding,
+                         bool secondaryHoldStarted = false)
     {
         FlightActions actions;
         if (primaryPressed && secondaryPressed && !_chordActive) {
@@ -78,6 +80,9 @@ public:
         if (primaryHoldStarted) {
             actions.setPressed(FlightAction::Reset);
             actions.setPressed(FlightAction::ToggleImmersive);
+        }
+        if (secondaryHoldStarted) {
+            actions.setPressed(FlightAction::DanceMode);
         }
         // Keep the raw primary hold observable for domain-specific adapters.
         // Vector Run still consumes only the click edge for throttle changes.

@@ -21,6 +21,7 @@ struct RacerInput {
     bool brakeHeld = false;
     bool boostHeld = false;
     bool pausePressed = false;
+    bool danceToggle = false;
     bool exitPressed = false;
     bool valid = false;
     bool menuBlocked = false;

@@ -109,7 +109,8 @@ void ArenaRenderer::render(lgfx::LGFXBase& canvas,const CharacterModel& characte
         }
     }else if(character.action==Action::Kick||character.action==Action::Jump||
              character.action==Action::Fall||character.action==Action::Land||
-             character.action==Action::Gesture){
+             character.action==Action::Gesture||character.action==Action::Dance||
+             character.danceMode){
         canvas.drawString(playActionHud(character),canvas.width()/2,18);
     }else if(character.clipIndex<kPlayClipCount){
         canvas.drawString(playClipHud(character.clipIndex),canvas.width()/2,18);

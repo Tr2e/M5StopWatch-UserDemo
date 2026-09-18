@@ -20,13 +20,14 @@ inline void mergeExternalPad(lets_and_go::DeviceControlFrame& device,const lets_
     device.input.confirmPressed|=pad.confirmPressed;
     device.input.cancelPressed|=pad.cancelPressed;
     device.input.pausePressed|=pad.pausePressed;
+    device.input.danceToggle|=pad.danceToggle;
     device.input.exitPressed|=pad.exitPressed;
     if(pad.navigationStep)device.navigation=pad.navigationStep;
     if(pad.valid){
         device.input.steer=pad.steer;
         device.input.viewAxis=pad.viewAxis;
         device.input.valid=true;
-    }else if(pad.confirmPressed||pad.cancelPressed||pad.pausePressed||pad.exitPressed)device.input.valid=true;
+    }else if(pad.confirmPressed||pad.cancelPressed||pad.pausePressed||pad.danceToggle||pad.exitPressed)device.input.valid=true;
 }
 
 class ArenaController {
@@ -48,6 +49,7 @@ public:
         _hadConfirm=input.input.confirmPressed;
         in.clipStep=_pendingClip;
         in.toggleMode=input.input.pausePressed;
+        in.danceToggle=input.input.danceToggle;
         in.valid=input.input.valid;
         if(in.valid){
             in.turn=-input.input.steer;
@@ -77,7 +79,7 @@ public:
             stepIdlePilot(_idle,_character,in,kStep,&_view,orbitCue);
             stepCharacter(_character,in,kStep);
             updateFollowView(_view,_character,kStep);
-            in.clipStep=0;in.toggleMode=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
+            in.clipStep=0;in.toggleMode=false;in.danceToggle=false;in.jointStep=0;in.poseYaw=0;in.posePitch=0;
             _pendingClip=0;
             _accumulator-=kStep;++steps;
         }

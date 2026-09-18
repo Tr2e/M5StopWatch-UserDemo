@@ -74,6 +74,7 @@ void HardwareRacerInputProvider::poll(uint32_t nowMs)
     raw.redHeld = actions.actions.isHeld(FlightAction::ThrottleDown);
     raw.blueHeld = actions.actions.isHeld(FlightAction::ThrottleUp);
     raw.redHoldStarted = actions.actions.wasPressed(FlightAction::ToggleImmersive);
+    raw.blueHoldStarted = actions.actions.wasPressed(FlightAction::DanceMode);
     raw.chordStarted = _exitChord.update(raw.redHeld, raw.blueHeld, nowMs);
     _screenInput.publish(raw, ++_sequence, nowMs);
     if (_lastDiagnosticMs == 0u || nowMs - _lastDiagnosticMs >= 5000u) {

@@ -67,6 +67,7 @@ public:
             _buttonsArmed = false;
             _frame.input.confirmPressed = _frame.input.cancelPressed = false;
             _frame.input.pausePressed = false;
+            _frame.input.danceToggle = false;
             _frame.navigation = _frame.view = 0;
             _frame.advance = false;
             _frame.autoToggle = false;
@@ -80,7 +81,8 @@ public:
             } else if (_screen == GameScreen::ArenaPlay) {
                 _frame.input.cancelPressed |= a.clicked;
                 _frame.input.confirmPressed |= b.clicked;
-                _frame.input.pausePressed |= b.holdStarted;
+                _frame.input.pausePressed |= a.holdStarted;
+                _frame.input.danceToggle |= b.holdStarted;
             } else if (_screen != GameScreen::Racing) {
                 if (a.clicked) _frame.navigation = 1;
                 _frame.input.confirmPressed |= b.clicked;
@@ -157,14 +159,16 @@ public:
         if (!healthy) { result.input.steer = 0; result.input.viewAxis = 0; }
         if (result.input.exitPressed) {
             result.input.confirmPressed = result.input.cancelPressed = false;
-            result.input.pausePressed = result.input.brakeHeld = result.input.boostHeld = false;
+            result.input.pausePressed = result.input.danceToggle = false;
+            result.input.brakeHeld = result.input.boostHeld = false;
             result.navigation = result.view = 0;
             result.advance = false;
             result.autoToggle = false;
             result.resultAction = -1;
         }
         _frame.input.confirmPressed = _frame.input.cancelPressed = false;
-        _frame.input.pausePressed = _frame.input.exitPressed = false;
+        _frame.input.pausePressed = _frame.input.danceToggle = false;
+        _frame.input.exitPressed = false;
         _frame.navigation = _frame.view = 0;
         _frame.advance = false;
         _frame.autoToggle = false;

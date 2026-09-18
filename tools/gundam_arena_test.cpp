@@ -2,6 +2,7 @@
 #include "../main/apps/app_gundam_arena/controller/arena_controller.h"
 #include "../main/apps/app_gundam_arena/model/arena_kick_clip.h"
 #include "../main/apps/app_gundam_arena/model/arena_gesture_clips.h"
+#include "../main/apps/app_gundam_arena/model/arena_dance_clips.h"
 #include "../tools/arena_motion/arena_walk_clip.h"
 #include "../main/apps/app_lets_and_go_racer/input/device_control_logic.h"
 #include <algorithm>
@@ -9,6 +10,7 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <string>
 
@@ -33,6 +35,10 @@ static void playSlot(CharacterModel& c,int slot){
     c.clipIndex=slot<=0?kPlayClipNone:slot-1;
     ArenaInput in{};in.valid=true;in.clipStep=1;
     stepCharacter(c,in,kStep);
+}
+
+static bool socialBusy(const CharacterModel& c){
+    return c.action==Action::Gesture && !locoPlaying(c);
 }
 
 static int yawReversals(const float* y,int n){
@@ -109,11 +115,16 @@ int main(int argc,char** argv){
     const std::string out=argc>1?argv[1]:"/tmp/gundam-arena";
     static_assert(kWalkFrames==60,"walk comparison clip window drifted");
     static_assert(kKickFrames==39,"kick clip window drifted");
-    static_assert(kGestureCount==15 && kGestureFrames[0]==50,"gesture bank drifted");
-    static_assert(kGestureFrames[11]>kGestureFrames[12] && kGestureFrames[12]>50,"dance windows drifted");
-    static_assert(kGestureFrames[13]>kGestureFrames[14] && kGestureFrames[14]>50,"loco windows drifted");
+    static_assert(kGestureCount==13 && kGestureFrames[0]==50,"gesture bank drifted");
+    static_assert(kGestureFrames[11]>kGestureFrames[12] && kGestureFrames[12]>50,"loco windows drifted");
     static_assert(kGestureFlashBytes[0]==10800,"gesture flash size drifted");
-    static_assert(sizeof(kGestureRootDip)/sizeof(kGestureRootDip[0])==15,"gesture root dip drifted");
+    static_assert(sizeof(kGestureRootDip)/sizeof(kGestureRootDip[0])==13,"gesture root dip drifted");
+    static_assert(kDanceCount==2 && kDanceFrames[0]==4751 && kDanceFrames[1]==1901,"full dance bank drifted");
+    static_assert(kDanceFlashBytes[0]==522610 && kDanceFlashBytes[1]==209110,"dance quantize drifted");
+    static_assert(kDanceScale==10000,"dance scale drifted");
+    static_assert(kDanceLoopStart[0]>30 && kDanceLoopStart[1]>30,"dance loop still includes intro hold");
+    static_assert(kDanceLoopEnd[0]<=kDanceFrames[0] && kDanceLoopEnd[1]<=kDanceFrames[1],"dance loop end past clip");
+    static_assert(kDanceLoopEnd[0]-kDanceLoopStart[0]>240 && kDanceLoopEnd[1]-kDanceLoopStart[1]>240,"dance loop too short");
     const auto kickPitch=[](int frame,BoneId bone){
         return kKickJoints[frame*18*3+(int(bone)-1)*3+1];
     };
@@ -416,8 +427,7 @@ int main(int argc,char** argv){
         "wave-left-hand_active","wave-right-hand_active","wave-both-hands_normal",
         "raise-up-left-hand_normal","raise-up-right-hand_normal","raise-up-both-hands_normal",
         "bow_normal","bye_normal","byebye_normal",
-        "guide_normal","punch_normal","dance-long_normal","dance-short_normal",
-        "run_normal","dash_normal"};
+        "guide_normal","punch_normal","run_normal","dash_normal"};
     for(int g=0;g<kGestureCount;++g){
         const std::string src=kGestureSource[g];
         assert(src.find(wantSrc[g])!=std::string::npos);
@@ -434,7 +444,7 @@ int main(int argc,char** argv){
         const Point rs=sk.world[int(BoneId::RShoulder)].t;
         const Point lf=sk.world[int(BoneId::LFoot)].t;
         const Point rf=sk.world[int(BoneId::RFoot)].t;
-        if(g<13)assert(lf.y<.40f && rf.y<.40f);
+        if(!isLocoGesture(g))assert(lf.y<.40f && rf.y<.40f);
         assert(length(subtract(ls,rs))>.90f);
         if(g<6){
             assert(length(subtract(lh,head))>.16f);
@@ -621,32 +631,84 @@ int main(int argc,char** argv){
         assert(firstL>=0 && firstR>=0 && firstL!=firstR);
     }
 
-    for(int g=11;g<=12;++g){
+    for(int d=0;d<kDanceCount;++d){
         c={};resetCharacter(c);
         in={};in.valid=true;
-        playSlot(c,2+g);
-        bool dipped=false;
-        int sameLim=0,n=0;
-        for(int i=0;i<120 && c.action==Action::Gesture;++i){
-            if(c.pose.root.y<c.y-0.06f)dipped=true;
+        const int ring=c.clipIndex;
+        playDance(c,d);
+        const float t0=float(kDanceLoopStart[d])/kDanceFps;
+        const float t1=float(kDanceLoopEnd[d])/kDanceFps;
+        assert(c.clipT>=t0-1e-4f && c.clipT<t0+kStep);
+        stepCharacter(c,in,0.f);
+        const float ua0=c.pose.anim[int(BoneId::LUpperArm)].pitch;
+        const float th0=c.pose.anim[int(BoneId::LThigh)].pitch;
+        float uaHi=ua0,uaLo=ua0,thHi=th0,thLo=th0;
+        bool sawHop=false;
+        int n=0;
+        for(int i=0;i<180 && c.action==Action::Dance;++i){
+            if(c.pose.root.y>c.y+0.03f)sawHop=true;
             evaluateSkeleton(sk,c.pose);
-            assert(sk.world[int(BoneId::LFoot)].t.y<.45f);
-            assert(sk.world[int(BoneId::RFoot)].t.y<.45f);
-            const float lp=c.pose.anim[int(BoneId::LUpperArm)].pitch;
-            const float rp=c.pose.anim[int(BoneId::RUpperArm)].pitch;
-            const bool lLo=lp<-1.38f,rLo=rp<-1.38f,lHi=lp>0.78f,rHi=rp>0.78f;
-            if((lLo&&rLo)||(lHi&&rHi))++sameLim;
+            uaHi=std::max(uaHi,c.pose.anim[int(BoneId::LUpperArm)].pitch);
+            uaLo=std::min(uaLo,c.pose.anim[int(BoneId::LUpperArm)].pitch);
+            thHi=std::max(thHi,c.pose.anim[int(BoneId::LThigh)].pitch);
+            thLo=std::min(thLo,c.pose.anim[int(BoneId::LThigh)].pitch);
             ++n;
             stepCharacter(c,in,kStep);
         }
-        assert(dipped);
-        assert(sameLim*4<n);
+        assert(c.danceMode && c.action==Action::Dance && n==180);
+        assert(c.clipIndex==ring);
+        assert(std::strcmp(playActionHud(c),kDanceHud[d])==0);
+        assert((uaHi-uaLo)+(thHi-thLo)>0.12f);
+        assert(sawHop);
+        c.clipT=t1-kStep*0.25f;
+        stepCharacter(c,in,kStep);
+        assert(c.action==Action::Dance && c.clipT>=t0-1e-3f && c.clipT<t0+1.f);
+        in.clipStep=1;stepCharacter(c,in,kStep);in.clipStep=0;
+        assert(c.danceId==(d+1)%kDanceCount && c.clipIndex==ring);
+        in.clipStep=-1;stepCharacter(c,in,kStep);in.clipStep=0;
+        assert(c.danceId==d && c.clipIndex==ring);
+        in.forward=1.f;stepCharacter(c,in,kStep);in.forward=0;
+        assert(!c.danceMode && c.action!=Action::Dance);
+        resetCharacter(c);
+        playDance(c,d);
+        float minDip=9.f,maxDip=-9.f,thScanLo=9.f,thScanHi=-9.f,uaScanLo=9.f,uaScanHi=-9.f;
+        bool hopped=false,feetOff=false;
+        ArenaInput idle{};idle.valid=true;
+        for(int f=kDanceLoopStart[d];f<kDanceLoopEnd[d];++f){
+            const float dip=float(kDanceRootDip[kDanceDipOffset[d]+f])/float(kDanceScale);
+            minDip=std::min(minDip,dip);
+            maxDip=std::max(maxDip,dip);
+            const int base=kDanceOffset[d]+f*54;
+            const float thigh=float(kDanceJoints[base+(int(BoneId::LThigh)-1)*3+1])/float(kDanceScale);
+            const float ua=float(kDanceJoints[base+(int(BoneId::LUpperArm)-1)*3+1])/float(kDanceScale);
+            thScanLo=std::min(thScanLo,thigh);thScanHi=std::max(thScanHi,thigh);
+            uaScanLo=std::min(uaScanLo,ua);uaScanHi=std::max(uaScanHi,ua);
+            if((f%11)!=0 || dip>=-0.04f)continue;
+            c.clipT=float(f)/kDanceFps;
+            const float x0=c.x,z0=c.z;
+            stepCharacter(c,idle,0.f);
+            assert(std::fabs(c.x-x0)<1e-4f && std::fabs(c.z-z0)<1e-4f);
+            if(c.pose.root.y>c.y+0.03f){
+                hopped=true;
+                evaluateSkeleton(sk,c.pose);
+                const float ly=sk.world[int(BoneId::LFoot)].t.y;
+                const float ry=sk.world[int(BoneId::RFoot)].t.y;
+                feetOff=ly>0.08f && ry>0.08f;
+            }
+        }
+        assert(maxDip>0.04f && minDip<-0.30f);
+        assert(thScanHi-thScanLo>0.25f);
+        assert(uaScanHi-uaScanLo>0.18f);
+        assert(hopped && feetOff);
     }
     {
-        const auto dL=sampleGesture(13);
-        const auto dS=sampleGesture(14);
-        assert(dL.n>dS.n+15);
-        assert(dS.n>110);
+        CharacterModel m;resetCharacter(m);
+        ArenaInput tog{};tog.valid=true;tog.danceToggle=true;
+        const int ring=m.clipIndex;
+        stepCharacter(m,tog,kStep);tog.danceToggle=false;
+        assert(m.danceMode && m.action==Action::Dance && m.danceId==0 && m.clipIndex==ring);
+        tog.danceToggle=true;stepCharacter(m,tog,kStep);tog.danceToggle=false;
+        assert(!m.danceMode && m.action==Action::Idle && m.clipIndex==ring);
     }
 
     {
@@ -671,8 +733,8 @@ int main(int argc,char** argv){
             }
             return std::array<float,5>{float(n),float(alt),lHi-lLo,maxChest,minRoot-m.y};
         };
-        const auto run=sampleLoco(15);
-        const auto dash=sampleLoco(16);
+        const auto run=sampleLoco(13);
+        const auto dash=sampleLoco(14);
         assert(run[0]>110 && dash[0]>90);
         assert(run[1]>run[0]*0.25f && dash[1]>dash[0]*0.25f);
         assert(run[2]>0.60f && dash[2]>run[2]+0.20f);
@@ -680,7 +742,7 @@ int main(int argc,char** argv){
         assert(run[4]<-0.03f && dash[4]<-0.05f);
         CharacterModel lift;resetCharacter(lift);
         ArenaInput idle{};idle.valid=true;
-        playSlot(lift,16);
+        playSlot(lift,14);
         float maxFoot=-9.f;
         for(int i=0;i<80 && lift.action==Action::Gesture;++i){
             evaluateSkeleton(sk,lift.pose);
@@ -836,7 +898,7 @@ int main(int argc,char** argv){
         assert(p.control==ControlMode::Pilot);
         for(int i=0;i<12;++i)tick(p,m,idle);
         assert(p.control==ControlMode::Auton);
-        while(m.action==Action::Gesture)tick(p,m,idle);
+        for(int wait=0;wait<400 && socialBusy(m);++wait)tick(p,m,idle);
         for(int i=0;i<12;++i)tick(p,m,idle);
         if(!m.lookEnabled){
             for(int i=0;i<180 && !m.lookEnabled;++i)tick(p,m,idle);
@@ -925,7 +987,7 @@ int main(int argc,char** argv){
             const KickStance s=kickStance(m);
             const float dist=std::sqrt((m.x-s.x)*(m.x-s.x)+(m.z-s.z)*(m.z-s.z));
             if(dist>=kStrikePosTol)assert(m.action!=Action::Kick);
-            if(m.action==Action::Walk || m.action==Action::Turn)sawMove=true;
+            if(m.action==Action::Walk || m.action==Action::Turn || locoPlaying(m))sawMove=true;
             tick(p,m,idle);
             if(m.action==Action::Kick){kicked=true;break;}
         }
@@ -971,7 +1033,7 @@ int main(int argc,char** argv){
         for(int i=0;i<52;++i)tick();
         for(int i=0;i<36 && m.action==Action::Kick;++i)tick();
         assert(m.action!=Action::Kick);
-        while(m.action==Action::Gesture)tick();
+        for(int wait=0;wait<400 && socialBusy(m);++wait)tick();
         for(int i=0;i<400 && m.action!=Action::Kick;++i)tick();
         assert(m.action==Action::Kick);
         while(m.action==Action::Kick)tick();
@@ -1042,7 +1104,7 @@ int main(int argc,char** argv){
             assert(m.action!=Action::Jump);
         }
         assert(p.control==ControlMode::Auton);
-        while(m.action==Action::Gesture){
+        for(int wait=0;wait<400 && socialBusy(m);++wait){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
@@ -1069,7 +1131,7 @@ int main(int argc,char** argv){
             stepCharacter(m,idle,kStep);
         }
         assert(m.action!=Action::Kick);
-        while(m.action==Action::Gesture){
+        for(int wait=0;wait<400 && socialBusy(m);++wait){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
@@ -1148,7 +1210,7 @@ int main(int argc,char** argv){
             stepIdlePilot(p,m,idle,kStep,&cam,false);
             stepCharacter(m,idle,kStep);
         }
-        while(m.action==Action::Gesture){
+        for(int wait=0;wait<400 && socialBusy(m);++wait){
             stepIdlePilot(p,m,idle,kStep,&cam,false);
             stepCharacter(m,idle,kStep);
         }
@@ -1174,6 +1236,44 @@ int main(int argc,char** argv){
         stepCharacter(m,idle,kStep);
         assert(m.action==Action::Gesture);
         assert(m.playGestureId==5);
+        assert(m.clipIndex==kPlayClipNone);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        ArenaView cam{};
+        const int ring=m.clipIndex;
+        p.playInhibit=kMissInhibit;
+        p.playCap=kMissInhibitCap;
+        p.play=.50f;
+        assert(pickSignalGesture(p,m,&cam)==kGesturePunch);
+        playSignal(p,m,&cam,false);
+        assert(m.action==Action::Gesture);
+        assert(m.playGestureId==kGesturePunch);
+        assert(m.clipIndex==ring);
+
+        resetIdlePilot(p);
+        resetCharacter(m);
+        p.operatorMemory=2.4f;
+        p.play=.20f;
+        assert(pickSignalGesture(p,m,&cam)==kGestureBye);
+        p.operatorMemory=1.2f;
+        assert(pickSignalGesture(p,m,&cam)==kGestureBye2);
+
+        resetIdlePilot(p);
+        resetCharacter(m);
+        p.operatorMemory=kOperatorMemory;
+        p.idleAge=5.f;
+        p.play=.20f;
+        assert(pickSignalGesture(p,m,&cam)==kGestureBow);
+
+        p.idleAge=3.f;
+        p.play=.80f;
+        m.ball.x=10.f;m.ball.z=10.f;
+        assert(pickSignalGesture(p,m,&cam)==waveGestureId(m,&cam));
+        playSignal(p,m,&cam,false);
+        assert(m.playGestureId==waveGestureId(m,&cam));
         assert(m.clipIndex==kPlayClipNone);
     }
 
@@ -1255,7 +1355,7 @@ int main(int argc,char** argv){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
-        while(m.action==Action::Gesture){
+        for(int wait=0;wait<400 && socialBusy(m);++wait){
             stepIdlePilot(p,m,idle,kStep);
             stepCharacter(m,idle,kStep);
         }
@@ -1289,6 +1389,123 @@ int main(int argc,char** argv){
             stepCharacter(m,idle,kStep);
             assert(m.action!=Action::Kick);
         }
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=10.f;m.ball.z=10.f;
+        ArenaInput idle{};idle.valid=true;
+        for(int i=0;i<52;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        assert(p.control==ControlMode::Auton);
+        for(int wait=0;wait<400 && socialBusy(m);++wait){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+        }
+        const float x0=m.x,z0=m.z;
+        bool sawLoco=false,sawFast=false;
+        for(int i=0;i<120;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            if(locoPlaying(m))sawLoco=true;
+            if(m.gaitSpeed>=kRunSpeed-0.05f)sawFast=true;
+        }
+        const float dist=std::sqrt((m.x-x0)*(m.x-x0)+(m.z-z0)*(m.z-z0));
+        assert(sawLoco && sawFast);
+        assert(dist>1.2f);
+        assert(m.clipIndex==kPlayClipNone);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.ball.x=12.f;m.ball.z=-12.f;m.ball.y=2.f;
+        ArenaInput idle{};idle.valid=true;
+        p.control=ControlMode::Auton;
+        p.skill=AutonSkill::Approach;
+        p.gait=AutonGait::Dash;
+        m.gaitSpeed=kDashSpeed;
+        playGesture(m,kGestureDash);
+        walkTo(m,8.f,8.f);
+        p.havePending=true;
+        p.pendingSkill=AutonSkill::Hold;
+        p.pendingScore=1.f;
+        beginBrakeStage(p,m,AutonGait::Stop);
+        float prev=m.gaitSpeed;
+        bool kicked=false;
+        int rising=0;
+        for(int i=0;i<180 && (p.braking || p.havePending);++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            if(m.action==Action::Kick || socialBusy(m)){
+                assert(m.gaitSpeed<=kGaitStop+0.02f);
+                kicked=true;
+                break;
+            }
+            if(m.gaitSpeed>prev+0.02f)++rising;
+            prev=m.gaitSpeed;
+        }
+        assert(rising==0);
+        assert(!p.braking);
+        assert(!p.havePending);
+        assert(m.gaitSpeed<=kGaitStop+0.05f);
+        assert(!kicked);
+        assert(m.action!=Action::Kick);
+        assert(!socialBusy(m));
+
+        p.skill=AutonSkill::Approach;
+        p.gait=AutonGait::Dash;
+        m.gaitSpeed=kDashSpeed;
+        m.gaitCoast=true;
+        playGesture(m,kGestureDash);
+        p.havePending=true;
+        p.pendingSkill=AutonSkill::Strike;
+        p.pendingScore=1.f;
+        beginBrakeStage(p,m,AutonGait::Stop);
+        prev=m.gaitSpeed;
+        bool struck=false;
+        rising=0;
+        for(int i=0;i<180;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            if(m.action==Action::Kick){
+                assert(m.gaitSpeed<=kGaitStop+0.02f);
+                struck=true;
+                break;
+            }
+            assert(!socialBusy(m));
+            if(m.gaitSpeed>prev+0.02f)++rising;
+            prev=m.gaitSpeed;
+        }
+        assert(rising==0);
+        assert(struck);
+    }
+
+    {
+        IdlePilot p;resetIdlePilot(p);
+        CharacterModel m;resetCharacter(m);
+        m.x=14.6f;m.z=0.f;m.heading=1.5708f;
+        m.ball.x=15.5f;m.ball.z=0.f;
+        ArenaInput idle{};idle.valid=true;
+        p.control=ControlMode::Auton;
+        p.skill=AutonSkill::Approach;
+        p.gait=AutonGait::Dash;
+        m.gaitSpeed=kDashSpeed;
+        playGesture(m,kGestureDash);
+        float maxX=m.x;
+        int clamped=0;
+        for(int i=0;i<90;++i){
+            stepIdlePilot(p,m,idle,kStep);
+            stepCharacter(m,idle,kStep);
+            maxX=std::max(maxX,m.x);
+            if(m.x>=kArenaHalfExtent-0.02f && m.gaitSpeed>1.f)++clamped;
+        }
+        assert(maxX<kArenaHalfExtent+1e-4f);
+        assert(clamped==0);
+        assert(m.gaitSpeed<kDashSpeed-0.5f || p.gait<AutonGait::Dash);
     }
 
     c={};resetCharacter(c);
@@ -1465,9 +1682,9 @@ int main(int argc,char** argv){
     pad={};pad.confirmPressed=true;
     mergeExternalPad(merged,pad);
     assert(merged.input.confirmPressed && merged.input.steer==1.f && merged.input.valid);
-    merged={};pad={};pad.pausePressed=true;pad.navigationStep=1;
+    merged={};pad={};pad.pausePressed=true;pad.danceToggle=true;pad.navigationStep=1;
     mergeExternalPad(merged,pad);
-    assert(merged.input.pausePressed && merged.navigation==1 && merged.input.valid);
+    assert(merged.input.pausePressed && merged.input.danceToggle && merged.navigation==1 && merged.input.valid);
 
     ArenaController padTurn;
     padTurn.reset();

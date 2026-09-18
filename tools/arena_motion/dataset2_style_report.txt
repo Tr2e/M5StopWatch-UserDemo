@@ -31,7 +31,5 @@ BYE dataset-1_bye_normal_001.bvh frames=50 flash=10800B peak=1.91 yaw=0.66 clamp
 BYE2 dataset-1_byebye_normal_001.bvh frames=50 flash=10800B peak=3.95 yaw=0.68 clamp=39/2178 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
 GUIDE dataset-1_guide_normal_001.bvh frames=50 flash=10800B peak=1.50 yaw=0.00 clamp=0/1548 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
 PUNCH dataset-1_punch_normal_001.bvh frames=50 flash=10800B peak=2.60 yaw=0.00 clamp=0/4032 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
-DNC L dataset-1_dance-long_normal_001.bvh frames=90 flash=19440B peak=4.50 yaw=0.55 clamp=2612/85518 sh_lim=0.86 ua_lim=0.00 both_up=0.00 head_sh=0.00
-DNC S dataset-1_dance-short_normal_001.bvh frames=70 flash=15120B peak=4.50 yaw=0.55 clamp=2058/34218 sh_lim=0.81 ua_lim=0.00 both_up=0.00 head_sh=0.00
 RUN dataset-1_run_normal_001.bvh frames=62 flash=13392B peak=1.92 yaw=0.00 clamp=0/432 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00
 DASH dataset-1_dash_normal_001.bvh frames=54 flash=11664B peak=2.26 yaw=0.00 clamp=80/360 sh_lim=0.00 ua_lim=0.00 both_up=0.00 head_sh=0.00

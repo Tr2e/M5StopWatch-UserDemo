@@ -17,6 +17,7 @@ struct RawRacerInput {
     bool redHeld = false;
     bool blueHeld = false;
     bool redHoldStarted = false;
+    bool blueHoldStarted = false;
     bool chordStarted = false;
 };
 
@@ -43,6 +44,7 @@ inline RacerInput mapRacerInput(const RawRacerInput& raw, uint32_t sequence)
     result.brakeHeld = raw.redHeld;
     result.boostHeld = raw.blueHeld;
     result.pausePressed = raw.redHoldStarted;
+    result.danceToggle = raw.blueHoldStarted;
     return result;
 }
 
@@ -57,6 +59,7 @@ public:
         next.confirmPressed |= _latest.confirmPressed;
         next.cancelPressed |= _latest.cancelPressed;
         next.pausePressed |= _latest.pausePressed;
+        next.danceToggle |= _latest.danceToggle;
         next.exitPressed |= _latest.exitPressed;
         if (!next.navigationStep) next.navigationStep = _latest.navigationStep;
         if (!next.viewStep) next.viewStep = _latest.viewStep;
@@ -64,6 +67,7 @@ public:
             next.confirmPressed = false;
             next.cancelPressed = false;
             next.pausePressed = false;
+            next.danceToggle = false;
             next.navigationStep = next.viewStep = 0;
         }
         _latest = next;
@@ -75,6 +79,7 @@ public:
         _latest.confirmPressed = false;
         _latest.cancelPressed = false;
         _latest.pausePressed = false;
+        _latest.danceToggle = false;
         _latest.exitPressed = false;
         _latest.navigationStep = _latest.viewStep = 0;
         return result;
@@ -196,6 +201,7 @@ public:
         auto input = mapRacerInput(raw, sequence);
         if (!_presented || !_buttonsArmed || !raw.actionsValid) {
             input.confirmPressed = input.cancelPressed = input.pausePressed = false;
+            input.danceToggle = false;
             // Discard the release edge which arms the next gesture.
             _buttonsArmed = _presented && raw.actionsValid && !raw.redHeld && !raw.blueHeld;
         }

@@ -37,7 +37,7 @@ FlightActionSample DualButtonActionSource::sampleActions(uint32_t nowMs)
         gpio_get_level(kBlueButtonPin) == 0, nowMs);
     result.actions = _buttonActions.update(
         red.pressed, blue.pressed, red.clicked, blue.clicked,
-        red.holdStarted, blue.holding);
+        red.holdStarted, blue.holding, blue.holdStarted);
     result.valid = true;
     _lastSampleMs = nowMs;
     return result;

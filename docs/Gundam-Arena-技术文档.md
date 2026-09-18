@@ -72,13 +72,13 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 | Fall | 空中且 `vy≤0` | 伸腿准备落地 |
 | Land | 落地后 0.20s | 屈膝缓冲并收回；着地时 A/B 可打断 |
 
-Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2 → BOW → BYE → BYE2 → GUIDE → PUNCH → DNC L → DNC S → RUN → DASH`。开局未播过：第一次 A 是踢球，第一次 B 是冲刺。着地可打断当前 clip/蓄力跳/走/落地；空中切条忽略。走/转仍用触屏摇杆，不进圈。
+Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2 → BOW → BYE → BYE2 → GUIDE → PUNCH → RUN → DASH`。开局未播过：第一次 A 是踢球，第一次 B 是冲刺。着地可打断当前 clip/蓄力跳/走/落地；空中切条忽略。走/转仍用触屏摇杆，不进圈。**B 长按**进出独立舞蹈模式，两段完整 `DNC L` / `DNC S` 在模式内循环，不进 A/B 圈。
 
 空中前进为地面的 45%，转向为 60%。未着地且输入失效时前进速度每步衰减到 98%。位置钳在 `±16`。
 
 ### 3.2 Pose
 
-暂停键切换。不再积分位移。HUD 显示 `POSE {关节名}`，左右画博物馆同款箭头热区。
+暂停键（**A 长按**）切换。不再积分位移。HUD 显示 `POSE {关节名}`，左右画博物馆同款箭头热区。
 
 可循环关节（18 个，不含 Root）：
 
@@ -97,7 +97,8 @@ Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈
 | 环视（仅 Play） | 上半区拖，灵敏度 0.012 / 0.008 | — | 预览拖动手势 |
 | 下一动作并播放 | — | **A 短按** = `cancelPressed` | Dual Button 红键短按 |
 | 上一动作并播放 / 复位关节 | — | **B 短按** = `confirmPressed`（Play=上一槽；Pose=复位关节） | Dual Button 蓝键短按 |
-| 切 Play/Pose | — | **B 长按** = pause | Dual Button 红键长按 |
+| 切 Play/Pose | — | **A 长按** = pause | Dual Button 红键长按 |
+| 进出舞蹈模式 | — | **B 长按** = `danceToggle` | Dual Button 蓝键长按 |
 | 选关节 | 左右箭头 `previous`/`next` | — | Pose 时水平导航步进 |
 | 退出 App | — | A+B 和弦 | 外设退出和弦 |
 | 回 Launcher | 机身 Home（`KeyManager::GoHome`） | 同左 | — |
@@ -262,9 +263,11 @@ BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行
 
 ### 6.4.2 Bandai 2 空手手势
 
-十五段进 `arena_gesture_clips.h`（多数 50 帧 / **10800 B** `.rodata`，短淡入 + 选窗 + 淡出）。源片只决定哪只手、切哪一段、挥手左右相位；SD 姿势按身份手写钥匙，**不再**共用矢状手 IK。WAVE 举起 pitch 锁死、源手 X 在头外侧放大成上臂 yaw；UP 过头顶举起并停住（上臂外展，避开 SD 头盔）；GUIDE 沿 +Z 指住；BYE 头侧偏高小幅 yaw；BYE2 头边双手小幅 yaw（外展）；PUNCH 先左后右各一记短刺，打完再收回；舞看沉髋窗，举起一侧同样外展，双臂交替/对向，不共用同一 pitch 上限。`DNC L` / `DNC S` 源片分别约 158s / 63s，不再都裁成 50 帧：长舞窗 76 帧（整段 90 / 约 3.0s），短舞窗 56 帧（整段 70 / 约 2.3s）。`RUN` / `DASH` 是原地步态钥匙（腿交替、对侧摆臂、前倾、Root 弹跳），不抄人体跑角，也不替换摇杆程序走：跑 3 步周期 / 62 帧 / 约 2.1s，冲刺 4 步更快周期 / 54 帧 / 约 1.8s。CALL / ANS / SLASH 已撤。躯干仍用胸相对髋再按 §6.5 放大。出拳不抄手部 IK。舞与跑另有 `kGestureRootDip`，播放时只沉 `pose.root.y`，不改 `c.y`。前六段仍是集 2：`WAVE L` / `WAVE R` 按 yaw 行程在 `normal`/`active` 里选，其余 `normal`。后九段是集 1：`BOW BYE BYE2 GUIDE PUNCH DNC L DNC S RUN DASH`。Auton 仍只用 ID 0/1/5（WAVE L/R、UP 2）。集 2 的 walk/run/turn 仍只离线预览。集 2 与集 1 同为 22 骨、`ZXY` / `Rz*Rx*Ry`。
+十三段进 `arena_gesture_clips.h`（多数 50 帧 / **10800 B** `.rodata`，短淡入 + 选窗 + 淡出）。源片只决定哪只手、切哪一段、挥手左右相位；SD 姿势按身份手写钥匙，**不再**共用矢状手 IK。WAVE 举起 pitch 锁死、源手 X 在头外侧放大成上臂 yaw；UP 过头顶举起并停住（上臂外展，避开 SD 头盔）；GUIDE 沿 +Z 指住；BYE 头侧偏高小幅 yaw；BYE2 头边双手小幅 yaw（外展）；PUNCH 先左后右各一记短刺，打完再收回。`RUN` / `DASH` 是原地步态钥匙（腿交替、对侧摆臂、前倾、Root 弹跳），不抄人体跑角，也不替换摇杆程序走：跑 3 步周期 / 62 帧 / 约 2.1s，冲刺 4 步更快周期 / 54 帧 / 约 1.8s。CALL / ANS / SLASH 已撤。躯干仍用胸相对髋再按 §6.5 放大。出拳不抄手部 IK。跑另有 `kGestureRootDip`，播放时只沉 `pose.root.y`，不改 `c.y`。前六段仍是集 2：`WAVE L` / `WAVE R` 按 yaw 行程在 `normal`/`active` 里选，其余 `normal`。后七段是集 1：`BOW BYE BYE2 GUIDE PUNCH RUN DASH`。Auton 仍只用 ID 0/1/5（WAVE L/R、UP 2）以及 Signal 的 BYE/BOW/PUNCH。集 2 的 walk/run/turn 仍只离线预览。集 2 与集 1 同为 22 骨、`ZXY` / `Rz*Rx*Ry`。
 
-主机软件光栅中位耗时（8 次，非设备 FPS）：WAVE L 804 µs，WAVE R 784 µs，WAVE 2 776 µs，UP L 792 µs，UP R 768 µs，UP 2 793 µs，BOW 786 µs，BYE 738 µs，BYE2 780 µs，GUIDE 749 µs，PUNCH 760 µs，DNC L 789 µs，DNC S 764 µs，RUN 754 µs，DASH 773 µs。设备帧率未测。
+`DNC L` / `DNC S` 不进 A/B 圈。源片整段按 SD 身份钥匙烘焙进独立 `arena_dance_clips.h`（int16 / 10000，4751 / 1901 帧，约 523 KB + 209 KB）。**按帧**用手相对头写举起（留 0.88 余量，不顶死 RAISE），上臂 yaw 用约 1.2s 窗的 WAVE 局部放大（幅 0.42）；双脚着地才下沉（tanh，上限 0.18），单脚离地迈步，双脚离地负 dip 抬 Root。离地 hop 重映射到约 0.31–0.40（接近跳跃 0.44），不按人体脚离地高度 1:1。数据仍是整段；播放从第一次 hop 前约 0.7s 起到片尾循环，跳过片头持姿和举手空转。当前循环窗 L `1258..4751`（约 41.9s–158s）、S `318..1901`（约 10.6s–63s）。舞蹈模式内 A/B 只切这两段。`danceMode` 着地时强制保持 `Action::Dance`。Auton 不请求整段舞。
+
+主机软件光栅中位耗时（8 次，非设备 FPS）以最新 `gundam_arena` 主机测试打印为准。设备帧率未测。
 
 ### 6.5 人体 mocap → SD 尺度（冻结，所有动作）
 
@@ -283,7 +286,7 @@ BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行
 **必须**
 
 - 和踢球一样：先 FK 出世界坐标，按髋高缩到 `kHipY`，再用 Arena 双骨 IK 求角，最后 `limitOf()`。
-- 下蹲、落地、重心降低要写进 **Root.y**（或等价的髋高度），脚钉在地面再求腿。
+- 下蹲、落地、重心降低要写进 **Root.y**（或等价的髋高度），脚钉在地面再求腿。双脚离地的 hop/跳不要钉地：负 dip 把 Root 抬上去，腿收到 SD 团身钥匙。
 - 位移、跳高按 **SD 身长比例**，不按米制绝对值。原地跳顶点约 0.24 身长（当前 `kJumpVel=4` → 0.44）。
 - 短肢动作按 SD 可读幅度放大：臂后摆/前摆要明显大于走路（当前 −0.85 / +0.80）；空中收腿约 −0.55 / 1.10。
 - 踢球/出拳的手臂跟主动作分段锁姿势，不要抄手部世界坐标的双骨 IK，也不要按大腿符号过零点。当前踢：收腿支撑臂 −0.48、出脚锁 −0.55，踢腿侧上臂 0.18→0.08，肘常屈 −0.28～−0.50，出脚段不再摆。
@@ -436,6 +439,41 @@ bash tools/test_gundam_arena.sh [输出目录]
 ## 12. 迭代记录
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
+
+### 2026-09-18 · 舞蹈 hop 加大、L 从第一次跳起播
+
+- **范围：** DNC S 能跳但幅度偏小；DNC L 进模式后像没动。L 循环原先从约 4.2s 举手空转开始，第一次 hop 在 42.6s。
+- **代码：** hop 离地重映射到 0.31–0.40（`HOP_MAX=0.40`，举手留 0.88，yaw 0.42，下蹲 0.18）。`dance_loop_range` 从第一次 hop 前约 0.7s 起，不再用相对第 0 帧的 pose_delta。循环窗 L `1258..4751`、S `318..1901`。测试要求进循环 3s 内出现 `root.y>c.y`，整段 min dip < −0.30。
+- **已验证：** 主机测试 `gundam_arena ok`。烘焙 hop 中位约 −0.34（此前约 −0.13）。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x4c0070` B（4,980,848），余量 4%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `1160d65630c5c4845c653079a633fee309cfb3b2771567feaa343794a4030e4a`。ELF SHA-256 前缀 `8d8f4a131` 与启动日志一致。PSRAM 自检通过，Launcher 已起。版本串 `V0.5-225-g03d93e3-dirty`。
+- **未验证：** 真机 DNC S 跳幅是否够大；DNC L 进模式后是否立刻能看出跳，而不再像雕像。
+
+### 2026-09-18 · 舞蹈循环跳过持姿、局部 yaw
+
+- **范围：** 两段舞都是做一个动作后看起来卡住。源片片头/片尾是持姿；举手和 dip 顶满后中间很多帧像同一姿势。
+- **代码：** `compose_dance_id` 用滚动窗 `yaw_from_xs`、举手留余量、dip 用 tanh、髋用局部高分位。写出 `kDanceLoopStart` / `kDanceLoopEnd`。`playDance` 从循环起点播，到终点绕回起点。`danceMode` 着地强制 `Action::Dance`。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`。循环窗 DNC L `127..4419`（约 4.2s–147s）、DNC S `273..1845`（约 9.1s–61.5s）；进模式 3s 内臂/腿有行程；终点绕回起点。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x4c0070` B（4,980,848），余量 4%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `6b725ccad509f2fd8952ddf6f0a44a117b86b9f8797562ab71ae7d2381820efb`。ELF SHA-256 前缀 `14c7c4e9d` 与启动日志一致。PSRAM 自检通过，Launcher 已起。版本串 `V0.5-225-g03d93e3-dirty`。
+- **未验证：** 真机从进模式起是否持续有举手/迈步/hop，不再像做完一下就停。
+
+### 2026-09-18 · 舞蹈按帧钥匙：迈步与 hop
+
+- **范围：** 上一轮整段舞看起来像雕像。原因是整段手高归一化 + 每帧钉地 + dip 只往下。片头约 11s 源片本身是持姿，后面也几乎看不出举手差。
+- **代码：** `compose_dance_id` 按帧手相对头写举起/yaw，掺一点前伸指向；双脚着地才 `plant`，单脚离地迈步，双脚离地负 dip + 团身。`lockRoot` 含 `Action::Dance`，舞中不滑步。测试断言负 dip、大腿行程、hop 帧 `root.y>c.y` 且双脚离地；不要求片头 180 帧有动作。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`。DNC L/S 负 dip −0.28、大腿行程 >1.0、hop 帧 `root.y>c.y` 且双脚离地；片头 90 帧臂行程仍约 6mm（源片持姿）。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x4bffd0` B（4,980,688），余量 4%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `c5f35aeda8581ed123c5d5b0fd222cd736789dec03c1c569f0c5874e86c03ad0`。ELF SHA-256 前缀 `21415d988` 与启动日志一致。PSRAM 自检通过，Launcher 已起。版本串 `V0.5-225-g03d93e3-dirty`。
+- **未验证：** 真机片头持姿之后的举手、迈步、hop 观感。
+
+### 2026-09-18 · 舞蹈模式：整段烘焙、B 长按进出
+
+- **范围：** 圈里的切片舞改为独立舞蹈模式。长按 B 进入，再长按 B 退出。模式内两段完整 SD 钥匙循环，A/B 只切 `DNC L`/`DNC S`，不拨玩家圈。摇杆立刻退出。Pose 改到 A 长按。Auton 不再播整段舞。
+- **代码：** `retarget_bandai.py` 把舞从手势库拆到 `arena_dance_clips.h`（int16 / 10000，4751+1901 帧，约 523 KB + 209 KB）。`RacerInput::danceToggle`。ArenaPlay：A 短按圈进、B 短按圈退、A 长按 Pose、B 长按切舞。`Action::Dance` 循环；`idle_pilot` 在 `danceMode` 时保持 Pilot。A/B 圈 15 槽：`Kick → Jump → WAVE… → PUNCH → RUN → DASH`。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`。整段帧数 4751/1901，舞蹈模式循环且 `clipIndex` 不变，A/B 只切两段，摇杆退出，`pickSignalGesture` 远球高玩心回 WAVE 而非 DNC S。输入测试：A 长按 Pose、B 长按 `danceToggle`。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x4bffc0` B（4,980,672），余量 4%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `60a4098a04019fa127dcea33b0fa33783a6598fb17f0bb2c49858782260fd279`。ELF SHA-256 前缀 `7622cc72c` 与启动日志一致。PSRAM 自检通过，Launcher 已起。版本串 `V0.5-225-g03d93e3-dirty`。
+- **未验证：** 真机整段舞时长与舞蹈观感。应用分区已很满，后续大资源要另想压缩。
+
+### 2026-09-18 · Auton 真跑、减速停、再竞争
+
+- **范围：** Approach 按到站位距离选走/跑/冲；`RUN`/`DASH` 循环且写 xz；切静止技能前 Brake 阶梯收到约 0；贴边按制动距离禁升档。Signal 按理由接 BYE/BOW/PUNCH/DNC S，不拨玩家圈。摇杆仍只走程序 IK。
+- **代码：** `character_model.h/.cpp` 的 `gaitSpeed` / loco 根位移 / `characterBusy` 例外；`idle_pilot.h` 的步态选择、`pendingSkill`、`wallAhead`、Signal 表；`tools/gundam_arena_test.cpp` 位移/减速/贴边/选条。
+- **已验证：** `bash tools/test_gundam_arena.sh` → `gundam_arena ok`。远球 2s 内根位移 > 1.2 且出现 loco；Brake 期间速度不回升，Kick/手势只在 `gaitSpeed≈0` 落下；朝 +X 边冲不在 `±16` 上带着速度滑；`pickSignalGesture` 覆盖 PUNCH/BYE/BOW/DNC S 且 `clipIndex` 不变。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x416230` B（4,284,976），余量 17%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `29f5a4538315ad255c71eee6da49c2ac1fdc25b3e830791827ba2cb5a08d10ca`。ELF SHA-256 前缀 `f085e60bf` 与启动日志一致。Launcher 已起。版本串 `V0.5-225-g03d93e3-dirty`（dirty 为未提交的 Auton 步态改动与文档）。
+- **未验证：** 真机跑/冲/减速停/贴边观感。
 
 ### 2026-09-18 · 原地跑与冲刺进圈
 
