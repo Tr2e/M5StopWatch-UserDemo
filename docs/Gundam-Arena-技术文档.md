@@ -72,7 +72,7 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 | Fall | 空中且 `vy≤0` | 伸腿准备落地 |
 | Land | 落地后 0.20s | 屈膝缓冲并收回；着地时 A/B 可打断 |
 
-Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2 → BOW → BYE → BYE2 → GUIDE → PUNCH → DNC L → DNC S`。开局未播过：第一次 A 是踢球，第一次 B 是短舞。着地可打断当前 clip/蓄力跳/走/落地；空中切条忽略。走/转仍用触屏摇杆，不进圈。
+Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2 → BOW → BYE → BYE2 → GUIDE → PUNCH → DNC L → DNC S → RUN → DASH`。开局未播过：第一次 A 是踢球，第一次 B 是冲刺。着地可打断当前 clip/蓄力跳/走/落地；空中切条忽略。走/转仍用触屏摇杆，不进圈。
 
 空中前进为地面的 45%，转向为 60%。未着地且输入失效时前进速度每步衰减到 98%。位置钳在 `±16`。
 
@@ -262,9 +262,9 @@ BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行
 
 ### 6.4.2 Bandai 2 空手手势
 
-十三段进 `arena_gesture_clips.h`（多数 50 帧 / **10800 B** `.rodata`，短淡入 + 选窗 + 淡出）。源片只决定哪只手、切哪一段、挥手左右相位；SD 姿势按身份手写钥匙，**不再**共用矢状手 IK。WAVE 举起 pitch 锁死、源手 X 在头外侧放大成上臂 yaw；UP 过头顶举起并停住（上臂外展，避开 SD 头盔）；GUIDE 沿 +Z 指住；BYE 头侧偏高小幅 yaw；BYE2 头边双手小幅 yaw（外展）；PUNCH 先左后右各一记短刺，打完再收回；舞看沉髋窗，举起一侧同样外展，双臂交替/对向，不共用同一 pitch 上限。`DNC L` / `DNC S` 源片分别约 158s / 63s，不再都裁成 50 帧：长舞窗 76 帧（整段 90 / 约 3.0s），短舞窗 56 帧（整段 70 / 约 2.3s）。CALL / ANS / SLASH 已撤。躯干仍用胸相对髋再按 §6.5 放大。出拳不抄手部 IK。舞另有 `kGestureRootDip`，播放时只沉 `pose.root.y`，不改 `c.y`。前六段仍是集 2：`WAVE L` / `WAVE R` 按 yaw 行程在 `normal`/`active` 里选，其余 `normal`。后七段是集 1：`BOW BYE BYE2 GUIDE PUNCH DNC L DNC S`。Auton 仍只用 ID 0/1/5（WAVE L/R、UP 2）。walk/run/turn 仍只离线预览。集 2 与集 1 同为 22 骨、`ZXY` / `Rz*Rx*Ry`。
+十五段进 `arena_gesture_clips.h`（多数 50 帧 / **10800 B** `.rodata`，短淡入 + 选窗 + 淡出）。源片只决定哪只手、切哪一段、挥手左右相位；SD 姿势按身份手写钥匙，**不再**共用矢状手 IK。WAVE 举起 pitch 锁死、源手 X 在头外侧放大成上臂 yaw；UP 过头顶举起并停住（上臂外展，避开 SD 头盔）；GUIDE 沿 +Z 指住；BYE 头侧偏高小幅 yaw；BYE2 头边双手小幅 yaw（外展）；PUNCH 先左后右各一记短刺，打完再收回；舞看沉髋窗，举起一侧同样外展，双臂交替/对向，不共用同一 pitch 上限。`DNC L` / `DNC S` 源片分别约 158s / 63s，不再都裁成 50 帧：长舞窗 76 帧（整段 90 / 约 3.0s），短舞窗 56 帧（整段 70 / 约 2.3s）。`RUN` / `DASH` 是原地步态钥匙（腿交替、对侧摆臂、前倾、Root 弹跳），不抄人体跑角，也不替换摇杆程序走：跑 3 步周期 / 62 帧 / 约 2.1s，冲刺 4 步更快周期 / 54 帧 / 约 1.8s。CALL / ANS / SLASH 已撤。躯干仍用胸相对髋再按 §6.5 放大。出拳不抄手部 IK。舞与跑另有 `kGestureRootDip`，播放时只沉 `pose.root.y`，不改 `c.y`。前六段仍是集 2：`WAVE L` / `WAVE R` 按 yaw 行程在 `normal`/`active` 里选，其余 `normal`。后九段是集 1：`BOW BYE BYE2 GUIDE PUNCH DNC L DNC S RUN DASH`。Auton 仍只用 ID 0/1/5（WAVE L/R、UP 2）。集 2 的 walk/run/turn 仍只离线预览。集 2 与集 1 同为 22 骨、`ZXY` / `Rz*Rx*Ry`。
 
-主机软件光栅中位耗时（8 次，非设备 FPS）：WAVE L 720 µs，WAVE R 757 µs，WAVE 2 752 µs，UP L 727 µs，UP R 762 µs，UP 2 734 µs，BOW 759 µs，BYE 708 µs，BYE2 727 µs，GUIDE 717 µs，PUNCH 726 µs，DNC L 723 µs，DNC S 728 µs。设备帧率未测。
+主机软件光栅中位耗时（8 次，非设备 FPS）：WAVE L 804 µs，WAVE R 784 µs，WAVE 2 776 µs，UP L 792 µs，UP R 768 µs，UP 2 793 µs，BOW 786 µs，BYE 738 µs，BYE2 780 µs，GUIDE 749 µs，PUNCH 760 µs，DNC L 789 µs，DNC S 764 µs，RUN 754 µs，DASH 773 µs。设备帧率未测。
 
 ### 6.5 人体 mocap → SD 尺度（冻结，所有动作）
 
@@ -436,6 +436,13 @@ bash tools/test_gundam_arena.sh [输出目录]
 ## 12. 迭代记录
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
+
+### 2026-09-18 · 原地跑与冲刺进圈
+
+- **范围：** 集 1 移动里先加 `run` / `dash` 给人看。摇杆走仍是程序 IK。
+- **代码：** A/B 圈末尾加 `RUN` / `DASH`（`kPlayClipCount=17`）。手写原地步态钥匙：跑 62 帧、冲刺 54 帧，冲刺更快、更前倾。Auton ID 0/1/5 不变。
+- **已验证：** 主机测试 `gundam_arena ok`（对侧摆臂、冲刺腿幅和前倾都大于跑）。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x415110` B（4,280,592），余量 17%。esptool `Hash of data verified`。BIN SHA-256 `aa2935f2fd617f1a0f69b78aa97aa8191c8dcb9b64374f41e353bf3f2c0064f2`。
+- **未验证：** 真机跑/冲刺是否像对应动作。
 
 ### 2026-09-18 · 左右拳与舞加长
 

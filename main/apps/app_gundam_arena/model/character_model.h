@@ -13,8 +13,8 @@ inline constexpr float kStep=1.f/60.f;
 inline constexpr float kBallR=.16f,kFootR=.20f;
 inline constexpr float kFootToeY=-.18f,kFootToeZ=.20f;
 inline constexpr float kBallSpawnX=-.42f,kBallSpawnZ=.74f;
-inline constexpr int kPlayClipCount=15;
-inline constexpr int kPlayClipNone=15;
+inline constexpr int kPlayClipCount=17;
+inline constexpr int kPlayClipNone=17;
 inline constexpr float kStrikePosTol=.05f;
 inline constexpr float kStrikeFaceTol=.05f;
 inline constexpr float kWalkArrive=.03f;
@@ -27,7 +27,7 @@ inline constexpr float kKickMinLift=5.f;
 inline const char* playClipHud(int index){
     static constexpr const char* names[]={
         "KICK","JUMP","WAVE L","WAVE R","WAVE 2","UP L","UP R","UP 2",
-        "BOW","BYE","BYE2","GUIDE","PUNCH","DNC L","DNC S"};
+        "BOW","BYE","BYE2","GUIDE","PUNCH","DNC L","DNC S","RUN","DASH"};
     if(index>=0 && index<kPlayClipCount)return names[index];
     return "A/B CLIP";
 }

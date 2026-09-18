@@ -109,10 +109,11 @@ int main(int argc,char** argv){
     const std::string out=argc>1?argv[1]:"/tmp/gundam-arena";
     static_assert(kWalkFrames==60,"walk comparison clip window drifted");
     static_assert(kKickFrames==39,"kick clip window drifted");
-    static_assert(kGestureCount==13 && kGestureFrames[0]==50,"gesture bank drifted");
+    static_assert(kGestureCount==15 && kGestureFrames[0]==50,"gesture bank drifted");
     static_assert(kGestureFrames[11]>kGestureFrames[12] && kGestureFrames[12]>50,"dance windows drifted");
+    static_assert(kGestureFrames[13]>kGestureFrames[14] && kGestureFrames[14]>50,"loco windows drifted");
     static_assert(kGestureFlashBytes[0]==10800,"gesture flash size drifted");
-    static_assert(sizeof(kGestureRootDip)/sizeof(kGestureRootDip[0])==13,"gesture root dip drifted");
+    static_assert(sizeof(kGestureRootDip)/sizeof(kGestureRootDip[0])==15,"gesture root dip drifted");
     const auto kickPitch=[](int frame,BoneId bone){
         return kKickJoints[frame*18*3+(int(bone)-1)*3+1];
     };
@@ -415,7 +416,8 @@ int main(int argc,char** argv){
         "wave-left-hand_active","wave-right-hand_active","wave-both-hands_normal",
         "raise-up-left-hand_normal","raise-up-right-hand_normal","raise-up-both-hands_normal",
         "bow_normal","bye_normal","byebye_normal",
-        "guide_normal","punch_normal","dance-long_normal","dance-short_normal"};
+        "guide_normal","punch_normal","dance-long_normal","dance-short_normal",
+        "run_normal","dash_normal"};
     for(int g=0;g<kGestureCount;++g){
         const std::string src=kGestureSource[g];
         assert(src.find(wantSrc[g])!=std::string::npos);
@@ -432,7 +434,7 @@ int main(int argc,char** argv){
         const Point rs=sk.world[int(BoneId::RShoulder)].t;
         const Point lf=sk.world[int(BoneId::LFoot)].t;
         const Point rf=sk.world[int(BoneId::RFoot)].t;
-        assert(lf.y<.40f && rf.y<.40f);
+        if(g<13)assert(lf.y<.40f && rf.y<.40f);
         assert(length(subtract(ls,rs))>.90f);
         if(g<6){
             assert(length(subtract(lh,head))>.16f);
@@ -645,6 +647,48 @@ int main(int argc,char** argv){
         const auto dS=sampleGesture(14);
         assert(dL.n>dS.n+15);
         assert(dS.n>110);
+    }
+
+    {
+        auto sampleLoco=[&](int slot){
+            CharacterModel m;resetCharacter(m);
+            ArenaInput idle{};idle.valid=true;
+            playSlot(m,slot);
+            float maxChest=-9.f,minRoot=9.f,lLo=9.f,lHi=-9.f;
+            int alt=0,n=0;
+            for(int i=0;i<260 && m.action==Action::Gesture;++i){
+                evaluateSkeleton(sk,m.pose);
+                const float lp=m.pose.anim[int(BoneId::LThigh)].pitch;
+                const float rp=m.pose.anim[int(BoneId::RThigh)].pitch;
+                const float la=m.pose.anim[int(BoneId::LUpperArm)].pitch;
+                const float ra=m.pose.anim[int(BoneId::RUpperArm)].pitch;
+                maxChest=std::max(maxChest,m.pose.anim[int(BoneId::Chest)].pitch);
+                minRoot=std::min(minRoot,m.pose.root.y);
+                lLo=std::min(lLo,lp);lHi=std::max(lHi,lp);
+                if(lp<rp-0.08f && ra<la-0.08f)++alt;
+                ++n;
+                stepCharacter(m,idle,kStep);
+            }
+            return std::array<float,5>{float(n),float(alt),lHi-lLo,maxChest,minRoot-m.y};
+        };
+        const auto run=sampleLoco(15);
+        const auto dash=sampleLoco(16);
+        assert(run[0]>110 && dash[0]>90);
+        assert(run[1]>run[0]*0.25f && dash[1]>dash[0]*0.25f);
+        assert(run[2]>0.60f && dash[2]>run[2]+0.20f);
+        assert(dash[3]>run[3]+0.04f);
+        assert(run[4]<-0.03f && dash[4]<-0.05f);
+        CharacterModel lift;resetCharacter(lift);
+        ArenaInput idle{};idle.valid=true;
+        playSlot(lift,16);
+        float maxFoot=-9.f;
+        for(int i=0;i<80 && lift.action==Action::Gesture;++i){
+            evaluateSkeleton(sk,lift.pose);
+            maxFoot=std::max(maxFoot,std::max(sk.world[int(BoneId::LFoot)].t.y,
+                                             sk.world[int(BoneId::RFoot)].t.y));
+            stepCharacter(lift,idle,kStep);
+        }
+        assert(maxFoot>0.40f);
     }
 
     {
