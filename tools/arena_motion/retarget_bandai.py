@@ -806,8 +806,8 @@ def dance_pose_delta(a: dict[str, tuple[float, float, float]],
 
 def dance_loop_range(clip: list[dict[str, tuple[float, float, float]]],
                      dips: list[float], fps: float = 30.0) -> tuple[int, int]:
-    # Open on the first hop (or a real step), not on yaw-only raise.
-    # DNC L's source hold plus raised-arm yaw reads as a statue for ~40s.
+    # Open/close on hops only. Thigh-span "steps" false-trigger on pegged
+    # limit holds (DNC S ~2s / DNC L ~14s dead outro looked frozen, then wrap).
     n = len(clip)
     if n < 2 or len(dips) != n:
         return 0, n
@@ -815,30 +815,11 @@ def dance_loop_range(clip: list[dict[str, tuple[float, float, float]]],
     def hop_at(i: int) -> bool:
         return dips[i] < -0.04
 
-    def step_at(i: int, width: int = 30) -> bool:
-        i1 = min(n, i + width)
-        if i1 - i < 8:
-            return False
-        th = [clip[k]["LThigh"][1] for k in range(i, i1)]
-        th += [clip[k]["RThigh"][1] for k in range(i, i1)]
-        return max(th) - min(th) > 0.30
-
-    start = 0
-    first_hop = next((i for i in range(n) if hop_at(i)), None)
-    first_step = next((i for i in range(n) if step_at(i)), None)
-    if first_hop is not None:
-        start = max(0, first_hop - DANCE_LOOP_PREROLL)
-    elif first_step is not None:
-        start = max(0, first_step - DANCE_LOOP_PREROLL)
-
-    end = n
-    last_busy = None
-    for i in range(n - 1, -1, -1):
-        if hop_at(i) or step_at(max(0, i - 29)):
-            last_busy = i
-            break
-    if last_busy is not None:
-        end = min(n, last_busy + DANCE_LOOP_PREROLL + 1)
+    hops = [i for i in range(n) if hop_at(i)]
+    if not hops:
+        return 0, n
+    start = max(0, hops[0] - DANCE_LOOP_PREROLL)
+    end = min(n, hops[-1] + DANCE_LOOP_PREROLL + 1)
     if end - start < int(DANCE_LOOP_MIN_S * fps):
         return 0, n
     return start, end
@@ -1638,6 +1619,19 @@ def main() -> None:
         first_hop = next((i for i in range(loop0, loop1) if dips[i] < -0.04), None)
         if first_hop is None or first_hop - loop0 > int(2.0 * 30):
             raise SystemExit(f"{hud} loop does not hop in first 2s; hop={first_hop}")
+        last_hop = max(i for i in range(loop0, loop1) if dips[i] < -0.04)
+        if loop1 - last_hop > DANCE_LOOP_PREROLL + 1:
+            raise SystemExit(
+                f"{hud} loop keeps dead outro after last hop; "
+                f"last_hop={last_hop} end={loop1}")
+        tail0 = max(loop0, loop1 - int(1.5 * 30))
+        tail_span = 0.0
+        for name in ("LUpperArm", "RUpperArm", "LThigh", "RThigh"):
+            vals = [pose[name][1] for pose in clip[tail0:loop1]]
+            yaws = [pose[name][2] for pose in clip[tail0:loop1]]
+            tail_span += max(vals) - min(vals) + max(yaws) - min(yaws)
+        if min(dips[tail0:loop1]) >= -0.04 and tail_span < 0.20:
+            raise SystemExit(f"{hud} loop tail still frozen; span={tail_span:.3f}")
         score = score_clip(clip, 0, 1)
         print(f"dance {hud} {source} frames={len(clip)} loop={loop0}..{loop1} "
               f"flash={len(clip)*54*2+len(dips)*2}B "

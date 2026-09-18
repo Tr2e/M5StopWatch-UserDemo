@@ -125,6 +125,9 @@ int main(int argc,char** argv){
     static_assert(kDanceLoopStart[0]>30 && kDanceLoopStart[1]>30,"dance loop still includes intro hold");
     static_assert(kDanceLoopEnd[0]<=kDanceFrames[0] && kDanceLoopEnd[1]<=kDanceFrames[1],"dance loop end past clip");
     static_assert(kDanceLoopEnd[0]-kDanceLoopStart[0]>240 && kDanceLoopEnd[1]-kDanceLoopStart[1]>240,"dance loop too short");
+    // Outro holds after the last hop must not stay in the playback window.
+    static_assert(kDanceLoopEnd[0]<kDanceFrames[0]-30 && kDanceLoopEnd[1]<kDanceFrames[1]-30,
+                  "dance loop still includes dead outro");
     const auto kickPitch=[](int frame,BoneId bone){
         return kKickJoints[frame*18*3+(int(bone)-1)*3+1];
     };
@@ -700,6 +703,13 @@ int main(int argc,char** argv){
         assert(thScanHi-thScanLo>0.25f);
         assert(uaScanHi-uaScanLo>0.18f);
         assert(hopped && feetOff);
+        // Last 1s of the loop must still include a hop — no dead outro.
+        bool tailHop=false;
+        for(int f=std::max(kDanceLoopStart[d],kDanceLoopEnd[d]-30);f<kDanceLoopEnd[d];++f){
+            const float dip=float(kDanceRootDip[kDanceDipOffset[d]+f])/float(kDanceScale);
+            if(dip<-0.04f)tailHop=true;
+        }
+        assert(tailHop);
     }
     {
         CharacterModel m;resetCharacter(m);
