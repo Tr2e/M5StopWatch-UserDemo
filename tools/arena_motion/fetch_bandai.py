@@ -11,6 +11,16 @@ BASE = (
 FILES = [
     "data/dataset-1_kick_normal_001.bvh",
     "data/dataset-1_walk_normal_001.bvh",
+    "data/dataset-1_bow_normal_001.bvh",
+    "data/dataset-1_bye_normal_001.bvh",
+    "data/dataset-1_byebye_normal_001.bvh",
+    "data/dataset-1_respond_normal_001.bvh",
+    "data/dataset-1_call_normal_001.bvh",
+    "data/dataset-1_guide_normal_001.bvh",
+    "data/dataset-1_punch_normal_001.bvh",
+    "data/dataset-1_slash_normal_001.bvh",
+    "data/dataset-1_dance-long_normal_001.bvh",
+    "data/dataset-1_dance-short_normal_001.bvh",
     "LICENSE",
 ]
 OUT = Path(__file__).resolve().parent / "raw"

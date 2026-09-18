@@ -72,7 +72,7 @@ Museum 的制作卡、复盘和视觉验收合同仍然只覆盖展品；Arena �
 | Fall | 空中且 `vy≤0` | 伸腿准备落地 |
 | Land | 落地后 0.20s | 屈膝缓冲并收回；着地时 A/B 可打断 |
 
-Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2`。开局未播过：第一次 A 是踢球，第一次 B 是双手举起。着地可打断当前 clip/蓄力跳/走/落地；空中切条忽略。走/转仍用触屏摇杆，不进圈。
+Play 下 **A 短按下一个并立刻播，B 短按上一个并立刻播**。圈序：`Kick → Jump → WAVE L → WAVE R → WAVE 2 → UP L → UP R → UP 2 → BOW → BYE → BYE2 → GUIDE → PUNCH → DNC L → DNC S`。开局未播过：第一次 A 是踢球，第一次 B 是短舞。着地可打断当前 clip/蓄力跳/走/落地；空中切条忽略。走/转仍用触屏摇杆，不进圈。
 
 空中前进为地面的 45%，转向为 60%。未着地且输入失效时前进速度每步衰减到 98%。位置钳在 `±16`。
 
@@ -262,9 +262,9 @@ BVH 原件不入库。clip 头文件是 CC BY-NC 4.0 衍生作品，商用发行
 
 ### 6.4.2 Bandai 2 空手手势
 
-六段进 `arena_gesture_clips.h`（每段 50 帧 / **10800 B** `.rodata`，短淡入 + 能量窗 + 淡出）。P5 只留更好的风格：`WAVE L` / `WAVE R` 用 `active_001`，`WAVE 2` / `UP L` / `UP R` / `UP 2` 仍用 `normal_001`。`youthful` 双手挥和 `active` 双手举因双臂同时打满上限被拒。脚钉 `kPlantAnkleY`，上肢按 §6.5 放大后 `limitOf()`。L/R 对调与踢球相同。walk/run/turn 只离线预览，不进固件、不进 A/B 圈。集 2 与集 1 同为 22 骨、`ZXY` / `Rz*Rx*Ry`。
+十三段进 `arena_gesture_clips.h`（多数 50 帧 / **10800 B** `.rodata`，短淡入 + 选窗 + 淡出）。源片只决定哪只手、切哪一段、挥手左右相位；SD 姿势按身份手写钥匙，**不再**共用矢状手 IK。WAVE 举起 pitch 锁死、源手 X 在头外侧放大成上臂 yaw；UP 过头顶举起并停住（上臂外展，避开 SD 头盔）；GUIDE 沿 +Z 指住；BYE 头侧偏高小幅 yaw；BYE2 头边双手小幅 yaw（外展）；PUNCH 先左后右各一记短刺，打完再收回；舞看沉髋窗，举起一侧同样外展，双臂交替/对向，不共用同一 pitch 上限。`DNC L` / `DNC S` 源片分别约 158s / 63s，不再都裁成 50 帧：长舞窗 76 帧（整段 90 / 约 3.0s），短舞窗 56 帧（整段 70 / 约 2.3s）。CALL / ANS / SLASH 已撤。躯干仍用胸相对髋再按 §6.5 放大。出拳不抄手部 IK。舞另有 `kGestureRootDip`，播放时只沉 `pose.root.y`，不改 `c.y`。前六段仍是集 2：`WAVE L` / `WAVE R` 按 yaw 行程在 `normal`/`active` 里选，其余 `normal`。后七段是集 1：`BOW BYE BYE2 GUIDE PUNCH DNC L DNC S`。Auton 仍只用 ID 0/1/5（WAVE L/R、UP 2）。walk/run/turn 仍只离线预览。集 2 与集 1 同为 22 骨、`ZXY` / `Rz*Rx*Ry`。
 
-主机软件光栅中位耗时（8 次，非设备 FPS）：WAVE L 738 µs，WAVE R 759 µs，WAVE 2 737 µs，UP L 724 µs，UP R 716 µs，UP 2 728 µs。设备帧率未测（本轮不烧录）。
+主机软件光栅中位耗时（8 次，非设备 FPS）：WAVE L 720 µs，WAVE R 757 µs，WAVE 2 752 µs，UP L 727 µs，UP R 762 µs，UP 2 734 µs，BOW 759 µs，BYE 708 µs，BYE2 727 µs，GUIDE 717 µs，PUNCH 726 µs，DNC L 723 µs，DNC S 728 µs。设备帧率未测。
 
 ### 6.5 人体 mocap → SD 尺度（冻结，所有动作）
 
@@ -436,6 +436,62 @@ bash tools/test_gundam_arena.sh [输出目录]
 ## 12. 迭代记录
 
 后续改动按时间追加本节，不新开主文档。每条写：日期、范围、代码事实、验证了什么、**没有**验证什么。
+
+### 2026-09-18 · 左右拳与舞加长
+
+- **范围：** PUNCH 只打源窗更靠前的一只，L/R 对调后真机是一记左拳。DNC L/S 源片 4751/1901 帧，却都裁成 50 帧（约 1.7s），两段一样短。
+- **代码：** PUNCH 改左刺→收回→右刺→停。长舞窗 76 帧、短舞窗 56 帧；dip 表按最长 clip 补齐。Auton ID 0/1/5 不变。
+- **已验证：** 主机测试 `gundam_arena ok`（左右拳各一记、`DNC L` 90 帧 / `DNC S` 70 帧）。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x40ec40` B（4,254,784），余量 18%。esptool `Hash of data verified`。BIN SHA-256 `7be34b9941ab9d1b073f8982a677fde75fa420b14a344c4d060256cff4e89440`。
+- **未验证：** 真机左右拳可读性和两段舞时长差。
+
+### 2026-09-18 · 撤 ANS / SLASH
+
+- **范围：** 真机 ANS 斜举和 SLASH 空手劈在 SD 胖身上都读不出来。
+- **代码：** A/B 圈再去掉 ANS、SLASH（`kPlayClipCount=15`）。Auton ID 0/1/5 不变。
+- **已验证：** `bash tools/test_gundam_arena.sh`。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x40b180` B（4,239,744），余量 18%。esptool `Hash of data verified`。BIN SHA-256 `d4a1f1d5588775d2989788b1c8e5ac3bdeeb02ce717a42a77dbf6b0d5c802c07`。
+- **未验证：** 真机圈序。GUIDE/PUNCH 仍在圈里。
+
+### 2026-09-18 · SD 胖身体：撤 CALL、抬 BYE、单臂劈
+
+- **范围：** 真机 CALL 贴头被 SD 大脑袋吃掉；BYE 仍不够高；SLASH 双臂起落看不出在劈。细动作（贴头/前指/短刺）在短肢胖身上读不出。
+- **代码：** A/B 圈去掉 CALL（`kPlayClipCount=17`）；BYE 钥匙抬到头侧并略外展；SLASH 改单臂外侧高举再斜劈过肚。Auton ID 0/1/5 不变。
+- **已验证：** `bash tools/test_gundam_arena.sh`。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x410790` B（4,261,776），余量 18%。esptool `Hash of data verified`。BIN SHA-256 `92eddaaec3a0a97b5565b6252863c5d6262183e8031818fa99b4e2a464532820`。
+- **未验证：** 真机 BYE 高度、SLASH 是否像劈。GUIDE/PUNCH 仍在圈里，同属细动作，待定。
+
+### 2026-09-18 · 过顶手势避开 SD 头盔
+
+- **范围：** CALL/BYE/SLASH 真机返修后，其余新手势按同一类排查：穿头盔、平举、过顶插值走面罩。WAVE/UP/舞的过顶钥匙 yaw=0 时手在脑门里（手网格 0.01–0.16）；WAVE 2 挥手还会收到 |x|≈0.45；BYE2 前臂蹭盔。BOW/ANS/GUIDE/PUNCH 手网格 ≥0.43，不是同一类，不改。
+- **代码：** 过顶/头边钥匙加外展 yaw，挥手只在头外侧振荡；BYE 仍用胸前偏高钥匙、不跟头侧外展。WAVE L/R 风格片在映射 yaw 接近时仍取 `active`。
+- **已验证：** `bash tools/test_gundam_arena.sh`。网格：WAVE/UP/BYE2/舞手≥0.34、臂≥0.19；CALL/SLASH 保持外侧；BYE 持高 y≈1.74；GUIDE/PUNCH 前伸臂距盔 0.16（点/刺近下颌，不是面罩）。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x4132a0` B（4,272,800），余量 17%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `11b530d08d41658d63ee91ff089ce22f3fc3330e8b1acacc6b79675ef17533ee`。ELF SHA-256 前缀 `4da52265a`。Launcher 已起。
+- **未验证：** 真机 WAVE/UP/BYE2/舞是否还穿头。
+
+### 2026-09-18 · CALL/BYE/SLASH 真机返修
+
+- **范围：** CALL 贴头穿进 SD 头盔；BYE 手停在 y≈1.30 像平举；SLASH 双手举在脑门前再垂下，像开合跳。
+- **代码：** CALL 手留在头盔外侧（肩/上臂略外展、屈肘在耳高）；BYE 用胸前偏高钥匙加 yaw，不再用平举胸钥匙；SLASH 高段双手 V 字在头两侧，低段前劈到腰高，不落到垂手。
+- **已验证：** `bash tools/test_gundam_arena.sh`。写入 `/dev/cu.usbmodem83301` Hash verified。
+- **未验证：** 真机 CALL/BYE/SLASH 观感。
+
+### 2026-09-18 · 手势身份钥匙
+
+- **范围：** 十六段手势按 WAVE → UP → 社交 → 拳斩 → 舞拆身份钥匙，不再加大同一套矢状 pitch。§6.5 仍有效：不抄人体角 1:1；出拳不抄手部 IK；短肢用 SD 可读钥匙。Auton ID 0/1/5 不变。
+- **代码：** `retarget_bandai.py` 的 `compose_wave` / `compose_hold` / `compose_punch_id` / `compose_slash_id` / `compose_dance_id`；WAVE 风格改看 yaw 行程；主机断言改手的世界坐标与振荡，不再只看峰值能量。`§6.4.2` 改为按身份钥匙。
+- **已验证：** `bash tools/test_gundam_arena.sh`。身份断言：WAVE yaw 过零、UP 过顶停住、社交五槽剪影、拳胸前刺、斩先高后低、舞沉髋且双臂不同时顶同一上限。写入 `/dev/cu.usbmodem83301` MAC `44:1b:f6:c1:8a:00` 应用分区 `0x4132a0` B（4,272,800），余量 17%。esptool `Hash of data verified`，RTS 重启。BIN SHA-256 `3b25a395791610b580818a9e8ae0c617ddc8436850c0d444dd138bafcad1b149`。ELF SHA-256 前缀 `61d1d6cdd` 与启动日志一致，Launcher 已起。
+- **未验证：** 真机挥/举/社交/拳斩/舞是否能分清。
+
+### 2026-09-18 · 手势尺度四刀
+
+- **范围：** 十六段手势一起按 §6.5 重烙。胸相对髋放大；手势去掉踢球躯干地板；按动作选窗；拳/斩分段锁姿势；舞用 Root dip。
+- **代码：** `retarget_bandai.py`；`kGestureRootDip`；`applyGesture` 沉 `pose.root.y`。Auton ID 0–5 不变。
+- **已验证：** `bash tools/test_gundam_arena.sh`。
+- **未验证：** 真机鞠躬/挥手/出拳/舞是否像对应动作。
+
+### 2026-09-18 · 集 1 社交/战斗/表演进 A/B 圈
+
+- **范围：** Auton 先暂停。把集 1 的 bow/bye/byebye/respond/call/guide、punch/slash、dance-long/short 烘焙进手势库，接在原 8 槽后面给人看。
+- **代码：** `kPlayClipCount=18`；每段仍 50 帧 / 10800 B，脚钉地。Auton 技能 ID 0–5 不变。
+- **已验证：** `bash tools/test_gundam_arena.sh`。
+- **未验证：** 真机鞠躬/出拳/舞是否像对应动作。
 
 ### 2026-09-17 · Auton 动机竞争（去掉强制链）
 

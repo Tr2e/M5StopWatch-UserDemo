@@ -35,6 +35,62 @@ static void playSlot(CharacterModel& c,int slot){
     stepCharacter(c,in,kStep);
 }
 
+static int yawReversals(const float* y,int n){
+    int c=0;
+    for(int i=2;i<n;++i){
+        const float a=y[i-1]-y[i-2],b=y[i]-y[i-1];
+        if(a*b<0.f && std::fabs(a)+std::fabs(b)>0.012f)++c;
+    }
+    return c;
+}
+
+struct GestureSamp {
+    int n=0;
+    float hy[180]{}, ly[180]{}, ry[180]{}, lx[180]{}, rx[180]{}, lz[180]{}, rz[180]{};
+    float lDist[180]{}, rDist[180]{};
+    float lY[180]{}, rY[180]{}, lP[180]{}, rP[180]{};
+    float chestP[180]{}, rootY[180]{}, cy[180]{};
+};
+
+static GestureSamp sampleGesture(int slot){
+    CharacterModel c;resetCharacter(c);
+    ArenaInput in{};in.valid=true;
+    Skeleton sk{};
+    makeBindSkeleton(sk);
+    playSlot(c,slot);
+    GestureSamp s{};
+    for(int i=0;i<260 && c.action==Action::Gesture;++i){
+        evaluateSkeleton(sk,c.pose);
+        const Point h=sk.world[int(BoneId::Head)].t;
+        const Point lh=sk.world[int(BoneId::LHand)].t;
+        const Point rh=sk.world[int(BoneId::RHand)].t;
+        s.hy[s.n]=h.y;
+        s.ly[s.n]=lh.y;
+        s.ry[s.n]=rh.y;
+        s.lx[s.n]=lh.x;
+        s.rx[s.n]=rh.x;
+        s.lz[s.n]=lh.z;
+        s.rz[s.n]=rh.z;
+        s.lDist[s.n]=length(subtract(lh,h));
+        s.rDist[s.n]=length(subtract(rh,h));
+        s.lY[s.n]=c.pose.anim[int(BoneId::LUpperArm)].yaw;
+        s.rY[s.n]=c.pose.anim[int(BoneId::RUpperArm)].yaw;
+        s.lP[s.n]=c.pose.anim[int(BoneId::LUpperArm)].pitch;
+        s.rP[s.n]=c.pose.anim[int(BoneId::RUpperArm)].pitch;
+        s.chestP[s.n]=c.pose.anim[int(BoneId::Chest)].pitch;
+        s.rootY[s.n]=c.pose.root.y;
+        s.cy[s.n]=c.y;
+        ++s.n;
+        stepCharacter(c,in,kStep);
+    }
+    return s;
+}
+
+static void holdWindow(const GestureSamp& s,int& a0,int& a1){
+    a0=std::min(20,std::max(0,s.n/5));
+    a1=std::max(a0+8,s.n-24);
+}
+
 static float robotScreenHeight(const LGFX_Sprite& canvas){
     const int cx=canvas.width()/2,cy=canvas.height()/2,r=std::min(canvas.width(),canvas.height())/2;
     int top=canvas.height(),bottom=-1;
@@ -53,8 +109,10 @@ int main(int argc,char** argv){
     const std::string out=argc>1?argv[1]:"/tmp/gundam-arena";
     static_assert(kWalkFrames==60,"walk comparison clip window drifted");
     static_assert(kKickFrames==39,"kick clip window drifted");
-    static_assert(kGestureCount==6 && kGestureFrames[0]==50,"gesture bank drifted");
-    static_assert(kGestureFlashBytes[0]==10800 && kGestureFlashBytes[5]==10800,"gesture flash size drifted");
+    static_assert(kGestureCount==13 && kGestureFrames[0]==50,"gesture bank drifted");
+    static_assert(kGestureFrames[11]>kGestureFrames[12] && kGestureFrames[12]>50,"dance windows drifted");
+    static_assert(kGestureFlashBytes[0]==10800,"gesture flash size drifted");
+    static_assert(sizeof(kGestureRootDip)/sizeof(kGestureRootDip[0])==13,"gesture root dip drifted");
     const auto kickPitch=[](int frame,BoneId bone){
         return kKickJoints[frame*18*3+(int(bone)-1)*3+1];
     };
@@ -355,7 +413,9 @@ int main(int argc,char** argv){
 
     const char* wantSrc[]={
         "wave-left-hand_active","wave-right-hand_active","wave-both-hands_normal",
-        "raise-up-left-hand_normal","raise-up-right-hand_normal","raise-up-both-hands_normal"};
+        "raise-up-left-hand_normal","raise-up-right-hand_normal","raise-up-both-hands_normal",
+        "bow_normal","bye_normal","byebye_normal",
+        "guide_normal","punch_normal","dance-long_normal","dance-short_normal"};
     for(int g=0;g<kGestureCount;++g){
         const std::string src=kGestureSource[g];
         assert(src.find(wantSrc[g])!=std::string::npos);
@@ -374,9 +434,217 @@ int main(int argc,char** argv){
         const Point rf=sk.world[int(BoneId::RFoot)].t;
         assert(lf.y<.40f && rf.y<.40f);
         assert(length(subtract(ls,rs))>.90f);
-        assert(length(subtract(lh,head))>.16f);
-        assert(length(subtract(rh,head))>.16f);
-        if(g==2 || g==5)assert(!(lh.x>-.08f && rh.x<.08f));
+        if(g<6){
+            assert(length(subtract(lh,head))>.16f);
+            assert(length(subtract(rh,head))>.16f);
+            if(g==2 || g==5)assert(!(lh.x>-.08f && rh.x<.08f));
+        }
+    }
+
+    {
+        c={};resetCharacter(c);
+        in={};in.valid=true;
+        playSlot(c,8);
+        float minCh=9.f,maxCh=-9.f,minPel=9.f,maxPel=-9.f;
+        for(int i=0;i<120 && c.action==Action::Gesture;++i){
+            minCh=std::min(minCh,c.pose.anim[int(BoneId::Chest)].pitch);
+            maxCh=std::max(maxCh,c.pose.anim[int(BoneId::Chest)].pitch);
+            minPel=std::min(minPel,c.pose.anim[int(BoneId::Pelvis)].pitch);
+            maxPel=std::max(maxPel,c.pose.anim[int(BoneId::Pelvis)].pitch);
+            stepCharacter(c,in,kStep);
+        }
+        assert(maxCh-minCh>0.10f || maxPel-minPel>0.10f);
+        assert(maxCh>0.12f);
+    }
+
+    auto yawSpan=[&](const GestureSamp& s,bool left){
+        int a0,a1;holdWindow(s,a0,a1);
+        float lo=9.f,hi=-9.f;
+        for(int i=a0;i<a1;++i){
+            const float y=left?s.lY[i]:s.rY[i];
+            lo=std::min(lo,y);hi=std::max(hi,y);
+        }
+        return hi-lo;
+    };
+
+    for(int g=0;g<=1;++g){
+        const auto s=sampleGesture(2+g);
+        int a0,a1;holdWindow(s,a0,a1);
+        const bool arenaR=(g==0);
+        int raised=0,otherUp=0,m=0;
+        float yaws[180]{};
+        for(int i=a0;i<a1;++i){
+            const float ah=arenaR?s.ry[i]:s.ly[i];
+            const float oh=arenaR?s.ly[i]:s.ry[i];
+            if(ah>s.hy[i])++raised;
+            if(oh>s.hy[i]-0.02f)++otherUp;
+            yaws[m++]=arenaR?s.rY[i]:s.lY[i];
+        }
+        assert(raised>m/2);
+        assert(otherUp<m/5);
+        assert(yawSpan(s,!arenaR)>0.12f);
+        assert(yawReversals(yaws,m)>=2);
+    }
+
+    {
+        const auto s=sampleGesture(4);
+        int a0,a1;holdWindow(s,a0,a1);
+        int both=0,n=0;
+        for(int i=a0;i<a1;++i){
+            if(s.ly[i]>s.hy[i] && s.ry[i]>s.hy[i])++both;
+            ++n;
+        }
+        assert(both>n/2);
+        assert(yawSpan(s,true)>0.15f || yawSpan(s,false)>0.15f);
+    }
+
+    for(int g=3;g<=4;++g){
+        const auto s=sampleGesture(2+g);
+        int a0,a1;holdWindow(s,a0,a1);
+        const bool arenaR=(g==3);
+        int raised=0,wide=0,n=0;
+        float lo=9.f,hi=-9.f;
+        for(int i=a0;i<a1;++i){
+            const float ah=arenaR?s.ry[i]:s.ly[i];
+            const float oh=arenaR?s.ly[i]:s.ry[i];
+            const float yaw=arenaR?s.rY[i]:s.lY[i];
+            if(ah>s.hy[i] && oh<s.hy[i])++raised;
+            if(std::abs(arenaR?s.rx[i]:s.lx[i])>0.70f)++wide;
+            lo=std::min(lo,yaw);hi=std::max(hi,yaw);
+            ++n;
+        }
+        assert(raised>n/2);
+        assert(wide>n/2);
+        assert(hi-lo<0.08f);
+    }
+
+    {
+        const auto s=sampleGesture(7);
+        int a0,a1;holdWindow(s,a0,a1);
+        int both=0,wide=0,n=0;
+        float lLo=9.f,lHi=-9.f,rLo=9.f,rHi=-9.f;
+        for(int i=a0;i<a1;++i){
+            if(s.ly[i]>s.hy[i] && s.ry[i]>s.hy[i])++both;
+            if(std::abs(s.lx[i])>0.70f && std::abs(s.rx[i])>0.70f)++wide;
+            lLo=std::min(lLo,s.lY[i]);lHi=std::max(lHi,s.lY[i]);
+            rLo=std::min(rLo,s.rY[i]);rHi=std::max(rHi,s.rY[i]);
+            ++n;
+        }
+        assert(both>n/2);
+        assert(wide>n/2);
+        assert(lHi-lLo<0.08f && rHi-rLo<0.08f);
+    }
+
+    {
+        const auto guide=sampleGesture(11);
+        const auto bye=sampleGesture(9);
+        const auto bye2=sampleGesture(10);
+        int a0,a1;
+        holdWindow(guide,a0,a1);
+        float maxZ=-9.f,gyLo=9.f,gyHi=-9.f;
+        int pointHold=0,gn=0;
+        for(int i=a0;i<a1;++i){
+            const float z=std::max(guide.lz[i],guide.rz[i]);
+            maxZ=std::max(maxZ,z);
+            if(z>0.35f)++pointHold;
+            const float yaw=std::abs(guide.lz[i])>std::abs(guide.rz[i])?guide.lY[i]:guide.rY[i];
+            gyLo=std::min(gyLo,yaw);gyHi=std::max(gyHi,yaw);
+            ++gn;
+        }
+        assert(maxZ>0.35f);
+        assert(pointHold>gn/3);
+        assert(gyHi-gyLo<0.20f);
+
+        holdWindow(bye,a0,a1);
+        int oneArm=0,notFlat=0,notOver=0,bn=0;
+        for(int i=a0;i<a1;++i){
+            const float ah=std::max(bye.ly[i],bye.ry[i]);
+            const bool lUp=bye.ly[i]>1.65f;
+            const bool rUp=bye.ry[i]>1.65f;
+            if(lUp!=rUp)++oneArm;
+            if(ah>1.65f)++notFlat;
+            if(ah<bye.hy[i]+0.10f)++notOver;
+            ++bn;
+        }
+        assert(oneArm>bn/2);
+        assert(notFlat>bn/2);
+        assert(notOver>bn/2);
+        assert(yawSpan(bye,true)>0.12f || yawSpan(bye,false)>0.12f);
+
+        holdWindow(bye2,a0,a1);
+        int headish=0,b2n=0;
+        for(int i=a0;i<a1;++i){
+            if(std::abs(bye2.ly[i]-bye2.hy[i])<0.45f && std::abs(bye2.ry[i]-bye2.hy[i])<0.45f)
+                ++headish;
+            ++b2n;
+        }
+        assert(headish>b2n/3);
+        const float waveYaw=std::max(yawSpan(sampleGesture(2),true),yawSpan(sampleGesture(2),false));
+        const float bye2Yaw=std::max(yawSpan(bye2,true),yawSpan(bye2,false));
+        assert(bye2Yaw+0.02f<waveYaw);
+        int bye2Both=0;
+        holdWindow(bye2,a0,a1);
+        for(int i=a0;i<a1;++i){
+            if(bye2.ly[i]>1.65f && bye2.ry[i]>1.65f)++bye2Both;
+        }
+        assert(bye2Both>b2n/3);
+    }
+
+    {
+        const auto s=sampleGesture(12);
+        float maxLZ=-9.f,maxRZ=-9.f,minP=9.f,maxP=-9.f,maxY=-9.f,minY=9.f;
+        int lBurst=0,rBurst=0,firstL=-1,firstR=-1;
+        bool lHot=false,rHot=false;
+        for(int i=0;i<s.n;++i){
+            maxLZ=std::max(maxLZ,s.lz[i]);
+            maxRZ=std::max(maxRZ,s.rz[i]);
+            const float y=std::max(s.ly[i],s.ry[i]);
+            const float p=s.lz[i]>=s.rz[i]?s.lP[i]:s.rP[i];
+            minP=std::min(minP,p);
+            maxP=std::max(maxP,p);
+            maxY=std::max(maxY,y);
+            minY=std::min(minY,y);
+            const bool lNow=s.lz[i]>0.35f && s.lz[i]>s.rz[i]+0.08f;
+            const bool rNow=s.rz[i]>0.35f && s.rz[i]>s.lz[i]+0.08f;
+            if(lNow && !lHot){++lBurst;if(firstL<0)firstL=i;}
+            if(rNow && !rHot){++rBurst;if(firstR<0)firstR=i;}
+            lHot=lNow;rHot=rNow;
+        }
+        assert(maxLZ>0.35f && maxRZ>0.35f);
+        assert(minP>-0.70f);
+        assert(maxP<0.20f);
+        assert(maxY<s.hy[s.n/2]+0.05f);
+        assert(minY>0.90f);
+        assert(lBurst==1 && rBurst==1);
+        assert(firstL>=0 && firstR>=0 && firstL!=firstR);
+    }
+
+    for(int g=11;g<=12;++g){
+        c={};resetCharacter(c);
+        in={};in.valid=true;
+        playSlot(c,2+g);
+        bool dipped=false;
+        int sameLim=0,n=0;
+        for(int i=0;i<120 && c.action==Action::Gesture;++i){
+            if(c.pose.root.y<c.y-0.06f)dipped=true;
+            evaluateSkeleton(sk,c.pose);
+            assert(sk.world[int(BoneId::LFoot)].t.y<.45f);
+            assert(sk.world[int(BoneId::RFoot)].t.y<.45f);
+            const float lp=c.pose.anim[int(BoneId::LUpperArm)].pitch;
+            const float rp=c.pose.anim[int(BoneId::RUpperArm)].pitch;
+            const bool lLo=lp<-1.38f,rLo=rp<-1.38f,lHi=lp>0.78f,rHi=rp>0.78f;
+            if((lLo&&rLo)||(lHi&&rHi))++sameLim;
+            ++n;
+            stepCharacter(c,in,kStep);
+        }
+        assert(dipped);
+        assert(sameLim*4<n);
+    }
+    {
+        const auto dL=sampleGesture(13);
+        const auto dS=sampleGesture(14);
+        assert(dL.n>dS.n+15);
+        assert(dS.n>110);
     }
 
     {

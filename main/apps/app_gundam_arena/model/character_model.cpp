@@ -230,8 +230,17 @@ void applyKick(CharacterModel& c,float dt){
 
 void applyGesture(CharacterModel& c,float dt){
     const int g=std::clamp(c.playGestureId,0,kGestureCount-1);
-    sampleClip(c,kGestureJoints+kGestureOffset[g],kGestureFrames[g],kGestureFps);
-    if(advanceClip(c,dt,kGestureFrames[g],kGestureFps)){
+    const int frames=kGestureFrames[g];
+    const float fps=kGestureFps;
+    sampleClip(c,kGestureJoints+kGestureOffset[g],frames,fps);
+    const int last=std::max(0,frames-1);
+    const float t=clampf(c.clipT*fps,0.f,float(last));
+    const int i0=int(t);
+    const int i1=i0>=last?last:i0+1;
+    const float u=t-float(i0);
+    const float dip=kGestureRootDip[g][i0]+(kGestureRootDip[g][i1]-kGestureRootDip[g][i0])*u;
+    c.pose.root.y=c.y-dip;
+    if(advanceClip(c,dt,frames,fps)){
         c.action=Action::Idle;
         c.clipT=0;
         c.leftPlanted=c.rightPlanted=false;
