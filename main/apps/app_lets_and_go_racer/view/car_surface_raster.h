@@ -134,6 +134,13 @@ public:
     void setSplitColorStorage(uint16_t* storage,int width,int splitRow) {
         _splitColor=storage;_splitColorWidth=width;_splitColorRow=splitRow;
     }
+    // Authoritative depth storage for rows [splitRow,height). Occupancy-driven
+    // composite can consume this band without copying it back to PSRAM.
+    void setSplitDepthStorage(uint16_t* storage,int width,int splitRow) {
+        if(storage!=_splitDepth || width!=_splitDepthWidth || splitRow!=_splitDepthRow)
+            _lastSparseDepthClear=false;
+        _splitDepth=storage;_splitDepthWidth=width;_splitDepthRow=splitRow;
+    }
     void setSparseDepthStorage(uint8_t* storage,std::size_t bytes) {
         _occupiedDepth=storage;_occupiedDepthBytes=bytes;_trackedDepthPixels=0;_lastSparseDepthClear=false;
         if(storage && bytes)std::memset(storage,0,bytes);
@@ -149,7 +156,6 @@ public:
     void begin(int x,int y,int width=Width,int height=Height) {
         _x=x;_y=y;
         _width=std::clamp(width,1,Width);_height=std::clamp(height,1,Height);
-        auto* depth=depthData();
         const std::size_t activePixels=std::size_t(_width)*_height;
         _sparseDepthClearFastPath=_sparseDepthClearRequested && _occupiedDepth &&
                                   _occupiedDepthBytes>=(activePixels+7)/8;
@@ -159,16 +165,16 @@ public:
                 unsigned bits=_occupiedDepth[byte];
                 while(bits){
                     const unsigned bit=unsigned(__builtin_ctz(bits));
-                    depth[byte*8+bit]=0;bits&=bits-1;
+                    depthPixel(byte*8+bit)=0;bits&=bits-1;
                 }
                 _occupiedDepth[byte]=0;
             }
             // A smaller compact frame may leave older data in the inactive
             // tail. Clear that tail when resolution grows again.
             if(activePixels>_trackedDepthPixels)
-                std::memset(depth+_trackedDepthPixels,0,(activePixels-_trackedDepthPixels)*sizeof(uint16_t));
+                clearDepthRange(_trackedDepthPixels,activePixels-_trackedDepthPixels);
         } else {
-            std::memset(depth,0,std::size_t(_width)*_height*sizeof(uint16_t));
+            clearDepthRange(0,std::size_t(_width)*_height);
             if(_occupiedDepth && _trackedDepthPixels)std::memset(_occupiedDepth,0,(_trackedDepthPixels+7)/8);
         }
         _trackedDepthPixels=std::size_t(_width)*_height;
@@ -225,7 +231,23 @@ private:
              bool PreparedSolidColor=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom,
                   uint16_t preparedSolidColor=0) {
+        // A band-parallel caller may fall back to one full-frame pass (for
+        // example when its worker is unavailable). Split a crossing range so
+        // the lower depth band remains authoritative in that fallback too.
+        if(_splitDepth && _width==_splitDepthWidth &&
+           clipTop<_splitDepthRow && clipBottom>=_splitDepthRow) {
+            triangleImpl<Incremental,Solid,SolidSpan,TrustedDepth,PreparedSolidColor>(
+                a,b,c,color,paint,light,clipTop,_splitDepthRow-1,preparedSolidColor);
+            triangleImpl<Incremental,Solid,SolidSpan,TrustedDepth,PreparedSolidColor>(
+                a,b,c,color,paint,light,_splitDepthRow,clipBottom,preparedSolidColor);
+            return;
+        }
         auto* depthBuffer=depthData();auto* colorBuffer=colorData();
+        std::size_t depthIndexOffset=0;
+        if(_splitDepth && _width==_splitDepthWidth && clipTop>=_splitDepthRow) {
+            depthBuffer=_splitDepth;
+            depthIndexOffset=std::size_t(_splitDepthRow)*_width;
+        }
         std::size_t colorIndexOffset=0;
         if(_splitColor && _width==_splitColorWidth && clipTop>=_splitColorRow) {
             colorBuffer=_splitColor;
@@ -325,14 +347,14 @@ private:
             const auto d=uint16_t(TrustedDepth ? depth*8192.f :
                                   std::clamp(depth*8192.f,1.f,65535.f));
             const auto index=std::size_t(y-_y)*_width+(x-_x);
-            const auto oldDepth=depthBuffer[index];
+            const auto oldDepth=depthBuffer[index-depthIndexOffset];
             if(d<oldDepth)continue;
             if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
                 _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
             if constexpr(Solid) {
                 // Identical barycentric/depth operations; compile out texture
                 // sampling and per-pixel material branches for solid exhibits.
-                depthBuffer[index]=d;colorBuffer[index-colorIndexOffset]=solidColor;
+                depthBuffer[index-depthIndexOffset]=d;colorBuffer[index-colorIndexOffset]=solidColor;
             }else{
             uint16_t pigment=color;
             if(paint!=CarPaint::Solid) {
@@ -343,7 +365,7 @@ private:
             }
             const uint16_t output=texture ? pigment : paint==CarPaint::Solid ? solidColor :
                                   (light==255 ? pigment : carTint(pigment,lightFactor));
-            depthBuffer[index]=d;colorBuffer[index-colorIndexOffset]=output;
+            depthBuffer[index-depthIndexOffset]=d;colorBuffer[index-colorIndexOffset]=output;
             }
             }
         }
@@ -634,6 +656,9 @@ private:
             const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
                 ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
                 : color+offset;
+            const auto* sourceDepth=_splitDepth && _width==_splitDepthWidth && sourceY>=_splitDepthRow
+                ? _splitDepth+std::size_t(sourceY-_splitDepthRow)*_width
+                : depth+offset;
             const bool recordRow=fusedOccupancy && sourceY!=previousSourceY;
             int previousSourceX=-1;
 #ifdef ESP_PLATFORM
@@ -645,7 +670,7 @@ private:
                 if constexpr(Scale) {
                     for(int px=0;px<width;++px) {
                         const auto sx=sourceX[px];
-                        const bool visible=depth[offset+sx]!=0;
+                        const bool visible=sourceDepth[sx]!=0;
                         if(visible) {
                             store(px,sourceColor[sx]);
                             if(recordRow && sx!=previousSourceX)recordOccupied(offset+sx);
@@ -653,7 +678,7 @@ private:
                         previousSourceX=sx;
                     }
                 } else {
-                    for(int px=0;px<width;++px)if(depth[offset+px]) {
+                    for(int px=0;px<width;++px)if(sourceDepth[px]) {
                         store(px,sourceColor[px]);
                         if(recordRow)recordOccupied(offset+px);
                     }
@@ -665,7 +690,7 @@ private:
             int start=-1;
             for(int px=0;px<=width;++px) {
                 const auto sx=Scale?(px<width?sourceX[px]:0):px;
-                const bool visible=px<width && depth[offset+sx]!=0;
+                const bool visible=px<width && sourceDepth[sx]!=0;
                 if(visible) {
                     row[px]=sourceColor[sx];
                     if(recordRow && sx!=previousSourceX)recordOccupied(offset+sx);
@@ -686,7 +711,7 @@ private:
         }
         if(deferredOccupancy && !fusedOccupancy)
             for(std::size_t index=0;index<std::size_t(_width)*_height;++index)
-                if(depth[index])recordOccupied(index);
+                if(depthPixel(index))recordOccupied(index);
         if(occupancyByte!=std::size_t(-1) && occupancyBits)_occupiedDepth[occupancyByte]=occupancyBits;
 #ifdef ESP_PLATFORM
         if(direct)canvas.endWrite();
@@ -695,7 +720,7 @@ private:
 public:
     int width() const {return _width;}
     int height() const {return _height;}
-    uint16_t depthAt(int x,int y) const {return depthData()[std::size_t(y)*_width+x];}
+    uint16_t depthAt(int x,int y) const {return depthPixel(std::size_t(y)*_width+x);}
 private:
     const RacePaintAtlas* _paintAtlas=nullptr;
     bool _incrementalInterpolation=false;
@@ -712,6 +737,8 @@ private:
     uint8_t* _occupiedDepth=nullptr;
     uint16_t* _splitColor=nullptr;
     int _splitColorWidth=0,_splitColorRow=0;
+    uint16_t* _splitDepth=nullptr;
+    int _splitDepthWidth=0,_splitDepthRow=0;
     std::size_t _occupiedDepthBytes=0;
     using Pixels=std::array<uint16_t,Width*Height>;
     RenderScratch<Pixels> _fastDepth,_fastColor;
@@ -719,6 +746,26 @@ private:
     RenderScratch<std::array<uint16_t,PencilOcclusion::kCapacity>> _fastOcclusionRows,_fastOcclusionCandidates;
     uint16_t* depthData() {return _fastDepth.get() ? _fastDepth.get()->data() : _depth.data();}
     const uint16_t* depthData() const {return _fastDepth.get() ? _fastDepth.get()->data() : _depth.data();}
+    uint16_t& depthPixel(std::size_t index) {
+        const std::size_t split=std::size_t(_splitDepthRow)*_width;
+        return _splitDepth && _width==_splitDepthWidth && index>=split
+            ? _splitDepth[index-split] : depthData()[index];
+    }
+    uint16_t depthPixel(std::size_t index) const {
+        const std::size_t split=std::size_t(_splitDepthRow)*_width;
+        return _splitDepth && _width==_splitDepthWidth && index>=split
+            ? _splitDepth[index-split] : depthData()[index];
+    }
+    void clearDepthRange(std::size_t first,std::size_t count) {
+        if(!count)return;
+        const std::size_t end=first+count,split=std::size_t(_splitDepthRow)*_width;
+        if(!_splitDepth || _width!=_splitDepthWidth || end<=split) {
+            std::memset(depthData()+first,0,count*sizeof(uint16_t));return;
+        }
+        if(first<split)std::memset(depthData()+first,0,(split-first)*sizeof(uint16_t));
+        const std::size_t lowerFirst=std::max(first,split);
+        std::memset(_splitDepth+(lowerFirst-split),0,(end-lowerFirst)*sizeof(uint16_t));
+    }
     uint16_t* colorData() {return _fastColor.get() ? _fastColor.get()->data() : _color.data();}
     const uint16_t* colorData() const {return _fastColor.get() ? _fastColor.get()->data() : _color.data();}
     std::array<uint16_t,Width*Height> _depth{};

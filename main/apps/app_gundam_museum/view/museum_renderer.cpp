@@ -95,7 +95,16 @@ bool MuseumRenderer::open(){
     if(_surface){
         _surface->raster.setSparseDepthStorage(_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
         _surface->fastLowerColor.allocate();
+        // Build the default exhibit before creating the worker so the exact
+        // active projected-point prefix can claim a compact internal block.
+        // Smaller ready/task allocations can then use the remaining fragments.
+        buildRx78(_surface->mesh,{true,false,false,Pose::Display});
+        _surface->projection.index(_surface->mesh);
+        _surface->projection.preferInternalProjected();
+        _surface->fastLowerDepth.allocate();
         _surface->projection.preferInternalReady();
+        _model=ModelId::Rx78;_pose=Pose::Display;_equipment=true;
+        _gray=false;_buried=false;_cached=true;
     }
 #ifdef ESP_PLATFORM
     if(_surface){
@@ -178,6 +187,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         w==fastColorWidth && h==fastColorWidth && _surface->fastLowerColor.get();
     raster.setSplitColorStorage(useSplitColor?_surface->fastLowerColor.get()->data():nullptr,
                                 fastColorWidth,fastColorSplit);
+    const bool useSplitDepth=useSplitColor && _splitDepthFastPath && _surface->fastLowerDepth.get();
+    raster.setSplitDepthStorage(useSplitDepth?_surface->fastLowerDepth.get()->data():nullptr,
+                                fastColorWidth,fastColorSplit);
     // Keep exact barycentric interpolation. View Car's incremental mode
     // changes thin SD panels at some continuous angles (see performance log).
     raster.setSolidFastPath(_optimizations);
@@ -206,6 +218,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const float correction=float(w)/h;
     const auto project=[&](Point point,uint8_t tag){auto v=transform(point,tag);v.x*=correction;return v;};
     _stats={};_stats.total=_surface->mesh.count;
+    if(useSplitDepth)_stats.internalDepthBytes=uint32_t(fastColorWidth*fastColorSplit*sizeof(uint16_t));
     auto& projection=_surface->projection;
     projection.setInternalReadyFastPath(_optimizations && _internalProjectionReadyFastPath && view.model==ModelId::Rx78);
     projection.setInternalProjectedFastPath(_optimizations && _internalProjectedPointFastPath && view.model==ModelId::Rx78);

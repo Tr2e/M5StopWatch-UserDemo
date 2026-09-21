@@ -87,13 +87,13 @@ void AppGundamMuseum::draw(uint32_t now){
         mclog::tagInfo("MuseumStageParallel","panel_prepare_us={} space_wait_us={} main_raster_us={} worker_raster_us={}",
             uint32_t(_perfPanelPrepareUs/frames),uint32_t(_perfSpaceWaitUs/frames),
             uint32_t(_perfMainRasterUs/frames),uint32_t(_perfWorkerRasterUs/frames));
-        mclog::tagInfo("MuseumMemory","internal_free={} internal_min={} internal_largest={} psram_free={} psram_min={} psram_largest={} projected_internal_bytes={}",
+        mclog::tagInfo("MuseumMemory","internal_free={} internal_min={} internal_largest={} psram_free={} psram_min={} psram_largest={} projected_internal_bytes={} depth_internal_bytes={}",
             heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
             heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM),
-            heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),stats.internalProjectedBytes);
+            heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),stats.internalProjectedBytes,stats.internalDepthBytes);
         resetPerformanceWindow(finishedMs);
     }
 }
