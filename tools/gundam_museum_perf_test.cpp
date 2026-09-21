@@ -85,9 +85,12 @@ int main(){
                              <<" equipment="<<equipment<<" detail="<<detail
                              <<" pitch="<<pitch<<" yaw_index="<<yaw
                              <<" first_pixel="<<first<<" differing_pixels="<<pixels<<'\n';
-                    for(std::size_t pixel=0;pixel<frames[0].size();++pixel)if(frames[0][pixel]!=frames[1][pixel])
+                    std::size_t reported=0;
+                    for(std::size_t pixel=0;pixel<frames[0].size() && reported<16;++pixel)if(frames[0][pixel]!=frames[1][pixel]) {
                         std::cerr<<"  pixel x="<<(pixel%canvas.width())<<" y="<<(pixel/canvas.width())
                                  <<" reference="<<frames[0][pixel]<<" optimized="<<frames[1][pixel]<<'\n';
+                        ++reported;
+                    }
                 }
                 assert(frames[0]==frames[1]);++cases;
             }
