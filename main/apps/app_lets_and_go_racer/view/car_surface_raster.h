@@ -663,27 +663,35 @@ private:
                 destinationFirst[sx]=std::min(destinationFirst[sx],uint16_t(px));
                 destinationLast[sx]=uint16_t(px+1);
             }
+            int cachedSourceY=-1;
+            std::size_t cachedCount=0;
             for(int py=0;py<height;++py) {
                 const int sourceY=(2*py+1)*_height/(2*height);
                 const std::size_t rowStart=std::size_t(sourceY)*_width,rowEnd=rowStart+_width;
-                const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
-                    ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
-                    : color+rowStart;
                 auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
-                const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
-                for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
-                    unsigned bits=_occupiedDepth[byte];
-                    if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
-                    if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
-                    while(bits) {
-                        const unsigned bit=unsigned(__builtin_ctz(bits));bits&=bits-1;
-                        const std::size_t index=byte*8+bit;
-                        const auto sx=uint16_t(index-rowStart);
-                        const uint16_t first=destinationFirst[sx],last=destinationLast[sx];
-                        const uint16_t value=sourceColor[sx];
-                        const uint16_t nativeValue=uint16_t((value<<8)|(value>>8));
-                        for(uint16_t px=first;px<last;++px)destination[px]=nativeValue;
+                if(sourceY!=cachedSourceY) {
+                    cachedSourceY=sourceY;cachedCount=0;
+                    const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
+                        ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
+                        : color+rowStart;
+                    const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
+                    for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
+                        unsigned bits=_occupiedDepth[byte];
+                        if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
+                        if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
+                        while(bits) {
+                            const unsigned bit=unsigned(__builtin_ctz(bits));bits&=bits-1;
+                            const auto sx=uint16_t(byte*8+bit-rowStart);
+                            sourceX[cachedCount]=sx;
+                            const uint16_t value=sourceColor[sx];
+                            row[cachedCount++]=uint16_t((value<<8)|(value>>8));
+                        }
                     }
+                }
+                for(std::size_t i=0;i<cachedCount;++i) {
+                    const auto sx=sourceX[i];
+                    for(uint16_t px=destinationFirst[sx];px<destinationLast[sx];++px)
+                        destination[px]=row[i];
                 }
             }
             return;
