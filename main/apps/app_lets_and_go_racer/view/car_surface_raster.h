@@ -467,6 +467,7 @@ public:
         if(face.visibility==1) {
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
+            const bool triangle=c.x==d.x && c.y==d.y && c.depth==d.depth;
             const auto trustedDepth=[](float depth) {
                 return std::isfinite(depth) && depth>=.001f && depth<=7.9f;
             };
@@ -476,17 +477,18 @@ public:
                 const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
                 triangleImpl<false,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
                                                        clipTop,clipBottom,solidColor);
-                triangleImpl<false,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
-                                                       clipTop,clipBottom,solidColor);
+                if(!triangle)triangleImpl<false,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                                    clipTop,clipBottom,solidColor);
             } else {
                 triangleRows(a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
-                triangleRows(a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+                if(!triangle)triangleRows(a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
             }
         } else {
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarSurfaceVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
             cameraTriangleRows(camera,a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
-            cameraTriangleRows(camera,a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+            if(c.x!=d.x || c.y!=d.y || c.z!=d.z)
+                cameraTriangleRows(camera,a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
         }
     }
     // Hidden-line stroke: keep a surface only when its depth matches the filled
