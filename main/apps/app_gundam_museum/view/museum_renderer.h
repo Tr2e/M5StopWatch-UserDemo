@@ -38,6 +38,7 @@ public:
     void setTrustedSolidDepthFastPath(bool enabled){_trustedSolidDepthFastPath=enabled;}
     void setDirectSpanFastPath(bool enabled){_directSpanFastPath=enabled;}
     void setNativeFrameBufferFastPath(bool enabled){_nativeFrameBufferFastPath=enabled;}
+    void setNativeClearFastPath(bool enabled){_nativeClearFastPath=enabled;}
     void setSparseDepthClearFastPath(bool enabled){_sparseDepthClearFastPath=enabled;}
     void setParallelRasterFastPath(bool enabled){_parallelRasterFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
@@ -69,6 +70,7 @@ private:
     bool _trustedSolidDepthFastPath=true;
     bool _directSpanFastPath=true;
     bool _nativeFrameBufferFastPath=true;
+    bool _nativeClearFastPath=true;
     bool _sparseDepthClearFastPath=true;
     bool _parallelRasterFastPath=true;
     bool _spaceEnabled=true;

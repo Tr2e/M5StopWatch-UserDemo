@@ -101,6 +101,12 @@ RX-78 当前全部是纯色材质。双核回放列表不再保存透视 UV、�
 
 回退该实验并恢复房间重叠生产路径后的正常 Launcher 固件 SHA-256：`905a26e8e1d251417ced7b33e194c2536e9261bf6c2e993bef719090fedf2676`。
 
+### 原生连续 framebuffer clear
+
+在原生 RGB565、rotation 0、偶数宽度、4-byte 地址/stride 对齐均成立时，以一个 32-bit store 写入两个 byte-swapped RGB565 背景像素；否则保留 `fillScreen`。交错 A/B 中 65% draw/background 从 104.498/12.684 ms 降至 104.269/12.624 ms，100% 从 139.445/12.461 ms 降至 139.138/12.408 ms。收益很小但稳定，整屏哈希均为 `2718444083`。
+
+移除基准后的正常 Launcher 固件 SHA-256：`f0c342d07ac3f2c513f53988b33daa3c24b3cb6db2495e81d285ef600baa1633`。
+
 ## RX-78 光栅工作量
 
 诊断构建覆盖 288 个姿态/配置样本，每帧平均：
