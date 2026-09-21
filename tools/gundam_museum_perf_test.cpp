@@ -38,7 +38,10 @@ void checkSolidRaster(){
     for(uint8_t light:{0,99,255})for(int size:{21,32}){
         std::vector<uint16_t> frames[2];std::vector<uint16_t> depths[2];
         for(int mode=0;mode<2;++mode){
-            canvas.fillScreen(0x0863);raster.begin(0,0,size,size);raster.setSolidFastPath(mode==1);
+            canvas.fillScreen(0x0863);raster.setSolidFastPath(mode==1);
+            raster.setSolidSpanFastPath(mode==1);
+            raster.setTrustedSolidDepthFastPath(mode==1);
+            raster.begin(0,0,size,size);
             raster.triangle({-2,1,.15f,0,0},{27,3,.2f,.2f,0},{7,29,.25f,0,.25f},0xef5d,paint,light);
             raster.triangle({1,3,.15f,0,0},{24,5,.2f,.2f,0},{9,27,.25f,0,.25f},0xf800,paint,light);
             raster.blitScaled(canvas,0,0,32,32);frames[mode]=canvas.frame();

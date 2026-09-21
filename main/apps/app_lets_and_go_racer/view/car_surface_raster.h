@@ -85,6 +85,21 @@ public:
     void setPaintAtlas(const RacePaintAtlas* atlas) { _paintAtlas=atlas; }
     void setIncrementalInterpolation(bool enabled) { _incrementalInterpolation=enabled; }
     void setSolidFastPath(bool enabled) { _solidFastPath=enabled; }
+    // Solid triangles have convex pixel coverage on every scanline. Locate the
+    // two boundary pixels with the reference barycentric predicate, then omit
+    // that predicate for the guaranteed-covered interior span.
+    void setSolidSpanFastPath(bool enabled) { _solidSpanFastPath=enabled; }
+    // Projection-clipped solid geometry has finite positive inverse depth. A
+    // guarded triangle-level check lets its inner loop omit redundant finite,
+    // sign and saturation work while retaining the general fallback.
+    void setTrustedSolidDepthFastPath(bool enabled) { _trustedSolidDepthFastPath=enabled; }
+    // The framebuffer panel already owns the surrounding transaction. Under a
+    // guarded native 16-bit/full-clip layout, write spans through its address
+    // window instead of rebuilding pushImage clipping state for every row.
+    void setDirectSpanFastPath(bool enabled) { _directSpanFastPath=enabled; }
+    // Native framebuffer rows avoid thousands of tiny image API calls. The
+    // implementation remains guarded by layout, clip and rotation checks.
+    void setNativeFrameBufferFastPath(bool enabled) { _nativeFrameBufferFastPath=enabled; }
     unsigned preferInternalMemory() {
         return unsigned(_fastDepth.allocate())+unsigned(_fastColor.allocate());
     }
@@ -118,6 +133,16 @@ public:
     void triangle(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
         if(_solidFastPath && paint==CarPaint::Solid) {
+            if(_solidSpanFastPath) {
+                const auto trustedDepth=[&](float depth) {
+                    return std::isfinite(depth) && depth>=.001f && depth<=7.9f;
+                };
+                if(_trustedSolidDepthFastPath && trustedDepth(a.depth) &&
+                   trustedDepth(b.depth) && trustedDepth(c.depth)) {
+                    triangleImpl<false,true,true,true>(a,b,c,color,paint,light);return;
+                }
+                triangleImpl<false,true,true>(a,b,c,color,paint,light);return;
+            }
             triangleImpl<false,true>(a,b,c,color,paint,light);return;
         }
         if(_incrementalInterpolation)
@@ -126,7 +151,7 @@ public:
             triangleImpl<false>(a,b,c,color,paint,light);
     }
 private:
-    template<bool Incremental,bool Solid=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
+    template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
         auto* depthBuffer=depthData();auto* colorBuffer=colorData();
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
@@ -182,6 +207,24 @@ private:
                 last=int(std::min(float(x1),rasterCeil(rowRight)+2.f));
             }
             const float py=y+.5f-a.y;
+            const auto barycentric=[&](int x,float& s,float& t) {
+                const float px=x+.5f-a.x;
+                s=(px*(c.y-a.y)-py*(c.x-a.x))*inverse;
+                t=((b.x-a.x)*py-(b.y-a.y)*px)*inverse;
+            };
+            if constexpr(SolidSpan) {
+                float s=0,t=0;
+                while(first<=last) {
+                    barycentric(first,s,t);
+                    if(s>=-.00001f && t>=-.00001f && s+t<=1.00001f)break;
+                    ++first;
+                }
+                while(last>first) {
+                    barycentric(last,s,t);
+                    if(s>=-.00001f && t>=-.00001f && s+t<=1.00001f)break;
+                    --last;
+                }
+            }
             float incrementalS=0,incrementalT=0;
             if constexpr(Incremental) {
                 const float firstPx=first+.5f-a.x;
@@ -194,14 +237,15 @@ private:
                 s=incrementalS;t=incrementalT;
                 incrementalS+=sStep;incrementalT+=tStep;
             } else {
-                const float px=x+.5f-a.x;
-                s=(px*(c.y-a.y)-py*(c.x-a.x))*inverse;
-                t=((b.x-a.x)*py-(b.y-a.y)*px)*inverse;
+                barycentric(x,s,t);
             }
-            if(s<-.00001f || t<-.00001f || s+t>1.00001f)continue;
+            if constexpr(!SolidSpan)
+                if(s<-.00001f || t<-.00001f || s+t>1.00001f)continue;
             const float depth=a.depth+s*(b.depth-a.depth)+t*(c.depth-a.depth);
-            if(!(depth>0) || !std::isfinite(depth))continue;
-            const auto d=uint16_t(std::clamp(depth*8192.f,1.f,65535.f));
+            if constexpr(!TrustedDepth)
+                if(!(depth>0) || !std::isfinite(depth))continue;
+            const auto d=uint16_t(TrustedDepth ? depth*8192.f :
+                                  std::clamp(depth*8192.f,1.f,65535.f));
             const auto index=std::size_t(y-_y)*_width+(x-_x);
             if(d<depthBuffer[index])continue;
             if constexpr(Solid) {
@@ -216,9 +260,9 @@ private:
                 pigment=texture ? RacePaintAtlas::sample(texture,u,v) :
                     carPaintColor(paint,color,std::clamp(u,0.f,1.f),std::clamp(v,0.f,1.f));
             }
-            depthBuffer[index]=d;
-            colorBuffer[index]=texture ? pigment : paint==CarPaint::Solid ? solidColor :
-                          (light==255 ? pigment : carTint(pigment,lightFactor));
+            const uint16_t output=texture ? pigment : paint==CarPaint::Solid ? solidColor :
+                                  (light==255 ? pigment : carTint(pigment,lightFactor));
+            depthBuffer[index]=d;colorBuffer[index]=output;
             }
             }
         }
@@ -389,19 +433,53 @@ public:
     }
     // Expand only the car coverage, leaving the native UI/background intact.
     // Reuse the existing compact active planes; no second sprite is allocated.
-    void blitScaled(lgfx::LGFXBase& canvas,int x,int y,int width,int height) const {
+    void blitScaled(lgfx::LGFXBase& canvas,int x,int y,int width,int height,
+                    uint8_t* nativeFrameBuffer=nullptr,std::size_t nativeStride=0) const {
         if(width<=0 || width>Width || height<=0 || height>Height)return;
-        if(width==_width && height==_height)blitScaledImpl<false>(canvas,x,y,width,height);
-        else blitScaledImpl<true>(canvas,x,y,width,height);
+        if(width==_width && height==_height)blitScaledImpl<false>(canvas,x,y,width,height,nativeFrameBuffer,nativeStride);
+        else blitScaledImpl<true>(canvas,x,y,width,height,nativeFrameBuffer,nativeStride);
     }
 private:
-    template<bool Scale> void blitScaledImpl(lgfx::LGFXBase& canvas,int x,int y,int width,int height) const {
+    template<bool Scale> void blitScaledImpl(lgfx::LGFXBase& canvas,int x,int y,int width,int height,
+                                             uint8_t* nativeFrameBuffer,std::size_t nativeStride) const {
+#ifndef ESP_PLATFORM
+        (void)nativeFrameBuffer;(void)nativeStride;
+#endif
         std::array<uint16_t,Width> row{},sourceX{};
         if constexpr(Scale)for(int px=0;px<width;++px)sourceX[px]=uint16_t((2*px+1)*_width/(2*width));
         const auto* depth=depthData();const auto* color=colorData();
+#ifdef ESP_PLATFORM
+        int32_t clipX=0,clipY=0,clipW=0,clipH=0;
+        canvas.getClipRect(&clipX,&clipY,&clipW,&clipH);
+        const bool native=_nativeFrameBufferFastPath && nativeFrameBuffer && nativeStride>=std::size_t(x+width)*2 &&
+            canvas.getColorDepth()==16 && canvas.getRotation()==0 &&
+            x>=clipX && y>=clipY && x+width<=clipX+clipW && y+height<=clipY+clipH &&
+            y>=0;
+        const bool direct=!native && _directSpanFastPath && canvas.getColorDepth()==16 && canvas.getRotation()==0 &&
+            x>=clipX && y>=clipY && x+width<=clipX+clipW && y+height<=clipY+clipH;
+        if(direct)canvas.startWrite();
+#endif
         for(int py=0;py<height;++py) {
             const int sourceY=Scale?(2*py+1)*_height/(2*height):py;
             const auto offset=std::size_t(sourceY)*_width;
+#ifdef ESP_PLATFORM
+            if(native) {
+                auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
+                const auto store=[&](int px,uint16_t value) {
+                    destination[px]=uint16_t((value<<8)|(value>>8));
+                };
+                if constexpr(Scale) {
+                    for(int px=0;px<width;++px) {
+                        const auto sx=sourceX[px];
+                        if(depth[offset+sx])store(px,color[offset+sx]);
+                    }
+                } else {
+                    for(int px=0;px<width;++px)
+                        if(depth[offset+px])store(px,color[offset+px]);
+                }
+                continue;
+            }
+#endif
             int start=-1;
             for(int px=0;px<=width;++px) {
                 const auto sx=Scale?(px<width?sourceX[px]:0):px;
@@ -410,11 +488,20 @@ private:
                     row[px]=color[offset+sx];
                     if(start<0)start=px;
                 } else if(start>=0) {
+#ifdef ESP_PLATFORM
+                    if(direct) {
+                        canvas.setAddrWindow(x+start,y+py,px-start,1);
+                        canvas.writePixels(reinterpret_cast<const lgfx::rgb565_t*>(row.data()+start),px-start);
+                    } else
+#endif
                     drawColorSpan(canvas,x+start,y+py,px-start,row.data()+start);
                     start=-1;
                 }
             }
         }
+#ifdef ESP_PLATFORM
+        if(direct)canvas.endWrite();
+#endif
     }
 public:
     int width() const {return _width;}
@@ -424,6 +511,10 @@ private:
     const RacePaintAtlas* _paintAtlas=nullptr;
     bool _incrementalInterpolation=false;
     bool _solidFastPath=false;
+    bool _solidSpanFastPath=false;
+    bool _trustedSolidDepthFastPath=false;
+    bool _directSpanFastPath=false;
+    bool _nativeFrameBufferFastPath=false;
     using Pixels=std::array<uint16_t,Width*Height>;
     RenderScratch<Pixels> _fastDepth,_fastColor;
     mutable std::array<uint16_t,PencilOcclusion::kCapacity> _occlusionCandidates{};

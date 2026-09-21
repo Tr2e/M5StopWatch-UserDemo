@@ -1,6 +1,6 @@
 # Gundam Museum 性能优化 TODO
 
-更新日期：2026-09-20  
+更新日期：2026-09-21
 适用分支：`feat/gundam-arena`  
 记录基线：`c0ba8ce` (`fix(gundam-arena): trim dance loops at the last hop`)
 
@@ -20,6 +20,8 @@
 - 不在没有同设备、同场景 A/B 时宣称优化完成。
 
 现有的共享顶点投影、朝向缓存、背面剔除、纯色快速路径、65%/100% 动态采样和按需刷新应保留。
+
+2026-09-21 RX-78 fast path 进度：接受 solid scanline span、trusted depth、framebuffer span transaction 和 native framebuffer composite。最后一项在整屏哈希逐字节一致的前提下，使 65% draw 从 149.37 ms 降至 124.63 ms，含 present 约 136.47 ms（约 7.33 FPS）。完整接受/否决证据见 [`assets/gundam-museum-rx78-fastpath-20260921/README.md`](assets/gundam-museum-rx78-fastpath-20260921/README.md)。距离 15 FPS 仍远，不能归因于 CPU 上限。
 
 ## 2. 已知基线
 
@@ -99,6 +101,15 @@
 - [ ] 连续随机角度测试必须包含条带边界附近的像素差异统计。
 
 ## 5. P2：优化条带 binning 和光栅内循环
+
+2026-09-21 更新：条带路线已否决；本节后续转为全帧实体光栅内核优化。已否决 interleaved depth/color、重复行缓存、直接/保护深度平面、单独 early-Z、索引色和平凡 subpixel 面跳过。下一轮先增加只在诊断构建启用的 tested/written/occluded 像素与 overdraw 计数，再决定 front-to-back+HZB 或专用凸四边形内核，避免无数据地继续微调。
+
+- [x] Solid scanline span 与 trusted-depth 内循环，主机逐像素一致、真机 A/B 通过。
+- [x] 原生 framebuffer 合成，65%/100% 整屏哈希一致、真机 A/B 通过。
+- [ ] 统计 triangle/span/pixel tested、depth rejected、written 和最终 covered，按姿态输出 overdraw 分布。
+- [ ] 保持原 equal-depth overwrite 语义，设计可验证的 front-to-back/HZB 原型；若排序改变共面覆盖，必须回退或增加稳定 tie 规则。
+- [ ] 评估直接处理凸四边形，减少每面两次 triangle setup 和共享对角线 overdraw。
+- [ ] 将 framebuffer 行访问整理为通用、可选、带格式/旋转/clip guard 的 3D composite 接口。
 
 - [ ] 为每带建立有界面片索引表，检测容量上限和最坏场景。
 - [ ] 满容量时使用可检测的安全回退，不静默丢面。

@@ -67,7 +67,12 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     auto& raster=_surface->raster;
     // Keep exact barycentric interpolation. View Car's incremental mode
     // changes thin SD panels at some continuous angles (see performance log).
-    raster.setSolidFastPath(_optimizations);raster.begin(0,0,w,h);
+    raster.setSolidFastPath(_optimizations);
+    raster.setSolidSpanFastPath(_optimizations && _solidSpanFastPath);
+    raster.setTrustedSolidDepthFastPath(_optimizations && _trustedSolidDepthFastPath);
+    raster.setDirectSpanFastPath(_optimizations && _directSpanFastPath);
+    raster.setNativeFrameBufferFastPath(_optimizations && _nativeFrameBufferFastPath);
+    raster.begin(0,0,w,h);
     if(hiddenLine)_surface->edges.begin();
     const auto clearUs=micros();
     lets_and_go::TrackCamera camera{};
@@ -142,7 +147,19 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         strokeHiddenLinePanel(raster,camera,prepared,&_surface->edges,&projection.indices[i*4]);
     }
     const auto rasterUs=micros();
-    raster.blitScaled(canvas,(canvas.width()-layout::side)/2,layout::top,layout::side,layout::side);
+    const int outputX=(canvas.width()-layout::side)/2;
+#ifdef ESP_PLATFORM
+    uint8_t* nativeFrameBuffer=nullptr;std::size_t nativeStride=0;
+    if(_optimizations && _nativeFrameBufferFastPath && &canvas==&GetHAL().getDisplay()) {
+        auto* first=GetHAL().getDisplayFrameBufferLine(0);
+        auto* second=GetHAL().getDisplayFrameBufferLine(1);
+        if(first && second && second>first) {nativeFrameBuffer=first;nativeStride=std::size_t(second-first);}
+    }
+    raster.blitScaled(canvas,outputX,layout::top,layout::side,layout::side,nativeFrameBuffer,nativeStride);
+    if(nativeFrameBuffer)GetHAL().markDisplayFrameBufferModified(outputX,layout::top,layout::side,layout::side);
+#else
+    raster.blitScaled(canvas,outputX,layout::top,layout::side,layout::side);
+#endif
     const auto blitUs=micros();
     _stats.vertices=projection.count;
     if(_optimizations)_stats.transformed=projection.transformed;

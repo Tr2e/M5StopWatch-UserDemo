@@ -27,6 +27,21 @@ static constexpr gpio_num_t cfg_pin_cs   = GPIO_NUM_39;
 static constexpr gpio_num_t cfg_pin_te   = GPIO_NUM_38;
 static constexpr gpio_num_t cfg_pin_rst  = GPIO_NUM_NC;
 
+class StopWatchFrameBuffer : public lgfx::Panel_AMOLED_Framebuffer {
+public:
+    explicit StopWatchFrameBuffer(lgfx::Panel_AMOLED* panel):Panel_AMOLED_Framebuffer(panel) {}
+    uint8_t* line(uint_fast16_t y) {
+        return _lines_buffer && y<_cfg.panel_height ? _lines_buffer[y] : nullptr;
+    }
+    void mark(uint_fast16_t x,uint_fast16_t y,uint_fast16_t w,uint_fast16_t h) {
+        if(!w || !h)return;
+        if(x<_range_mod.left)_range_mod.left=x;
+        if(x+w-1>_range_mod.right)_range_mod.right=x+w-1;
+        if(y<_range_mod.top)_range_mod.top=y;
+        if(y+h-1>_range_mod.bottom)_range_mod.bottom=y+h-1;
+    }
+};
+
 class Panel_CO5300 : public lgfx::Panel_AMOLED {
 public:
     Panel_CO5300(void)
@@ -35,6 +50,21 @@ public:
         _cfg.memory_height = _cfg.panel_height = 480;
         _write_depth                           = lgfx::color_depth_t::rgb565_2Byte;
         _read_depth                            = lgfx::color_depth_t::rgb565_2Byte;
+    }
+
+    bool initPanelFb() {
+        if(_panel_fb)return true;
+        _panel_fb=new StopWatchFrameBuffer(this);
+        _panel_fb->config(_cfg);
+        _panel_fb->setColorDepth(_write_depth);
+        _panel_fb->setRotation(getRotation());
+        return _panel_fb->init(false);
+    }
+    uint8_t* frameBufferLine(uint_fast16_t y) {
+        return _panel_fb ? static_cast<StopWatchFrameBuffer*>(_panel_fb)->line(y) : nullptr;
+    }
+    void markFrameBuffer(uint_fast16_t x,uint_fast16_t y,uint_fast16_t w,uint_fast16_t h) {
+        if(_panel_fb)static_cast<StopWatchFrameBuffer*>(_panel_fb)->mark(x,y,w,h);
     }
 
     const uint8_t *getInitCommands(uint8_t listno) const override
@@ -78,6 +108,11 @@ public:
     bool hasFrameBuffer() const
     {
         return _frame_buffer_available;
+    }
+
+    uint8_t* frameBufferLine(uint_fast16_t y) {return _panel_instance.frameBufferLine(y);}
+    void markFrameBuffer(uint_fast16_t x,uint_fast16_t y,uint_fast16_t w,uint_fast16_t h) {
+        _panel_instance.markFrameBuffer(x,y,w,h);
     }
 
     // static constexpr int in_i2c_port                   = 0;  // I2C_NUM_0
@@ -207,6 +242,17 @@ LGFX_Sprite &Hal::getCanvas()
 bool Hal::hasDisplayFrameBuffer() const
 {
     return _display_frame_buffer_available;
+}
+
+uint8_t* Hal::getDisplayFrameBufferLine(int y)
+{
+    return _display && y>=0 ? _display->frameBufferLine(uint_fast16_t(y)) : nullptr;
+}
+
+void Hal::markDisplayFrameBufferModified(int x,int y,int width,int height)
+{
+    if(_display && x>=0 && y>=0 && width>0 && height>0)
+        _display->markFrameBuffer(uint_fast16_t(x),uint_fast16_t(y),uint_fast16_t(width),uint_fast16_t(height));
 }
 
 void Hal::updateCanvas()

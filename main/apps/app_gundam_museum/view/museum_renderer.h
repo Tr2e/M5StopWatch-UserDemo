@@ -28,6 +28,10 @@ public:
     static std::size_t workingBytes();
     // Diagnostic A/B switch; production always uses the optimized path.
     void setOptimizations(bool enabled){_optimizations=enabled;}
+    void setSolidSpanFastPath(bool enabled){_solidSpanFastPath=enabled;}
+    void setTrustedSolidDepthFastPath(bool enabled){_trustedSolidDepthFastPath=enabled;}
+    void setDirectSpanFastPath(bool enabled){_directSpanFastPath=enabled;}
+    void setNativeFrameBufferFastPath(bool enabled){_nativeFrameBufferFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
     // Diagnostic coverage of the last render, in active raster coordinates.
@@ -48,6 +52,10 @@ private:
     Pose _pose=Pose::Display;
     ModelId _model=ModelId::Rx78;
     bool _optimizations=true;
+    bool _solidSpanFastPath=true;
+    bool _trustedSolidDepthFastPath=true;
+    bool _directSpanFastPath=true;
+    bool _nativeFrameBufferFastPath=true;
     bool _spaceEnabled=true;
 };
 } // namespace gundam_museum

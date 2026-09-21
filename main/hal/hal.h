@@ -168,6 +168,8 @@ public:
     LGFX_Device& getDisplay();
     LGFX_Sprite& getCanvas();
     bool hasDisplayFrameBuffer() const;
+    uint8_t* getDisplayFrameBufferLine(int y);
+    void markDisplayFrameBufferModified(int x,int y,int width,int height);
     void updateCanvas();
     void updateCanvasRegion(int x,int y,int width,int height);
 
