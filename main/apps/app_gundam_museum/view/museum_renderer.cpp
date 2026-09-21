@@ -113,11 +113,10 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     }
     if(hiddenLine && drag){
         raster.upsampleNearestToFull();
-        const float sx=float(raster.width())/float(w),sy=float(raster.height())/float(h);
-        for(std::size_t i=0;i<projection.count;++i){
-            if(!projection.ready[i])continue;
-            projection.projected[i].x*=sx;projection.projected[i].y*=sy;
-        }
+        // Reproject strokes at native resolution. Scaling cached low-resolution
+        // coordinates changes floating-point rounding at depth-test boundaries
+        // and can erase isolated ink pixels on grazing Nu edges.
+        std::fill_n(projection.ready.begin(),projection.count,false);
         camera.principalX=raster.width()*.5f;camera.principalY=raster.height()*.5f;
         camera.focalLength=scale*7.f;
     }

@@ -5,16 +5,26 @@
 #include <hal/hal.h>
 #include <mooncake_log.h>
 #include <esp_timer.h>
+#include <esp_heap_caps.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+namespace {
+constexpr uint32_t kPerformanceWindowMs=2000;
+}
 
 AppGundamMuseum::AppGundamMuseum(){setAppInfo().name="Gundam Museum";setAppInfo().icon=(void*)&icon_gundam_museum;}
 void AppGundamMuseum::onOpen(){
     GetHAL().stopLvglUpdate();GetHAL().lvglLock();GetHAL().lvglUnlock();
-    _controller.reset();_lastLog=0;_presented=false;
+    _controller.reset();_presented=false;
     _direct=GetHAL().hasDisplayFrameBuffer();
     const bool ready=_renderer.open();
     mclog::tagInfo("Museum","open ready={} working_bytes={}",ready,_renderer.workingBytes());
     _input.open();_input.setScreen(lets_and_go::GameScreen::MuseumInspect);
     draw(GetHAL().millis());_input.presentScreen(lets_and_go::GameScreen::MuseumInspect);
+    // Exclude model/index construction and the first complete framebuffer
+    // from the steady-state interaction window.
+    resetPerformanceWindow(GetHAL().millis());
 }
 void AppGundamMuseum::onRunning(){
     auto input=_input.sample(GetHAL().millis());
@@ -42,14 +52,43 @@ void AppGundamMuseum::draw(uint32_t now){
         GetHAL().updateCanvas();
     }
     _presented=true;
-    if(now-_lastLog>=2000){
-        _lastLog=now;const auto stats=_renderer.stats();
-        mclog::tagInfo("Museum","panels={} culled={} submitted={} scale={} draw_us={} present_us={}",
-            stats.total,stats.culled,stats.submitted,_controller.percent(now),
-            uint32_t(rendered-start),uint32_t(esp_timer_get_time()-rendered));
-        mclog::tagInfo("MuseumStage","vertices={} transformed={} clear_us={} cull_us={} project_raster_us={} blit_us={}",
-            stats.vertices,stats.transformed,stats.clearUs,stats.prepareUs,stats.rasterUs,stats.blitUs);
+    const uint64_t finished=esp_timer_get_time();
+    const uint32_t drawUs=uint32_t(rendered-start),presentUs=uint32_t(finished-rendered);
+    const uint32_t frameUs=uint32_t(finished-start);
+    const int percent=_controller.percent(now);
+    const auto stats=_renderer.stats();
+    ++_perfFrames;
+    if(percent==65)++_perfFrames65;
+    if(percent==100)++_perfFrames100;
+    _perfDrawUs+=drawUs;_perfPresentUs+=presentUs;
+    _perfClearUs+=stats.clearUs;_perfCullUs+=stats.prepareUs;
+    _perfRasterUs+=stats.rasterUs;_perfBlitUs+=stats.blitUs;
+    _perfPeakUs=std::max(_perfPeakUs,frameUs);
+    const uint32_t finishedMs=GetHAL().millis();
+    if(finishedMs-_perfStarted>=kPerformanceWindowMs){
+        const uint32_t elapsed=finishedMs-_perfStarted;
+        const uint32_t frames=std::max<uint32_t>(1,_perfFrames);
+        mclog::tagInfo("MuseumPerf","model={} frames={} fps_x10={} scale65={} scale100={} draw_us={} present_us={} peak_us={}",
+            int(_controller.view().model),_perfFrames,_perfFrames*10000u/elapsed,
+            _perfFrames65,_perfFrames100,uint32_t(_perfDrawUs/frames),
+            uint32_t(_perfPresentUs/frames),_perfPeakUs);
+        mclog::tagInfo("MuseumStageAvg","clear_us={} cull_us={} project_raster_us={} blit_us={} stack={}",
+            uint32_t(_perfClearUs/frames),uint32_t(_perfCullUs/frames),
+            uint32_t(_perfRasterUs/frames),uint32_t(_perfBlitUs/frames),
+            uint32_t(uxTaskGetStackHighWaterMark(nullptr)));
+        mclog::tagInfo("MuseumMemory","internal_free={} internal_min={} internal_largest={} psram_free={} psram_min={} psram_largest={}",
+            heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+            heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+            heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+            heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM),
+            heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+        resetPerformanceWindow(finishedMs);
     }
+}
+void AppGundamMuseum::resetPerformanceWindow(uint32_t now){
+    _perfStarted=now;_perfFrames=0;_perfFrames65=0;_perfFrames100=0;_perfPeakUs=0;
+    _perfDrawUs=0;_perfPresentUs=0;_perfClearUs=0;_perfCullUs=0;_perfRasterUs=0;_perfBlitUs=0;
 }
 void AppGundamMuseum::onClose(){
     _input.close();_renderer.close();_controller.reset();_direct=false;_presented=false;

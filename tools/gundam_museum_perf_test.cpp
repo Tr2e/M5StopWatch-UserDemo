@@ -2,6 +2,7 @@
 #include <cassert>
 #include <chrono>
 #include <iostream>
+#include <numeric>
 #include <vector>
 #include <random>
 using namespace gundam_museum;
@@ -74,6 +75,19 @@ int main(){
                     frames[mode]=canvas.frame();
                     if(mode)newCount+=renderer.stats().transformed;
                     else oldCount+=renderer.stats().transformed;
+                }
+                if(frames[0]!=frames[1]) {
+                    const auto different=std::mismatch(frames[0].begin(),frames[0].end(),frames[1].begin());
+                    const auto first=std::distance(frames[0].begin(),different.first);
+                    const auto pixels=std::inner_product(frames[0].begin(),frames[0].end(),frames[1].begin(),
+                        std::size_t{},std::plus<>(),std::not_equal_to<>());
+                    std::cerr<<"grid mismatch model="<<int(model)<<" percent="<<percent
+                             <<" equipment="<<equipment<<" detail="<<detail
+                             <<" pitch="<<pitch<<" yaw_index="<<yaw
+                             <<" first_pixel="<<first<<" differing_pixels="<<pixels<<'\n';
+                    for(std::size_t pixel=0;pixel<frames[0].size();++pixel)if(frames[0][pixel]!=frames[1][pixel])
+                        std::cerr<<"  pixel x="<<(pixel%canvas.width())<<" y="<<(pixel/canvas.width())
+                                 <<" reference="<<frames[0][pixel]<<" optimized="<<frames[1][pixel]<<'\n';
                 }
                 assert(frames[0]==frames[1]);++cases;
             }

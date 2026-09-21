@@ -32,14 +32,16 @@
 
 ## 3. P0：先建立真机基线
 
-- [ ] 记录硬件、分支、commit、固件 SHA-256 和构建配置。
-- [ ] 确认真机运行的固件与本基线一致，排除旧固件数据。
+2026-09-21 进度：已用临时自动设备基准完成 RX-78/Nu、65%/100%、每档 24 帧的固定角度采集。结果见 [`assets/gundam-museum-p0-20260921/README.md`](assets/gundam-museum-p0-20260921/README.md)。数据确认显示提交约 11.6 ms，RX-78 主要受光栅阶段限制；Nu 的原生隐藏线路径是更严重的独立瓶颈。产品触摸轨迹手感样本仍保留为后续验收项。
+
+- [x] 记录硬件、分支、commit、固件 SHA-256 和构建配置。
+- [x] 确认真机运行的固件与本基线一致，排除旧固件数据。
 - [ ] 分别采集 RX-78 和 Nu Gundam 的持续水平拖动、水平+俯仰混合拖动、松手恢复高清三种场景。
 - [ ] 每种场景丢弃冷启动和首次建模帧，保留至少 10 s 稳态数据。
-- [ ] 分别记录 65% 和 100% 采样阶段。
-- [ ] 保留 `Museum` 日志中的 `draw_us` 和 `present_us`。
-- [ ] 保留 `MuseumStage` 日志中的 `clear_us`/`cull_us`/`project_raster_us`/`blit_us`。
-- [ ] 补充实际呈现帧数和时间窗口，计算真实 FPS，不用 `1000 / 平均 draw_ms` 代替。
+- [x] 分别记录 65% 和 100% 采样阶段。
+- [x] 保留 `Museum` 日志中的 `draw_us` 和 `present_us`。
+- [x] 保留 `MuseumStage` 日志中的 `clear_us`/`cull_us`/`project_raster_us`/`blit_us`。
+- [x] 补充实际呈现帧数和时间窗口，计算真实 FPS，不用 `1000 / 平均 draw_ms` 代替。
 - [ ] 记录 PSRAM 和 internal RAM 的打开前、打开后、运行中最低值、退出后回收值。
 - [ ] 记录主任务和输入任务的最低栈余量。
 
@@ -132,9 +134,9 @@
 
 ### 8.1 主机正确性
 
-- [ ] 运行 `tools/test_gundam_museum.sh`。
-- [ ] 运行 `tools/test_gundam_museum_perf.sh`。
-- [ ] 使用 `SANITIZE=1` 重跑涉及新缓冲、bin 和条带边界的测试。
+- [x] 运行 `tools/test_gundam_museum.sh`。
+- [x] 运行 `tools/test_gundam_museum_perf.sh`。
+- [x] 使用 `SANITIZE=1` 重跑当前几何与性能基线；待 strip 缓冲/bin 落地后还需再跑其边界用例。
 - [ ] 覆盖 RX-78/Nu、65%/100%、完整装备、正斜侧后、俯仰上下限。
 - [ ] 覆盖近裁剪压力、极薄面、屏外包围盒和条带边界。
 - [ ] 使用固定种子的连续随机 yaw/pitch，不只测规则角度网格。
