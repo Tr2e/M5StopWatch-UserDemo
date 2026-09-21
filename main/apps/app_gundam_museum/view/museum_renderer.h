@@ -65,6 +65,7 @@ private:
         MuseumProjectionCache projection;
         EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
+        lets_and_go::RenderScratch<std::array<uint8_t,(424*424+7)/8>> fastOccupiedDepth;
         std::array<lets_and_go::PreparedSolidPanel,Mesh::capacity> preparedPanels{};
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerColor;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerDepth;

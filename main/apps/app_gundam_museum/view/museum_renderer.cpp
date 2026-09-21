@@ -93,7 +93,6 @@ MuseumRenderer::~MuseumRenderer(){close();}
 bool MuseumRenderer::open(){
     close();_surface.reset(new(std::nothrow) Surface{});
     if(_surface){
-        _surface->raster.setSparseDepthStorage(_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
         _surface->fastLowerColor.allocate();
         // Build the default exhibit before creating the worker so the exact
         // active projected-point prefix can claim a compact internal block.
@@ -103,6 +102,10 @@ bool MuseumRenderer::open(){
         _surface->projection.preferInternalProjected();
         _surface->fastLowerDepth.allocate();
         _surface->projection.preferInternalReady();
+        _surface->fastOccupiedDepth.allocate();
+        auto* occupied=_surface->fastOccupiedDepth.get();
+        _surface->raster.setSparseDepthStorage(
+            occupied?occupied->data():_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
         _model=ModelId::Rx78;_pose=Pose::Display;_equipment=true;
         _gray=false;_buried=false;_cached=true;
     }
