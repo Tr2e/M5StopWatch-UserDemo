@@ -95,6 +95,7 @@ bool MuseumRenderer::open(){
     if(_surface){
         _surface->raster.setSparseDepthStorage(_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
         _surface->fastLowerColor.allocate();
+        _surface->projection.preferInternalReady();
     }
 #ifdef ESP_PLATFORM
     if(_surface){
@@ -205,6 +206,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const auto project=[&](Point point,uint8_t tag){auto v=transform(point,tag);v.x*=correction;return v;};
     _stats={};_stats.total=_surface->mesh.count;
     auto& projection=_surface->projection;
+    projection.setInternalReadyFastPath(_optimizations && _internalProjectionReadyFastPath && view.model==ModelId::Rx78);
     projection.begin();
     if(_optimizations)for(std::size_t i=0;i<_surface->mesh.count;++i){
         projection.passes[i]=-1;

@@ -12,7 +12,8 @@ struct MuseumProjectionCache {
     static constexpr std::size_t corners=Mesh::capacity*4;
     std::array<uint16_t,corners> indices{};
     std::array<lets_and_go::TrackCameraPoint,corners> projected{};
-    std::array<bool,corners> ready{};
+    std::array<uint8_t,corners> ready{};
+    lets_and_go::RenderScratch<std::array<uint8_t,corners>> fastReady;
     std::array<int8_t,Mesh::capacity> passes{};
     std::size_t count=0,transformed=0;
 
@@ -42,14 +43,18 @@ struct MuseumProjectionCache {
             else indices[corner]=indices[(*slots)[slot]-1];
         }
     }
-    void begin(){std::fill_n(ready.begin(),count,false);transformed=0;}
+    bool preferInternalReady(){return fastReady.allocate();}
+    void setInternalReadyFastPath(bool enabled){useFastReady=enabled && fastReady.get();}
+    uint8_t* readyData(){return useFastReady?fastReady.get()->data():ready.data();}
+    void begin(){std::fill_n(readyData(),count,uint8_t(0));transformed=0;}
 
     template<class Transform> void panel(lets_and_go::PreparedCarPanel& result,
         const lets_and_go::TrackCamera& camera,const lets_and_go::CarPanel& face,
         std::size_t index,Transform transform) {
+        auto* status=readyData();
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
-            if(!ready[key]) {
+            if(!status[key]) {
                 const auto p=transform(face.point[i],face.wheel);++transformed;
                 if(p.z<lets_and_go::kTrackNearPlane)projected[key]={0,0,0};
                 else {
@@ -57,7 +62,7 @@ struct MuseumProjectionCache {
                     projected[key]={camera.principalX+camera.focalLength*p.x*inverse,
                                    camera.principalY-camera.focalLength*p.y*inverse,inverse};
                 }
-                ready[key]=true;
+                status[key]=1;
             }
             if(projected[key].z==0) {
                 lets_and_go::prepareCarPanel(result,camera,face,transform);return;
@@ -81,9 +86,10 @@ struct MuseumProjectionCache {
     template<class Transform> void solidPanel(lets_and_go::PreparedSolidPanel& result,
         float& left,float& right,const lets_and_go::TrackCamera& camera,
         const lets_and_go::CarPanel& face,std::size_t index,Transform transform) {
+        auto* status=readyData();
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
-            if(!ready[key]) {
+            if(!status[key]) {
                 const auto p=transform(face.point[i],face.wheel);++transformed;
                 if(p.z<lets_and_go::kTrackNearPlane)projected[key]={0,0,0};
                 else {
@@ -91,7 +97,7 @@ struct MuseumProjectionCache {
                     projected[key]={camera.principalX+camera.focalLength*p.x*inverse,
                                    camera.principalY-camera.focalLength*p.y*inverse,inverse};
                 }
-                ready[key]=true;
+                status[key]=1;
             }
             if(projected[key].z==0) {
                 lets_and_go::PreparedCarPanel generic{};
@@ -109,5 +115,7 @@ struct MuseumProjectionCache {
             result.top=std::min(result.top,p.y);result.bottom=std::max(result.bottom,p.y);
         }
     }
+private:
+    bool useFastReady=false;
 };
 } // namespace gundam_museum

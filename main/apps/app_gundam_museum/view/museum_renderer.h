@@ -46,6 +46,7 @@ public:
     void setParallelRasterFastPath(bool enabled){_parallelRasterFastPath=enabled;}
     void setSplitColorFastPath(bool enabled){_splitColorFastPath=enabled;}
     void setCompactPanelPrepareFastPath(bool enabled){_compactPanelPrepareFastPath=enabled;}
+    void setInternalProjectionReadyFastPath(bool enabled){_internalProjectionReadyFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
     // Diagnostic coverage of the last render, in active raster coordinates.
@@ -83,6 +84,7 @@ private:
     bool _parallelRasterFastPath=true;
     bool _splitColorFastPath=true;
     bool _compactPanelPrepareFastPath=true;
+    bool _internalProjectionReadyFastPath=true;
     bool _spaceEnabled=true;
 };
 } // namespace gundam_museum
