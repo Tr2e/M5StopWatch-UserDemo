@@ -146,6 +146,10 @@ public:
         if(storage && bytes)std::memset(storage,0,bytes);
     }
     void setSparseDepthClearFastPath(bool enabled) {_sparseDepthClearRequested=enabled;}
+    void setSparseDepthSpanClearFastPath(bool enabled) {
+        if(enabled!=_sparseDepthSpanClearRequested)_lastSparseDepthClear=false;
+        _sparseDepthSpanClearRequested=enabled;
+    }
     void setDeferredSparseDepthRecord(bool enabled) {_deferredSparseDepthRecord=enabled;}
     unsigned preferInternalMemory() {
         return unsigned(_fastDepth.allocate())+unsigned(_fastColor.allocate());
@@ -161,13 +165,37 @@ public:
                                   _occupiedDepthBytes>=(activePixels+7)/8;
         if(_sparseDepthClearFastPath && _lastSparseDepthClear) {
             const std::size_t bytes=(_trackedDepthPixels+7)/8;
-            for(std::size_t byte=0;byte<bytes;++byte){
-                unsigned bits=_occupiedDepth[byte];
-                while(bits){
-                    const unsigned bit=unsigned(__builtin_ctz(bits));
-                    depthPixel(byte*8+bit)=0;bits&=bits-1;
+            if(_sparseDepthSpanClearRequested && _trackedDepthWidth==_width) {
+                const int rows=int(_trackedDepthPixels/std::size_t(_trackedDepthWidth));
+                for(int row=0;row<rows;++row) {
+                    const std::size_t rowStart=std::size_t(row)*_trackedDepthWidth;
+                    const std::size_t rowEnd=rowStart+_trackedDepthWidth;
+                    const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
+                    std::size_t first=rowEnd,last=rowStart;
+                    for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
+                        unsigned bits=_occupiedDepth[byte];
+                        if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
+                        if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
+                        if(bits){first=byte*8+unsigned(__builtin_ctz(bits));break;}
+                    }
+                    if(first<rowEnd)for(std::size_t byte=lastByte+1;byte-->firstByte;) {
+                        unsigned bits=_occupiedDepth[byte];
+                        if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
+                        if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
+                        if(bits){last=byte*8+unsigned(31-__builtin_clz(bits));break;}
+                    }
+                    if(first<=last)clearDepthRange(first,last-first+1);
                 }
-                _occupiedDepth[byte]=0;
+                std::memset(_occupiedDepth,0,bytes);
+            } else {
+                for(std::size_t byte=0;byte<bytes;++byte){
+                    unsigned bits=_occupiedDepth[byte];
+                    while(bits){
+                        const unsigned bit=unsigned(__builtin_ctz(bits));
+                        depthPixel(byte*8+bit)=0;bits&=bits-1;
+                    }
+                    _occupiedDepth[byte]=0;
+                }
             }
             // A smaller compact frame may leave older data in the inactive
             // tail. Clear that tail when resolution grows again.
@@ -178,6 +206,7 @@ public:
             if(_occupiedDepth && _trackedDepthPixels)std::memset(_occupiedDepth,0,(_trackedDepthPixels+7)/8);
         }
         _trackedDepthPixels=std::size_t(_width)*_height;
+        _trackedDepthWidth=_width;
         _lastSparseDepthClear=_sparseDepthClearFastPath;
     }
     // Nearest-expand the packed active tile to the full template size in
@@ -732,8 +761,10 @@ private:
     bool _nativeFrameBufferFastPath=false;
     bool _sparseCompositeFastPath=false;
     bool _sparseDepthClearRequested=false,_sparseDepthClearFastPath=false,_lastSparseDepthClear=false;
+    bool _sparseDepthSpanClearRequested=false;
     bool _deferredSparseDepthRecord=false;
     std::size_t _trackedDepthPixels=0;
+    int _trackedDepthWidth=0;
     uint8_t* _occupiedDepth=nullptr;
     uint16_t* _splitColor=nullptr;
     int _splitColorWidth=0,_splitColorRow=0;

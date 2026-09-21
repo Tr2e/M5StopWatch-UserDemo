@@ -202,6 +202,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     // Nu's drag path expands the compact depth plane in place after fill, so
     // its next clear cannot use the source-resolution occupancy map.
     raster.setSparseDepthClearFastPath(_optimizations && _sparseDepthClearFastPath && !hiddenLine);
+    raster.setSparseDepthSpanClearFastPath(_optimizations && _sparseDepthSpanClearFastPath && !hiddenLine);
     // At native size the composite already visits every visible source pixel,
     // so build next frame's occupancy map there and remove the write from the
     // raster hot loop. Scaled composite revisits source samples; recording in

@@ -50,6 +50,7 @@ public:
     void setInternalProjectionReadyFastPath(bool enabled){_internalProjectionReadyFastPath=enabled;}
     void setInternalProjectedPointFastPath(bool enabled){_internalProjectedPointFastPath=enabled;}
     void setSplitDepthFastPath(bool enabled){_splitDepthFastPath=enabled;}
+    void setSparseDepthSpanClearFastPath(bool enabled){_sparseDepthSpanClearFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
     // Diagnostic coverage of the last render, in active raster coordinates.
@@ -91,6 +92,7 @@ private:
     bool _internalProjectionReadyFastPath=true;
     bool _internalProjectedPointFastPath=true;
     bool _splitDepthFastPath=true;
+    bool _sparseDepthSpanClearFastPath=true;
     bool _spaceEnabled=true;
 };
 } // namespace gundam_museum
