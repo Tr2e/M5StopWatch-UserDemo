@@ -264,7 +264,11 @@ public:
     }
 private:
     template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false,
-             bool PreparedSolidColor=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
+             bool PreparedSolidColor=false>
+#ifdef ESP_PLATFORM
+    __attribute__((optimize("O3")))
+#endif
+    void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom,
                   uint16_t preparedSolidColor=0) {
         // A band-parallel caller may fall back to one full-frame pass (for
