@@ -21,7 +21,7 @@
 
 现有的共享顶点投影、朝向缓存、背面剔除、纯色快速路径、65%/100% 动态采样和按需刷新应保留。
 
-2026-09-21 RX-78 fast path 进度：接受 solid scanline span、trusted depth、framebuffer span transaction 和 native framebuffer composite。最后一项在整屏哈希逐字节一致的前提下，使 65% draw 从 149.37 ms 降至 124.63 ms，含 present 约 136.47 ms（约 7.33 FPS）。完整接受/否决证据见 [`assets/gundam-museum-rx78-fastpath-20260921/README.md`](assets/gundam-museum-rx78-fastpath-20260921/README.md)。距离 15 FPS 仍远，不能归因于 CPU 上限。
+2026-09-21 RX-78 fast path 进度：接受 solid scanline span、trusted depth、framebuffer span transaction、native framebuffer composite 和稀疏深度清理。最后一项在整屏哈希逐字节一致的前提下，使当前 65% draw 从 123.08 ms 降至 121.89 ms，含 present 约 133.63 ms（约 7.48 FPS）。完整接受/否决证据见 [`assets/gundam-museum-rx78-fastpath-20260921/README.md`](assets/gundam-museum-rx78-fastpath-20260921/README.md)。距离 15 FPS 仍远，不能归因于 CPU 上限。
 
 ## 2. 已知基线
 
@@ -102,12 +102,13 @@
 
 ## 5. P2：优化条带 binning 和光栅内循环
 
-2026-09-21 更新：条带路线已否决；本节后续转为全帧实体光栅内核优化。已否决 interleaved depth/color、重复行缓存、直接/保护深度平面、单独 early-Z、索引色和平凡 subpixel 面跳过。下一轮先增加只在诊断构建启用的 tested/written/occluded 像素与 overdraw 计数，再决定 front-to-back+HZB 或专用凸四边形内核，避免无数据地继续微调。
+2026-09-21 更新：条带路线已否决；本节后续转为全帧实体光栅内核优化。已完成 RX-78 工作量计数：65%/100% 每帧平均覆盖约 41,468/97,901 次，最终覆盖约 13,566/32,020 像素；26.3% 覆盖被深度拒绝，每个最终像素仍被写约 2.255 次。自由 front-to-back 排序会改变等深像素；严格排序收益不足且仍触及量化边界，均否决。4-bit 粗深度与量化保护深度平面也经真机否决。稀疏深度清理已接受。
 
 - [x] Solid scanline span 与 trusted-depth 内循环，主机逐像素一致、真机 A/B 通过。
 - [x] 原生 framebuffer 合成，65%/100% 整屏哈希一致、真机 A/B 通过。
-- [ ] 统计 triangle/span/pixel tested、depth rejected、written 和最终 covered，按姿态输出 overdraw 分布。
-- [ ] 保持原 equal-depth overwrite 语义，设计可验证的 front-to-back/HZB 原型；若排序改变共面覆盖，必须回退或增加稳定 tie 规则。
+- [x] 统计 triangle/span/pixel tested、depth rejected、written 和最终 covered，按姿态输出 overdraw 分布。
+- [x] 保持原 equal-depth overwrite 语义，验证 front-to-back 原型；自由排序首姿态即有 88 像素差异，部件级与保守区间排序仍分别有 14/4 像素差异，已回退。
+- [x] 以外置 22 KiB 占用位图实现稀疏深度清理；Nu 原地扩展路径禁用，RX-78 真机 A/B 为正。进一步按合成比例分流占用记录：缩放路径在首次深度写入时记录，1:1 路径融合进 framebuffer composite；固定姿态整屏哈希一致。
 - [ ] 评估直接处理凸四边形，减少每面两次 triangle setup 和共享对角线 overdraw。
 - [ ] 将 framebuffer 行访问整理为通用、可选、带格式/旋转/clip guard 的 3D composite 接口。
 

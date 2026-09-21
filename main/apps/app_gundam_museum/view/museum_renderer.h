@@ -32,6 +32,7 @@ public:
     void setTrustedSolidDepthFastPath(bool enabled){_trustedSolidDepthFastPath=enabled;}
     void setDirectSpanFastPath(bool enabled){_directSpanFastPath=enabled;}
     void setNativeFrameBufferFastPath(bool enabled){_nativeFrameBufferFastPath=enabled;}
+    void setSparseDepthClearFastPath(bool enabled){_sparseDepthClearFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
     // Diagnostic coverage of the last render, in active raster coordinates.
@@ -45,6 +46,7 @@ private:
         lets_and_go::CarSurfaceRaster<424,424> raster;
         MuseumProjectionCache projection;
         EdgeFilter edges;
+        std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
     };
     std::unique_ptr<Surface> _surface;
     RenderStats _stats{};
@@ -56,6 +58,7 @@ private:
     bool _trustedSolidDepthFastPath=true;
     bool _directSpanFastPath=true;
     bool _nativeFrameBufferFastPath=true;
+    bool _sparseDepthClearFastPath=true;
     bool _spaceEnabled=true;
 };
 } // namespace gundam_museum

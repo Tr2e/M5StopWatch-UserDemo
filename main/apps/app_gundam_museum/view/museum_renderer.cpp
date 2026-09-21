@@ -32,7 +32,11 @@ void label(lgfx::LGFXBase& c,const char* text,int x,int y,int size,uint16_t colo
     c.setTextDatum(textdatum_t::middle_center);c.setTextColor(color,background);c.setTextSize(size);c.drawString(text,x,y);
 }
 }
-bool MuseumRenderer::open(){close();_surface.reset(new(std::nothrow) Surface{});return bool(_surface);}
+bool MuseumRenderer::open(){
+    close();_surface.reset(new(std::nothrow) Surface{});
+    if(_surface)_surface->raster.setSparseDepthStorage(_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
+    return bool(_surface);
+}
 void MuseumRenderer::close(){_surface.reset();_cached=false;_stats={};}
 std::size_t MuseumRenderer::workingBytes(){return sizeof(Surface);}
 void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,bool cull,bool gray,bool keepBuried,bool partial){
@@ -72,6 +76,14 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     raster.setTrustedSolidDepthFastPath(_optimizations && _trustedSolidDepthFastPath);
     raster.setDirectSpanFastPath(_optimizations && _directSpanFastPath);
     raster.setNativeFrameBufferFastPath(_optimizations && _nativeFrameBufferFastPath);
+    // Nu's drag path expands the compact depth plane in place after fill, so
+    // its next clear cannot use the source-resolution occupancy map.
+    raster.setSparseDepthClearFastPath(_optimizations && _sparseDepthClearFastPath && !hiddenLine);
+    // At native size the composite already visits every visible source pixel,
+    // so build next frame's occupancy map there and remove the write from the
+    // raster hot loop. Scaled composite revisits source samples; recording in
+    // the raster remains faster for that path on ESP32-S3.
+    raster.setDeferredSparseDepthRecord(w==layout::side && h==layout::side);
     raster.begin(0,0,w,h);
     if(hiddenLine)_surface->edges.begin();
     const auto clearUs=micros();

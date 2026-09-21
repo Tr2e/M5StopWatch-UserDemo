@@ -100,6 +100,12 @@ public:
     // Native framebuffer rows avoid thousands of tiny image API calls. The
     // implementation remains guarded by layout, clip and rotation checks.
     void setNativeFrameBufferFastPath(bool enabled) { _nativeFrameBufferFastPath=enabled; }
+    void setSparseDepthStorage(uint8_t* storage,std::size_t bytes) {
+        _occupiedDepth=storage;_occupiedDepthBytes=bytes;_trackedDepthPixels=0;_lastSparseDepthClear=false;
+        if(storage && bytes)std::memset(storage,0,bytes);
+    }
+    void setSparseDepthClearFastPath(bool enabled) {_sparseDepthClearRequested=enabled;}
+    void setDeferredSparseDepthRecord(bool enabled) {_deferredSparseDepthRecord=enabled;}
     unsigned preferInternalMemory() {
         return unsigned(_fastDepth.allocate())+unsigned(_fastColor.allocate());
     }
@@ -109,7 +115,30 @@ public:
     void begin(int x,int y,int width=Width,int height=Height) {
         _x=x;_y=y;
         _width=std::clamp(width,1,Width);_height=std::clamp(height,1,Height);
-        std::memset(depthData(),0,_width*_height*sizeof(uint16_t));
+        auto* depth=depthData();
+        const std::size_t activePixels=std::size_t(_width)*_height;
+        _sparseDepthClearFastPath=_sparseDepthClearRequested && _occupiedDepth &&
+                                  _occupiedDepthBytes>=(activePixels+7)/8;
+        if(_sparseDepthClearFastPath && _lastSparseDepthClear) {
+            const std::size_t bytes=(_trackedDepthPixels+7)/8;
+            for(std::size_t byte=0;byte<bytes;++byte){
+                unsigned bits=_occupiedDepth[byte];
+                while(bits){
+                    const unsigned bit=unsigned(__builtin_ctz(bits));
+                    depth[byte*8+bit]=0;bits&=bits-1;
+                }
+                _occupiedDepth[byte]=0;
+            }
+            // A smaller compact frame may leave older data in the inactive
+            // tail. Clear that tail when resolution grows again.
+            if(activePixels>_trackedDepthPixels)
+                std::memset(depth+_trackedDepthPixels,0,(activePixels-_trackedDepthPixels)*sizeof(uint16_t));
+        } else {
+            std::memset(depth,0,std::size_t(_width)*_height*sizeof(uint16_t));
+            if(_occupiedDepth && _trackedDepthPixels)std::memset(_occupiedDepth,0,(_trackedDepthPixels+7)/8);
+        }
+        _trackedDepthPixels=std::size_t(_width)*_height;
+        _lastSparseDepthClear=_sparseDepthClearFastPath;
     }
     // Nearest-expand the packed active tile to the full template size in
     // place. Source rows are read before dest rows overwrite them.
@@ -247,7 +276,10 @@ private:
             const auto d=uint16_t(TrustedDepth ? depth*8192.f :
                                   std::clamp(depth*8192.f,1.f,65535.f));
             const auto index=std::size_t(y-_y)*_width+(x-_x);
-            if(d<depthBuffer[index])continue;
+            const auto oldDepth=depthBuffer[index];
+            if(d<oldDepth)continue;
+            if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
+                _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
             if constexpr(Solid) {
                 // Identical barycentric/depth operations; compile out texture
                 // sampling and per-pixel material branches for solid exhibits.
@@ -434,20 +466,32 @@ public:
     // Expand only the car coverage, leaving the native UI/background intact.
     // Reuse the existing compact active planes; no second sprite is allocated.
     void blitScaled(lgfx::LGFXBase& canvas,int x,int y,int width,int height,
-                    uint8_t* nativeFrameBuffer=nullptr,std::size_t nativeStride=0) const {
+                    uint8_t* nativeFrameBuffer=nullptr,std::size_t nativeStride=0) {
         if(width<=0 || width>Width || height<=0 || height>Height)return;
         if(width==_width && height==_height)blitScaledImpl<false>(canvas,x,y,width,height,nativeFrameBuffer,nativeStride);
         else blitScaledImpl<true>(canvas,x,y,width,height,nativeFrameBuffer,nativeStride);
     }
 private:
     template<bool Scale> void blitScaledImpl(lgfx::LGFXBase& canvas,int x,int y,int width,int height,
-                                             uint8_t* nativeFrameBuffer,std::size_t nativeStride) const {
+                                             uint8_t* nativeFrameBuffer,std::size_t nativeStride) {
 #ifndef ESP_PLATFORM
         (void)nativeFrameBuffer;(void)nativeStride;
 #endif
         std::array<uint16_t,Width> row{},sourceX{};
         if constexpr(Scale)for(int px=0;px<width;++px)sourceX[px]=uint16_t((2*px+1)*_width/(2*width));
         const auto* depth=depthData();const auto* color=colorData();
+        const bool deferredOccupancy=_sparseDepthClearFastPath && _deferredSparseDepthRecord;
+        const bool fusedOccupancy=deferredOccupancy && width>=_width && height>=_height;
+        std::size_t occupancyByte=std::size_t(-1);uint8_t occupancyBits=0;
+        const auto recordOccupied=[&](std::size_t index) {
+            const auto byte=index>>3;
+            if(byte!=occupancyByte) {
+                if(occupancyByte!=std::size_t(-1) && occupancyBits)_occupiedDepth[occupancyByte]=occupancyBits;
+                occupancyByte=byte;occupancyBits=0;
+            }
+            occupancyBits|=uint8_t(1u<<(index&7));
+        };
+        int previousSourceY=-1;
 #ifdef ESP_PLATFORM
         int32_t clipX=0,clipY=0,clipW=0,clipH=0;
         canvas.getClipRect(&clipX,&clipY,&clipW,&clipH);
@@ -462,6 +506,8 @@ private:
         for(int py=0;py<height;++py) {
             const int sourceY=Scale?(2*py+1)*_height/(2*height):py;
             const auto offset=std::size_t(sourceY)*_width;
+            const bool recordRow=fusedOccupancy && sourceY!=previousSourceY;
+            int previousSourceX=-1;
 #ifdef ESP_PLATFORM
             if(native) {
                 auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
@@ -471,12 +517,20 @@ private:
                 if constexpr(Scale) {
                     for(int px=0;px<width;++px) {
                         const auto sx=sourceX[px];
-                        if(depth[offset+sx])store(px,color[offset+sx]);
+                        const bool visible=depth[offset+sx]!=0;
+                        if(visible) {
+                            store(px,color[offset+sx]);
+                            if(recordRow && sx!=previousSourceX)recordOccupied(offset+sx);
+                        }
+                        previousSourceX=sx;
                     }
                 } else {
-                    for(int px=0;px<width;++px)
-                        if(depth[offset+px])store(px,color[offset+px]);
+                    for(int px=0;px<width;++px)if(depth[offset+px]) {
+                        store(px,color[offset+px]);
+                        if(recordRow)recordOccupied(offset+px);
+                    }
                 }
+                previousSourceY=sourceY;
                 continue;
             }
 #endif
@@ -486,6 +540,7 @@ private:
                 const bool visible=px<width && depth[offset+sx]!=0;
                 if(visible) {
                     row[px]=color[offset+sx];
+                    if(recordRow && sx!=previousSourceX)recordOccupied(offset+sx);
                     if(start<0)start=px;
                 } else if(start>=0) {
 #ifdef ESP_PLATFORM
@@ -497,8 +552,14 @@ private:
                     drawColorSpan(canvas,x+start,y+py,px-start,row.data()+start);
                     start=-1;
                 }
+                previousSourceX=sx;
             }
+            previousSourceY=sourceY;
         }
+        if(deferredOccupancy && !fusedOccupancy)
+            for(std::size_t index=0;index<std::size_t(_width)*_height;++index)
+                if(depth[index])recordOccupied(index);
+        if(occupancyByte!=std::size_t(-1) && occupancyBits)_occupiedDepth[occupancyByte]=occupancyBits;
 #ifdef ESP_PLATFORM
         if(direct)canvas.endWrite();
 #endif
@@ -515,6 +576,11 @@ private:
     bool _trustedSolidDepthFastPath=false;
     bool _directSpanFastPath=false;
     bool _nativeFrameBufferFastPath=false;
+    bool _sparseDepthClearRequested=false,_sparseDepthClearFastPath=false,_lastSparseDepthClear=false;
+    bool _deferredSparseDepthRecord=false;
+    std::size_t _trackedDepthPixels=0;
+    uint8_t* _occupiedDepth=nullptr;
+    std::size_t _occupiedDepthBytes=0;
     using Pixels=std::array<uint16_t,Width*Height>;
     RenderScratch<Pixels> _fastDepth,_fastColor;
     mutable std::array<uint16_t,PencilOcclusion::kCapacity> _occlusionCandidates{};
