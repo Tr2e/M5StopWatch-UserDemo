@@ -30,6 +30,30 @@ struct PreparedCarPanel {
     uint8_t visibility=0; // 0: behind near plane, 1: projected, 2: clipped.
 };
 
+// Band-parallel solid rendering does not need perspective UVs or horizontal
+// bounds after the panel has passed the frame-level reject. Keeping only xyz
+// (screen depth when projected, camera z when clipped) reduces shared-memory
+// traffic when multiple cores replay the same ordered panel list.
+struct PreparedSolidPanel {
+    struct Vertex {float x=0,y=0,z=0;};
+    std::array<Vertex,4> vertex{};
+    float top=0,bottom=0;
+    uint16_t color=0;
+    uint8_t light=255;
+    uint8_t visibility=0;
+};
+
+inline PreparedSolidPanel compactSolidPanel(const PreparedCarPanel& source) {
+    PreparedSolidPanel result{};
+    result.top=source.top;result.bottom=source.bottom;
+    result.color=source.color;result.light=source.light;result.visibility=source.visibility;
+    if(source.visibility==1)for(std::size_t i=0;i<4;++i)
+        result.vertex[i]={source.screen[i].x,source.screen[i].y,source.screen[i].depth};
+    else for(std::size_t i=0;i<4;++i)
+        result.vertex[i]={source.camera[i].x,source.camera[i].y,source.camera[i].z};
+    return result;
+}
+
 inline CarScreenVertex projectCarSurface(const TrackCamera& camera,CarSurfaceVertex p) {
     const float inverse=1/p.z;
     return {camera.principalX+camera.focalLength*p.x*inverse,
@@ -365,6 +389,22 @@ public:
         } else {
             cameraTriangleRows(camera,face.camera[0],face.camera[1],face.camera[2],face.color,face.paint,face.light,clipTop,clipBottom);
             cameraTriangleRows(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light,clipTop,clipBottom);
+        }
+    }
+    void preparedSolidPanelRows(const TrackCamera& camera,const PreparedSolidPanel& face,
+                                int clipTop,int clipBottom) {
+        if(!face.visibility || face.bottom<std::max(_y,clipTop)-1 ||
+           face.top>std::min(_y+_height-1,clipBottom)+1)return;
+        if(face.visibility==1) {
+            const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
+            const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
+            triangleRows(a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+            triangleRows(a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+        } else {
+            const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarSurfaceVertex{p.x,p.y,p.z,0,0};};
+            const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
+            cameraTriangleRows(camera,a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+            cameraTriangleRows(camera,a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
         }
     }
     // Hidden-line stroke: keep a surface only when its depth matches the filled

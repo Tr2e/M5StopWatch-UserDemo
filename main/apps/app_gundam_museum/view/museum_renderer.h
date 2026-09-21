@@ -53,7 +53,7 @@ private:
         MuseumProjectionCache projection;
         EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
-        std::array<lets_and_go::PreparedCarPanel,Mesh::capacity> preparedPanels{};
+        std::array<lets_and_go::PreparedSolidPanel,Mesh::capacity> preparedPanels{};
     };
     std::unique_ptr<Surface> _surface;
 #ifdef ESP_PLATFORM

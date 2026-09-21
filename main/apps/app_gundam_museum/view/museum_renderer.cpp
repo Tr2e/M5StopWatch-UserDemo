@@ -24,7 +24,7 @@ namespace gundam_museum {
 struct MuseumParallelWorker {
     lets_and_go::CarSurfaceRaster<424,424>* raster=nullptr;
     const lets_and_go::TrackCamera* camera=nullptr;
-    const lets_and_go::PreparedCarPanel* panels=nullptr;
+    const lets_and_go::PreparedSolidPanel* panels=nullptr;
     std::size_t count=0;
     int top=0,bottom=-1;
     SemaphoreHandle_t start=nullptr,done=nullptr;
@@ -37,7 +37,7 @@ struct MuseumParallelWorker {
             xSemaphoreTake(worker.start,portMAX_DELAY);
             if(worker.stopping)break;
             for(std::size_t i=0;i<worker.count;++i)
-                worker.raster->preparedPanelRows(*worker.camera,worker.panels[i],worker.top,worker.bottom);
+                worker.raster->preparedSolidPanelRows(*worker.camera,worker.panels[i],worker.top,worker.bottom);
             xSemaphoreGive(worker.done);
         }
         xSemaphoreGive(worker.done);
@@ -49,7 +49,7 @@ struct MuseumParallelWorker {
         return xTaskCreatePinnedToCore(taskMain,"rx_raster",6144,this,tskIDLE_PRIORITY+2,&task,1)==pdPASS;
     }
     void dispatch(lets_and_go::CarSurfaceRaster<424,424>& target,const lets_and_go::TrackCamera& view,
-                  const lets_and_go::PreparedCarPanel* input,std::size_t size,int first,int last) {
+                  const lets_and_go::PreparedSolidPanel* input,std::size_t size,int first,int last) {
         raster=&target;camera=&view;panels=input;count=size;top=first;bottom=last;
         xSemaphoreGive(start);
     }
@@ -166,6 +166,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     }
     const auto prepareUs=micros();
     const bool splitRaster=_optimizations && _parallelRasterFastPath && !hiddenLine && view.model==ModelId::Rx78;
+    bool splitCompatible=splitRaster;
     std::size_t preparedCount=0;
     // The diagnostic path draws backfaces first. Quantized equal depth must
     // not let an invisible reverse face overwrite a visible front face.
@@ -185,11 +186,21 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         else {lets_and_go::prepareCarPanel(prepared,camera,face,project);_stats.transformed+=4;}
         if(!prepared.visibility || prepared.right<0 || prepared.left>=w || prepared.bottom<0 || prepared.top>=h){++_stats.offscreen;continue;}
         if(hiddenLine)prepareHiddenLineFill(prepared);
-        if(splitRaster)_surface->preparedPanels[preparedCount++]=prepared;
-        else raster.preparedPanel(camera,prepared);
+        if(splitCompatible && prepared.paint==lets_and_go::CarPaint::Solid)
+            _surface->preparedPanels[preparedCount++]=lets_and_go::compactSolidPanel(prepared);
+        else {
+            // Preserve the generic material path if a future RX mesh gains a
+            // textured panel; flush earlier solids in their original order.
+            if(splitCompatible) {
+                for(std::size_t j=0;j<preparedCount;++j)
+                    raster.preparedSolidPanelRows(camera,_surface->preparedPanels[j],0,h-1);
+                preparedCount=0;splitCompatible=false;
+            }
+            raster.preparedPanel(camera,prepared);
+        }
         ++_stats.submitted;
     }
-    if(splitRaster) {
+    if(splitCompatible) {
         // Keep the split on an occupancy-byte boundary so the two cores never
         // update the same sparse-clear byte. Pixel/depth rows are disjoint.
         int split=h/2;
@@ -198,18 +209,19 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         if(_parallelWorker) {
             _parallelWorker->dispatch(raster,camera,_surface->preparedPanels.data(),preparedCount,split,h-1);
             for(std::size_t i=0;i<preparedCount;++i)
-                raster.preparedPanelRows(camera,_surface->preparedPanels[i],0,split-1);
+                raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,split-1);
             _parallelWorker->wait();
         } else {
-            for(std::size_t i=0;i<preparedCount;++i)raster.preparedPanel(camera,_surface->preparedPanels[i]);
+            for(std::size_t i=0;i<preparedCount;++i)
+                raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,h-1);
         }
 #else
         // Host regressions execute both partitions serially and compare the
         // resulting framebuffer to the original unsplit implementation.
         for(std::size_t i=0;i<preparedCount;++i)
-            raster.preparedPanelRows(camera,_surface->preparedPanels[i],0,split-1);
+            raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,split-1);
         for(std::size_t i=0;i<preparedCount;++i)
-            raster.preparedPanelRows(camera,_surface->preparedPanels[i],split,h-1);
+            raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],split,h-1);
 #endif
     }
     if(hiddenLine && drag){
