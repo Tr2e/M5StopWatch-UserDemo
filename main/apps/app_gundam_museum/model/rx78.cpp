@@ -98,13 +98,28 @@ public:
         auto axis=subtract(b,a);const float len=std::sqrt(dot(axis,axis));axis={axis.x/len,axis.y/len,axis.z/len};
         auto u=cross(axis,std::abs(axis.y)<.9f?Point{0,1,0}:Point{1,0,0});const float ul=std::sqrt(dot(u,u));u={u.x/ul,u.y/ul,u.z/ul};const auto v=cross(axis,u);
         const auto p=[&](Point c,float r,int i){const float co=std::cos(2*pi*i/count),si=std::sin(2*pi*i/count);return Point{c.x+r*(u.x*co+v.x*si),c.y+r*(u.y*co+v.y*si),c.z+r*(u.z*co+v.z*si)};};
-        for(int i=0;i<count;++i){auto x=p(a,r0,i),y=p(a,r0,i+1);face(x,y,p(b,r1,i+1),p(b,r1,i),color,subtract(x,a));
-            if(!buriedStart||options.keepBuriedFaces)face(a,y,x,x,color,{-axis.x,-axis.y,-axis.z});else ++m.buriedOmitted;
-            if(!hollow){face(b,p(b,r1,i),p(b,r1,i+1),p(b,r1,i+1),color,axis);continue;}
-            const float recess=std::min(.08f,len*.65f);auto inner=Point{b.x-axis.x*recess,b.y-axis.y*recess,b.z-axis.z*recess};
-            face(p(b,r1,i),p(b,r1,i+1),p(b,r1*.72f,i+1),p(b,r1*.72f,i),color,axis,true);
-            face(p(b,r1*.72f,i),p(b,r1*.72f,i+1),p(inner,r1*.66f,i+1),p(inner,r1*.66f,i),frame,subtract(b,p(b,r1,i)),true);
-            face(inner,p(inner,r1*.66f,i),p(inner,r1*.66f,i+1),p(inner,r1*.66f,i+1),black,axis,true);}
+        const float recess=std::min(.08f,len*.65f);const auto inner=Point{b.x-axis.x*recess,b.y-axis.y*recess,b.z-axis.z*recess};
+        for(int i=0;i<count;i+=2){
+            const int last=std::min(i+2,count);
+            for(int side=i;side<last;++side){auto x=p(a,r0,side),y=p(a,r0,side+1);
+                face(x,y,p(b,r1,side+1),p(b,r1,side),color,subtract(x,a));
+                if(hollow){
+                    face(p(b,r1,side),p(b,r1,side+1),p(b,r1*.72f,side+1),p(b,r1*.72f,side),color,axis,true);
+                    face(p(b,r1*.72f,side),p(b,r1*.72f,side+1),p(inner,r1*.66f,side+1),p(inner,r1*.66f,side),frame,subtract(b,p(b,r1,side)),true);
+                }
+            }
+            if(!buriedStart){
+                if(last==i+2)face(a,p(a,r0,i+2),p(a,r0,i+1),p(a,r0,i),color,{-axis.x,-axis.y,-axis.z});
+                else face(a,p(a,r0,i+1),p(a,r0,i),p(a,r0,i),color,{-axis.x,-axis.y,-axis.z});
+            }else if(options.keepBuriedFaces)for(int cap=i;cap<last;++cap)
+                face(a,p(a,r0,cap+1),p(a,r0,cap),p(a,r0,cap),color,{-axis.x,-axis.y,-axis.z});
+            else m.buriedOmitted+=std::size_t(last-i);
+            if(!hollow){
+                if(last==i+2)face(b,p(b,r1,i),p(b,r1,i+1),p(b,r1,i+2),color,axis);
+                else face(b,p(b,r1,i),p(b,r1,i+1),p(b,r1,i+1),color,axis);
+            }else if(last==i+2)face(inner,p(inner,r1*.66f,i),p(inner,r1*.66f,i+1),p(inner,r1*.66f,i+2),black,axis,true);
+            else face(inner,p(inner,r1*.66f,i),p(inner,r1*.66f,i+1),p(inner,r1*.66f,i+1),black,axis,true);
+        }
     }
 };
 
