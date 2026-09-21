@@ -363,5 +363,6 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             canvas.drawLine(x+sign*4+d,y,x-sign*4+d,y+9,white);
         }
     }
+    _stats.overlayUs=uint32_t(micros()-blitUs);
 }
 } // namespace gundam_museum

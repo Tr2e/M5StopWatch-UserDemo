@@ -62,7 +62,7 @@ void AppGundamMuseum::draw(uint32_t now){
     if(percent==100)++_perfFrames100;
     _perfDrawUs+=drawUs;_perfPresentUs+=presentUs;
     _perfClearUs+=stats.clearUs;_perfCullUs+=stats.prepareUs;
-    _perfRasterUs+=stats.rasterUs;_perfBlitUs+=stats.blitUs;
+    _perfRasterUs+=stats.rasterUs;_perfBlitUs+=stats.blitUs;_perfOverlayUs+=stats.overlayUs;
     _perfBackgroundUs+=stats.backgroundUs;_perfSpaceUs+=stats.spaceUs;
     _perfDepthClearUs+=stats.depthClearUs;
     _perfPanelPrepareUs+=stats.panelPrepareUs;_perfSpaceWaitUs+=stats.spaceWaitUs;
@@ -76,9 +76,10 @@ void AppGundamMuseum::draw(uint32_t now){
             int(_controller.view().model),_perfFrames,_perfFrames*10000u/elapsed,
             _perfFrames65,_perfFrames100,uint32_t(_perfDrawUs/frames),
             uint32_t(_perfPresentUs/frames),_perfPeakUs);
-        mclog::tagInfo("MuseumStageAvg","clear_us={} cull_us={} project_raster_us={} blit_us={} stack={}",
+        mclog::tagInfo("MuseumStageAvg","clear_us={} cull_us={} project_raster_us={} blit_us={} overlay_us={} stack={}",
             uint32_t(_perfClearUs/frames),uint32_t(_perfCullUs/frames),
             uint32_t(_perfRasterUs/frames),uint32_t(_perfBlitUs/frames),
+            uint32_t(_perfOverlayUs/frames),
             uint32_t(uxTaskGetStackHighWaterMark(nullptr)));
         mclog::tagInfo("MuseumStageDetail","background_us={} space_work_us={} depth_clear_us={}",
             uint32_t(_perfBackgroundUs/frames),uint32_t(_perfSpaceUs/frames),
@@ -98,7 +99,7 @@ void AppGundamMuseum::draw(uint32_t now){
 }
 void AppGundamMuseum::resetPerformanceWindow(uint32_t now){
     _perfStarted=now;_perfFrames=0;_perfFrames65=0;_perfFrames100=0;_perfPeakUs=0;
-    _perfDrawUs=0;_perfPresentUs=0;_perfClearUs=0;_perfCullUs=0;_perfRasterUs=0;_perfBlitUs=0;
+    _perfDrawUs=0;_perfPresentUs=0;_perfClearUs=0;_perfCullUs=0;_perfRasterUs=0;_perfBlitUs=0;_perfOverlayUs=0;
     _perfBackgroundUs=0;_perfSpaceUs=0;_perfDepthClearUs=0;
     _perfPanelPrepareUs=0;_perfSpaceWaitUs=0;_perfMainRasterUs=0;_perfWorkerRasterUs=0;
 }
