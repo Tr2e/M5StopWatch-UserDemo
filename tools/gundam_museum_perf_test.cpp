@@ -143,6 +143,27 @@ int main(){
     }
     std::cout<<'\n';
     renderer.setSolidQuadFastPath(true);
+    std::vector<double> compactPrepareTimes[2];
+    for(int sample=0;sample<288;++sample) {
+        quadView.yaw=-3.141593f+6.2831853f*sample/288.f;
+        std::vector<uint16_t> frames[2];
+        for(int order=0;order<2;++order) {
+            const int mode=order^(sample&1);
+            renderer.setCompactPanelPrepareFastPath(mode==1);
+            const auto start=Clock::now();renderer.render(canvas,quadView,65);
+            const auto end=Clock::now();frames[mode]=canvas.frame();
+            compactPrepareTimes[mode].push_back(std::chrono::duration<double,std::micro>(end-start).count());
+        }
+        assert(frames[0]==frames[1]);
+    }
+    std::cout<<"rx78_compact_prepare samples="<<compactPrepareTimes[0].size();
+    for(int mode=0;mode<2;++mode) {
+        const double sum=std::accumulate(compactPrepareTimes[mode].begin(),compactPrepareTimes[mode].end(),0.0);
+        std::sort(compactPrepareTimes[mode].begin(),compactPrepareTimes[mode].end());
+        std::cout<<(mode?" direct":" generic")<<"_mean_us="<<sum/compactPrepareTimes[mode].size()
+                 <<" p95_us="<<compactPrepareTimes[mode][compactPrepareTimes[mode].size()*95/100];
+    }
+    std::cout<<'\n';renderer.setCompactPanelPrepareFastPath(true);
     std::cout<<"pixel_identical_cases="<<cases<<" working_bytes="<<MuseumRenderer::workingBytes()
              <<" transforms_before="<<oldTransforms<<" transforms_after="<<newTransforms<<'\n';
 }

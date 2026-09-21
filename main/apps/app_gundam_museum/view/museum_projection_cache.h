@@ -74,5 +74,40 @@ struct MuseumProjectionCache {
             result.top=std::min(result.top,p.y);result.bottom=std::max(result.bottom,p.y);
         }
     }
+
+    // Solid parallel exhibits never consume perspective UVs or generic paint
+    // state. Build their compact replay record directly while preserving the
+    // same lazy projection, bounds and near-plane fallback as panel().
+    template<class Transform> void solidPanel(lets_and_go::PreparedSolidPanel& result,
+        float& left,float& right,const lets_and_go::TrackCamera& camera,
+        const lets_and_go::CarPanel& face,std::size_t index,Transform transform) {
+        for(unsigned i=0;i<4;++i) {
+            const auto key=indices[index*4+i];
+            if(!ready[key]) {
+                const auto p=transform(face.point[i],face.wheel);++transformed;
+                if(p.z<lets_and_go::kTrackNearPlane)projected[key]={0,0,0};
+                else {
+                    const float inverse=1/p.z;
+                    projected[key]={camera.principalX+camera.focalLength*p.x*inverse,
+                                   camera.principalY-camera.focalLength*p.y*inverse,inverse};
+                }
+                ready[key]=true;
+            }
+            if(projected[key].z==0) {
+                lets_and_go::PreparedCarPanel generic{};
+                lets_and_go::prepareCarPanel(generic,camera,face,transform);
+                result=lets_and_go::compactSolidPanel(generic);
+                left=generic.left;right=generic.right;return;
+            }
+        }
+        result.visibility=1;result.color=face.color;result.light=face.light;
+        left=result.top=1e20f;right=result.bottom=-1e20f;
+        for(unsigned i=0;i<4;++i) {
+            const auto p=projected[indices[index*4+i]];
+            result.vertex[i]={p.x,p.y,p.z};
+            left=std::min(left,p.x);right=std::max(right,p.x);
+            result.top=std::min(result.top,p.y);result.bottom=std::max(result.bottom,p.y);
+        }
+    }
 };
 } // namespace gundam_museum

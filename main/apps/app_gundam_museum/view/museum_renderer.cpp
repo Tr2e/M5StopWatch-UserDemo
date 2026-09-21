@@ -234,6 +234,15 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             const bool retainMountRim=nu && _surface->mesh.parts[i]==Part::Backpack;
             if(cull && !_surface->mesh.twoSided[i] && !retainMountRim && facing<-.035f){++_stats.culled;continue;}
         }
+        if(_optimizations && _compactPanelPrepareFastPath && splitCompatible &&
+           face.paint==lets_and_go::CarPaint::Solid) {
+            lets_and_go::PreparedSolidPanel prepared{};float left=0,right=0;
+            projection.solidPanel(prepared,left,right,camera,face,i,project);
+            if(!prepared.visibility || right<0 || left>=w || prepared.bottom<0 || prepared.top>=h) {
+                ++_stats.offscreen;continue;
+            }
+            _surface->preparedPanels[preparedCount++]=prepared;++_stats.submitted;continue;
+        }
         lets_and_go::PreparedCarPanel prepared{};
         if(_optimizations)projection.panel(prepared,camera,face,i,project);
         else {lets_and_go::prepareCarPanel(prepared,camera,face,project);_stats.transformed+=4;}
