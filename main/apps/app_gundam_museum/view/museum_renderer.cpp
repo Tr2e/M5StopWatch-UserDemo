@@ -22,11 +22,16 @@
 namespace gundam_museum {
 #ifdef ESP_PLATFORM
 struct MuseumParallelWorker {
+    enum class Work : uint8_t {Raster,Space};
     lets_and_go::CarSurfaceRaster<424,424>* raster=nullptr;
     const lets_and_go::TrackCamera* camera=nullptr;
     const lets_and_go::PreparedSolidPanel* panels=nullptr;
+    lgfx::LGFXBase* canvas=nullptr;
+    const View* view=nullptr;
     std::size_t count=0;
     int top=0,bottom=-1;
+    uint32_t lastUs=0;
+    Work work=Work::Raster;
     SemaphoreHandle_t start=nullptr,done=nullptr;
     TaskHandle_t task=nullptr;
     bool stopping=false;
@@ -36,8 +41,11 @@ struct MuseumParallelWorker {
         for(;;) {
             xSemaphoreTake(worker.start,portMAX_DELAY);
             if(worker.stopping)break;
-            for(std::size_t i=0;i<worker.count;++i)
+            const auto started=esp_timer_get_time();
+            if(worker.work==Work::Space)space::draw(*worker.canvas,*worker.view);
+            else for(std::size_t i=0;i<worker.count;++i)
                 worker.raster->preparedSolidPanelRows(*worker.camera,worker.panels[i],worker.top,worker.bottom);
+            worker.lastUs=uint32_t(esp_timer_get_time()-started);
             xSemaphoreGive(worker.done);
         }
         xSemaphoreGive(worker.done);
@@ -51,7 +59,11 @@ struct MuseumParallelWorker {
     void dispatch(lets_and_go::CarSurfaceRaster<424,424>& target,const lets_and_go::TrackCamera& view,
                   const lets_and_go::PreparedSolidPanel* input,std::size_t size,int first,int last) {
         raster=&target;camera=&view;panels=input;count=size;top=first;bottom=last;
+        work=Work::Raster;
         xSemaphoreGive(start);
+    }
+    void dispatchSpace(lgfx::LGFXBase& target,const View& state) {
+        canvas=&target;view=&state;work=Work::Space;xSemaphoreGive(start);
     }
     void wait(){xSemaphoreTake(done,portMAX_DELAY);}
     ~MuseumParallelWorker() {
@@ -103,7 +115,17 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     // entire screen. Retain the old bounded clear for model-only diagnostics.
     if(partial && !_spaceEnabled)canvas.fillRect(0,layout::top,canvas.width(),layout::side,clearColor);
     else canvas.fillScreen(clearColor);
+    const auto backgroundUs=micros();
+    const bool parallelFrame=_optimizations && _parallelRasterFastPath &&
+                             view.model==ModelId::Rx78 && _surface;
+#ifdef ESP_PLATFORM
+    bool spaceDispatched=false;
+    if(_spaceEnabled && parallelFrame && _parallelWorker) {
+        _parallelWorker->dispatchSpace(canvas,view);spaceDispatched=true;
+    } else
+#endif
     if(_spaceEnabled)space::draw(canvas,view);
+    const auto spaceUs=micros();
     if(!_surface){label(canvas,"MODEL MEMORY UNAVAILABLE",canvas.width()/2,220,1);return;}
     const bool nu=view.model==ModelId::NuGundam,strike=view.model==ModelId::StrikeGundam,destiny=view.model==ModelId::DestinyGundam,zaku=view.model==ModelId::CharZaku,sazabi=view.model==ModelId::Sazabi;
     const bool hiddenLine=view.model==ModelId::NuGundam;
@@ -141,6 +163,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     // raster hot loop. Scaled composite revisits source samples; recording in
     // the raster remains faster for that path on ESP32-S3.
     raster.setDeferredSparseDepthRecord(w==layout::side && h==layout::side);
+    const auto depthClearStartUs=micros();
     raster.begin(0,0,w,h);
     if(hiddenLine)_surface->edges.begin();
     const auto clearUs=micros();
@@ -165,7 +188,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         projection.passes[i]=facing<=0?0:1;
     }
     const auto prepareUs=micros();
-    const bool splitRaster=_optimizations && _parallelRasterFastPath && !hiddenLine && view.model==ModelId::Rx78;
+    const bool splitRaster=parallelFrame && !hiddenLine;
     bool splitCompatible=splitRaster;
     std::size_t preparedCount=0;
     // The diagnostic path draws backfaces first. Quantized equal depth must
@@ -200,6 +223,10 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         }
         ++_stats.submitted;
     }
+#ifdef ESP_PLATFORM
+    uint32_t parallelSpaceUs=0;
+    if(spaceDispatched){_parallelWorker->wait();parallelSpaceUs=_parallelWorker->lastUs;}
+#endif
     if(splitCompatible) {
         // Keep the split on an occupancy-byte boundary so the two cores never
         // update the same sparse-clear byte. Pixel/depth rows are disjoint.
@@ -273,6 +300,13 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(_optimizations)_stats.transformed=projection.transformed;
     _stats.clearUs=uint32_t(clearUs-startUs);_stats.prepareUs=uint32_t(prepareUs-clearUs);
     _stats.rasterUs=uint32_t(rasterUs-prepareUs);_stats.blitUs=uint32_t(blitUs-rasterUs);
+    _stats.backgroundUs=uint32_t(backgroundUs-startUs);
+#ifdef ESP_PLATFORM
+    _stats.spaceUs=spaceDispatched?parallelSpaceUs:uint32_t(spaceUs-backgroundUs);
+#else
+    _stats.spaceUs=uint32_t(spaceUs-backgroundUs);
+#endif
+    _stats.depthClearUs=uint32_t(clearUs-depthClearStartUs);
     // Keep navigation above both the room and the exhibit.
     for(const auto& button:{layout::previous,layout::next}){
         const int x=button.x+button.width/2,y=button.y+button.height/2;

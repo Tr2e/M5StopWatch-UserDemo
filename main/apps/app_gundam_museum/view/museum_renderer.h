@@ -18,6 +18,7 @@ struct View {
 struct RenderStats {
     std::size_t total=0,culled=0,submitted=0,offscreen=0,vertices=0,transformed=0;
     uint32_t clearUs=0,prepareUs=0,rasterUs=0,blitUs=0;
+    uint32_t backgroundUs=0,spaceUs=0,depthClearUs=0;
 };
 class MuseumRenderer {
 public:

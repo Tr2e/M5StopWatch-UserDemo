@@ -77,6 +77,14 @@ RX-78 当前全部是纯色材质。双核回放列表不再保存透视 UV、�
 
 移除基准后的正常 Launcher 固件 SHA-256：`7e559ead20c26eb1892c0822bd3bf7e03875ec92c79ea10f0c89c6deea21a1b6`。
 
+### 房间绘制与几何准备重叠
+
+细分计时显示 65% 的 background/room/depth-clear/cull 分别约为 12.99/5.08/2.15/4.15 ms。常驻 CPU1 worker 先绘制房间，CPU0 同时清理离屏深度、剔除并准备面片；房间任务完成后，同一个 worker 再处理下半屏光栅，framebuffer composite 始终等待房间结束，因此绘制顺序确定。
+
+共享 PSRAM 争用使并行 room work 自身增至约 8.3 ms，深度清理与准备也略有变慢，但 wall time 仍改善：65% draw 从 106.390 降至 104.999 ms，含 present 周期 116.757 ms（约 8.57 FPS）；100% draw 从 140.426 降至 138.794 ms，周期 150.521 ms（约 6.64 FPS）。这证明非重叠任务并行有效，同时也把共享内存带宽确定为后续框架优化的核心约束。
+
+移除基准后的正常 Launcher 固件 SHA-256：`917e9eed0f842c8ae05a97f60f6f0b3685e5311b95fd3d87e9fa008c89bc5898`。
+
 ## 否决项
 
 - 交错 `[depth16|color16]`：100% blit 29.72→23.84 ms，但 32-bit 清屏抵消收益；65% draw 143.25→151.63 ms，100% 194.58→199.69 ms。

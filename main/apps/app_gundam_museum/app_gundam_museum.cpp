@@ -63,6 +63,8 @@ void AppGundamMuseum::draw(uint32_t now){
     _perfDrawUs+=drawUs;_perfPresentUs+=presentUs;
     _perfClearUs+=stats.clearUs;_perfCullUs+=stats.prepareUs;
     _perfRasterUs+=stats.rasterUs;_perfBlitUs+=stats.blitUs;
+    _perfBackgroundUs+=stats.backgroundUs;_perfSpaceUs+=stats.spaceUs;
+    _perfDepthClearUs+=stats.depthClearUs;
     _perfPeakUs=std::max(_perfPeakUs,frameUs);
     const uint32_t finishedMs=GetHAL().millis();
     if(finishedMs-_perfStarted>=kPerformanceWindowMs){
@@ -76,6 +78,9 @@ void AppGundamMuseum::draw(uint32_t now){
             uint32_t(_perfClearUs/frames),uint32_t(_perfCullUs/frames),
             uint32_t(_perfRasterUs/frames),uint32_t(_perfBlitUs/frames),
             uint32_t(uxTaskGetStackHighWaterMark(nullptr)));
+        mclog::tagInfo("MuseumStageDetail","background_us={} space_work_us={} depth_clear_us={}",
+            uint32_t(_perfBackgroundUs/frames),uint32_t(_perfSpaceUs/frames),
+            uint32_t(_perfDepthClearUs/frames));
         mclog::tagInfo("MuseumMemory","internal_free={} internal_min={} internal_largest={} psram_free={} psram_min={} psram_largest={}",
             heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
@@ -89,6 +94,7 @@ void AppGundamMuseum::draw(uint32_t now){
 void AppGundamMuseum::resetPerformanceWindow(uint32_t now){
     _perfStarted=now;_perfFrames=0;_perfFrames65=0;_perfFrames100=0;_perfPeakUs=0;
     _perfDrawUs=0;_perfPresentUs=0;_perfClearUs=0;_perfCullUs=0;_perfRasterUs=0;_perfBlitUs=0;
+    _perfBackgroundUs=0;_perfSpaceUs=0;_perfDepthClearUs=0;
 }
 void AppGundamMuseum::onClose(){
     _input.close();_renderer.close();_controller.reset();_direct=false;_presented=false;
