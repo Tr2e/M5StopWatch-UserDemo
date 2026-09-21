@@ -92,7 +92,10 @@ MuseumRenderer::MuseumRenderer()=default;
 MuseumRenderer::~MuseumRenderer(){close();}
 bool MuseumRenderer::open(){
     close();_surface.reset(new(std::nothrow) Surface{});
-    if(_surface)_surface->raster.setSparseDepthStorage(_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
+    if(_surface){
+        _surface->raster.setSparseDepthStorage(_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
+        _surface->fastLowerColor.allocate();
+    }
 #ifdef ESP_PLATFORM
     if(_surface){
         _parallelWorker.reset(new(std::nothrow) MuseumParallelWorker{});
@@ -168,6 +171,11 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const bool drag=hiddenLine && percent<100;
     const int p=std::clamp(percent,50,100),w=(424*p+50)/100,h=(424*p+50)/100;
     auto& raster=_surface->raster;
+    constexpr int fastColorWidth=276,fastColorSplit=138;
+    const bool useSplitColor=_optimizations && _splitColorFastPath && view.model==ModelId::Rx78 &&
+        w==fastColorWidth && h==fastColorWidth && _surface->fastLowerColor.get();
+    raster.setSplitColorStorage(useSplitColor?_surface->fastLowerColor.get()->data():nullptr,
+                                fastColorWidth,fastColorSplit);
     // Keep exact barycentric interpolation. View Car's incremental mode
     // changes thin SD panels at some continuous angles (see performance log).
     raster.setSolidFastPath(_optimizations);

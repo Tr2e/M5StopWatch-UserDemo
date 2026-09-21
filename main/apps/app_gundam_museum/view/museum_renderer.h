@@ -43,6 +43,7 @@ public:
     void setNativeClearFastPath(bool enabled){_nativeClearFastPath=enabled;}
     void setSparseDepthClearFastPath(bool enabled){_sparseDepthClearFastPath=enabled;}
     void setParallelRasterFastPath(bool enabled){_parallelRasterFastPath=enabled;}
+    void setSplitColorFastPath(bool enabled){_splitColorFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
     // Diagnostic coverage of the last render, in active raster coordinates.
@@ -58,6 +59,7 @@ private:
         EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
         std::array<lets_and_go::PreparedSolidPanel,Mesh::capacity> preparedPanels{};
+        lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerColor;
     };
     std::unique_ptr<Surface> _surface;
 #ifdef ESP_PLATFORM
@@ -77,6 +79,7 @@ private:
     bool _nativeClearFastPath=true;
     bool _sparseDepthClearFastPath=true;
     bool _parallelRasterFastPath=true;
+    bool _splitColorFastPath=true;
     bool _spaceEnabled=true;
 };
 } // namespace gundam_museum

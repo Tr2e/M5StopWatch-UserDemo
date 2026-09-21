@@ -128,6 +128,12 @@ public:
     // implementation remains guarded by layout, clip and rotation checks.
     void setNativeFrameBufferFastPath(bool enabled) { _nativeFrameBufferFastPath=enabled; }
     void setSparseCompositeFastPath(bool enabled) {_sparseCompositeFastPath=enabled;}
+    // Optional caller-owned storage for rows [splitRow,height). This lets a
+    // band-parallel renderer keep one write-only color band in internal RAM
+    // without mirroring or copying its depth plane.
+    void setSplitColorStorage(uint16_t* storage,int width,int splitRow) {
+        _splitColor=storage;_splitColorWidth=width;_splitColorRow=splitRow;
+    }
     void setSparseDepthStorage(uint8_t* storage,std::size_t bytes) {
         _occupiedDepth=storage;_occupiedDepthBytes=bytes;_trackedDepthPixels=0;_lastSparseDepthClear=false;
         if(storage && bytes)std::memset(storage,0,bytes);
@@ -220,6 +226,11 @@ private:
                   uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom,
                   uint16_t preparedSolidColor=0) {
         auto* depthBuffer=depthData();auto* colorBuffer=colorData();
+        std::size_t colorIndexOffset=0;
+        if(_splitColor && _width==_splitColorWidth && clipTop>=_splitColorRow) {
+            colorBuffer=_splitColor;
+            colorIndexOffset=std::size_t(_splitColorRow)*_width;
+        }
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
         if(!std::isfinite(det) || std::abs(det)<.001f)return;
         const float left=std::max(float(_x),rasterFloor(std::min({a.x,b.x,c.x})));
@@ -321,7 +332,7 @@ private:
             if constexpr(Solid) {
                 // Identical barycentric/depth operations; compile out texture
                 // sampling and per-pixel material branches for solid exhibits.
-                depthBuffer[index]=d;colorBuffer[index]=solidColor;
+                depthBuffer[index]=d;colorBuffer[index-colorIndexOffset]=solidColor;
             }else{
             uint16_t pigment=color;
             if(paint!=CarPaint::Solid) {
@@ -332,7 +343,7 @@ private:
             }
             const uint16_t output=texture ? pigment : paint==CarPaint::Solid ? solidColor :
                                   (light==255 ? pigment : carTint(pigment,lightFactor));
-            depthBuffer[index]=d;colorBuffer[index]=output;
+            depthBuffer[index]=d;colorBuffer[index-colorIndexOffset]=output;
             }
             }
         }
@@ -594,6 +605,9 @@ private:
             for(int py=0;py<height;++py) {
                 const int sourceY=(2*py+1)*_height/(2*height);
                 const std::size_t rowStart=std::size_t(sourceY)*_width,rowEnd=rowStart+_width;
+                const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
+                    ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
+                    : color+rowStart;
                 auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
                 const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
                 for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
@@ -605,7 +619,7 @@ private:
                         const std::size_t index=byte*8+bit;
                         const auto sx=uint16_t(index-rowStart);
                         const uint16_t first=destinationFirst[sx],last=destinationLast[sx];
-                        const uint16_t value=color[rowStart+sx];
+                        const uint16_t value=sourceColor[sx];
                         const uint16_t nativeValue=uint16_t((value<<8)|(value>>8));
                         for(uint16_t px=first;px<last;++px)destination[px]=nativeValue;
                     }
@@ -617,6 +631,9 @@ private:
         for(int py=0;py<height;++py) {
             const int sourceY=Scale?(2*py+1)*_height/(2*height):py;
             const auto offset=std::size_t(sourceY)*_width;
+            const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
+                ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
+                : color+offset;
             const bool recordRow=fusedOccupancy && sourceY!=previousSourceY;
             int previousSourceX=-1;
 #ifdef ESP_PLATFORM
@@ -630,14 +647,14 @@ private:
                         const auto sx=sourceX[px];
                         const bool visible=depth[offset+sx]!=0;
                         if(visible) {
-                            store(px,color[offset+sx]);
+                            store(px,sourceColor[sx]);
                             if(recordRow && sx!=previousSourceX)recordOccupied(offset+sx);
                         }
                         previousSourceX=sx;
                     }
                 } else {
                     for(int px=0;px<width;++px)if(depth[offset+px]) {
-                        store(px,color[offset+px]);
+                        store(px,sourceColor[px]);
                         if(recordRow)recordOccupied(offset+px);
                     }
                 }
@@ -650,7 +667,7 @@ private:
                 const auto sx=Scale?(px<width?sourceX[px]:0):px;
                 const bool visible=px<width && depth[offset+sx]!=0;
                 if(visible) {
-                    row[px]=color[offset+sx];
+                    row[px]=sourceColor[sx];
                     if(recordRow && sx!=previousSourceX)recordOccupied(offset+sx);
                     if(start<0)start=px;
                 } else if(start>=0) {
@@ -693,6 +710,8 @@ private:
     bool _deferredSparseDepthRecord=false;
     std::size_t _trackedDepthPixels=0;
     uint8_t* _occupiedDepth=nullptr;
+    uint16_t* _splitColor=nullptr;
+    int _splitColorWidth=0,_splitColorRow=0;
     std::size_t _occupiedDepthBytes=0;
     using Pixels=std::array<uint16_t,Width*Height>;
     RenderScratch<Pixels> _fastDepth,_fastColor;
