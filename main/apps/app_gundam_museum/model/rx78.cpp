@@ -67,7 +67,13 @@ public:
             if(count==8){constexpr float xs[]={-.72f,.72f,1,1,.72f,-.72f,-1,-1},zs[]={1,1,.70f,-.70f,-1,-1,-.70f,.70f};return Point{xs[i%8]*r.w,r.y,r.z+zs[i%8]*r.d};}
             const float a=2*pi*i/count;return Point{std::sin(a)*r.w,r.y,r.z+std::cos(a)*r.d};};
         for(auto it=rings.begin()+1;it!=rings.end();++it)for(int i=0;i<count;++i){const auto a=*(it-1),b=*it;auto u=p(a,i),v=p(a,i+1);face(u,v,p(b,i+1),p(b,i),color,{(u.x+v.x)/2,0,(u.z+v.z)/2-a.z});}
-        for(int end=0;end<2;++end){auto r=end?*(rings.end()-1):*rings.begin();for(int i=1;i<count-1;++i)face(p(r,0),p(r,i),p(r,i+1),p(r,i+1),color,{0,end?1.f:-1.f,0});}
+        // Pack adjacent cap triangles into one panel while preserving their
+        // shared diagonal. The raster still receives the same two triangles,
+        // but avoids a second panel prepare and a degenerate triangle call.
+        for(int end=0;end<2;++end){auto r=end?*(rings.end()-1):*rings.begin();for(int i=1;i<count-1;i+=2){
+            if(i+1<count-1)face(p(r,0),p(r,i),p(r,i+1),p(r,i+2),color,{0,end?1.f:-1.f,0});
+            else face(p(r,0),p(r,i),p(r,i+1),p(r,i+1),color,{0,end?1.f:-1.f,0});
+        }}
     }
     // Convex planar covers: front remains planar; bevel and side walls separate.
     void cover(std::initializer_list<Point> points,float depth,uint16_t color,float bevel=.015f){
