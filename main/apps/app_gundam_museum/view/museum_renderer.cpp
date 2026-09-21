@@ -124,6 +124,9 @@ void MuseumRenderer::close(){
     _surface.reset();_cached=false;_stats={};
 }
 std::size_t MuseumRenderer::workingBytes(){return sizeof(Surface);}
+#ifdef ESP_PLATFORM
+__attribute__((optimize("O3")))
+#endif
 void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,bool cull,bool gray,bool keepBuried,bool partial){
     const auto startUs=micros();
     const uint16_t clearColor=_spaceEnabled?space::background:space::diagnosticBackground;
