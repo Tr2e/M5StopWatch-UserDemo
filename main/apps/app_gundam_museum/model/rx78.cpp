@@ -82,10 +82,20 @@ public:
         const auto inset=[&](Point p){return Point{center.x+(p.x-center.x)*.90f,center.y+(p.y-center.y)*.90f,center.z+(p.z-center.z)*.90f+bevel};};
         const auto back=[&](Point p){p.z-=depth;return p;};
         const Point frontCenter{center.x,center.y,center.z+bevel};
-        for(size_t i=0;i<points.size();++i){auto a=points.begin()[i],b=points.begin()[(i+1)%points.size()],u=inset(a),v=inset(b);
-            face(frontCenter,u,v,v,color,{0,0,1},part==Part::Head);face(a,b,v,u,color,{0,0,1},part==Part::Head);
+        for(size_t i=0;i<points.size();i+=2){
+            const auto a=points.begin()[i],b=points.begin()[(i+1)%points.size()];
+            const auto u=inset(a),v=inset(b);const bool pair=i+1<points.size();
+            const auto c=pair?points.begin()[(i+2)%points.size()]:b,w=inset(c);
+            if(pair)face(frontCenter,u,v,w,color,{0,0,1},part==Part::Head);
+            else face(frontCenter,u,v,v,color,{0,0,1},part==Part::Head);
+            face(a,b,v,u,color,{0,0,1},part==Part::Head);
             face(a,back(a),back(b),b,color,{(a.x+b.x)/2-center.x,(a.y+b.y)/2-center.y,0},part==Part::Head);
-            face(back(center),back(b),back(a),back(a),color,{0,0,-1},part==Part::Head);}
+            if(pair){
+                face(b,c,w,v,color,{0,0,1},part==Part::Head);
+                face(b,back(b),back(c),c,color,{(b.x+c.x)/2-center.x,(b.y+c.y)/2-center.y,0},part==Part::Head);
+                face(back(center),back(c),back(b),back(a),color,{0,0,-1},part==Part::Head);
+            }else face(back(center),back(b),back(a),back(a),color,{0,0,-1},part==Part::Head);
+        }
     }
     void opening(Point a,Point b,Point c,Point d,float depth,uint16_t border){
         const Point center{(a.x+b.x+c.x+d.x)/4,(a.y+b.y+c.y+d.y)/4,(a.z+b.z+c.z+d.z)/4};
