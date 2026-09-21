@@ -65,6 +65,8 @@ void AppGundamMuseum::draw(uint32_t now){
     _perfRasterUs+=stats.rasterUs;_perfBlitUs+=stats.blitUs;
     _perfBackgroundUs+=stats.backgroundUs;_perfSpaceUs+=stats.spaceUs;
     _perfDepthClearUs+=stats.depthClearUs;
+    _perfPanelPrepareUs+=stats.panelPrepareUs;_perfSpaceWaitUs+=stats.spaceWaitUs;
+    _perfMainRasterUs+=stats.mainRasterUs;_perfWorkerRasterUs+=stats.workerRasterUs;
     _perfPeakUs=std::max(_perfPeakUs,frameUs);
     const uint32_t finishedMs=GetHAL().millis();
     if(finishedMs-_perfStarted>=kPerformanceWindowMs){
@@ -81,6 +83,9 @@ void AppGundamMuseum::draw(uint32_t now){
         mclog::tagInfo("MuseumStageDetail","background_us={} space_work_us={} depth_clear_us={}",
             uint32_t(_perfBackgroundUs/frames),uint32_t(_perfSpaceUs/frames),
             uint32_t(_perfDepthClearUs/frames));
+        mclog::tagInfo("MuseumStageParallel","panel_prepare_us={} space_wait_us={} main_raster_us={} worker_raster_us={}",
+            uint32_t(_perfPanelPrepareUs/frames),uint32_t(_perfSpaceWaitUs/frames),
+            uint32_t(_perfMainRasterUs/frames),uint32_t(_perfWorkerRasterUs/frames));
         mclog::tagInfo("MuseumMemory","internal_free={} internal_min={} internal_largest={} psram_free={} psram_min={} psram_largest={}",
             heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
@@ -95,6 +100,7 @@ void AppGundamMuseum::resetPerformanceWindow(uint32_t now){
     _perfStarted=now;_perfFrames=0;_perfFrames65=0;_perfFrames100=0;_perfPeakUs=0;
     _perfDrawUs=0;_perfPresentUs=0;_perfClearUs=0;_perfCullUs=0;_perfRasterUs=0;_perfBlitUs=0;
     _perfBackgroundUs=0;_perfSpaceUs=0;_perfDepthClearUs=0;
+    _perfPanelPrepareUs=0;_perfSpaceWaitUs=0;_perfMainRasterUs=0;_perfWorkerRasterUs=0;
 }
 void AppGundamMuseum::onClose(){
     _input.close();_renderer.close();_controller.reset();_direct=false;_presented=false;

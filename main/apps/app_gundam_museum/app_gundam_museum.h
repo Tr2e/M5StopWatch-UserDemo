@@ -21,4 +21,5 @@ private:
     uint64_t _perfDrawUs=0,_perfPresentUs=0;
     uint64_t _perfClearUs=0,_perfCullUs=0,_perfRasterUs=0,_perfBlitUs=0;
     uint64_t _perfBackgroundUs=0,_perfSpaceUs=0,_perfDepthClearUs=0;
+    uint64_t _perfPanelPrepareUs=0,_perfSpaceWaitUs=0,_perfMainRasterUs=0,_perfWorkerRasterUs=0;
 };

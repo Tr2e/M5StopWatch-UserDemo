@@ -253,9 +253,13 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         }
         ++_stats.submitted;
     }
+    const auto panelPrepareUs=micros();
 #ifdef ESP_PLATFORM
     uint32_t parallelSpaceUs=0;
-    if(spaceDispatched){_parallelWorker->wait();parallelSpaceUs=_parallelWorker->lastUs;}
+    if(spaceDispatched){
+        const auto waitStart=micros();_parallelWorker->wait();
+        _stats.spaceWaitUs=uint32_t(micros()-waitStart);parallelSpaceUs=_parallelWorker->lastUs;
+    }
 #endif
     if(splitCompatible) {
         // Keep the split on an occupancy-byte boundary so the two cores never
@@ -265,20 +269,27 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
 #ifdef ESP_PLATFORM
         if(_parallelWorker) {
             _parallelWorker->dispatch(raster,camera,_surface->preparedPanels.data(),preparedCount,split,h-1);
+            const auto mainStart=micros();
             for(std::size_t i=0;i<preparedCount;++i)
                 raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,split-1);
+            _stats.mainRasterUs=uint32_t(micros()-mainStart);
             _parallelWorker->wait();
+            _stats.workerRasterUs=_parallelWorker->lastUs;
         } else {
+            const auto mainStart=micros();
             for(std::size_t i=0;i<preparedCount;++i)
                 raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,h-1);
+            _stats.mainRasterUs=uint32_t(micros()-mainStart);
         }
 #else
         // Host regressions execute both partitions serially and compare the
         // resulting framebuffer to the original unsplit implementation.
+        const auto mainStart=micros();
         for(std::size_t i=0;i<preparedCount;++i)
             raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,split-1);
         for(std::size_t i=0;i<preparedCount;++i)
             raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],split,h-1);
+        _stats.mainRasterUs=uint32_t(micros()-mainStart);
 #endif
     }
     if(hiddenLine && drag){
@@ -331,6 +342,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     _stats.spaceUs=uint32_t(spaceUs-backgroundUs);
 #endif
     _stats.depthClearUs=uint32_t(clearUs-depthClearStartUs);
+    _stats.panelPrepareUs=uint32_t(panelPrepareUs-prepareUs);
     // Keep navigation above both the room and the exhibit.
     for(const auto& button:{layout::previous,layout::next}){
         const int x=button.x+button.width/2,y=button.y+button.height/2;
