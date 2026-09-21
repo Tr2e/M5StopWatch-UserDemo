@@ -117,6 +117,32 @@ int main(){
         if(before!=canvas.frame())std::cerr<<"continuous angle mismatch model="<<int(model)<<" yaw="<<v.yaw<<" pitch="<<v.pitch<<'\n';
         assert(before==canvas.frame());++cases;
     }
+    // Isolate the prepared-solid quad specialization from the other accepted
+    // optimizations; alternate order to reduce host cache bias.
+    std::vector<double> quadTimes[2];
+    View quadView;quadView.model=ModelId::Rx78;
+    renderer.setOptimizations(true);
+    for(int sample=0;sample<288;++sample) {
+        quadView.yaw=-3.141593f+6.2831853f*sample/288.f;
+        std::vector<uint16_t> frames[2];
+        for(int order=0;order<2;++order) {
+            const int mode=order^(sample&1);
+            renderer.setSolidQuadFastPath(mode==1);
+            const auto start=Clock::now();renderer.render(canvas,quadView,65);
+            const auto end=Clock::now();frames[mode]=canvas.frame();
+            quadTimes[mode].push_back(std::chrono::duration<double,std::micro>(end-start).count());
+        }
+        assert(frames[0]==frames[1]);
+    }
+    std::cout<<"rx78_quad samples="<<quadTimes[0].size();
+    for(int mode=0;mode<2;++mode) {
+        const double sum=std::accumulate(quadTimes[mode].begin(),quadTimes[mode].end(),0.0);
+        std::sort(quadTimes[mode].begin(),quadTimes[mode].end());
+        std::cout<<(mode?" specialized":" triangles")<<"_mean_us="<<sum/quadTimes[mode].size()
+                 <<" p95_us="<<quadTimes[mode][quadTimes[mode].size()*95/100];
+    }
+    std::cout<<'\n';
+    renderer.setSolidQuadFastPath(true);
     std::cout<<"pixel_identical_cases="<<cases<<" working_bytes="<<MuseumRenderer::workingBytes()
              <<" transforms_before="<<oldTransforms<<" transforms_after="<<newTransforms<<'\n';
 }

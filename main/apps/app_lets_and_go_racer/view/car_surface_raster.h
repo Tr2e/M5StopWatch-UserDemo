@@ -117,6 +117,9 @@ public:
     // guarded triangle-level check lets its inner loop omit redundant finite,
     // sign and saturation work while retaining the general fallback.
     void setTrustedSolidDepthFastPath(bool enabled) { _trustedSolidDepthFastPath=enabled; }
+    // Prepared solid quads share lighting and validated depth across both
+    // constituent triangles. Hoist those panel-constant checks and tint work.
+    void setSolidQuadFastPath(bool enabled) {_solidQuadFastPath=enabled;}
     // The framebuffer panel already owns the surrounding transaction. Under a
     // guarded native 16-bit/full-clip layout, write spans through its address
     // window instead of rebuilding pushImage clipping state for every row.
@@ -211,8 +214,10 @@ public:
             triangleImpl<false>(a,b,c,color,paint,light,clipTop,clipBottom);
     }
 private:
-    template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
-                  uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom) {
+    template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false,
+             bool PreparedSolidColor=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
+                  uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom,
+                  uint16_t preparedSolidColor=0) {
         auto* depthBuffer=depthData();auto* colorBuffer=colorData();
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
         if(!std::isfinite(det) || std::abs(det)<.001f)return;
@@ -231,7 +236,8 @@ private:
         // Xtensa otherwise repeats __divsf3 for each shaded pigment. Lighting
         // is constant for the triangle; retain the exact original quotient.
         const float lightFactor=light==255 ? 1.f : light/255.f;
-        const uint16_t solidColor=light==255 ? color : carTint(color,lightFactor);
+        const uint16_t solidColor=PreparedSolidColor ? preparedSolidColor :
+                                  (light==255 ? color : carTint(color,lightFactor));
         const auto* texture=_paintAtlas ? _paintAtlas->find(paint,color,light) : nullptr;
         const bool scanRows=(x1-x0)*(y1-y0)>256;
         const std::array<CarScreenVertex,3> points{{a,b,c}};
@@ -398,8 +404,21 @@ public:
         if(face.visibility==1) {
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
-            triangleRows(a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
-            triangleRows(a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+            const auto trustedDepth=[](float depth) {
+                return std::isfinite(depth) && depth>=.001f && depth<=7.9f;
+            };
+            if(_solidFastPath && _solidSpanFastPath && _trustedSolidDepthFastPath &&
+               _solidQuadFastPath && trustedDepth(a.depth) && trustedDepth(b.depth) &&
+               trustedDepth(c.depth) && trustedDepth(d.depth)) {
+                const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
+                triangleImpl<false,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
+                                                       clipTop,clipBottom,solidColor);
+                triangleImpl<false,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                       clipTop,clipBottom,solidColor);
+            } else {
+                triangleRows(a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+                triangleRows(a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+            }
         } else {
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarSurfaceVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
@@ -629,6 +648,7 @@ private:
     bool _solidFastPath=false;
     bool _solidSpanFastPath=false;
     bool _trustedSolidDepthFastPath=false;
+    bool _solidQuadFastPath=false;
     bool _directSpanFastPath=false;
     bool _nativeFrameBufferFastPath=false;
     bool _sparseDepthClearRequested=false,_sparseDepthClearFastPath=false,_lastSparseDepthClear=false;

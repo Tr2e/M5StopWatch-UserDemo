@@ -36,6 +36,7 @@ public:
     void setOptimizations(bool enabled){_optimizations=enabled;}
     void setSolidSpanFastPath(bool enabled){_solidSpanFastPath=enabled;}
     void setTrustedSolidDepthFastPath(bool enabled){_trustedSolidDepthFastPath=enabled;}
+    void setSolidQuadFastPath(bool enabled){_solidQuadFastPath=enabled;}
     void setDirectSpanFastPath(bool enabled){_directSpanFastPath=enabled;}
     void setNativeFrameBufferFastPath(bool enabled){_nativeFrameBufferFastPath=enabled;}
     void setNativeClearFastPath(bool enabled){_nativeClearFastPath=enabled;}
@@ -68,6 +69,7 @@ private:
     bool _optimizations=true;
     bool _solidSpanFastPath=true;
     bool _trustedSolidDepthFastPath=true;
+    bool _solidQuadFastPath=true;
     bool _directSpanFastPath=true;
     bool _nativeFrameBufferFastPath=true;
     bool _nativeClearFastPath=true;
