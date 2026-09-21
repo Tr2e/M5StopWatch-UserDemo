@@ -161,6 +161,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         else if(zaku)buildCharZaku(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         else buildRx78(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         _surface->projection.index(_surface->mesh);
+        if(view.model==ModelId::Rx78)_surface->projection.preferInternalProjected();
         _model=view.model;
         _pose=view.pose;
         _equipment=view.equipment;_gray=gray;_buried=keepBuried;_cached=true;
@@ -207,6 +208,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     _stats={};_stats.total=_surface->mesh.count;
     auto& projection=_surface->projection;
     projection.setInternalReadyFastPath(_optimizations && _internalProjectionReadyFastPath && view.model==ModelId::Rx78);
+    projection.setInternalProjectedFastPath(_optimizations && _internalProjectedPointFastPath && view.model==ModelId::Rx78);
+    if(projection.usingInternalProjected())_stats.internalProjectedBytes=uint32_t(projection.count*sizeof(lets_and_go::TrackCameraPoint));
     projection.begin();
     if(_optimizations)for(std::size_t i=0;i<_surface->mesh.count;++i){
         projection.passes[i]=-1;

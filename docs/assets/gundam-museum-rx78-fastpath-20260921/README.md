@@ -187,6 +187,19 @@ panel prepare 降低 28.6%，draw 降低 7.9%，完整周期降低 7.1%，不增
 
 移除启动基准后的正常 Launcher 固件 SHA-256：`8637461cc2c697d108d946bf2cb7b56bca54f8c9704d9b3236704ec3c0e44ef9`。
 
+### 片内共享顶点投影坐标
+
+投影坐标原容量按 16,384 个面片角预留，但 RX-78 去重后实际仅需 2,674 个 `TrackCameraPoint`。新增可复用的运行时定长片内 scratch buffer，在索引完成后只分配 32,088 B；保留 32 KiB 内部堆安全余量，分配失败则继续使用 PSRAM 原表。48 姿态交错 A/B 整屏哈希 0 差异：
+
+| 路径 | panel prepare | project+raster | draw | blit | overlay | present |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| PSRAM 投影坐标 | 14.273 ms | 56.602 ms | 87.123 ms | 8.387 ms | 0.119 ms | 11.729 ms |
+| 片内投影坐标 | 13.554 ms | 55.861 ms | 86.391 ms | 8.386 ms | 0.117 ms | 11.736 ms |
+
+这次收益与直接阶段完整对应：panel prepare 减少 0.719 ms，draw 减少 0.732 ms。试验后剩余片内 RAM 133,827 B，最大连续块 59,392 B。框架原则是：大容量上限数组不应整体复制到片内 RAM，应在实际索引数确定后仅迁移活跃前缀。
+
+移除启动基准后的正常 Launcher 固件 SHA-256：`8d99615767ccc757acb37c0d487cc3caf50d3379e0af3ad810b21ebf41721930`。
+
 ## RX-78 光栅工作量
 
 诊断构建覆盖 288 个姿态/配置样本，每帧平均：
@@ -204,6 +217,6 @@ panel prepare 降低 28.6%，draw 降低 7.9%，完整周期降低 7.1%，不增
 - `tools/test_gundam_museum_perf.sh`：`pixel_identical_cases=6720`。
 - `tools/test_gundam_museum.sh`：几何、构图、控制和重入通过。
 - ASan/UBSan 两套测试通过。
-- 65% 当前约 9.7 FPS，距离 15 FPS 的 66.7 ms 周期仍约差 36.2 ms；当前主要剩余项是约 59.4 ms 的 project+raster，合成约 8.9 ms、屏幕提交约 11.9 ms。
+- 65% 当前约 9.8 FPS，距离 15 FPS 的 66.7 ms 周期仍约差 35.5 ms；当前主要剩余项是约 55.9–58.7 ms 的 project+raster（依基准环境浮动），合成约 8.4–8.9 ms、屏幕提交约 11.7–11.9 ms。
 
 下一阶段应继续设计保持原三角形顺序、共享对角线和 Q13 深度语义的实体四边形/凸多边形光栅内核，并把 PSRAM 读写按生命周期拆成可选片内带；不再重复已否决的单项 early-Z、索引色、分区比例和 strip 路线。

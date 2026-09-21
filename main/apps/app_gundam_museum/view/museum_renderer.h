@@ -20,6 +20,7 @@ struct RenderStats {
     uint32_t clearUs=0,prepareUs=0,rasterUs=0,blitUs=0,overlayUs=0;
     uint32_t backgroundUs=0,spaceUs=0,depthClearUs=0;
     uint32_t panelPrepareUs=0,spaceWaitUs=0,mainRasterUs=0,workerRasterUs=0;
+    uint32_t internalProjectedBytes=0;
 };
 class MuseumRenderer {
 public:
@@ -47,6 +48,7 @@ public:
     void setSplitColorFastPath(bool enabled){_splitColorFastPath=enabled;}
     void setCompactPanelPrepareFastPath(bool enabled){_compactPanelPrepareFastPath=enabled;}
     void setInternalProjectionReadyFastPath(bool enabled){_internalProjectionReadyFastPath=enabled;}
+    void setInternalProjectedPointFastPath(bool enabled){_internalProjectedPointFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
     // Diagnostic coverage of the last render, in active raster coordinates.
@@ -85,6 +87,7 @@ private:
     bool _splitColorFastPath=true;
     bool _compactPanelPrepareFastPath=true;
     bool _internalProjectionReadyFastPath=true;
+    bool _internalProjectedPointFastPath=true;
     bool _spaceEnabled=true;
 };
 } // namespace gundam_museum
