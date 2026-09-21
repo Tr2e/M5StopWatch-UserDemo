@@ -6,6 +6,9 @@
 #include <memory>
 
 namespace gundam_museum {
+#ifdef ESP_PLATFORM
+struct MuseumParallelWorker;
+#endif
 struct View {
     float yaw=-.40f,pitch=.10f;
     bool equipment=true,detail=false,automatic=false;
@@ -18,6 +21,8 @@ struct RenderStats {
 };
 class MuseumRenderer {
 public:
+    MuseumRenderer();
+    ~MuseumRenderer();
     bool open();
     void close();
     bool ready() const{return bool(_surface);}
@@ -33,6 +38,7 @@ public:
     void setDirectSpanFastPath(bool enabled){_directSpanFastPath=enabled;}
     void setNativeFrameBufferFastPath(bool enabled){_nativeFrameBufferFastPath=enabled;}
     void setSparseDepthClearFastPath(bool enabled){_sparseDepthClearFastPath=enabled;}
+    void setParallelRasterFastPath(bool enabled){_parallelRasterFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
     // Diagnostic coverage of the last render, in active raster coordinates.
@@ -47,8 +53,12 @@ private:
         MuseumProjectionCache projection;
         EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
+        std::array<lets_and_go::PreparedCarPanel,Mesh::capacity> preparedPanels{};
     };
     std::unique_ptr<Surface> _surface;
+#ifdef ESP_PLATFORM
+    std::unique_ptr<MuseumParallelWorker> _parallelWorker;
+#endif
     RenderStats _stats{};
     bool _cached=false,_equipment=false,_gray=false,_buried=false;
     Pose _pose=Pose::Display;
@@ -59,6 +69,7 @@ private:
     bool _directSpanFastPath=true;
     bool _nativeFrameBufferFastPath=true;
     bool _sparseDepthClearFastPath=true;
+    bool _parallelRasterFastPath=true;
     bool _spaceEnabled=true;
 };
 } // namespace gundam_museum

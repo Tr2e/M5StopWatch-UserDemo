@@ -109,6 +109,7 @@
 - [x] 统计 triangle/span/pixel tested、depth rejected、written 和最终 covered，按姿态输出 overdraw 分布。
 - [x] 保持原 equal-depth overwrite 语义，验证 front-to-back 原型；自由排序首姿态即有 88 像素差异，部件级与保守区间排序仍分别有 14/4 像素差异，已回退。
 - [x] 以外置 22 KiB 占用位图实现稀疏深度清理；Nu 原地扩展路径禁用，RX-78 真机 A/B 为正。进一步按合成比例分流占用记录：缩放路径在首次深度写入时记录，1:1 路径融合进 framebuffer composite；固定姿态整屏哈希一致。
+- [x] RX-78 实体光栅按互不重叠的上下行区间分发到 ESP32-S3 双核；保持每个分区内原面片顺序，分界对齐占用位图字节，常驻 worker 避免逐帧任务分配。真机交错 A/B 与整屏哈希通过。
 - [ ] 评估直接处理凸四边形，减少每面两次 triangle setup 和共享对角线 overdraw。
 - [ ] 将 framebuffer 行访问整理为通用、可选、带格式/旋转/clip guard 的 3D composite 接口。
 

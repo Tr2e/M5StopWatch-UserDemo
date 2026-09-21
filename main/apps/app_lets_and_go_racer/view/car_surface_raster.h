@@ -161,6 +161,13 @@ public:
     }
     void triangle(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light) {
+        triangleRows(a,b,c,color,paint,light,_y,_y+_height-1);
+    }
+    // Render an inclusive row range into the same backing planes. Disjoint,
+    // byte-aligned ranges can be dispatched to separate cores without changing
+    // panel order or depth semantics.
+    void triangleRows(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
+                      uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom) {
         if(_solidFastPath && paint==CarPaint::Solid) {
             if(_solidSpanFastPath) {
                 const auto trustedDepth=[&](float depth) {
@@ -168,27 +175,27 @@ public:
                 };
                 if(_trustedSolidDepthFastPath && trustedDepth(a.depth) &&
                    trustedDepth(b.depth) && trustedDepth(c.depth)) {
-                    triangleImpl<false,true,true,true>(a,b,c,color,paint,light);return;
+                    triangleImpl<false,true,true,true>(a,b,c,color,paint,light,clipTop,clipBottom);return;
                 }
-                triangleImpl<false,true,true>(a,b,c,color,paint,light);return;
+                triangleImpl<false,true,true>(a,b,c,color,paint,light,clipTop,clipBottom);return;
             }
-            triangleImpl<false,true>(a,b,c,color,paint,light);return;
+            triangleImpl<false,true>(a,b,c,color,paint,light,clipTop,clipBottom);return;
         }
         if(_incrementalInterpolation)
-            triangleImpl<true>(a,b,c,color,paint,light);
+            triangleImpl<true>(a,b,c,color,paint,light,clipTop,clipBottom);
         else
-            triangleImpl<false>(a,b,c,color,paint,light);
+            triangleImpl<false>(a,b,c,color,paint,light,clipTop,clipBottom);
     }
 private:
     template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false> void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
-                  uint16_t color,CarPaint paint,uint8_t light) {
+                  uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom) {
         auto* depthBuffer=depthData();auto* colorBuffer=colorData();
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
         if(!std::isfinite(det) || std::abs(det)<.001f)return;
         const float left=std::max(float(_x),rasterFloor(std::min({a.x,b.x,c.x})));
         const float right=std::min(float(_x+_width-1),rasterCeil(std::max({a.x,b.x,c.x})));
-        const float top=std::max(float(_y),rasterFloor(std::min({a.y,b.y,c.y})));
-        const float bottom=std::min(float(_y+_height-1),rasterCeil(std::max({a.y,b.y,c.y})));
+        const float top=std::max(float(std::max(_y,clipTop)),rasterFloor(std::min({a.y,b.y,c.y})));
+        const float bottom=std::min(float(std::min(_y+_height-1,clipBottom)),rasterCeil(std::max({a.y,b.y,c.y})));
         if(left>right || top>bottom)return;
         const int x0=int(left),x1=int(right),y0=int(top),y1=int(bottom);
         const float inverse=1/det;
@@ -302,6 +309,11 @@ private:
 public:
     void cameraTriangle(const TrackCamera& camera,CarSurfaceVertex a,CarSurfaceVertex b,
                         CarSurfaceVertex c,uint16_t color,CarPaint paint,uint8_t light) {
+        cameraTriangleRows(camera,a,b,c,color,paint,light,_y,_y+_height-1);
+    }
+    void cameraTriangleRows(const TrackCamera& camera,CarSurfaceVertex a,CarSurfaceVertex b,
+                            CarSurfaceVertex c,uint16_t color,CarPaint paint,uint8_t light,
+                            int clipTop,int clipBottom) {
         const std::array<CarSurfaceVertex,3> input{{a,b,c}};
         std::array<CarSurfaceVertex,4> output{};
         std::size_t count=0;
@@ -321,7 +333,7 @@ public:
                 camera.principalY-camera.focalLength*p.y*inverse,inverse,p.u*inverse,p.v*inverse};
         };
         for(std::size_t i=1;i+1<count;++i)
-            triangle(project(output[0]),project(output[i]),project(output[i+1]),color,paint,light);
+            triangleRows(project(output[0]),project(output[i]),project(output[i+1]),color,paint,light,clipTop,clipBottom);
     }
     template<class Transform> void panel(const TrackCamera& camera,const CarPanel& face,Transform transform) {
         std::array<CarSurfaceVertex,4> v{};
@@ -342,14 +354,17 @@ public:
         cameraTriangle(camera,v[0],v[2],v[3],face.color,face.paint,face.light);
     }
     void preparedPanel(const TrackCamera& camera,const PreparedCarPanel& face) {
+        preparedPanelRows(camera,face,_y,_y+_height-1);
+    }
+    void preparedPanelRows(const TrackCamera& camera,const PreparedCarPanel& face,int clipTop,int clipBottom) {
         if(!face.visibility || face.right<_x-1 || face.left>_x+_width ||
-           face.bottom<_y-1 || face.top>_y+_height)return;
+           face.bottom<std::max(_y,clipTop)-1 || face.top>std::min(_y+_height-1,clipBottom)+1)return;
         if(face.visibility==1) {
-            triangle(face.screen[0],face.screen[1],face.screen[2],face.color,face.paint,face.light);
-            triangle(face.screen[0],face.screen[2],face.screen[3],face.color,face.paint,face.light);
+            triangleRows(face.screen[0],face.screen[1],face.screen[2],face.color,face.paint,face.light,clipTop,clipBottom);
+            triangleRows(face.screen[0],face.screen[2],face.screen[3],face.color,face.paint,face.light,clipTop,clipBottom);
         } else {
-            cameraTriangle(camera,face.camera[0],face.camera[1],face.camera[2],face.color,face.paint,face.light);
-            cameraTriangle(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light);
+            cameraTriangleRows(camera,face.camera[0],face.camera[1],face.camera[2],face.color,face.paint,face.light,clipTop,clipBottom);
+            cameraTriangleRows(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light,clipTop,clipBottom);
         }
     }
     // Hidden-line stroke: keep a surface only when its depth matches the filled

@@ -12,11 +12,55 @@
 #include <new>
 #ifdef ESP_PLATFORM
 #include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 #else
 #include <chrono>
 #endif
 
 namespace gundam_museum {
+#ifdef ESP_PLATFORM
+struct MuseumParallelWorker {
+    lets_and_go::CarSurfaceRaster<424,424>* raster=nullptr;
+    const lets_and_go::TrackCamera* camera=nullptr;
+    const lets_and_go::PreparedCarPanel* panels=nullptr;
+    std::size_t count=0;
+    int top=0,bottom=-1;
+    SemaphoreHandle_t start=nullptr,done=nullptr;
+    TaskHandle_t task=nullptr;
+    bool stopping=false;
+
+    static void taskMain(void* argument) {
+        auto& worker=*static_cast<MuseumParallelWorker*>(argument);
+        for(;;) {
+            xSemaphoreTake(worker.start,portMAX_DELAY);
+            if(worker.stopping)break;
+            for(std::size_t i=0;i<worker.count;++i)
+                worker.raster->preparedPanelRows(*worker.camera,worker.panels[i],worker.top,worker.bottom);
+            xSemaphoreGive(worker.done);
+        }
+        xSemaphoreGive(worker.done);
+        vTaskDelete(nullptr);
+    }
+    bool open() {
+        start=xSemaphoreCreateBinary();done=xSemaphoreCreateBinary();
+        if(!start || !done)return false;
+        return xTaskCreatePinnedToCore(taskMain,"rx_raster",6144,this,tskIDLE_PRIORITY+2,&task,1)==pdPASS;
+    }
+    void dispatch(lets_and_go::CarSurfaceRaster<424,424>& target,const lets_and_go::TrackCamera& view,
+                  const lets_and_go::PreparedCarPanel* input,std::size_t size,int first,int last) {
+        raster=&target;camera=&view;panels=input;count=size;top=first;bottom=last;
+        xSemaphoreGive(start);
+    }
+    void wait(){xSemaphoreTake(done,portMAX_DELAY);}
+    ~MuseumParallelWorker() {
+        if(task){stopping=true;xSemaphoreGive(start);wait();task=nullptr;}
+        if(start)vSemaphoreDelete(start);
+        if(done)vSemaphoreDelete(done);
+    }
+};
+#endif
 static_assert(hiddenLinePaper==space::background && hiddenLineInk==space::navigation);
 namespace {
 uint64_t micros(){
@@ -32,12 +76,25 @@ void label(lgfx::LGFXBase& c,const char* text,int x,int y,int size,uint16_t colo
     c.setTextDatum(textdatum_t::middle_center);c.setTextColor(color,background);c.setTextSize(size);c.drawString(text,x,y);
 }
 }
+MuseumRenderer::MuseumRenderer()=default;
+MuseumRenderer::~MuseumRenderer(){close();}
 bool MuseumRenderer::open(){
     close();_surface.reset(new(std::nothrow) Surface{});
     if(_surface)_surface->raster.setSparseDepthStorage(_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
+#ifdef ESP_PLATFORM
+    if(_surface){
+        _parallelWorker.reset(new(std::nothrow) MuseumParallelWorker{});
+        if(!_parallelWorker || !_parallelWorker->open())_parallelWorker.reset();
+    }
+#endif
     return bool(_surface);
 }
-void MuseumRenderer::close(){_surface.reset();_cached=false;_stats={};}
+void MuseumRenderer::close(){
+#ifdef ESP_PLATFORM
+    _parallelWorker.reset();
+#endif
+    _surface.reset();_cached=false;_stats={};
+}
 std::size_t MuseumRenderer::workingBytes(){return sizeof(Surface);}
 void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,bool cull,bool gray,bool keepBuried,bool partial){
     const auto startUs=micros();
@@ -108,6 +165,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         projection.passes[i]=facing<=0?0:1;
     }
     const auto prepareUs=micros();
+    const bool splitRaster=_optimizations && _parallelRasterFastPath && !hiddenLine && view.model==ModelId::Rx78;
+    std::size_t preparedCount=0;
     // The diagnostic path draws backfaces first. Quantized equal depth must
     // not let an invisible reverse face overwrite a visible front face.
     for(int pass=0;pass<2;++pass)for(std::size_t i=0;i<_surface->mesh.count;++i){
@@ -126,7 +185,32 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         else {lets_and_go::prepareCarPanel(prepared,camera,face,project);_stats.transformed+=4;}
         if(!prepared.visibility || prepared.right<0 || prepared.left>=w || prepared.bottom<0 || prepared.top>=h){++_stats.offscreen;continue;}
         if(hiddenLine)prepareHiddenLineFill(prepared);
-        raster.preparedPanel(camera,prepared);++_stats.submitted;
+        if(splitRaster)_surface->preparedPanels[preparedCount++]=prepared;
+        else raster.preparedPanel(camera,prepared);
+        ++_stats.submitted;
+    }
+    if(splitRaster) {
+        // Keep the split on an occupancy-byte boundary so the two cores never
+        // update the same sparse-clear byte. Pixel/depth rows are disjoint.
+        int split=h/2;
+        while(split<h && (std::size_t(w)*split&7))++split;
+#ifdef ESP_PLATFORM
+        if(_parallelWorker) {
+            _parallelWorker->dispatch(raster,camera,_surface->preparedPanels.data(),preparedCount,split,h-1);
+            for(std::size_t i=0;i<preparedCount;++i)
+                raster.preparedPanelRows(camera,_surface->preparedPanels[i],0,split-1);
+            _parallelWorker->wait();
+        } else {
+            for(std::size_t i=0;i<preparedCount;++i)raster.preparedPanel(camera,_surface->preparedPanels[i]);
+        }
+#else
+        // Host regressions execute both partitions serially and compare the
+        // resulting framebuffer to the original unsplit implementation.
+        for(std::size_t i=0;i<preparedCount;++i)
+            raster.preparedPanelRows(camera,_surface->preparedPanels[i],0,split-1);
+        for(std::size_t i=0;i<preparedCount;++i)
+            raster.preparedPanelRows(camera,_surface->preparedPanels[i],split,h-1);
+#endif
     }
     if(hiddenLine && drag){
         raster.upsampleNearestToFull();
