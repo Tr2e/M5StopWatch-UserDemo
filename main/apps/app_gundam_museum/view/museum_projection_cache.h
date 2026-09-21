@@ -110,10 +110,13 @@ struct MuseumProjectionCache {
                 lets_and_go::PreparedCarPanel generic{};
                 lets_and_go::prepareCarPanel(generic,camera,face,transform);
                 result=lets_and_go::compactSolidPanel(generic);
+                if(indices[index*4+2]==indices[index*4+3])
+                    result.visibility|=lets_and_go::kPreparedSolidTriangle;
                 left=generic.left;right=generic.right;return;
             }
         }
-        result.visibility=1;result.color=face.color;result.light=face.light;
+        result.visibility=uint8_t(1|(indices[index*4+2]==indices[index*4+3] ?
+            lets_and_go::kPreparedSolidTriangle:0));result.color=face.color;result.light=face.light;
         left=result.top=1e20f;right=result.bottom=-1e20f;
         for(unsigned i=0;i<4;++i) {
             const auto p=points[indices[index*4+i]];

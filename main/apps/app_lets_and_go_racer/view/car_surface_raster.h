@@ -40,13 +40,20 @@ struct PreparedSolidPanel {
     float top=0,bottom=0;
     uint16_t color=0;
     uint8_t light=255;
-    uint8_t visibility=0;
+    uint8_t visibility=0; // Low bits match PreparedCarPanel; high bit marks a triangle.
 };
+constexpr uint8_t kPreparedSolidTriangle=0x80u;
 
 inline PreparedSolidPanel compactSolidPanel(const PreparedCarPanel& source) {
     PreparedSolidPanel result{};
     result.top=source.top;result.bottom=source.bottom;
     result.color=source.color;result.light=source.light;result.visibility=source.visibility;
+    if(source.visibility==1 && source.screen[2].x==source.screen[3].x &&
+       source.screen[2].y==source.screen[3].y && source.screen[2].depth==source.screen[3].depth)
+        result.visibility|=kPreparedSolidTriangle;
+    else if(source.visibility==2 && source.camera[2].x==source.camera[3].x &&
+            source.camera[2].y==source.camera[3].y && source.camera[2].z==source.camera[3].z)
+        result.visibility|=kPreparedSolidTriangle;
     if(source.visibility==1)for(std::size_t i=0;i<4;++i)
         result.vertex[i]={source.screen[i].x,source.screen[i].y,source.screen[i].depth};
     else for(std::size_t i=0;i<4;++i)
@@ -462,12 +469,13 @@ public:
     }
     void preparedSolidPanelRows(const TrackCamera& camera,const PreparedSolidPanel& face,
                                 int clipTop,int clipBottom) {
-        if(!face.visibility || face.bottom<std::max(_y,clipTop)-1 ||
+        const uint8_t visibility=face.visibility&~kPreparedSolidTriangle;
+        if(!visibility || face.bottom<std::max(_y,clipTop)-1 ||
            face.top>std::min(_y+_height-1,clipBottom)+1)return;
-        if(face.visibility==1) {
+        if(visibility==1) {
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
-            const bool triangle=c.x==d.x && c.y==d.y && c.depth==d.depth;
+            const bool triangle=face.visibility&kPreparedSolidTriangle;
             const auto trustedDepth=[](float depth) {
                 return std::isfinite(depth) && depth>=.001f && depth<=7.9f;
             };
@@ -487,7 +495,7 @@ public:
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarSurfaceVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
             cameraTriangleRows(camera,a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
-            if(c.x!=d.x || c.y!=d.y || c.z!=d.z)
+            if(!(face.visibility&kPreparedSolidTriangle))
                 cameraTriangleRows(camera,a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
         }
     }
