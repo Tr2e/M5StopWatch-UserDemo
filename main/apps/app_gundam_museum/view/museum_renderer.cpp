@@ -176,6 +176,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     raster.setSolidQuadFastPath(_optimizations && _solidQuadFastPath);
     raster.setDirectSpanFastPath(_optimizations && _directSpanFastPath);
     raster.setNativeFrameBufferFastPath(_optimizations && _nativeFrameBufferFastPath);
+    raster.setSparseCompositeFastPath(_optimizations && _sparseCompositeFastPath);
     // Nu's drag path expands the compact depth plane in place after fill, so
     // its next clear cannot use the source-resolution occupancy map.
     raster.setSparseDepthClearFastPath(_optimizations && _sparseDepthClearFastPath && !hiddenLine);

@@ -127,6 +127,7 @@ public:
     // Native framebuffer rows avoid thousands of tiny image API calls. The
     // implementation remains guarded by layout, clip and rotation checks.
     void setNativeFrameBufferFastPath(bool enabled) { _nativeFrameBufferFastPath=enabled; }
+    void setSparseCompositeFastPath(bool enabled) {_sparseCompositeFastPath=enabled;}
     void setSparseDepthStorage(uint8_t* storage,std::size_t bytes) {
         _occupiedDepth=storage;_occupiedDepthBytes=bytes;_trackedDepthPixels=0;_lastSparseDepthClear=false;
         if(storage && bytes)std::memset(storage,0,bytes);
@@ -577,6 +578,42 @@ private:
             x>=clipX && y>=clipY && x+width<=clipX+clipW && y+height<=clipY+clipH;
         if(direct)canvas.startWrite();
 #endif
+#ifdef ESP_PLATFORM
+        // During scaled RX-78 rendering the occupancy map is complete before
+        // composite. Scan its set pixels in source-row order instead of
+        // issuing a PSRAM depth read for every expanded destination pixel.
+        if constexpr(Scale)if(native && _sparseCompositeFastPath && _sparseDepthClearFastPath &&
+                             !_deferredSparseDepthRecord && _occupiedDepth) {
+            std::array<uint16_t,Width> destinationFirst{},destinationLast{};
+            destinationFirst.fill(uint16_t(width));
+            for(int px=0;px<width;++px) {
+                const auto sx=sourceX[px];
+                destinationFirst[sx]=std::min(destinationFirst[sx],uint16_t(px));
+                destinationLast[sx]=uint16_t(px+1);
+            }
+            for(int py=0;py<height;++py) {
+                const int sourceY=(2*py+1)*_height/(2*height);
+                const std::size_t rowStart=std::size_t(sourceY)*_width,rowEnd=rowStart+_width;
+                auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
+                const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
+                for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
+                    unsigned bits=_occupiedDepth[byte];
+                    if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
+                    if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
+                    while(bits) {
+                        const unsigned bit=unsigned(__builtin_ctz(bits));bits&=bits-1;
+                        const std::size_t index=byte*8+bit;
+                        const auto sx=uint16_t(index-rowStart);
+                        const uint16_t first=destinationFirst[sx],last=destinationLast[sx];
+                        const uint16_t value=color[rowStart+sx];
+                        const uint16_t nativeValue=uint16_t((value<<8)|(value>>8));
+                        for(uint16_t px=first;px<last;++px)destination[px]=nativeValue;
+                    }
+                }
+            }
+            return;
+        }
+#endif
         for(int py=0;py<height;++py) {
             const int sourceY=Scale?(2*py+1)*_height/(2*height):py;
             const auto offset=std::size_t(sourceY)*_width;
@@ -651,6 +688,7 @@ private:
     bool _solidQuadFastPath=false;
     bool _directSpanFastPath=false;
     bool _nativeFrameBufferFastPath=false;
+    bool _sparseCompositeFastPath=false;
     bool _sparseDepthClearRequested=false,_sparseDepthClearFastPath=false,_lastSparseDepthClear=false;
     bool _deferredSparseDepthRecord=false;
     std::size_t _trackedDepthPixels=0;

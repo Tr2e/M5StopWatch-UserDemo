@@ -39,6 +39,7 @@ public:
     void setSolidQuadFastPath(bool enabled){_solidQuadFastPath=enabled;}
     void setDirectSpanFastPath(bool enabled){_directSpanFastPath=enabled;}
     void setNativeFrameBufferFastPath(bool enabled){_nativeFrameBufferFastPath=enabled;}
+    void setSparseCompositeFastPath(bool enabled){_sparseCompositeFastPath=enabled;}
     void setNativeClearFastPath(bool enabled){_nativeClearFastPath=enabled;}
     void setSparseDepthClearFastPath(bool enabled){_sparseDepthClearFastPath=enabled;}
     void setParallelRasterFastPath(bool enabled){_parallelRasterFastPath=enabled;}
@@ -72,6 +73,7 @@ private:
     bool _solidQuadFastPath=true;
     bool _directSpanFastPath=true;
     bool _nativeFrameBufferFastPath=true;
+    bool _sparseCompositeFastPath=true;
     bool _nativeClearFastPath=true;
     bool _sparseDepthClearFastPath=true;
     bool _parallelRasterFastPath=true;
