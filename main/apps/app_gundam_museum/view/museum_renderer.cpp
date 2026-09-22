@@ -349,9 +349,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         if(facePasses[i]!=pass)continue;
         const auto& face=_surface->mesh.panels[i];
         if(useIndexedPanels) {
-            lets_and_go::PreparedIndexedSolidRasterPanel prepared{};float left=0,right=0,top=0,bottom=0;
-            projection.solidIndexedPanel(prepared,left,right,top,bottom,camera,face,i,project);
-            if(right<0 || left>=w || bottom<0 || top>=h) {++_stats.offscreen;continue;}
+            lets_and_go::PreparedIndexedSolidRasterPanel prepared{};float top=0,bottom=0;
+            projection.solidIndexedPanel(prepared,top,bottom,camera,face,i,project);
+            if(bottom<0 || top>=h) {++_stats.offscreen;continue;}
             if(bandIndices)prepared.visibility|=lets_and_go::kPreparedSolidBandSelected;
             if(indexedPanels!=_surface->preparedPanels.indexed &&
                preparedCount==_surface->fastIndexedPanels.capacity()) {

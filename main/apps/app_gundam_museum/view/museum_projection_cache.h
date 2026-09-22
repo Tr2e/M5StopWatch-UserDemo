@@ -161,13 +161,13 @@ struct MuseumProjectionCache {
     // Trusted RX-78 path: keep the exact projected triplets in the shared
     // cache and emit only their compact keys into the ordered command stream.
     template<class Transform> void solidIndexedPanel(lets_and_go::PreparedIndexedSolidRasterPanel& result,
-        float& left,float& right,float& top,float& bottom,const lets_and_go::TrackCamera& camera,
+        float& top,float& bottom,const lets_and_go::TrackCamera& camera,
         const lets_and_go::CarPanel& face,std::size_t index,Transform transform) {
         auto* status=readyData();auto* points=projectedData();
         result.visibility=uint8_t(1|lets_and_go::kPreparedSolidTrustedDepth|
             (indices[index*4+2]==indices[index*4+3] ? lets_and_go::kPreparedSolidTriangle:0));
         result.color=face.color;result.light=face.light;
-        left=top=1e20f;right=bottom=-1e20f;
+        top=1e20f;bottom=-1e20f;
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
             if(!status[key]) {
@@ -178,9 +178,8 @@ struct MuseumProjectionCache {
                 status[key]=1;
             }
             result.vertex[i]=key;
-            const auto p=points[key];
-            left=std::min(left,p.x);right=std::max(right,p.x);
-            top=std::min(top,p.y);bottom=std::max(bottom,p.y);
+            const float y=points[key].y;
+            top=std::min(top,y);bottom=std::max(bottom,y);
         }
     }
 private:
