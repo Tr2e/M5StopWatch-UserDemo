@@ -31,17 +31,7 @@ extern "C" void app_main(void)
     ui_hal::on_get_tick([]() { return GetHAL().millis(); });
 
     // Install apps
-    GetMooncake().installApp(std::make_unique<AppLauncher>());
-    GetMooncake().installApp(std::make_unique<AppTyphoon>());
-    GetMooncake().installApp(std::make_unique<AppGrokBotLab>());
-    GetMooncake().installApp(std::make_unique<AppGlowField>());
-    GetMooncake().installApp(std::make_unique<AppVectorCanyonFighter>());
-    GetMooncake().installApp(std::make_unique<AppLetsAndGoRacer>());
-    GetMooncake().installApp(std::make_unique<AppGundamMuseum>());
-    GetMooncake().installApp(std::make_unique<AppGundamArena>());
-    GetMooncake().installApp(std::make_unique<AppRuView>());
-    GetMooncake().installApp(std::make_unique<AppLuckyWheel>());
-    GetMooncake().installApp(std::make_unique<AppSetup>());
+    const int museumApp=GetMooncake().installApp(std::make_unique<AppGundamMuseum>());GetMooncake().openApp(museumApp);
 
     // Main loop
     while (1) {

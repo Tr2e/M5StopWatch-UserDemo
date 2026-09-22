@@ -20,6 +20,7 @@ struct RenderStats {
     uint32_t clearUs=0,prepareUs=0,rasterUs=0,blitUs=0,overlayUs=0;
     uint32_t backgroundUs=0,spaceUs=0,depthClearUs=0;
     uint32_t panelPrepareUs=0,spaceWaitUs=0,mainRasterUs=0,workerRasterUs=0;
+    uint32_t workerStackFree=0;
     uint32_t internalProjectedBytes=0,internalDepthBytes=0;
 };
 class MuseumRenderer {
@@ -68,7 +69,7 @@ private:
         EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
         lets_and_go::RenderScratch<std::array<uint8_t,(424*424+7)/8>> fastOccupiedDepth;
-        std::array<lets_and_go::PreparedSolidPanel,Mesh::capacity> preparedPanels{};
+        std::array<lets_and_go::PreparedSolidRasterPanel,Mesh::capacity> preparedPanels{};
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerColor;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerDepth;
     };

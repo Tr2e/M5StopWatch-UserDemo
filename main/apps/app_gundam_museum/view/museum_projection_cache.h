@@ -115,8 +115,8 @@ struct MuseumProjectionCache {
     // Solid parallel exhibits never consume perspective UVs or generic paint
     // state. Build their compact replay record directly while preserving the
     // same lazy projection, bounds and near-plane fallback as panel().
-    template<bool TrustedNearPlane=false,class Transform> void solidPanel(lets_and_go::PreparedSolidPanel& result,
-        float& left,float& right,const lets_and_go::TrackCamera& camera,
+    template<bool TrustedNearPlane=false,class Transform> void solidPanel(lets_and_go::PreparedSolidRasterPanel& result,
+        float& left,float& right,float& top,float& bottom,const lets_and_go::TrackCamera& camera,
         const lets_and_go::CarPanel& face,std::size_t index,Transform transform) {
         auto* status=readyData();auto* points=projectedData();
         for(unsigned i=0;i<4;++i) {
@@ -140,21 +140,22 @@ struct MuseumProjectionCache {
             if constexpr(!TrustedNearPlane)if(points[key].z==0) {
                 lets_and_go::PreparedCarPanel generic{};
                 lets_and_go::prepareCarPanel(generic,camera,face,transform);
-                result=lets_and_go::compactSolidPanel(generic);
+                const auto selected=lets_and_go::compactSolidPanel(generic);
+                result=lets_and_go::compactSolidRasterPanel(selected);
                 if(indices[index*4+2]==indices[index*4+3])
                     result.visibility|=lets_and_go::kPreparedSolidTriangle;
-                left=generic.left;right=generic.right;return;
+                left=generic.left;right=generic.right;top=generic.top;bottom=generic.bottom;return;
             }
         }
         result.visibility=uint8_t(1|lets_and_go::kPreparedSolidTrustedDepth|
             (indices[index*4+2]==indices[index*4+3] ?
             lets_and_go::kPreparedSolidTriangle:0));result.color=face.color;result.light=face.light;
-        left=result.top=1e20f;right=result.bottom=-1e20f;
+        left=top=1e20f;right=bottom=-1e20f;
         for(unsigned i=0;i<4;++i) {
             const auto p=points[indices[index*4+i]];
             result.vertex[i]={p.x,p.y,p.z};
             left=std::min(left,p.x);right=std::max(right,p.x);
-            result.top=std::min(result.top,p.y);result.bottom=std::max(result.bottom,p.y);
+            top=std::min(top,p.y);bottom=std::max(bottom,p.y);
         }
     }
 private:

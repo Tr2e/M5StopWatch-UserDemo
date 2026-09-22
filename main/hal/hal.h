@@ -170,6 +170,8 @@ public:
     bool hasDisplayFrameBuffer() const;
     uint8_t* getDisplayFrameBufferLine(int y);
     void markDisplayFrameBufferModified(int x,int y,int width,int height);
+    bool setDisplayFrameBufferAsync(bool enabled);
+    uint32_t getDisplayFrameBufferPresentUs() const;
     void updateCanvas();
     void updateCanvasRegion(int x,int y,int width,int height);
 

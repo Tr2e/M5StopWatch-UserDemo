@@ -14,6 +14,7 @@ struct Mesh {
     std::array<lets_and_go::CarPanel,capacity> panels{};
     std::array<Point,capacity> normals{};
     std::array<Point,capacity> anchors{};
+    std::array<float,capacity> planeOffsets{};
     std::array<Part,capacity> parts{};
     std::array<bool,capacity> twoSided{};
     std::size_t count=0,buriedOmitted=0;

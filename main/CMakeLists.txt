@@ -63,7 +63,10 @@ idf_component_register(
 set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/apps/app_lets_and_go_racer/view/garage_renderer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/apps/app_lets_and_go_racer/view/race_renderer.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/apps/app_gundam_museum/view/museum_renderer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/apps/app_gundam_arena/view/arena_renderer.cpp"
     PROPERTIES COMPILE_OPTIONS "-O2;-fno-builtin-memset"
+)
+set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/apps/app_gundam_museum/view/museum_renderer.cpp"
+    PROPERTIES COMPILE_OPTIONS "-O2;-fno-builtin-memset;-mtext-section-literals"
 )

@@ -43,6 +43,14 @@ struct PreparedSolidPanel {
     uint8_t light=255;
     uint8_t visibility=0; // Low bits match PreparedCarPanel; high bits carry replay invariants.
 };
+// Once band selection is complete, vertical bounds are dead. Keep the final
+// raster command tightly packed so both cores stream less shared memory.
+struct PreparedSolidRasterPanel {
+    std::array<PreparedSolidPanel::Vertex,4> vertex{};
+    uint16_t color=0;
+    uint8_t light=255;
+    uint8_t visibility=0;
+};
 constexpr uint8_t kPreparedSolidTriangle=0x80u;
 constexpr uint8_t kPreparedSolidTrustedDepth=0x40u;
 constexpr uint8_t kPreparedSolidBandSelected=0x20u;
@@ -68,6 +76,10 @@ inline PreparedSolidPanel compactSolidPanel(const PreparedCarPanel& source) {
         if(trusted)result.visibility|=kPreparedSolidTrustedDepth;
     }
     return result;
+}
+
+inline PreparedSolidRasterPanel compactSolidRasterPanel(const PreparedSolidPanel& source) {
+    return {source.vertex,source.color,source.light,source.visibility};
 }
 
 inline CarScreenVertex projectCarSurface(const TrackCamera& camera,CarSurfaceVertex p) {
@@ -495,9 +507,9 @@ public:
             cameraTriangleRows(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light,clipTop,clipBottom);
         }
     }
-#ifdef ESP_PLATFORM
-    __attribute__((optimize("O3")))
-#endif
+    // Keep the innermost triangle clone in flash. A source-level IRAM
+    // duplicate lost GCC's parameter-specialized clone, and relocating the
+    // exact clone increased frame time while reducing internal heap.
     void preparedSolidPanelRows(const TrackCamera& camera,const PreparedSolidPanel& face,
                                 int clipTop,int clipBottom) {
         const uint8_t visibility=face.visibility&~(kPreparedSolidTriangle|kPreparedSolidTrustedDepth|
@@ -555,6 +567,65 @@ public:
             cameraTriangleRows(camera,a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
             if(!(face.visibility&kPreparedSolidTriangle))
                 cameraTriangleRows(camera,a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
+        }
+    }
+#ifdef ESP_PLATFORM
+    __attribute__((optimize("O3"),section(".iram1")))
+#endif
+    // Replay an already selected, trusted solid band. The caller guarantees
+    // projected/trusted vertices and ordered band membership, allowing the
+    // frame-wide raster/storage invariants to be resolved once per batch
+    // instead of once per panel.
+    void preparedSolidPanelBatchRowsTrusted(const TrackCamera& camera,
+                                             const PreparedSolidRasterPanel* panels,
+                                             const uint16_t* panelIndices,
+                                             std::size_t count,int clipTop,int clipBottom) {
+        const bool crossesDepth=_splitDepth && _width==_splitDepthWidth &&
+            clipTop<_splitDepthRow && clipBottom>=_splitDepthRow;
+        const bool crossesColor=_splitColor && _width==_splitColorWidth &&
+            clipTop<_splitColorRow && clipBottom>=_splitColorRow;
+        if(!_solidFastPath || !_solidSpanFastPath || !_trustedSolidDepthFastPath ||
+           !_solidQuadFastPath || crossesDepth || crossesColor) {
+            for(std::size_t i=0;i<count;++i) {
+                const auto panel=panelIndices?panelIndices[i]:i;
+                PreparedSolidPanel expanded{};
+                expanded.vertex=panels[panel].vertex;
+                expanded.color=panels[panel].color;expanded.light=panels[panel].light;
+                expanded.visibility=panels[panel].visibility|kPreparedSolidBandSelected;
+                preparedSolidPanelRows(camera,expanded,clipTop,clipBottom);
+            }
+            return;
+        }
+        SolidRasterTarget target{depthData(),colorData(),0,0};
+        if(_splitDepth && _width==_splitDepthWidth && clipTop>=_splitDepthRow) {
+            target.depth=_splitDepth;
+            target.depthIndexOffset=std::size_t(_splitDepthRow)*_width;
+        }
+        if(_splitColor && _width==_splitColorWidth && clipTop>=_splitColorRow) {
+            target.color=_splitColor;
+            target.colorIndexOffset=std::size_t(_splitColorRow)*_width;
+        }
+        const bool recordSparse=_sparseDepthClearFastPath && !_deferredSparseDepthRecord;
+        for(std::size_t i=0;i<count;++i) {
+            const auto& face=panels[panelIndices?panelIndices[i]:i];
+            const auto vertex=[&](unsigned v) {
+                const auto p=face.vertex[v];return SolidScreenVertex{p.x,p.y,p.z};
+            };
+            const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
+            const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
+            if(recordSparse) {
+                triangleImpl<false,true,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
+                                                                 clipTop,clipBottom,solidColor,&target);
+                if(!(face.visibility&kPreparedSolidTriangle))
+                    triangleImpl<false,true,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                                     clipTop,clipBottom,solidColor,&target);
+            } else {
+                triangleImpl<false,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
+                                                             clipTop,clipBottom,solidColor,&target);
+                if(!(face.visibility&kPreparedSolidTriangle))
+                    triangleImpl<false,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                                 clipTop,clipBottom,solidColor,&target);
+            }
         }
     }
     // Hidden-line stroke: keep a surface only when its depth matches the filled
@@ -676,6 +747,62 @@ public:
         if(width==_width && height==_height)blitScaledImpl<false>(canvas,x,y,width,height,nativeFrameBuffer,nativeStride);
         else blitScaledImpl<true>(canvas,x,y,width,height,nativeFrameBuffer,nativeStride);
     }
+#ifdef ESP_PLATFORM
+    bool canBlitScaledNativeSparse(int width,int height,uint8_t* nativeFrameBuffer,
+                                   std::size_t nativeStride,int x) const {
+        return width>0 && height>0 && width<=Width && height<=Height &&
+            (width!=_width || height!=_height) && _sparseCompositeFastPath &&
+            _sparseDepthClearFastPath && !_deferredSparseDepthRecord && _occupiedDepth &&
+            nativeFrameBuffer && nativeStride>=std::size_t(x+width)*2;
+    }
+    void blitScaledNativeSparseRows(uint8_t* nativeFrameBuffer,std::size_t nativeStride,
+                                    int x,int y,int width,int height,int firstRow,int lastRow,
+                                    const uint16_t* mappedFirst=nullptr,const uint16_t* mappedLast=nullptr,
+                                    const uint16_t* mappedSourceY=nullptr) {
+        std::array<uint16_t,Width> sourceX{},destinationFirstStorage{},destinationLastStorage{},row{};
+        if(!mappedFirst || !mappedLast) {
+            destinationFirstStorage.fill(uint16_t(width));
+            for(int px=0;px<width;++px) {
+                const auto sx=uint16_t((2*px+1)*_width/(2*width));
+                destinationFirstStorage[sx]=std::min(destinationFirstStorage[sx],uint16_t(px));
+                destinationLastStorage[sx]=uint16_t(px+1);
+            }
+        }
+        const auto* destinationFirst=mappedFirst?mappedFirst:destinationFirstStorage.data();
+        const auto* destinationLast=mappedLast?mappedLast:destinationLastStorage.data();
+        const auto* color=colorData();
+        int cachedSourceY=-1;std::size_t cachedCount=0;
+        for(int py=std::max(0,firstRow);py<=std::min(height-1,lastRow);++py) {
+            const int sourceY=mappedSourceY?mappedSourceY[py]:(2*py+1)*_height/(2*height);
+            const std::size_t rowStart=std::size_t(sourceY)*_width,rowEnd=rowStart+_width;
+            auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
+            if(sourceY!=cachedSourceY) {
+                cachedSourceY=sourceY;cachedCount=0;
+                const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
+                    ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
+                    : color+rowStart;
+                const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
+                for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
+                    unsigned bits=_occupiedDepth[byte];
+                    if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
+                    if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
+                    while(bits) {
+                        const unsigned bit=unsigned(__builtin_ctz(bits));bits&=bits-1;
+                        const auto sx=uint16_t(byte*8+bit-rowStart);
+                        sourceX[cachedCount]=sx;
+                        const uint16_t value=sourceColor[sx];
+                        row[cachedCount++]=uint16_t((value<<8)|(value>>8));
+                    }
+                }
+            }
+            for(std::size_t i=0;i<cachedCount;++i) {
+                const auto sx=sourceX[i];
+                for(uint16_t px=destinationFirst[sx];px<destinationLast[sx];++px)
+                    destination[px]=row[i];
+            }
+        }
+    }
+#endif
 private:
     template<bool Scale> void blitScaledImpl(lgfx::LGFXBase& canvas,int x,int y,int width,int height,
                                              uint8_t* nativeFrameBuffer,std::size_t nativeStride) {
@@ -714,44 +841,7 @@ private:
         // issuing a PSRAM depth read for every expanded destination pixel.
         if constexpr(Scale)if(native && _sparseCompositeFastPath && _sparseDepthClearFastPath &&
                              !_deferredSparseDepthRecord && _occupiedDepth) {
-            std::array<uint16_t,Width> destinationFirst{},destinationLast{};
-            destinationFirst.fill(uint16_t(width));
-            for(int px=0;px<width;++px) {
-                const auto sx=sourceX[px];
-                destinationFirst[sx]=std::min(destinationFirst[sx],uint16_t(px));
-                destinationLast[sx]=uint16_t(px+1);
-            }
-            int cachedSourceY=-1;
-            std::size_t cachedCount=0;
-            for(int py=0;py<height;++py) {
-                const int sourceY=(2*py+1)*_height/(2*height);
-                const std::size_t rowStart=std::size_t(sourceY)*_width,rowEnd=rowStart+_width;
-                auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
-                if(sourceY!=cachedSourceY) {
-                    cachedSourceY=sourceY;cachedCount=0;
-                    const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
-                        ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
-                        : color+rowStart;
-                    const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
-                    for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
-                        unsigned bits=_occupiedDepth[byte];
-                        if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
-                        if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
-                        while(bits) {
-                            const unsigned bit=unsigned(__builtin_ctz(bits));bits&=bits-1;
-                            const auto sx=uint16_t(byte*8+bit-rowStart);
-                            sourceX[cachedCount]=sx;
-                            const uint16_t value=sourceColor[sx];
-                            row[cachedCount++]=uint16_t((value<<8)|(value>>8));
-                        }
-                    }
-                }
-                for(std::size_t i=0;i<cachedCount;++i) {
-                    const auto sx=sourceX[i];
-                    for(uint16_t px=destinationFirst[sx];px<destinationLast[sx];++px)
-                        destination[px]=row[i];
-                }
-            }
+            blitScaledNativeSparseRows(nativeFrameBuffer,nativeStride,x,y,width,height,0,height-1);
             return;
         }
 #endif

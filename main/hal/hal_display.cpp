@@ -12,6 +12,10 @@
 #include <uitk/short_namespace.hpp>
 #include <memory>
 #include <algorithm>
+#include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 
 static const std::string_view _tag = "HAL-Display";
 
@@ -30,6 +34,9 @@ static constexpr gpio_num_t cfg_pin_rst  = GPIO_NUM_NC;
 class StopWatchFrameBuffer : public lgfx::Panel_AMOLED_Framebuffer {
 public:
     explicit StopWatchFrameBuffer(lgfx::Panel_AMOLED* panel):Panel_AMOLED_Framebuffer(panel) {}
+    ~StopWatchFrameBuffer() override {
+        shutdownAsync();
+    }
     uint8_t* line(uint_fast16_t y) {
         return _lines_buffer && y<_cfg.panel_height ? _lines_buffer[y] : nullptr;
     }
@@ -40,6 +47,139 @@ public:
         if(y<_range_mod.top)_range_mod.top=y;
         if(y+h-1>_range_mod.bottom)_range_mod.bottom=y+h-1;
     }
+    bool setAsync(bool enabled) {
+        if(enabled==_async)return enabled ? _asyncReady : true;
+        if(enabled) {
+            if(!prepareAsync())return false;
+            _async=true;return true;
+        }
+        waitPresent();_async=false;
+        // Keep the framebuffer API on the pixels that were most recently
+        // submitted when the direct-rendered app hands control back to LVGL.
+        selectRenderBuffer(_lastSubmitted);
+        return true;
+    }
+    uint32_t lastPresentUs() const{return _lastPresentUs;}
+
+    void display(uint_fast16_t x,uint_fast16_t y,uint_fast16_t w,uint_fast16_t h) override {
+        if(!_async) {
+            Panel_AMOLED_Framebuffer::display(x,y,w,h);return;
+        }
+        if(w && h) {
+            _range_mod.left=std::min<int_fast16_t>(_range_mod.left,x);
+            _range_mod.right=std::max<int_fast16_t>(_range_mod.right,x+w-1);
+            _range_mod.top=std::min<int_fast16_t>(_range_mod.top,y);
+            _range_mod.bottom=std::max<int_fast16_t>(_range_mod.bottom,y+h-1);
+        }
+        if(_range_mod.empty())return;
+
+        // Two buffers are sufficient because a complete RX-78 render is much
+        // longer than one panel transfer. Wait only when the previous transfer
+        // has not completed before the next finished frame is submitted.
+        waitPresent();
+        _pendingLeft=uint16_t(_range_mod.left)&~1u;
+        _pendingTop=uint16_t(_range_mod.top)&~1u;
+        const uint16_t right=uint16_t(_range_mod.right)|1u;
+        const uint16_t bottom=uint16_t(_range_mod.bottom)|1u;
+        _pendingWidth=right-_pendingLeft+1;
+        _pendingHeight=bottom-_pendingTop+1;
+        _pendingBuffer=_buffers[_renderIndex];
+        _lastSubmitted=_renderIndex;
+        _range_mod.top=INT16_MAX;_range_mod.left=INT16_MAX;
+        _range_mod.right=0;_range_mod.bottom=0;
+        selectRenderBuffer(_renderIndex^1u);
+        _inFlight=true;
+        xSemaphoreGive(_presentStart);
+    }
+
+private:
+    static void presentTask(void* argument) {
+        auto& framebuffer=*static_cast<StopWatchFrameBuffer*>(argument);
+        for(;;) {
+            xSemaphoreTake(framebuffer._presentStart,portMAX_DELAY);
+            if(framebuffer._stopping)break;
+            const auto started=esp_timer_get_time();
+            framebuffer.presentPending();
+            framebuffer._lastPresentUs=uint32_t(esp_timer_get_time()-started);
+            xSemaphoreGive(framebuffer._presentDone);
+        }
+        xSemaphoreGive(framebuffer._presentDone);
+        vTaskDelete(nullptr);
+    }
+    bool prepareAsync() {
+        if(_asyncReady)return true;
+        if(!_frame_buffer || !_lines_buffer || _cfg.panel_height<1)return false;
+        _buffers[0]=_frame_buffer;
+        _stride=_cfg.panel_height>1 ? std::size_t(_lines_buffer[1]-_lines_buffer[0]) :
+            std::size_t((_cfg.panel_width+3)&~3u)*(_write_bits>>3);
+        _buffers[1]=static_cast<uint8_t*>(lgfx::heap_alloc_psram(_stride*_cfg.panel_height));
+        if(!_buffers[1])return false;
+        _presentStart=xSemaphoreCreateBinary();
+        _presentDone=xSemaphoreCreateBinary();
+        if(!_presentStart || !_presentDone ||
+           xTaskCreatePinnedToCore(presentTask,"display_present",4096,this,
+                                  tskIDLE_PRIORITY+3,&_presentTask,1)!=pdPASS) {
+            shutdownAsync();return false;
+        }
+        _renderIndex=0;_lastSubmitted=0;_asyncReady=true;return true;
+    }
+    void selectRenderBuffer(uint8_t index) {
+        if(!_buffers[index])return;
+        _renderIndex=index;_frame_buffer=_buffers[index];
+        for(uint_fast16_t y=0;y<_cfg.panel_height;++y)
+            _lines_buffer[y]=_frame_buffer+std::size_t(y)*_stride;
+    }
+    void waitPresent() {
+        if(!_inFlight)return;
+        xSemaphoreTake(_presentDone,portMAX_DELAY);_inFlight=false;
+    }
+    void presentPending() {
+        _panel->setWindow(_pendingLeft,_pendingTop,
+                          _pendingLeft+_pendingWidth-1,_pendingTop+_pendingHeight-1);
+        auto* bus=_panel->getBus();
+        const std::size_t rowBytes=std::size_t(_pendingWidth)*(_write_bits>>3);
+        // Amortize QSPI DMA descriptor setup while retaining two alternating
+        // internal buffers. The framebuffer stride includes the panel padding,
+        // so pack a few visible rows rather than transmitting that padding.
+        constexpr uint_fast16_t rowsPerDma=4;
+        const std::size_t dmaBytes=rowBytes*rowsPerDma;
+        uint8_t* dma[2]{bus->getDMABuffer(dmaBytes),bus->getDMABuffer(dmaBytes)};
+        _panel->start_qspi();
+        const auto* source=_pendingBuffer+std::size_t(_pendingTop)*_stride+
+                           std::size_t(_pendingLeft)*(_write_bits>>3);
+        for(uint_fast16_t row=0,chunk=0;row<_pendingHeight;row+=rowsPerDma,++chunk) {
+            const auto rows=std::min<uint_fast16_t>(rowsPerDma,_pendingHeight-row);
+            auto* output=dma[chunk&1u];
+            for(uint_fast16_t packed=0;packed<rows;++packed)
+                std::memcpy(output+std::size_t(packed)*rowBytes,
+                            source+std::size_t(row+packed)*_stride,rowBytes);
+            bus->writeBytes(output,rowBytes*rows,false,true);
+        }
+        bus->wait();
+        _panel->end_qspi();
+    }
+    void shutdownAsync() {
+        if(_asyncReady) {
+            waitPresent();_async=false;_stopping=true;
+            xSemaphoreGive(_presentStart);
+            xSemaphoreTake(_presentDone,portMAX_DELAY);
+            _presentTask=nullptr;
+        }
+        if(_presentStart){vSemaphoreDelete(_presentStart);_presentStart=nullptr;}
+        if(_presentDone){vSemaphoreDelete(_presentDone);_presentDone=nullptr;}
+        if(_buffers[0])selectRenderBuffer(0);
+        if(_buffers[1]){lgfx::heap_free(_buffers[1]);_buffers[1]=nullptr;}
+        _buffers[0]=nullptr;_asyncReady=false;_stopping=false;_inFlight=false;
+    }
+    uint8_t* _buffers[2]{};
+    uint8_t* _pendingBuffer=nullptr;
+    std::size_t _stride=0;
+    SemaphoreHandle_t _presentStart=nullptr,_presentDone=nullptr;
+    TaskHandle_t _presentTask=nullptr;
+    uint16_t _pendingLeft=0,_pendingTop=0,_pendingWidth=0,_pendingHeight=0;
+    volatile uint32_t _lastPresentUs=0;
+    uint8_t _renderIndex=0,_lastSubmitted=0;
+    bool _async=false,_asyncReady=false,_inFlight=false,_stopping=false;
 };
 
 class Panel_CO5300 : public lgfx::Panel_AMOLED {
@@ -113,6 +253,14 @@ public:
     uint8_t* frameBufferLine(uint_fast16_t y) {return _panel_instance.frameBufferLine(y);}
     void markFrameBuffer(uint_fast16_t x,uint_fast16_t y,uint_fast16_t w,uint_fast16_t h) {
         _panel_instance.markFrameBuffer(x,y,w,h);
+    }
+    bool setFrameBufferAsync(bool enabled) {
+        auto* panel=_panel_instance.getPanelFb();
+        return panel && static_cast<StopWatchFrameBuffer*>(panel)->setAsync(enabled);
+    }
+    uint32_t frameBufferPresentUs() {
+        auto* panel=_panel_instance.getPanelFb();
+        return panel ? static_cast<const StopWatchFrameBuffer*>(panel)->lastPresentUs() : 0;
     }
 
     // static constexpr int in_i2c_port                   = 0;  // I2C_NUM_0
@@ -253,6 +401,16 @@ void Hal::markDisplayFrameBufferModified(int x,int y,int width,int height)
 {
     if(_display && x>=0 && y>=0 && width>0 && height>0)
         _display->markFrameBuffer(uint_fast16_t(x),uint_fast16_t(y),uint_fast16_t(width),uint_fast16_t(height));
+}
+
+bool Hal::setDisplayFrameBufferAsync(bool enabled)
+{
+    return _display && _display->setFrameBufferAsync(enabled);
+}
+
+uint32_t Hal::getDisplayFrameBufferPresentUs() const
+{
+    return _display ? _display->frameBufferPresentUs() : 0;
 }
 
 void Hal::updateCanvas()

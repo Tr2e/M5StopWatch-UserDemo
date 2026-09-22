@@ -1,9 +1,11 @@
 #include "app_gundam_museum.h"
 #include "view/museum_layout.h"
 #include "../common/performance/display_frame_scope.h"
+#include "../common/network/wifi_service.h"
 #include <assets/assets.h>
 #include <hal/hal.h>
 #include <mooncake_log.h>
+#include <wifi_manager.h>
 #include <esp_timer.h>
 #include <esp_heap_caps.h>
 #include <freertos/FreeRTOS.h>
@@ -17,7 +19,12 @@ AppGundamMuseum::AppGundamMuseum(){setAppInfo().name="Gundam Museum";setAppInfo(
 void AppGundamMuseum::onOpen(){
     GetHAL().stopLvglUpdate();GetHAL().lvglLock();GetHAL().lvglUnlock();
     _controller.reset();_presented=false;
+    auto& wifi=WifiManager::GetInstance();
+    _resumeWifi=network::WifiService::GetInstance().getStatus().has_saved_network && !wifi.IsConfigMode();
+    if(_resumeWifi)wifi.StopStation();
     _direct=GetHAL().hasDisplayFrameBuffer();
+    if(_direct && !GetHAL().setDisplayFrameBufferAsync(true))
+        mclog::tagWarn("Museum","async framebuffer unavailable; using synchronous present");
     const bool ready=_renderer.open();
     mclog::tagInfo("Museum","open ready={} working_bytes={}",ready,_renderer.workingBytes());
     _input.open();_input.setScreen(lets_and_go::GameScreen::MuseumInspect);
@@ -27,12 +34,22 @@ void AppGundamMuseum::onOpen(){
     resetPerformanceWindow(GetHAL().millis());
 }
 void AppGundamMuseum::onRunning(){
+    benchmarkFrame();return;
     auto input=_input.sample(GetHAL().millis());
     const uint32_t now=GetHAL().millis();
     const bool dirty=_controller.update(input,now);
     if(_controller.exitRequested()){close();return;}
     if(dirty)draw(now);
     GetHAL().delay(5);
+}
+void AppGundamMuseum::benchmarkFrame(){
+    constexpr uint32_t frames=96;gundam_museum::View view;view.model=gundam_museum::ModelId::Rx78;view.equipment=true;view.pitch=.10f;view.yaw=float(_benchmarkFrame)*6.28318530718f/float(frames);auto& display=GetHAL().getDisplay();
+    const app_performance::DisplayRegion region{0,0,display.width(),display.height()};const uint64_t started=esp_timer_get_time();app_performance::DisplayFrameScope frame(display,region);_renderer.render(display,view,65,true,false,false,true);const uint64_t rendered=esp_timer_get_time();
+    uint32_t frameHash=2166136261u;for(int y=0;y<display.height();++y){const auto* row=reinterpret_cast<const uint16_t*>(GetHAL().getDisplayFrameBufferLine(y));for(int x=0;x<display.width();++x)frameHash=(frameHash^row[x])*16777619u;}_benchmarkHashA=(_benchmarkHashA^frameHash)*16777619u;_benchmarkHashB+=frameHash;
+    const uint64_t beforePresent=esp_timer_get_time();frame.finish();const uint64_t finished=esp_timer_get_time();const auto stats=_renderer.stats();
+    _benchmarkDrawUs+=rendered-started;_benchmarkPresentUs+=finished-beforePresent;_benchmarkAsyncPresentUs+=GetHAL().getDisplayFrameBufferPresentUs();_benchmarkCullUs+=stats.prepareUs;_benchmarkPanelUs+=stats.panelPrepareUs;_benchmarkRasterUs+=stats.rasterUs;_benchmarkMainUs+=stats.mainRasterUs;_benchmarkWorkerUs+=stats.workerRasterUs;_benchmarkBlitUs+=stats.blitUs;_benchmarkBackgroundUs+=stats.backgroundUs;
+    if(++_benchmarkFrame==frames){mclog::tagInfo("MuseumBatch","batch={} draw={} present={} panel_tx={} cycle={} background={} cull={} panel={} raster={} main={} worker={} blit={} hash={}:{}",_benchmarkBatch++,uint32_t(_benchmarkDrawUs/frames),uint32_t(_benchmarkPresentUs/frames),uint32_t(_benchmarkAsyncPresentUs/frames),uint32_t((_benchmarkDrawUs+_benchmarkPresentUs)/frames),uint32_t(_benchmarkBackgroundUs/frames),uint32_t(_benchmarkCullUs/frames),uint32_t(_benchmarkPanelUs/frames),uint32_t(_benchmarkRasterUs/frames),uint32_t(_benchmarkMainUs/frames),uint32_t(_benchmarkWorkerUs/frames),uint32_t(_benchmarkBlitUs/frames),_benchmarkHashA,_benchmarkHashB);_benchmarkFrame=0;_benchmarkHashA=2166136261u;_benchmarkHashB=0;_benchmarkDrawUs=_benchmarkPresentUs=_benchmarkAsyncPresentUs=_benchmarkCullUs=_benchmarkPanelUs=_benchmarkRasterUs=_benchmarkMainUs=_benchmarkWorkerUs=_benchmarkBlitUs=_benchmarkBackgroundUs=0;}
+    GetHAL().feedTheDog();GetHAL().delay(1);
 }
 void AppGundamMuseum::draw(uint32_t now){
     const uint64_t start=esp_timer_get_time();
@@ -87,13 +104,14 @@ void AppGundamMuseum::draw(uint32_t now){
         mclog::tagInfo("MuseumStageParallel","panel_prepare_us={} space_wait_us={} main_raster_us={} worker_raster_us={}",
             uint32_t(_perfPanelPrepareUs/frames),uint32_t(_perfSpaceWaitUs/frames),
             uint32_t(_perfMainRasterUs/frames),uint32_t(_perfWorkerRasterUs/frames));
-        mclog::tagInfo("MuseumMemory","internal_free={} internal_min={} internal_largest={} psram_free={} psram_min={} psram_largest={} projected_internal_bytes={} depth_internal_bytes={}",
+        mclog::tagInfo("MuseumMemory","internal_free={} internal_min={} internal_largest={} psram_free={} psram_min={} psram_largest={} projected_internal_bytes={} depth_internal_bytes={} worker_stack_free={}",
             heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
             heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
             heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM),
-            heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),stats.internalProjectedBytes,stats.internalDepthBytes);
+            heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),stats.internalProjectedBytes,stats.internalDepthBytes,
+            stats.workerStackFree);
         resetPerformanceWindow(finishedMs);
     }
 }
@@ -104,6 +122,9 @@ void AppGundamMuseum::resetPerformanceWindow(uint32_t now){
     _perfPanelPrepareUs=0;_perfSpaceWaitUs=0;_perfMainRasterUs=0;_perfWorkerRasterUs=0;
 }
 void AppGundamMuseum::onClose(){
+    if(_direct)GetHAL().setDisplayFrameBufferAsync(false);
     _input.close();_renderer.close();_controller.reset();_direct=false;_presented=false;
+    if(_resumeWifi)WifiManager::GetInstance().StartStation();
+    _resumeWifi=false;
     GetHAL().startLvglUpdate();
 }
