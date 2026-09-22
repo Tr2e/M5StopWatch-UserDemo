@@ -34,7 +34,7 @@ public:
         lets_and_go::mesh_parts::MeshWriter writer{{m.panels.data(),Mesh::capacity},m.count,false};
         lets_and_go::mesh_parts::Builder base{writer,12};
         base.quad(a,b,c,d,lets_and_go::mesh_parts::shade(options.gray?uint16_t(0xdedb):color,light));
-        m.normals[m.count]=n;m.parts[m.count]=part;m.twoSided[m.count]=twoSided || part==Part::Head || part==Part::Shield || part==Part::Sabers || part==Part::Rifle || part==Part::Hands || part==Part::Arms || part==Part::Shoulders || part==Part::Shins;m.count=writer.count;
+        m.normals[m.count]=n;m.anchors[m.count]=a;m.parts[m.count]=part;m.twoSided[m.count]=twoSided || part==Part::Head || part==Part::Shield || part==Part::Sabers || part==Part::Rifle || part==Part::Hands || part==Part::Arms || part==Part::Shoulders || part==Part::Shins;m.count=writer.count;
     }
     void box(float x,float y,float z,float w,float h,float d,uint16_t color,bool twoSided=false){
         const float l=x-w/2,r=x+w/2,b=y-h/2,t=y+h/2,f=z+d/2,k=z-d/2;

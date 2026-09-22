@@ -13,6 +13,7 @@ struct Mesh {
     static constexpr std::size_t capacity=4096;
     std::array<lets_and_go::CarPanel,capacity> panels{};
     std::array<Point,capacity> normals{};
+    std::array<Point,capacity> anchors{};
     std::array<Part,capacity> parts{};
     std::array<bool,capacity> twoSided{};
     std::size_t count=0,buriedOmitted=0;

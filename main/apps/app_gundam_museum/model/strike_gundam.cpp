@@ -36,7 +36,7 @@ public:
         lets_and_go::mesh_parts::MeshWriter writer{{m.panels.data(),Mesh::capacity},m.count,false};
         lets_and_go::mesh_parts::Builder base{writer,12};
         base.quad(a,b,c,d,lets_and_go::mesh_parts::shade(options.gray?ivory:color,light));
-        m.normals[m.count]=n;m.parts[m.count]=part;// The open palm is assembled from thin fingers; retain both sides of
+        m.normals[m.count]=n;m.anchors[m.count]=a;m.parts[m.count]=part;// The open palm is assembled from thin fingers; retain both sides of
         // its socket walls at the production raster's quantized grazing edges.
         // The collar and vent blades are thin inserts. Their grazing rims can
         // occupy a pixel even when the continuous normal points slightly away.

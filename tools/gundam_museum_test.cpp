@@ -102,6 +102,9 @@ int main(int argc,char** argv){
     for(size_t i=0;i<renderer.mesh().count;++i){
         const auto& mesh=renderer.mesh();++parts[static_cast<unsigned>(mesh.parts[i])];
         assert(std::abs(dot(mesh.normals[i],mesh.normals[i])-1)<.0001f);
+        assert(mesh.anchors[i].x==mesh.panels[i].point[0].x &&
+               mesh.anchors[i].y==mesh.panels[i].point[0].y &&
+               mesh.anchors[i].z==mesh.panels[i].point[0].z);
         for(auto p:mesh.panels[i].point)assert(std::isfinite(p.x)&&std::isfinite(p.y)&&std::isfinite(p.z));
     }
     for(unsigned i=0;i<static_cast<unsigned>(Part::Bazooka);++i)assert(parts[i]>0);

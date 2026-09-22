@@ -240,8 +240,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(_optimizations)for(std::size_t i=0;i<_surface->mesh.count;++i){
         facePasses[i]=-1;
         if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
-        const auto& face=_surface->mesh.panels[i];
-        const float facing=dot(_surface->mesh.normals[i],subtract(eye,face.point[0]));
+        const float facing=dot(_surface->mesh.normals[i],subtract(eye,_surface->mesh.anchors[i]));
         // Keep the accepted grazing band and Nu backpack mounting rims;
         // performance work must not silently remove these coverage repairs.
         const bool retainMountRim=nu && _surface->mesh.parts[i]==Part::Backpack;
@@ -272,7 +271,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             if(facePasses[i]!=pass)continue;
         }else{
             if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
-            const float facing=dot(_surface->mesh.normals[i],subtract(eye,face.point[0]));
+            const float facing=dot(_surface->mesh.normals[i],subtract(eye,_surface->mesh.anchors[i]));
             if((facing<=0?0:1)!=pass)continue;
             const bool retainMountRim=nu && _surface->mesh.parts[i]==Part::Backpack;
             if(cull && !_surface->mesh.twoSided[i] && !retainMountRim && facing<-.035f){++_stats.culled;continue;}
@@ -376,7 +375,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             facing=facePasses[i]==1?1.f:-1.f;
         }else{
             if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
-            facing=dot(_surface->mesh.normals[i],subtract(eye,face.point[0]));
+            facing=dot(_surface->mesh.normals[i],subtract(eye,_surface->mesh.anchors[i]));
             if(cull && !_surface->mesh.twoSided[i] && facing<-.035f)continue;
         }
         // Far-side panels still fill depth when culling is off; stroking them
