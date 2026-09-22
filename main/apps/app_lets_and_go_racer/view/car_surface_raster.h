@@ -761,11 +761,7 @@ public:
             target.color=_splitColor;target.colorIndexOffset=std::size_t(_splitColorRow)*_width;
         }
         const bool recordSparse=_sparseDepthClearFastPath && !_deferredSparseDepthRecord;
-        const std::ptrdiff_t directStep=reverseDirect ? -1 : 1;
-        const auto* directPanel=panels;
-        for(std::size_t i=0;i<count;++i) {
-            const auto& face=panelIndices?panels[panelIndices[i]]:*directPanel;
-            directPanel+=directStep;
+        const auto rasterFace=[&](const PreparedIndexedSolidRasterPanel& face) {
             std::array<SolidScreenVertex,4> vertex{};
             for(unsigned v=0;v<4;++v) {
                 const auto p=projected[face.vertex[v]];vertex[v]={p.x,p.y,p.z};
@@ -774,6 +770,14 @@ public:
                                                     clipTop,clipBottom,target);
             else trustedSolidFace<false>(vertex,face.color,face.light,face.visibility,
                                          clipTop,clipBottom,target);
+        };
+        if(panelIndices)for(std::size_t i=0;i<count;++i)rasterFace(panels[panelIndices[i]]);
+        else {
+            const std::ptrdiff_t directStep=reverseDirect ? -1 : 1;
+            const auto* directPanel=panels;
+            for(std::size_t i=0;i<count;++i) {
+                rasterFace(*directPanel);directPanel+=directStep;
+            }
         }
     }
     // Hidden-line stroke: keep a surface only when its depth matches the filled
