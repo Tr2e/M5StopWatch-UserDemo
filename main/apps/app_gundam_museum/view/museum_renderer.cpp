@@ -483,16 +483,19 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const auto panelPrepareUs=micros();
 #ifdef ESP_PLATFORM
     uint32_t parallelSpaceUs=0;
-    if(parallelDepthClear) {
-        _parallelWorker->wait();parallelDepthClearUs=_parallelWorker->lastUs;
-    }
     if(lateBackground) {
+        // The display framebuffer and raster depth/color storage are disjoint.
+        // Let their clears overlap, but still join depth clear before any
+        // room or entity raster access begins.
         const auto backgroundStart=micros();clearFrame();backgroundUs=micros();
         frameBackgroundUs=uint32_t(backgroundUs-backgroundStart);
         if(!splitCompatible) {
             if(_spaceEnabled)space::draw(canvas,view);
             spaceUs=micros();
         }
+    }
+    if(parallelDepthClear) {
+        _parallelWorker->wait();parallelDepthClearUs=_parallelWorker->lastUs;
     }
     if(spaceDispatched){
         const auto waitStart=micros();_parallelWorker->wait();
