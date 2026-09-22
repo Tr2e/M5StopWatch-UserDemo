@@ -3,6 +3,7 @@
 #include "../../app_lets_and_go_racer/view/car_surface_raster.h"
 #include <cstring>
 #include <memory>
+#include <new>
 
 namespace gundam_museum {
 // View Car's shared-vertex approach, sized for the museum's 4096 panels.
@@ -52,6 +53,21 @@ struct MuseumProjectionCache {
     }
     uint8_t* readyData(){return useFastReady?fastReady.get()->data():ready.data();}
     lets_and_go::TrackCameraPoint* projectedData(){return useFastProjected?fastProjected.get():projected.data();}
+    int8_t* passesData(std::size_t faceCount,bool useReadyTail) {
+        // The internal ready allocation retains the 16K capacity ceiling, but
+        // RX-78 uses only its active unique-vertex prefix. Face-pass state has
+        // the same frame lifetime and can safely occupy the unused tail.
+        if(useReadyTail && useFastReady && count+faceCount<=corners)
+            return reinterpret_cast<int8_t*>(fastReady.get()->data()+count);
+        return passes.data();
+    }
+    uint16_t* bandIndicesData(std::size_t faceCount,bool useReadyTail) {
+        if(!useReadyTail || !useFastReady)return nullptr;
+        std::size_t offset=count+faceCount;
+        offset=(offset+alignof(uint16_t)-1)&~(alignof(uint16_t)-1);
+        if(offset+2*faceCount*sizeof(uint16_t)>corners)return nullptr;
+        return reinterpret_cast<uint16_t*>(fastReady.get()->data()+offset);
+    }
     bool usingInternalProjected() const{return useFastProjected;}
     void begin(){std::fill_n(readyData(),count,uint8_t(0));transformed=0;}
 

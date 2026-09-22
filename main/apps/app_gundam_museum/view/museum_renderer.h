@@ -49,6 +49,8 @@ public:
     void setCompactPanelPrepareFastPath(bool enabled){_compactPanelPrepareFastPath=enabled;}
     void setInternalProjectionReadyFastPath(bool enabled){_internalProjectionReadyFastPath=enabled;}
     void setInternalProjectedPointFastPath(bool enabled){_internalProjectedPointFastPath=enabled;}
+    void setInternalFacePassFastPath(bool enabled){_internalFacePassFastPath=enabled;}
+    void setInternalBandIndexFastPath(bool enabled){_internalBandIndexFastPath=enabled;}
     void setSplitDepthFastPath(bool enabled){_splitDepthFastPath=enabled;}
     void setSparseDepthSpanClearFastPath(bool enabled){_sparseDepthSpanClearFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
@@ -92,6 +94,8 @@ private:
     bool _compactPanelPrepareFastPath=true;
     bool _internalProjectionReadyFastPath=true;
     bool _internalProjectedPointFastPath=true;
+    bool _internalFacePassFastPath=true;
+    bool _internalBandIndexFastPath=true;
     bool _splitDepthFastPath=true;
     bool _sparseDepthSpanClearFastPath=true;
     bool _spaceEnabled=true;

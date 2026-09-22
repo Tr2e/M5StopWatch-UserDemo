@@ -26,6 +26,7 @@ struct MuseumParallelWorker {
     lets_and_go::CarSurfaceRaster<424,424>* raster=nullptr;
     const lets_and_go::TrackCamera* camera=nullptr;
     const lets_and_go::PreparedSolidPanel* panels=nullptr;
+    const uint16_t* panelIndices=nullptr;
     lgfx::LGFXBase* canvas=nullptr;
     const View* view=nullptr;
     std::size_t count=0;
@@ -43,8 +44,10 @@ struct MuseumParallelWorker {
             if(worker.stopping)break;
             const auto started=esp_timer_get_time();
             if(worker.work==Work::Space)space::draw(*worker.canvas,*worker.view);
-            else for(std::size_t i=0;i<worker.count;++i)
-                worker.raster->preparedSolidPanelRows(*worker.camera,worker.panels[i],worker.top,worker.bottom);
+            else for(std::size_t i=0;i<worker.count;++i) {
+                const auto panel=worker.panelIndices?worker.panelIndices[i]:i;
+                worker.raster->preparedSolidPanelRows(*worker.camera,worker.panels[panel],worker.top,worker.bottom);
+            }
             worker.lastUs=uint32_t(esp_timer_get_time()-started);
             xSemaphoreGive(worker.done);
         }
@@ -57,8 +60,9 @@ struct MuseumParallelWorker {
         return xTaskCreatePinnedToCore(taskMain,"rx_raster",6144,this,tskIDLE_PRIORITY+2,&task,1)==pdPASS;
     }
     void dispatch(lets_and_go::CarSurfaceRaster<424,424>& target,const lets_and_go::TrackCamera& view,
-                  const lets_and_go::PreparedSolidPanel* input,std::size_t size,int first,int last) {
-        raster=&target;camera=&view;panels=input;count=size;top=first;bottom=last;
+                  const lets_and_go::PreparedSolidPanel* input,const uint16_t* indices,
+                  std::size_t size,int first,int last) {
+        raster=&target;camera=&view;panels=input;panelIndices=indices;count=size;top=first;bottom=last;
         work=Work::Raster;
         xSemaphoreGive(start);
     }
@@ -231,8 +235,10 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     projection.setInternalProjectedFastPath(_optimizations && _internalProjectedPointFastPath && view.model==ModelId::Rx78);
     if(projection.usingInternalProjected())_stats.internalProjectedBytes=uint32_t(projection.count*sizeof(lets_and_go::TrackCameraPoint));
     projection.begin();
+    auto* facePasses=projection.passesData(_surface->mesh.count,
+        _optimizations && _internalFacePassFastPath && view.model==ModelId::Rx78);
     if(_optimizations)for(std::size_t i=0;i<_surface->mesh.count;++i){
-        projection.passes[i]=-1;
+        facePasses[i]=-1;
         if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
         const auto& face=_surface->mesh.panels[i];
         const float facing=dot(_surface->mesh.normals[i],subtract(eye,face.point[0]));
@@ -240,18 +246,30 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         // performance work must not silently remove these coverage repairs.
         const bool retainMountRim=nu && _surface->mesh.parts[i]==Part::Backpack;
         if(cull && !_surface->mesh.twoSided[i] && !retainMountRim && facing<-.035f){++_stats.culled;continue;}
-        projection.passes[i]=facing<=0?0:1;
+        facePasses[i]=facing<=0?0:1;
     }
     const auto prepareUs=micros();
     const bool splitRaster=parallelFrame && !hiddenLine;
     bool splitCompatible=splitRaster;
+    int split=h/2;
+    while(split<h && (std::size_t(w)*split&7))++split;
+    auto* bandIndices=projection.bandIndicesData(_surface->mesh.count,
+        splitCompatible && _optimizations && _internalBandIndexFastPath && view.model==ModelId::Rx78);
+    auto* upperIndices=bandIndices;
+    auto* lowerIndices=bandIndices?bandIndices+_surface->mesh.count:nullptr;
+    std::size_t upperCount=0,lowerCount=0;
+    const auto recordBands=[&](std::size_t panelIndex,const lets_and_go::PreparedSolidPanel& prepared) {
+        if(!bandIndices)return;
+        if(prepared.top<=split)new(upperIndices+upperCount++) uint16_t(uint16_t(panelIndex));
+        if(prepared.bottom>=split-1)new(lowerIndices+lowerCount++) uint16_t(uint16_t(panelIndex));
+    };
     std::size_t preparedCount=0;
     // The diagnostic path draws backfaces first. Quantized equal depth must
     // not let an invisible reverse face overwrite a visible front face.
     for(int pass=0;pass<2;++pass)for(std::size_t i=0;i<_surface->mesh.count;++i){
         const auto& face=_surface->mesh.panels[i];
         if(_optimizations){
-            if(projection.passes[i]!=pass)continue;
+            if(facePasses[i]!=pass)continue;
         }else{
             if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
             const float facing=dot(_surface->mesh.normals[i],subtract(eye,face.point[0]));
@@ -266,15 +284,21 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             if(!prepared.visibility || right<0 || left>=w || prepared.bottom<0 || prepared.top>=h) {
                 ++_stats.offscreen;continue;
             }
-            _surface->preparedPanels[preparedCount++]=prepared;++_stats.submitted;continue;
+            if(bandIndices)prepared.visibility|=lets_and_go::kPreparedSolidBandSelected;
+            _surface->preparedPanels[preparedCount]=prepared;
+            recordBands(preparedCount,prepared);++preparedCount;++_stats.submitted;continue;
         }
         lets_and_go::PreparedCarPanel prepared{};
         if(_optimizations)projection.panel(prepared,camera,face,i,project);
         else {lets_and_go::prepareCarPanel(prepared,camera,face,project);_stats.transformed+=4;}
         if(!prepared.visibility || prepared.right<0 || prepared.left>=w || prepared.bottom<0 || prepared.top>=h){++_stats.offscreen;continue;}
         if(hiddenLine)prepareHiddenLineFill(prepared);
-        if(splitCompatible && prepared.paint==lets_and_go::CarPaint::Solid)
-            _surface->preparedPanels[preparedCount++]=lets_and_go::compactSolidPanel(prepared);
+        if(splitCompatible && prepared.paint==lets_and_go::CarPaint::Solid) {
+            auto solid=lets_and_go::compactSolidPanel(prepared);
+            if(bandIndices)solid.visibility|=lets_and_go::kPreparedSolidBandSelected;
+            _surface->preparedPanels[preparedCount]=solid;
+            recordBands(preparedCount,solid);++preparedCount;
+        }
         else {
             // Preserve the generic material path if a future RX mesh gains a
             // textured panel; flush earlier solids in their original order.
@@ -298,14 +322,16 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(splitCompatible) {
         // Keep the split on an occupancy-byte boundary so the two cores never
         // update the same sparse-clear byte. Pixel/depth rows are disjoint.
-        int split=h/2;
-        while(split<h && (std::size_t(w)*split&7))++split;
 #ifdef ESP_PLATFORM
         if(_parallelWorker) {
-            _parallelWorker->dispatch(raster,camera,_surface->preparedPanels.data(),preparedCount,split,h-1);
+            _parallelWorker->dispatch(raster,camera,_surface->preparedPanels.data(),lowerIndices,
+                bandIndices?lowerCount:preparedCount,split,h-1);
             const auto mainStart=micros();
-            for(std::size_t i=0;i<preparedCount;++i)
-                raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,split-1);
+            const auto mainCount=bandIndices?upperCount:preparedCount;
+            for(std::size_t i=0;i<mainCount;++i) {
+                const auto panel=upperIndices?upperIndices[i]:i;
+                raster.preparedSolidPanelRows(camera,_surface->preparedPanels[panel],0,split-1);
+            }
             _stats.mainRasterUs=uint32_t(micros()-mainStart);
             _parallelWorker->wait();
             _stats.workerRasterUs=_parallelWorker->lastUs;
@@ -319,10 +345,16 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         // Host regressions execute both partitions serially and compare the
         // resulting framebuffer to the original unsplit implementation.
         const auto mainStart=micros();
-        for(std::size_t i=0;i<preparedCount;++i)
-            raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],0,split-1);
-        for(std::size_t i=0;i<preparedCount;++i)
-            raster.preparedSolidPanelRows(camera,_surface->preparedPanels[i],split,h-1);
+        const auto topCount=bandIndices?upperCount:preparedCount;
+        for(std::size_t i=0;i<topCount;++i) {
+            const auto panel=upperIndices?upperIndices[i]:i;
+            raster.preparedSolidPanelRows(camera,_surface->preparedPanels[panel],0,split-1);
+        }
+        const auto bottomCount=bandIndices?lowerCount:preparedCount;
+        for(std::size_t i=0;i<bottomCount;++i) {
+            const auto panel=lowerIndices?lowerIndices[i]:i;
+            raster.preparedSolidPanelRows(camera,_surface->preparedPanels[panel],split,h-1);
+        }
         _stats.mainRasterUs=uint32_t(micros()-mainStart);
 #endif
     }
@@ -340,8 +372,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         const auto& face=_surface->mesh.panels[i];
         float facing=0;
         if(_optimizations){
-            if(projection.passes[i]<0)continue;
-            facing=projection.passes[i]==1?1.f:-1.f;
+            if(facePasses[i]<0)continue;
+            facing=facePasses[i]==1?1.f:-1.f;
         }else{
             if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
             facing=dot(_surface->mesh.normals[i],subtract(eye,face.point[0]));

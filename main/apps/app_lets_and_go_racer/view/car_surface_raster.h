@@ -44,6 +44,7 @@ struct PreparedSolidPanel {
 };
 constexpr uint8_t kPreparedSolidTriangle=0x80u;
 constexpr uint8_t kPreparedSolidTrustedDepth=0x40u;
+constexpr uint8_t kPreparedSolidBandSelected=0x20u;
 
 inline PreparedSolidPanel compactSolidPanel(const PreparedCarPanel& source) {
     PreparedSolidPanel result{};
@@ -483,9 +484,11 @@ public:
 #endif
     void preparedSolidPanelRows(const TrackCamera& camera,const PreparedSolidPanel& face,
                                 int clipTop,int clipBottom) {
-        const uint8_t visibility=face.visibility&~(kPreparedSolidTriangle|kPreparedSolidTrustedDepth);
-        if(!visibility || face.bottom<std::max(_y,clipTop)-1 ||
-           face.top>std::min(_y+_height-1,clipBottom)+1)return;
+        const uint8_t visibility=face.visibility&~(kPreparedSolidTriangle|kPreparedSolidTrustedDepth|
+                                                   kPreparedSolidBandSelected);
+        if(!visibility || (!(face.visibility&kPreparedSolidBandSelected) &&
+           (face.bottom<std::max(_y,clipTop)-1 ||
+            face.top>std::min(_y+_height-1,clipBottom)+1)))return;
         if(visibility==1) {
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);

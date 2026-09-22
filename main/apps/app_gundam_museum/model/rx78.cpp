@@ -307,7 +307,7 @@ void head(SdBuilder& b,Rx78Assembly* assembly){
         }
         for(int end:{0,4}){
             auto r=sections[end];Point center{s*r.x,r.y,r.z};
-            for(int k=0;k<4;++k)b.face(center,vertex(r,k),vertex(r,(k+1)%4),vertex(r,(k+1)%4),
+            for(int k=0;k<4;k+=2)b.face(center,vertex(r,k),vertex(r,(k+1)%4),vertex(r,(k+2)%4),
                 ivory,{end?s:-s,end?1.f:-1.f,0},true);
         }
     }
