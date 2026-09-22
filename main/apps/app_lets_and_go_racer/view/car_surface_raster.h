@@ -279,7 +279,8 @@ private:
         std::size_t colorIndexOffset=0;
     };
     template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false,
-             bool PreparedSolidColor=false,bool PreparedTarget=false,class ScreenVertex=CarScreenVertex>
+             bool PreparedSolidColor=false,bool PreparedTarget=false,bool PreparedSparseRecord=false,
+             class ScreenVertex=CarScreenVertex>
 #ifdef ESP_PLATFORM
     __attribute__((optimize("O3")))
 #endif
@@ -410,7 +411,9 @@ private:
             const auto index=std::size_t(y-_y)*_width+(x-_x);
             const auto oldDepth=depthBuffer[index-depthIndexOffset];
             if(d<oldDepth)continue;
-            if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
+            if constexpr(PreparedSparseRecord) {
+                if(!oldDepth)_occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
+            } else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
                 _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
             if constexpr(Solid) {
                 // Identical barycentric/depth operations; compile out texture
@@ -523,10 +526,17 @@ public:
                         target.color=_splitColor;
                         target.colorIndexOffset=std::size_t(_splitColorRow)*_width;
                     }
-                    triangleImpl<false,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
-                                                                clipTop,clipBottom,solidColor,&target);
-                    if(!triangle)triangleImpl<false,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
-                                                                             clipTop,clipBottom,solidColor,&target);
+                    if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord) {
+                        triangleImpl<false,true,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
+                                                                        clipTop,clipBottom,solidColor,&target);
+                        if(!triangle)triangleImpl<false,true,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                                                     clipTop,clipBottom,solidColor,&target);
+                    } else {
+                        triangleImpl<false,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
+                                                                    clipTop,clipBottom,solidColor,&target);
+                        if(!triangle)triangleImpl<false,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                                                 clipTop,clipBottom,solidColor,&target);
+                    }
                 } else {
                     triangleImpl<false,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
                                                            clipTop,clipBottom,solidColor);
