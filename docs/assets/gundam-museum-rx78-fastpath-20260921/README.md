@@ -657,4 +657,6 @@ RX-78 面法线和 anchor 原本以两条流存储，每帧剪枝计算 `dot(nor
 
 清理流水最后做了一个不改变像素语义的时序调整：CPU1 异步清理 raster depth/color 时，CPU0 在完成 cull/command prepare 后不再立即等待，而是先清理与其完全互斥的 display framebuffer，然后再 join；房间和 RX-78 光栅仍严格在 join 之后开始。两个清理任务都因 PSRAM 争用变慢：background 约从 12.78 增至 13.889 ms，depth clear 约从 13.5 增至 15.3 ms；但它们的重叠缩短了端到端关键路径。23×96 帧 draw 均值由 67.030 降到 66.572 ms（15.021 FPS），范围 66.541–66.607 ms；含约 0.101 ms present 的完整周期为 66.673 ms（14.998 FPS）。所有批次均为 canonical 哈希，主机 6,720 组、ASan 和 UBSan 均通过。这是一个可复用的帧图原语：对互斥缓冲的带宽型任务，只要在首个消费者前设置 join，就应用总关键路径而不是单任务耗时判断并发价值。
 
+一个更激进的时序对照把 framebuffer clear 前移到 cull 结束后、command prepare 之前。这确实让 panel prepare 由约 7.89 降到 6.29 ms，但上一帧 panel DMA 尚未结束，此时再同时运行 framebuffer clear 和 depth clear 形成三方 PSRAM 争用：panel tx 约 12.1→17.1 ms，background 约 13.9→18.5 ms，4 组 draw 为 69.314/69.323/69.284/69.302 ms。哈希仍为 canonical，候选已回退。因此框架的并发时序图必须显式包含跨帧 DMA；“当前两个任务写不同缓冲”并不足以证明提前启动一定有利。
+
 后续已用 20 行、22,080 B 片内深度/颜色工作集验证微带路线。候选在上半屏带内完成后直接扩展到最终 framebuffer，没有 PSRAM 中间回写；现有片内索引尾部容纳了每帧约 2,414 个有序带成员。它将帧尾 composite 从约 5.15 降到 4.04 ms，但跨带图元的重复 setup/回放使 panel prepare 升到约 11.4 ms、主核阶段升到约 36.7 ms，8×96 帧稳定约 75.08–75.15 ms；固定序列哈希也变为 `2103724662:3711746231`。候选已完整回退。片内带本身不会自动提高 FPS；只有持久化跨带 setup/边状态、同时保留原覆盖顺序时才有重开价值。不再重复已否决的单项 early-Z、索引色、分区比例和 strip/微带回放路线。
