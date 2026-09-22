@@ -744,14 +744,15 @@ public:
     }
     // Indexed companion to the trusted batch above. The command stream stays
     // ordered; only vertex materialization moves to the consuming core and
-    // reads the exact cached float triplets.
+    // reads the exact cached float triplets. A directly generated stream may
+    // grow backward in memory and is then consumed with a negative stride.
 #ifdef ESP_PLATFORM
     __attribute__((optimize("O3"),section(".iram1")))
 #endif
     void preparedIndexedSolidPanelBatchRowsTrusted(const PreparedIndexedSolidRasterPanel* panels,
                                                     const TrackCameraPoint* projected,
                                                     const uint16_t* panelIndices,std::size_t count,
-                                                    int clipTop,int clipBottom) {
+                                                    int clipTop,int clipBottom,bool reverseDirect=false) {
         SolidRasterTarget target{depthData(),colorData(),0,0};
         if(_splitDepth && _width==_splitDepthWidth && clipTop>=_splitDepthRow) {
             target.depth=_splitDepth;target.depthIndexOffset=std::size_t(_splitDepthRow)*_width;
@@ -760,8 +761,11 @@ public:
             target.color=_splitColor;target.colorIndexOffset=std::size_t(_splitColorRow)*_width;
         }
         const bool recordSparse=_sparseDepthClearFastPath && !_deferredSparseDepthRecord;
+        const std::ptrdiff_t directStep=reverseDirect ? -1 : 1;
+        const auto* directPanel=panels;
         for(std::size_t i=0;i<count;++i) {
-            const auto& face=panels[panelIndices?panelIndices[i]:i];
+            const auto& face=panelIndices?panels[panelIndices[i]]:*directPanel;
+            directPanel+=directStep;
             std::array<SolidScreenVertex,4> vertex{};
             for(unsigned v=0;v<4;++v) {
                 const auto p=projected[face.vertex[v]];vertex[v]={p.x,p.y,p.z};
