@@ -40,9 +40,10 @@ struct PreparedSolidPanel {
     float top=0,bottom=0;
     uint16_t color=0;
     uint8_t light=255;
-    uint8_t visibility=0; // Low bits match PreparedCarPanel; high bit marks a triangle.
+    uint8_t visibility=0; // Low bits match PreparedCarPanel; high bits carry replay invariants.
 };
 constexpr uint8_t kPreparedSolidTriangle=0x80u;
+constexpr uint8_t kPreparedSolidTrustedDepth=0x40u;
 
 inline PreparedSolidPanel compactSolidPanel(const PreparedCarPanel& source) {
     PreparedSolidPanel result{};
@@ -58,6 +59,12 @@ inline PreparedSolidPanel compactSolidPanel(const PreparedCarPanel& source) {
         result.vertex[i]={source.screen[i].x,source.screen[i].y,source.screen[i].depth};
     else for(std::size_t i=0;i<4;++i)
         result.vertex[i]={source.camera[i].x,source.camera[i].y,source.camera[i].z};
+    if(source.visibility==1) {
+        bool trusted=true;
+        for(const auto& vertex:source.screen)
+            trusted=trusted && std::isfinite(vertex.depth) && vertex.depth>=.001f && vertex.depth<=7.9f;
+        if(trusted)result.visibility|=kPreparedSolidTrustedDepth;
+    }
     return result;
 }
 
@@ -473,19 +480,15 @@ public:
     }
     void preparedSolidPanelRows(const TrackCamera& camera,const PreparedSolidPanel& face,
                                 int clipTop,int clipBottom) {
-        const uint8_t visibility=face.visibility&~kPreparedSolidTriangle;
+        const uint8_t visibility=face.visibility&~(kPreparedSolidTriangle|kPreparedSolidTrustedDepth);
         if(!visibility || face.bottom<std::max(_y,clipTop)-1 ||
            face.top>std::min(_y+_height-1,clipBottom)+1)return;
         if(visibility==1) {
             const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
             const bool triangle=face.visibility&kPreparedSolidTriangle;
-            const auto trustedDepth=[](float depth) {
-                return std::isfinite(depth) && depth>=.001f && depth<=7.9f;
-            };
             if(_solidFastPath && _solidSpanFastPath && _trustedSolidDepthFastPath &&
-               _solidQuadFastPath && trustedDepth(a.depth) && trustedDepth(b.depth) &&
-               trustedDepth(c.depth) && trustedDepth(d.depth)) {
+               _solidQuadFastPath && (face.visibility&kPreparedSolidTrustedDepth)) {
                 const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
                 triangleImpl<false,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
                                                        clipTop,clipBottom,solidColor);

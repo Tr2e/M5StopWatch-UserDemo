@@ -115,7 +115,8 @@ struct MuseumProjectionCache {
                 left=generic.left;right=generic.right;return;
             }
         }
-        result.visibility=uint8_t(1|(indices[index*4+2]==indices[index*4+3] ?
+        result.visibility=uint8_t(1|lets_and_go::kPreparedSolidTrustedDepth|
+            (indices[index*4+2]==indices[index*4+3] ?
             lets_and_go::kPreparedSolidTriangle:0));result.color=face.color;result.light=face.light;
         left=result.top=1e20f;right=result.bottom=-1e20f;
         for(unsigned i=0;i<4;++i) {
