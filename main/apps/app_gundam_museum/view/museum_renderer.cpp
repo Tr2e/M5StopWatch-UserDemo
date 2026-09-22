@@ -22,7 +22,7 @@
 namespace gundam_museum {
 #ifdef ESP_PLATFORM
 struct MuseumParallelWorker {
-    enum class Work : uint8_t {Raster,Space,Blit};
+    enum class Work : uint8_t {Raster,Space,Blit,Begin};
     lets_and_go::CarSurfaceRaster<424,424>* raster=nullptr;
     const lets_and_go::TrackCamera* camera=nullptr;
     const lets_and_go::PreparedSolidRasterPanel* panels=nullptr;
@@ -52,7 +52,9 @@ struct MuseumParallelWorker {
             xSemaphoreTake(worker.start,portMAX_DELAY);
             if(worker.stopping)break;
             const auto started=esp_timer_get_time();
-            if(worker.work==Work::Space)space::draw(*worker.canvas,*worker.view);
+            if(worker.work==Work::Begin)
+                worker.raster->begin(worker.outputX,worker.outputY,worker.outputWidth,worker.outputHeight);
+            else if(worker.work==Work::Space)space::draw(*worker.canvas,*worker.view);
             else if(worker.work==Work::Blit)
                 worker.raster->blitScaledNativeSparseRows(worker.nativeFrameBuffer,worker.nativeStride,
                     worker.outputX,worker.outputY,worker.outputWidth,worker.outputHeight,worker.top,worker.bottom,
@@ -98,6 +100,11 @@ struct MuseumParallelWorker {
     }
     void dispatchSpace(lgfx::LGFXBase& target,const View& state) {
         canvas=&target;view=&state;work=Work::Space;xSemaphoreGive(start);
+    }
+    void dispatchBegin(lets_and_go::CarSurfaceRaster<424,424>& target,
+                       int x,int y,int width,int height) {
+        raster=&target;outputX=x;outputY=y;outputWidth=width;outputHeight=height;
+        work=Work::Begin;xSemaphoreGive(start);
     }
     void dispatchBlit(lets_and_go::CarSurfaceRaster<424,424>& target,uint8_t* frameBuffer,
                       std::size_t stride,int x,int y,int width,int height,int first,int last) {
@@ -283,8 +290,16 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     // raster hot loop. Scaled composite revisits source samples; recording in
     // the raster remains faster for that path on ESP32-S3.
     raster.setDeferredSparseDepthRecord(w==layout::side && h==layout::side);
+    uint32_t parallelDepthClearUs=0;
     const auto depthClearStartUs=micros();
+#ifdef ESP_PLATFORM
+    const bool parallelDepthClear=parallelFrame && _parallelWorker;
+    if(parallelDepthClear)_parallelWorker->dispatchBegin(raster,0,0,w,h);
+    else raster.begin(0,0,w,h);
+#else
+    constexpr bool parallelDepthClear=false;
     raster.begin(0,0,w,h);
+#endif
     if(hiddenLine)_surface->edges.begin();
     const auto clearUs=micros();
     lets_and_go::TrackCamera camera{};
@@ -468,6 +483,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const auto panelPrepareUs=micros();
 #ifdef ESP_PLATFORM
     uint32_t parallelSpaceUs=0;
+    if(parallelDepthClear) {
+        _parallelWorker->wait();parallelDepthClearUs=_parallelWorker->lastUs;
+    }
     if(lateBackground) {
         const auto backgroundStart=micros();clearFrame();backgroundUs=micros();
         frameBackgroundUs=uint32_t(backgroundUs-backgroundStart);
@@ -604,7 +622,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
 #else
     _stats.spaceUs=uint32_t(spaceUs-backgroundUs);
 #endif
-    _stats.depthClearUs=uint32_t(clearUs-depthClearStartUs);
+    _stats.depthClearUs=parallelDepthClear?parallelDepthClearUs:uint32_t(clearUs-depthClearStartUs);
     _stats.panelPrepareUs=uint32_t(panelPrepareUs-prepareUs);
     // Keep navigation above both the room and the exhibit.
     for(const auto& button:{layout::previous,layout::next}){
