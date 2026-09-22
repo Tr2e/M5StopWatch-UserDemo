@@ -478,6 +478,9 @@ public:
             cameraTriangleRows(camera,face.camera[0],face.camera[2],face.camera[3],face.color,face.paint,face.light,clipTop,clipBottom);
         }
     }
+#ifdef ESP_PLATFORM
+    __attribute__((optimize("O3")))
+#endif
     void preparedSolidPanelRows(const TrackCamera& camera,const PreparedSolidPanel& face,
                                 int clipTop,int clipBottom) {
         const uint8_t visibility=face.visibility&~(kPreparedSolidTriangle|kPreparedSolidTrustedDepth);
