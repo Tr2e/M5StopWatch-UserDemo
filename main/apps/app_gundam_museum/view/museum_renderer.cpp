@@ -155,7 +155,7 @@ bool MuseumRenderer::open(){
         _surface->fastLowerDepth.allocate();
         _surface->projection.preferInternalReady();
         _surface->fastOccupiedDepth.allocate();
-        _surface->fastIndexedPanels.allocate(2048);
+        _surface->fastIndexedPanels.allocate(2112);
         auto* occupied=_surface->fastOccupiedDepth.get();
         _surface->raster.setSparseDepthStorage(
             occupied?occupied->data():_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
@@ -344,7 +344,46 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         _stats.internalCommandBytes=uint32_t(_surface->fastIndexedPanels.capacity()*
                                              sizeof(lets_and_go::PreparedIndexedSolidRasterPanel));
     }
+    bool directIndexedBands=false;
+    const auto* upperIndexedPanels=indexedPanels;
+    const auto* lowerIndexedPanels=indexedPanels;
+    if(useIndexedPanels && bandIndices && indexedPanels!=_surface->preparedPanels.indexed) {
+        const auto capacity=_surface->fastIndexedPanels.capacity();
+        bool overflow=false;
+        const auto submittedBefore=_stats.submitted,offscreenBefore=_stats.offscreen;
+        for(int pass=0;pass<2 && !overflow;++pass)
+          for(std::size_t i=0;i<_surface->mesh.count;++i) {
+            if(facePasses[i]!=pass)continue;
+            const auto& face=_surface->mesh.panels[i];
+            lets_and_go::PreparedIndexedSolidRasterPanel prepared{};float top=0,bottom=0;
+            projection.solidIndexedPanel(prepared,top,bottom,camera,face,i,project);
+            if(bottom<0 || top>=h) {++_stats.offscreen;continue;}
+            prepared.visibility|=lets_and_go::kPreparedSolidBandSelected;
+            const bool upper=top<=split,lower=bottom>=split-1;
+            if(upperCount+lowerCount+std::size_t(upper)+std::size_t(lower)>capacity) {
+                overflow=true;break;
+            }
+            if(upper)new (&indexedPanels[upperCount++])
+                lets_and_go::PreparedIndexedSolidRasterPanel(prepared);
+            if(lower)new (&indexedPanels[capacity-1-lowerCount++])
+                lets_and_go::PreparedIndexedSolidRasterPanel(prepared);
+            ++_stats.submitted;
+          }
+        if(!overflow) {
+            auto* lowerBegin=indexedPanels+capacity-lowerCount;
+            std::reverse(lowerBegin,indexedPanels+capacity);
+            upperIndexedPanels=indexedPanels;lowerIndexedPanels=lowerBegin;
+            directIndexedBands=true;preparedCount=_stats.submitted-submittedBefore;
+        } else {
+            // An unusual pose can exceed the bounded direct-stream workspace.
+            // Rebuild the ordinary shared command + index streams; projected
+            // points are recomputed so fallback accounting stays coherent.
+            projection.begin();upperCount=lowerCount=preparedCount=0;
+            _stats.submitted=submittedBefore;_stats.offscreen=offscreenBefore;
+        }
+    }
     if(rxCompactPrepare) {
+      if(!directIndexedBands) {
       for(int pass=0;pass<2;++pass)for(std::size_t i=0;i<_surface->mesh.count;++i){
         if(facePasses[i]!=pass)continue;
         const auto& face=_surface->mesh.panels[i];
@@ -372,6 +411,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         new (&_surface->preparedPanels.solid[preparedCount])
             lets_and_go::PreparedSolidRasterPanel(prepared);
         recordBands(preparedCount,top,bottom);++preparedCount;++_stats.submitted;
+      }
       }
     } else for(int pass=0;pass<2;++pass)for(std::size_t i=0;i<_surface->mesh.count;++i){
         const auto& face=_surface->mesh.panels[i];
@@ -422,6 +462,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         }
         ++_stats.submitted;
     }
+    if(useIndexedPanels && !directIndexedBands)
+        upperIndexedPanels=lowerIndexedPanels=indexedPanels;
     const auto panelPrepareUs=micros();
 #ifdef ESP_PLATFORM
     uint32_t parallelSpaceUs=0;
@@ -444,8 +486,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
 #ifdef ESP_PLATFORM
         if(_parallelWorker) {
             if(useIndexedPanels)
-                _parallelWorker->dispatchIndexed(raster,indexedPanels,projection.projectedData(),
-                    lowerIndices,bandIndices?lowerCount:preparedCount,split,h-1);
+                _parallelWorker->dispatchIndexed(raster,lowerIndexedPanels,projection.projectedData(),
+                    directIndexedBands?nullptr:lowerIndices,
+                    directIndexedBands?lowerCount:(bandIndices?lowerCount:preparedCount),split,h-1);
             else _parallelWorker->dispatch(raster,camera,_surface->preparedPanels.solid,lowerIndices,
                     bandIndices?lowerCount:preparedCount,split,h-1);
             if(lateBackground) {
@@ -453,10 +496,10 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
                 spaceUs=micros();
             }
             const auto mainStart=micros();
-            const auto mainCount=bandIndices?upperCount:preparedCount;
+            const auto mainCount=directIndexedBands?upperCount:(bandIndices?upperCount:preparedCount);
             if(useIndexedPanels)
-                raster.preparedIndexedSolidPanelBatchRowsTrusted(indexedPanels,
-                    projection.projectedData(),upperIndices,mainCount,0,split-1);
+                raster.preparedIndexedSolidPanelBatchRowsTrusted(upperIndexedPanels,
+                    projection.projectedData(),directIndexedBands?nullptr:upperIndices,mainCount,0,split-1);
             else raster.preparedSolidPanelBatchRowsTrusted(camera,_surface->preparedPanels.solid,upperIndices,
                                                             mainCount,0,split-1);
             _stats.mainRasterUs=uint32_t(micros()-mainStart);
@@ -465,10 +508,12 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         } else {
             const auto mainStart=micros();
             if(useIndexedPanels) {
-                raster.preparedIndexedSolidPanelBatchRowsTrusted(indexedPanels,
-                    projection.projectedData(),nullptr,preparedCount,0,split-1);
-                raster.preparedIndexedSolidPanelBatchRowsTrusted(indexedPanels,
-                    projection.projectedData(),nullptr,preparedCount,split,h-1);
+                raster.preparedIndexedSolidPanelBatchRowsTrusted(upperIndexedPanels,
+                    projection.projectedData(),directIndexedBands?nullptr:upperIndices,
+                    directIndexedBands?upperCount:preparedCount,0,split-1);
+                raster.preparedIndexedSolidPanelBatchRowsTrusted(lowerIndexedPanels,
+                    projection.projectedData(),directIndexedBands?nullptr:lowerIndices,
+                    directIndexedBands?lowerCount:preparedCount,split,h-1);
             } else {
                 raster.preparedSolidPanelBatchRowsTrusted(camera,_surface->preparedPanels.solid,nullptr,
                                                            preparedCount,0,split-1);
@@ -481,14 +526,14 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         // Host regressions execute both partitions serially and compare the
         // resulting framebuffer to the original unsplit implementation.
         const auto mainStart=micros();
-        const auto topCount=bandIndices?upperCount:preparedCount;
-        if(useIndexedPanels)raster.preparedIndexedSolidPanelBatchRowsTrusted(indexedPanels,
-            projection.projectedData(),upperIndices,topCount,0,split-1);
+        const auto topCount=directIndexedBands?upperCount:(bandIndices?upperCount:preparedCount);
+        if(useIndexedPanels)raster.preparedIndexedSolidPanelBatchRowsTrusted(upperIndexedPanels,
+            projection.projectedData(),directIndexedBands?nullptr:upperIndices,topCount,0,split-1);
         else raster.preparedSolidPanelBatchRowsTrusted(camera,_surface->preparedPanels.solid,upperIndices,
                                                         topCount,0,split-1);
-        const auto bottomCount=bandIndices?lowerCount:preparedCount;
-        if(useIndexedPanels)raster.preparedIndexedSolidPanelBatchRowsTrusted(indexedPanels,
-            projection.projectedData(),lowerIndices,bottomCount,split,h-1);
+        const auto bottomCount=directIndexedBands?lowerCount:(bandIndices?lowerCount:preparedCount);
+        if(useIndexedPanels)raster.preparedIndexedSolidPanelBatchRowsTrusted(lowerIndexedPanels,
+            projection.projectedData(),directIndexedBands?nullptr:lowerIndices,bottomCount,split,h-1);
         else raster.preparedSolidPanelBatchRowsTrusted(camera,_surface->preparedPanels.solid,lowerIndices,
                                                         bottomCount,split,h-1);
         _stats.mainRasterUs=uint32_t(micros()-mainStart);
