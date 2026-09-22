@@ -271,35 +271,47 @@ public:
             triangleImpl<false>(a,b,c,color,paint,light,clipTop,clipBottom);
     }
 private:
+    struct SolidRasterTarget {
+        uint16_t* depth=nullptr;
+        uint16_t* color=nullptr;
+        std::size_t depthIndexOffset=0;
+        std::size_t colorIndexOffset=0;
+    };
     template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false,
-             bool PreparedSolidColor=false>
+             bool PreparedSolidColor=false,bool PreparedTarget=false>
 #ifdef ESP_PLATFORM
     __attribute__((optimize("O3")))
 #endif
     void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom,
-                  uint16_t preparedSolidColor=0) {
+                  uint16_t preparedSolidColor=0,const SolidRasterTarget* preparedTarget=nullptr) {
         // A band-parallel caller may fall back to one full-frame pass (for
         // example when its worker is unavailable). Split a crossing range so
         // the lower depth band remains authoritative in that fallback too.
-        if(_splitDepth && _width==_splitDepthWidth &&
-           clipTop<_splitDepthRow && clipBottom>=_splitDepthRow) {
-            triangleImpl<Incremental,Solid,SolidSpan,TrustedDepth,PreparedSolidColor>(
-                a,b,c,color,paint,light,clipTop,_splitDepthRow-1,preparedSolidColor);
-            triangleImpl<Incremental,Solid,SolidSpan,TrustedDepth,PreparedSolidColor>(
-                a,b,c,color,paint,light,_splitDepthRow,clipBottom,preparedSolidColor);
-            return;
-        }
-        auto* depthBuffer=depthData();auto* colorBuffer=colorData();
-        std::size_t depthIndexOffset=0;
-        if(_splitDepth && _width==_splitDepthWidth && clipTop>=_splitDepthRow) {
-            depthBuffer=_splitDepth;
-            depthIndexOffset=std::size_t(_splitDepthRow)*_width;
-        }
-        std::size_t colorIndexOffset=0;
-        if(_splitColor && _width==_splitColorWidth && clipTop>=_splitColorRow) {
-            colorBuffer=_splitColor;
-            colorIndexOffset=std::size_t(_splitColorRow)*_width;
+        uint16_t* depthBuffer=nullptr;uint16_t* colorBuffer=nullptr;
+        std::size_t depthIndexOffset=0,colorIndexOffset=0;
+        if constexpr(PreparedTarget) {
+            depthBuffer=preparedTarget->depth;colorBuffer=preparedTarget->color;
+            depthIndexOffset=preparedTarget->depthIndexOffset;
+            colorIndexOffset=preparedTarget->colorIndexOffset;
+        } else {
+            if(_splitDepth && _width==_splitDepthWidth &&
+               clipTop<_splitDepthRow && clipBottom>=_splitDepthRow) {
+                triangleImpl<Incremental,Solid,SolidSpan,TrustedDepth,PreparedSolidColor>(
+                    a,b,c,color,paint,light,clipTop,_splitDepthRow-1,preparedSolidColor);
+                triangleImpl<Incremental,Solid,SolidSpan,TrustedDepth,PreparedSolidColor>(
+                    a,b,c,color,paint,light,_splitDepthRow,clipBottom,preparedSolidColor);
+                return;
+            }
+            depthBuffer=depthData();colorBuffer=colorData();
+            if(_splitDepth && _width==_splitDepthWidth && clipTop>=_splitDepthRow) {
+                depthBuffer=_splitDepth;
+                depthIndexOffset=std::size_t(_splitDepthRow)*_width;
+            }
+            if(_splitColor && _width==_splitColorWidth && clipTop>=_splitColorRow) {
+                colorBuffer=_splitColor;
+                colorIndexOffset=std::size_t(_splitColorRow)*_width;
+            }
         }
         const float det=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
         if(!std::isfinite(det) || std::abs(det)<.001f)return;
@@ -496,10 +508,30 @@ public:
             if(_solidFastPath && _solidSpanFastPath && _trustedSolidDepthFastPath &&
                _solidQuadFastPath && (face.visibility&kPreparedSolidTrustedDepth)) {
                 const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
-                triangleImpl<false,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
-                                                       clipTop,clipBottom,solidColor);
-                if(!triangle)triangleImpl<false,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
-                                                                    clipTop,clipBottom,solidColor);
+                const bool crossesDepth=_splitDepth && _width==_splitDepthWidth &&
+                    clipTop<_splitDepthRow && clipBottom>=_splitDepthRow;
+                const bool crossesColor=_splitColor && _width==_splitColorWidth &&
+                    clipTop<_splitColorRow && clipBottom>=_splitColorRow;
+                if(!crossesDepth && !crossesColor) {
+                    SolidRasterTarget target{depthData(),colorData(),0,0};
+                    if(_splitDepth && _width==_splitDepthWidth && clipTop>=_splitDepthRow) {
+                        target.depth=_splitDepth;
+                        target.depthIndexOffset=std::size_t(_splitDepthRow)*_width;
+                    }
+                    if(_splitColor && _width==_splitColorWidth && clipTop>=_splitColorRow) {
+                        target.color=_splitColor;
+                        target.colorIndexOffset=std::size_t(_splitColorRow)*_width;
+                    }
+                    triangleImpl<false,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
+                                                                clipTop,clipBottom,solidColor,&target);
+                    if(!triangle)triangleImpl<false,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                                             clipTop,clipBottom,solidColor,&target);
+                } else {
+                    triangleImpl<false,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
+                                                           clipTop,clipBottom,solidColor);
+                    if(!triangle)triangleImpl<false,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                                                                        clipTop,clipBottom,solidColor);
+                }
             } else {
                 triangleRows(a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
                 if(!triangle)triangleRows(a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
