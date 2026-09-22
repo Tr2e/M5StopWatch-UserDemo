@@ -169,6 +169,8 @@ __attribute__((optimize("O3")))
 void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,bool cull,bool gray,bool keepBuried,bool partial){
     const auto startUs=micros();
     const uint16_t clearColor=_spaceEnabled?space::background:space::diagnosticBackground;
+    const bool parallelFrame=_optimizations && _parallelRasterFastPath &&
+                             view.model==ModelId::Rx78 && _surface;
 #ifdef ESP_PLATFORM
     uint8_t* nativeFrameBuffer=nullptr;std::size_t nativeStride=0;
     if(_optimizations && _nativeFrameBufferFastPath && &canvas==&GetHAL().getDisplay() &&
@@ -178,32 +180,45 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         if(first && second && second>first) {nativeFrameBuffer=first;nativeStride=std::size_t(second-first);}
     }
 #endif
-    // The rotating room reaches the screen poles, so its dirty area is the
-    // entire screen. Retain the old bounded clear for model-only diagnostics.
-    if(partial && !_spaceEnabled)canvas.fillRect(0,layout::top,canvas.width(),layout::side,clearColor);
+    const auto clearFrame=[&] {
+        // The rotating room reaches the screen poles, so its dirty area is the
+        // entire screen. Retain the old bounded clear for model-only diagnostics.
+        if(partial && !_spaceEnabled)canvas.fillRect(0,layout::top,canvas.width(),layout::side,clearColor);
 #ifdef ESP_PLATFORM
-    else if(_nativeClearFastPath && nativeFrameBuffer && !(canvas.width()&1) && !(nativeStride&3) &&
-            !(reinterpret_cast<std::uintptr_t>(nativeFrameBuffer)&3) &&
-            nativeStride>=std::size_t(canvas.width())*2) {
-        const uint16_t native=uint16_t((clearColor<<8)|(clearColor>>8));
-        const uint32_t pair=uint32_t(native)|(uint32_t(native)<<16);
-        for(int y=0;y<canvas.height();++y)
-            std::fill_n(reinterpret_cast<uint32_t*>(nativeFrameBuffer+std::size_t(y)*nativeStride),canvas.width()/2,pair);
-        GetHAL().markDisplayFrameBufferModified(0,0,canvas.width(),canvas.height());
-    }
+        else if(_nativeClearFastPath && nativeFrameBuffer && !(canvas.width()&1) && !(nativeStride&3) &&
+                !(reinterpret_cast<std::uintptr_t>(nativeFrameBuffer)&3) &&
+                nativeStride>=std::size_t(canvas.width())*2) {
+            const uint16_t native=uint16_t((clearColor<<8)|(clearColor>>8));
+            const uint32_t pair=uint32_t(native)|(uint32_t(native)<<16);
+            for(int y=0;y<canvas.height();++y)
+                std::fill_n(reinterpret_cast<uint32_t*>(nativeFrameBuffer+std::size_t(y)*nativeStride),canvas.width()/2,pair);
+            GetHAL().markDisplayFrameBufferModified(0,0,canvas.width(),canvas.height());
+        }
 #endif
-    else canvas.fillScreen(clearColor);
-    const auto backgroundUs=micros();
-    const bool parallelFrame=_optimizations && _parallelRasterFastPath &&
-                             view.model==ModelId::Rx78 && _surface;
+        else canvas.fillScreen(clearColor);
+    };
+    uint64_t backgroundUs=startUs,spaceUs=startUs;
+    uint32_t frameBackgroundUs=0;
 #ifdef ESP_PLATFORM
     bool spaceDispatched=false;
-    if(_spaceEnabled && parallelFrame && _parallelWorker) {
-        _parallelWorker->dispatchSpace(canvas,view);spaceDispatched=true;
-    } else
+    // Let the previous frame's panel DMA overlap command preparation instead
+    // of immediately competing with a full framebuffer clear. The room draw
+    // will later occupy CPU0 while CPU1 starts the lower raster band.
+    const bool lateBackground=parallelFrame && _parallelWorker;
+#else
+    constexpr bool lateBackground=false;
 #endif
-    if(_spaceEnabled)space::draw(canvas,view);
-    const auto spaceUs=micros();
+    if(!lateBackground) {
+        const auto backgroundStart=micros();clearFrame();backgroundUs=micros();
+        frameBackgroundUs=uint32_t(backgroundUs-backgroundStart);
+#ifdef ESP_PLATFORM
+        if(_spaceEnabled && parallelFrame && _parallelWorker) {
+            _parallelWorker->dispatchSpace(canvas,view);spaceDispatched=true;
+        } else
+#endif
+        if(_spaceEnabled)space::draw(canvas,view);
+        spaceUs=micros();
+    }
     if(!_surface){label(canvas,"MODEL MEMORY UNAVAILABLE",canvas.width()/2,220,1);return;}
     const bool nu=view.model==ModelId::NuGundam,strike=view.model==ModelId::StrikeGundam,destiny=view.model==ModelId::DestinyGundam,zaku=view.model==ModelId::CharZaku,sazabi=view.model==ModelId::Sazabi;
     const bool hiddenLine=view.model==ModelId::NuGundam;
@@ -370,6 +385,14 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const auto panelPrepareUs=micros();
 #ifdef ESP_PLATFORM
     uint32_t parallelSpaceUs=0;
+    if(lateBackground) {
+        const auto backgroundStart=micros();clearFrame();backgroundUs=micros();
+        frameBackgroundUs=uint32_t(backgroundUs-backgroundStart);
+        if(!splitCompatible) {
+            if(_spaceEnabled)space::draw(canvas,view);
+            spaceUs=micros();
+        }
+    }
     if(spaceDispatched){
         const auto waitStart=micros();_parallelWorker->wait();
         _stats.spaceWaitUs=uint32_t(micros()-waitStart);parallelSpaceUs=_parallelWorker->lastUs;
@@ -382,6 +405,10 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         if(_parallelWorker) {
             _parallelWorker->dispatch(raster,camera,_surface->preparedPanels.data(),lowerIndices,
                 bandIndices?lowerCount:preparedCount,split,h-1);
+            if(lateBackground) {
+                if(_spaceEnabled)space::draw(canvas,view);
+                spaceUs=micros();
+            }
             const auto mainStart=micros();
             const auto mainCount=bandIndices?upperCount:preparedCount;
             raster.preparedSolidPanelBatchRowsTrusted(camera,_surface->preparedPanels.data(),upperIndices,
@@ -465,7 +492,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(_optimizations)_stats.transformed=projection.transformed;
     _stats.clearUs=uint32_t(clearUs-startUs);_stats.prepareUs=uint32_t(prepareUs-clearUs);
     _stats.rasterUs=uint32_t(rasterUs-prepareUs);_stats.blitUs=uint32_t(blitUs-rasterUs);
-    _stats.backgroundUs=uint32_t(backgroundUs-startUs);
+    _stats.backgroundUs=frameBackgroundUs;
 #ifdef ESP_PLATFORM
     _stats.spaceUs=spaceDispatched?parallelSpaceUs:uint32_t(spaceUs-backgroundUs);
     if(_parallelWorker)_stats.workerStackFree=_parallelWorker->stackFree;
