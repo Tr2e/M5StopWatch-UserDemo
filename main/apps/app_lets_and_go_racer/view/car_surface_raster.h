@@ -446,6 +446,104 @@ private:
             }
         }
     }
+    template<bool PreparedSparseRecord>
+#ifdef ESP_PLATFORM
+    __attribute__((optimize("O3")))
+#endif
+    void solidQuadRowsExact(SolidScreenVertex a,SolidScreenVertex b,
+                            SolidScreenVertex c,SolidScreenVertex d,
+                            int clipTop,int clipBottom,uint16_t solidColor,
+                            const SolidRasterTarget& target) {
+        struct TriangleSetup {
+            std::array<SolidScreenVertex,3> point{};
+            std::array<float,3> slope{};
+            float inverse=0,left=0,right=-1;
+            int x0=0,x1=-1,y0=0,y1=-1;
+            bool scanRows=false,valid=false;
+        };
+        const auto prepare=[&](SolidScreenVertex p,SolidScreenVertex q,SolidScreenVertex r) {
+            TriangleSetup setup{{p,q,r}};
+            const float det=(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+            if(!std::isfinite(det) || std::abs(det)<.001f)return setup;
+            setup.left=std::max(float(_x),rasterFloor(std::min({p.x,q.x,r.x})));
+            setup.right=std::min(float(_x+_width-1),rasterCeil(std::max({p.x,q.x,r.x})));
+            const float top=std::max(float(std::max(_y,clipTop)),rasterFloor(std::min({p.y,q.y,r.y})));
+            const float bottom=std::min(float(std::min(_y+_height-1,clipBottom)),rasterCeil(std::max({p.y,q.y,r.y})));
+            if(setup.left>setup.right || top>bottom)return setup;
+            setup.x0=int(setup.left);setup.x1=int(setup.right);
+            setup.y0=int(top);setup.y1=int(bottom);setup.inverse=1/det;
+            setup.scanRows=(setup.x1-setup.x0)*(setup.y1-setup.y0)>256;
+            if(setup.scanRows)for(int edge=0;edge<3;++edge) {
+                const auto& u=setup.point[edge];const auto& v=setup.point[(edge+1)%3];
+                if(std::abs(v.y-u.y)>=.00001f)setup.slope[edge]=(v.x-u.x)/(v.y-u.y);
+            }
+            setup.valid=true;return setup;
+        };
+        const TriangleSetup firstTriangle=prepare(a,b,c),secondTriangle=prepare(a,c,d);
+        if(!firstTriangle.valid && !secondTriangle.valid)return;
+        const int firstY=std::min(firstTriangle.valid?firstTriangle.y0:secondTriangle.y0,
+                                  secondTriangle.valid?secondTriangle.y0:firstTriangle.y0);
+        const int lastY=std::max(firstTriangle.valid?firstTriangle.y1:secondTriangle.y1,
+                                 secondTriangle.valid?secondTriangle.y1:firstTriangle.y1);
+        const auto interval=[&](const TriangleSetup& setup,int y,int& first,int& last) {
+            if(!setup.valid || y<setup.y0 || y>setup.y1)return false;
+            float rowLeft=setup.right,rowRight=setup.left;bool intersects=false;
+            const float rowY=y+.5f;
+            if(setup.scanRows)for(int edge=0;edge<3;++edge) {
+                const auto& p=setup.point[edge];const auto& q=setup.point[(edge+1)%3];
+                if(rowY<std::min(p.y,q.y)-.001f || rowY>std::max(p.y,q.y)+.001f)continue;
+                if(std::abs(q.y-p.y)<.00001f) {
+                    rowLeft=std::min(rowLeft,std::min(p.x,q.x));
+                    rowRight=std::max(rowRight,std::max(p.x,q.x));
+                } else {
+                    const float x=p.x+setup.slope[edge]*(rowY-p.y);
+                    rowLeft=std::min(rowLeft,x);rowRight=std::max(rowRight,x);
+                }
+                intersects=true;
+            }
+            first=setup.x0;last=setup.x1;
+            if(intersects) {
+                first=int(std::max(float(setup.x0),rasterFloor(rowLeft)-2.f));
+                last=int(std::min(float(setup.x1),rasterCeil(rowRight)+2.f));
+            }
+            const auto& p=setup.point[0];const auto& q=setup.point[1];const auto& r=setup.point[2];
+            const float py=y+.5f-p.y;
+            const auto covered=[&](int x) {
+                const float px=x+.5f-p.x;
+                const float s=(px*(r.y-p.y)-py*(r.x-p.x))*setup.inverse;
+                const float t=((q.x-p.x)*py-(q.y-p.y)*px)*setup.inverse;
+                return s>=-.00001f && t>=-.00001f && s+t<=1.00001f;
+            };
+            while(first<=last && !covered(first))++first;
+            while(last>first && !covered(last))--last;
+            return first<=last;
+        };
+        const auto draw=[&](const TriangleSetup& setup,int y,int first,int last) {
+            const auto& p=setup.point[0];const auto& q=setup.point[1];const auto& r=setup.point[2];
+            const float py=y+.5f-p.y;
+            for(int x=first;x<=last;++x) {
+                const float px=x+.5f-p.x;
+                const float s=(px*(r.y-p.y)-py*(r.x-p.x))*setup.inverse;
+                const float t=((q.x-p.x)*py-(q.y-p.y)*px)*setup.inverse;
+                const float depth=p.depth+s*(q.depth-p.depth)+t*(r.depth-p.depth);
+                const auto value=uint16_t(depth*8192.f);
+                const auto index=std::size_t(y-_y)*_width+(x-_x);
+                const auto oldDepth=target.depth[index-target.depthIndexOffset];
+                if(value<oldDepth)continue;
+                if constexpr(PreparedSparseRecord)
+                    _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
+                else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
+                    _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
+                target.depth[index-target.depthIndexOffset]=value;
+                target.color[index-target.colorIndexOffset]=solidColor;
+            }
+        };
+        for(int y=firstY;y<=lastY;++y) {
+            int first=0,last=-1;
+            if(interval(firstTriangle,y,first,last))draw(firstTriangle,y,first,last);
+            if(interval(secondTriangle,y,first,last))draw(secondTriangle,y,first,last);
+        }
+    }
 public:
     void cameraTriangle(const TrackCamera& camera,CarSurfaceVertex a,CarSurfaceVertex b,
                         CarSurfaceVertex c,uint16_t color,CarPaint paint,uint8_t light) {
@@ -614,17 +712,15 @@ public:
             const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
             const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
             if(recordSparse) {
-                triangleImpl<false,true,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
-                                                                 clipTop,clipBottom,solidColor,&target);
-                if(!(face.visibility&kPreparedSolidTriangle))
-                    triangleImpl<false,true,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                if(face.visibility&kPreparedSolidTriangle)
+                    triangleImpl<false,true,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
                                                                      clipTop,clipBottom,solidColor,&target);
+                else solidQuadRowsExact<true>(a,b,c,d,clipTop,clipBottom,solidColor,target);
             } else {
-                triangleImpl<false,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
-                                                             clipTop,clipBottom,solidColor,&target);
-                if(!(face.visibility&kPreparedSolidTriangle))
-                    triangleImpl<false,true,true,true,true,true>(a,c,d,face.color,CarPaint::Solid,face.light,
+                if(face.visibility&kPreparedSolidTriangle)
+                    triangleImpl<false,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
                                                                  clipTop,clipBottom,solidColor,&target);
+                else solidQuadRowsExact<false>(a,b,c,d,clipTop,clipBottom,solidColor,target);
             }
         }
     }
