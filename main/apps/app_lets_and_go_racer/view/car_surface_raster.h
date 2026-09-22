@@ -17,6 +17,7 @@ struct CarBlitWork {
 
 struct CarSurfaceVertex {float x,y,z,u,v;};
 struct CarScreenVertex {float x,y,depth,uDepth,vDepth;};
+struct SolidScreenVertex {float x,y,depth;};
 
 struct PreparedCarPanel {
     union {
@@ -278,11 +279,11 @@ private:
         std::size_t colorIndexOffset=0;
     };
     template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false,
-             bool PreparedSolidColor=false,bool PreparedTarget=false>
+             bool PreparedSolidColor=false,bool PreparedTarget=false,class ScreenVertex=CarScreenVertex>
 #ifdef ESP_PLATFORM
     __attribute__((optimize("O3")))
 #endif
-    void triangleImpl(CarScreenVertex a,CarScreenVertex b,CarScreenVertex c,
+    void triangleImpl(ScreenVertex a,ScreenVertex b,ScreenVertex c,
                   uint16_t color,CarPaint paint,uint8_t light,int clipTop,int clipBottom,
                   uint16_t preparedSolidColor=0,const SolidRasterTarget* preparedTarget=nullptr) {
         // A band-parallel caller may fall back to one full-frame pass (for
@@ -334,7 +335,7 @@ private:
                                   (light==255 ? color : carTint(color,lightFactor));
         const auto* texture=_paintAtlas ? _paintAtlas->find(paint,color,light) : nullptr;
         const bool scanRows=(x1-x0)*(y1-y0)>256;
-        const std::array<CarScreenVertex,3> points{{a,b,c}};
+        const std::array<ScreenVertex,3> points{{a,b,c}};
         std::array<float,3> slopes{};
         if(scanRows) for(int edge=0;edge<3;++edge) {
             const auto& p=points[edge];const auto& q=points[(edge+1)%3];
@@ -502,11 +503,11 @@ public:
            (face.bottom<std::max(_y,clipTop)-1 ||
             face.top>std::min(_y+_height-1,clipBottom)+1)))return;
         if(visibility==1) {
-            const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
-            const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
             const bool triangle=face.visibility&kPreparedSolidTriangle;
             if(_solidFastPath && _solidSpanFastPath && _trustedSolidDepthFastPath &&
                _solidQuadFastPath && (face.visibility&kPreparedSolidTrustedDepth)) {
+                const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return SolidScreenVertex{p.x,p.y,p.z};};
+                const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
                 const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
                 const bool crossesDepth=_splitDepth && _width==_splitDepthWidth &&
                     clipTop<_splitDepthRow && clipBottom>=_splitDepthRow;
@@ -533,6 +534,8 @@ public:
                                                                         clipTop,clipBottom,solidColor);
                 }
             } else {
+                const auto vertex=[&](unsigned i) {const auto p=face.vertex[i];return CarScreenVertex{p.x,p.y,p.z,0,0};};
+                const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
                 triangleRows(a,b,c,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
                 if(!triangle)triangleRows(a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
             }
