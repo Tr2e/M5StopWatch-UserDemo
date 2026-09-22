@@ -18,15 +18,19 @@ struct MuseumProjectionCache {
     lets_and_go::RenderScratchBuffer<lets_and_go::TrackCameraPoint> fastProjected;
     std::array<int8_t,Mesh::capacity> passes{};
     std::size_t count=0,transformed=0;
+    float maximumHorizontalRadiusSquared=0,minY=0,maxY=0;
 
     void index(const Mesh& mesh) {
         // At most 50% occupied, including a mesh with no shared vertices.
         auto slots=std::unique_ptr<std::array<uint16_t,corners*2>>(
             new(std::nothrow) std::array<uint16_t,corners*2>{});
-        count=0;
+        count=0;maximumHorizontalRadiusSquared=0;
+        minY=1e20f;maxY=-1e20f;
         for(std::size_t corner=0;corner<mesh.count*4;++corner) {
             if(!slots){indices[corner]=uint16_t(count++);continue;}
             const auto p=mesh.panels[corner/4].point[corner%4];
+            maximumHorizontalRadiusSquared=std::max(maximumHorizontalRadiusSquared,p.x*p.x+p.z*p.z);
+            minY=std::min(minY,p.y);maxY=std::max(maxY,p.y);
             uint32_t hash=2166136261u;
             for(float value:{p.x,p.y,p.z}) {
                 uint32_t bits=0;if(value!=0)std::memcpy(&bits,&value,sizeof(bits));
@@ -44,6 +48,11 @@ struct MuseumProjectionCache {
             if(!(*slots)[slot]) {(*slots)[slot]=uint16_t(corner+1);indices[corner]=uint16_t(count++);}
             else indices[corner]=indices[(*slots)[slot]-1];
         }
+    }
+    bool nearPlaneSafe(float pivot) const {
+        const float vertical=std::max(std::abs(minY-pivot),std::abs(maxY-pivot));
+        constexpr float available=7.f-lets_and_go::kTrackNearPlane;
+        return maximumHorizontalRadiusSquared+vertical*vertical<available*available;
     }
     bool preferInternalReady(){return fastReady.allocate();}
     bool preferInternalProjected(){return fastProjected.allocate(count);}
@@ -106,7 +115,7 @@ struct MuseumProjectionCache {
     // Solid parallel exhibits never consume perspective UVs or generic paint
     // state. Build their compact replay record directly while preserving the
     // same lazy projection, bounds and near-plane fallback as panel().
-    template<class Transform> void solidPanel(lets_and_go::PreparedSolidPanel& result,
+    template<bool TrustedNearPlane=false,class Transform> void solidPanel(lets_and_go::PreparedSolidPanel& result,
         float& left,float& right,const lets_and_go::TrackCamera& camera,
         const lets_and_go::CarPanel& face,std::size_t index,Transform transform) {
         auto* status=readyData();auto* points=projectedData();
@@ -114,15 +123,21 @@ struct MuseumProjectionCache {
             const auto key=indices[index*4+i];
             if(!status[key]) {
                 const auto p=transform(face.point[i],face.wheel);++transformed;
-                if(p.z<lets_and_go::kTrackNearPlane)points[key]={0,0,0};
-                else {
+                if constexpr(!TrustedNearPlane) {
+                    if(p.z<lets_and_go::kTrackNearPlane)points[key]={0,0,0};
+                    else {
+                        const float inverse=1/p.z;
+                        points[key]={camera.principalX+camera.focalLength*p.x*inverse,
+                                     camera.principalY-camera.focalLength*p.y*inverse,inverse};
+                    }
+                } else {
                     const float inverse=1/p.z;
                     points[key]={camera.principalX+camera.focalLength*p.x*inverse,
                                  camera.principalY-camera.focalLength*p.y*inverse,inverse};
                 }
                 status[key]=1;
             }
-            if(points[key].z==0) {
+            if constexpr(!TrustedNearPlane)if(points[key].z==0) {
                 lets_and_go::PreparedCarPanel generic{};
                 lets_and_go::prepareCarPanel(generic,camera,face,transform);
                 result=lets_and_go::compactSolidPanel(generic);

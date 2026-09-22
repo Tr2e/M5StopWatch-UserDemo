@@ -231,6 +231,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     _stats={};_stats.total=_surface->mesh.count;
     if(useSplitDepth)_stats.internalDepthBytes=uint32_t(fastColorWidth*fastColorSplit*sizeof(uint16_t));
     auto& projection=_surface->projection;
+    const bool trustedNearPlane=view.model==ModelId::Rx78 && projection.nearPlaneSafe(transform.pivot);
     projection.setInternalReadyFastPath(_optimizations && _internalProjectionReadyFastPath && view.model==ModelId::Rx78);
     projection.setInternalProjectedFastPath(_optimizations && _internalProjectedPointFastPath && view.model==ModelId::Rx78);
     if(projection.usingInternalProjected())_stats.internalProjectedBytes=uint32_t(projection.count*sizeof(lets_and_go::TrackCameraPoint));
@@ -279,7 +280,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         if(_optimizations && _compactPanelPrepareFastPath && splitCompatible &&
            face.paint==lets_and_go::CarPaint::Solid) {
             lets_and_go::PreparedSolidPanel prepared{};float left=0,right=0;
-            projection.solidPanel(prepared,left,right,camera,face,i,project);
+            if(trustedNearPlane)projection.solidPanel<true>(prepared,left,right,camera,face,i,project);
+            else projection.solidPanel(prepared,left,right,camera,face,i,project);
             if(!prepared.visibility || right<0 || left>=w || prepared.bottom<0 || prepared.top>=h) {
                 ++_stats.offscreen;continue;
             }

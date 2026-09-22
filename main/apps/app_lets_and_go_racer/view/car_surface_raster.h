@@ -412,7 +412,7 @@ private:
             const auto oldDepth=depthBuffer[index-depthIndexOffset];
             if(d<oldDepth)continue;
             if constexpr(PreparedSparseRecord) {
-                if(!oldDepth)_occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
+                _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
             } else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
                 _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
             if constexpr(Solid) {
