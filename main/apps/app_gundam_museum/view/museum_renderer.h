@@ -52,6 +52,7 @@ public:
     void setInternalProjectedPointFastPath(bool enabled){_internalProjectedPointFastPath=enabled;}
     void setInternalFacePassFastPath(bool enabled){_internalFacePassFastPath=enabled;}
     void setInternalBandIndexFastPath(bool enabled){_internalBandIndexFastPath=enabled;}
+    void setIndexedPanelFastPath(bool enabled){_indexedPanelFastPath=enabled;}
     void setSplitDepthFastPath(bool enabled){_splitDepthFastPath=enabled;}
     void setSparseDepthSpanClearFastPath(bool enabled){_sparseDepthSpanClearFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
@@ -63,13 +64,19 @@ public:
     int sampleHeight() const{return _surface?_surface->raster.height():0;}
 private:
     struct Surface {
+        union PreparedCommands {
+            lets_and_go::PreparedSolidRasterPanel solid[Mesh::capacity];
+            lets_and_go::PreparedIndexedSolidRasterPanel indexed[Mesh::capacity];
+            PreparedCommands() {}
+            ~PreparedCommands() {}
+        };
         Mesh mesh;
         lets_and_go::CarSurfaceRaster<424,424> raster;
         MuseumProjectionCache projection;
         EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
         lets_and_go::RenderScratch<std::array<uint8_t,(424*424+7)/8>> fastOccupiedDepth;
-        std::array<lets_and_go::PreparedSolidRasterPanel,Mesh::capacity> preparedPanels{};
+        PreparedCommands preparedPanels;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerColor;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerDepth;
     };
@@ -97,6 +104,7 @@ private:
     bool _internalProjectedPointFastPath=true;
     bool _internalFacePassFastPath=true;
     bool _internalBandIndexFastPath=true;
+    bool _indexedPanelFastPath=true;
     bool _splitDepthFastPath=true;
     bool _sparseDepthSpanClearFastPath=true;
     bool _spaceEnabled=true;

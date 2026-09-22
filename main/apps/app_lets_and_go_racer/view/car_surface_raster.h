@@ -51,6 +51,16 @@ struct PreparedSolidRasterPanel {
     uint8_t light=255;
     uint8_t visibility=0;
 };
+// When projected vertices live in fast shared storage, keep only their keys in
+// the ordered command stream. This shrinks the PSRAM command payload from 52 B
+// to 12 B without changing the projected float values consumed by raster.
+struct PreparedIndexedSolidRasterPanel {
+    std::array<uint16_t,4> vertex{};
+    uint16_t color=0;
+    uint8_t light=255;
+    uint8_t visibility=0;
+};
+static_assert(sizeof(PreparedIndexedSolidRasterPanel)==12);
 constexpr uint8_t kPreparedSolidTriangle=0x80u;
 constexpr uint8_t kPreparedSolidTrustedDepth=0x40u;
 constexpr uint8_t kPreparedSolidBandSelected=0x20u;
@@ -667,6 +677,22 @@ public:
                 cameraTriangleRows(camera,a,c,d,face.color,CarPaint::Solid,face.light,clipTop,clipBottom);
         }
     }
+private:
+    template<bool RecordSparse>
+#ifdef ESP_PLATFORM
+    __attribute__((noinline,optimize("O3"),section(".iram1")))
+#endif
+    void trustedSolidFace(const std::array<SolidScreenVertex,4>& vertex,uint16_t color,
+                          uint8_t light,uint8_t visibility,int clipTop,int clipBottom,
+                          const SolidRasterTarget& target) {
+        const auto& a=vertex[0];const auto& b=vertex[1];const auto& c=vertex[2];const auto& d=vertex[3];
+        const uint16_t solidColor=light==255 ? color : carTint(color,light/255.f);
+        if(visibility&kPreparedSolidTriangle)
+            triangleImpl<false,true,true,true,true,true,RecordSparse>(a,b,c,color,CarPaint::Solid,light,
+                                                                      clipTop,clipBottom,solidColor,&target);
+        else solidQuadRowsExact<RecordSparse>(a,b,c,d,clipTop,clipBottom,solidColor,target);
+    }
+public:
 #ifdef ESP_PLATFORM
     __attribute__((optimize("O3"),section(".iram1")))
 #endif
@@ -706,22 +732,44 @@ public:
         const bool recordSparse=_sparseDepthClearFastPath && !_deferredSparseDepthRecord;
         for(std::size_t i=0;i<count;++i) {
             const auto& face=panels[panelIndices?panelIndices[i]:i];
-            const auto vertex=[&](unsigned v) {
-                const auto p=face.vertex[v];return SolidScreenVertex{p.x,p.y,p.z};
-            };
-            const auto a=vertex(0),b=vertex(1),c=vertex(2),d=vertex(3);
-            const uint16_t solidColor=face.light==255 ? face.color : carTint(face.color,face.light/255.f);
-            if(recordSparse) {
-                if(face.visibility&kPreparedSolidTriangle)
-                    triangleImpl<false,true,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
-                                                                     clipTop,clipBottom,solidColor,&target);
-                else solidQuadRowsExact<true>(a,b,c,d,clipTop,clipBottom,solidColor,target);
-            } else {
-                if(face.visibility&kPreparedSolidTriangle)
-                    triangleImpl<false,true,true,true,true,true>(a,b,c,face.color,CarPaint::Solid,face.light,
-                                                                 clipTop,clipBottom,solidColor,&target);
-                else solidQuadRowsExact<false>(a,b,c,d,clipTop,clipBottom,solidColor,target);
+            std::array<SolidScreenVertex,4> vertex{};
+            for(unsigned v=0;v<4;++v) {
+                const auto p=face.vertex[v];vertex[v]={p.x,p.y,p.z};
             }
+            if(recordSparse)trustedSolidFace<true>(vertex,face.color,face.light,face.visibility,
+                                                    clipTop,clipBottom,target);
+            else trustedSolidFace<false>(vertex,face.color,face.light,face.visibility,
+                                         clipTop,clipBottom,target);
+        }
+    }
+    // Indexed companion to the trusted batch above. The command stream stays
+    // ordered; only vertex materialization moves to the consuming core and
+    // reads the exact cached float triplets.
+#ifdef ESP_PLATFORM
+    __attribute__((optimize("O3"),section(".iram1")))
+#endif
+    void preparedIndexedSolidPanelBatchRowsTrusted(const PreparedIndexedSolidRasterPanel* panels,
+                                                    const TrackCameraPoint* projected,
+                                                    const uint16_t* panelIndices,std::size_t count,
+                                                    int clipTop,int clipBottom) {
+        SolidRasterTarget target{depthData(),colorData(),0,0};
+        if(_splitDepth && _width==_splitDepthWidth && clipTop>=_splitDepthRow) {
+            target.depth=_splitDepth;target.depthIndexOffset=std::size_t(_splitDepthRow)*_width;
+        }
+        if(_splitColor && _width==_splitColorWidth && clipTop>=_splitColorRow) {
+            target.color=_splitColor;target.colorIndexOffset=std::size_t(_splitColorRow)*_width;
+        }
+        const bool recordSparse=_sparseDepthClearFastPath && !_deferredSparseDepthRecord;
+        for(std::size_t i=0;i<count;++i) {
+            const auto& face=panels[panelIndices?panelIndices[i]:i];
+            std::array<SolidScreenVertex,4> vertex{};
+            for(unsigned v=0;v<4;++v) {
+                const auto p=projected[face.vertex[v]];vertex[v]={p.x,p.y,p.z};
+            }
+            if(recordSparse)trustedSolidFace<true>(vertex,face.color,face.light,face.visibility,
+                                                    clipTop,clipBottom,target);
+            else trustedSolidFace<false>(vertex,face.color,face.light,face.visibility,
+                                         clipTop,clipBottom,target);
         }
     }
     // Hidden-line stroke: keep a surface only when its depth matches the filled
