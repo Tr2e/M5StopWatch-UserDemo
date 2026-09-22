@@ -21,7 +21,7 @@ struct RenderStats {
     uint32_t backgroundUs=0,spaceUs=0,depthClearUs=0;
     uint32_t panelPrepareUs=0,spaceWaitUs=0,mainRasterUs=0,workerRasterUs=0;
     uint32_t workerStackFree=0;
-    uint32_t internalProjectedBytes=0,internalDepthBytes=0;
+    uint32_t internalProjectedBytes=0,internalDepthBytes=0,internalCommandBytes=0;
 };
 class MuseumRenderer {
 public:
@@ -79,6 +79,7 @@ private:
         PreparedCommands preparedPanels;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerColor;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerDepth;
+        lets_and_go::RenderScratchBuffer<lets_and_go::PreparedIndexedSolidRasterPanel> fastIndexedPanels;
     };
     std::unique_ptr<Surface> _surface;
 #ifdef ESP_PLATFORM
