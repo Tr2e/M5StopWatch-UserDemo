@@ -43,6 +43,12 @@ struct FrameWorkload {
     uint32_t depthRejectedPixels=0;
     uint32_t solidPrimitives=0;
     uint32_t generalPrimitives=0;
+    uint32_t totalTriangles=0;
+    uint32_t submittedTriangles=0;
+    uint32_t culledPrimitives=0;
+    uint32_t offscreenPrimitives=0;
+    uint32_t totalQuads=0;
+    uint32_t submittedQuads=0;
 };
 
 constexpr RenderProfile game30Profile(){return {};}

@@ -98,6 +98,10 @@ def run(output: pathlib.Path) -> None:
             "source_triangles": 2, "unique_vertices": 4,
         }
         assert report["materials"]["solid_fast_path_ratio"] == 1.0
+        assert report["memory"]["maximum_projection_bytes"] == 48
+        assert report["memory"]["rigid_scratch"] == {
+            "vertex_capacity": 4, "bone_capacity": 1, "estimated_bytes": 176,
+        }
         assert report["bounds"]["minimum"] == [2.0, 4.0, 6.0]
         assert report["bounds"]["maximum"] == [4.0, 6.0, 6.0]
         assert "PrimitiveTopology::Quad" in (output / "model_asset.h").read_text()

@@ -45,19 +45,10 @@ struct MuseumAssetRegistration {
     soft3d::AssetProfile profile=soft3d::AssetProfile::General;
 };
 
-inline MuseumAssetRegistration museumAssetRegistration(ModelId model) {
+inline MuseumAssetRegistration museumAssetRegistration() {
     using namespace soft3d;
-    switch(model) {
-    case ModelId::Rx78:
-        return {"rx78",AssetDeterministicOrder|AssetAllSolid|AssetNearPlaneEnvelope|
-                       AssetPrecomputedCullPlanes|AssetFastIndexedCommands,AssetProfile::SolidStatic};
-    case ModelId::CharZaku:return {"char_zaku",AssetDeterministicOrder|AssetAllSolid,AssetProfile::SolidStatic};
-    case ModelId::NuGundam:return {"nu_gundam",AssetDeterministicOrder|AssetAllSolid,AssetProfile::SolidStatic};
-    case ModelId::Sazabi:return {"sazabi",AssetDeterministicOrder|AssetAllSolid,AssetProfile::SolidStatic};
-    case ModelId::StrikeGundam:return {"strike_gundam",AssetDeterministicOrder|AssetAllSolid,AssetProfile::SolidStatic};
-    case ModelId::DestinyGundam:return {"destiny_gundam",AssetDeterministicOrder|AssetAllSolid,AssetProfile::SolidStatic};
-    }
-    return {};
+    return {"rx78",AssetDeterministicOrder|AssetAllSolid|AssetNearPlaneEnvelope|
+                   AssetPrecomputedCullPlanes|AssetFastIndexedCommands,AssetProfile::SolidStatic};
 }
 
 } // namespace gundam_museum

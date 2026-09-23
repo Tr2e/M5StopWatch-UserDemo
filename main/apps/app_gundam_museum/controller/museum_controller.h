@@ -11,8 +11,6 @@ public:
     const View& view()const{return _view;}
     bool exitRequested()const{return _exit;}
     int percent(uint32_t now)const{
-        // Nu hidden-line drag fills a 65% Z-buffer; strokes are expanded to 1px.
-        if(_view.model==ModelId::NuGundam)return _touch?65:100;
         return (_touch || now-_lastMotion<180?65:100);
     }
     bool update(const lets_and_go::DeviceControlFrame& input,uint32_t now){
@@ -20,24 +18,6 @@ public:
         // Exit remains usable when the touchscreen is invalid/stale.
         if(input.input.exitPressed || input.input.cancelPressed){_exit=true;return false;}
         if(input.input.valid){
-            if(input.navigation){
-                // One complete exhibit per model; study views remain host-only.
-                // Zaku, Sazabi, Strike and Destiny stay in the renderer for
-                // host tests, but are not in the product browse cycle.
-                constexpr ModelId models[]={
-                    ModelId::Rx78,
-                    // ModelId::CharZaku,
-                    ModelId::NuGundam,
-                    // ModelId::Sazabi,
-                    // ModelId::StrikeGundam,
-                    // ModelId::DestinyGundam,
-                };
-                constexpr int count=int(sizeof(models)/sizeof(models[0]));
-                _mode=(_mode+(input.navigation>0?1:count-1))%count;
-                _view.model=models[_mode];
-                _view.equipment=true;_view.detail=false;
-                _view.automatic=false;_touch=false;_blockedGesture=true;dirty=true;
-            }
             const auto& drag=input.preview;
             if(drag.changed){
                 if(drag.gesture!=_gesture){_gesture=drag.gesture;_lastDx=_lastDy=0;_blockedGesture=false;}
@@ -58,7 +38,7 @@ public:
 private:
     View _view{};
     uint32_t _lastMotion=uint32_t(0)-1000,_gesture=0;
-    int _lastDx=0,_lastDy=0,_mode=0,_lastQuality=100;
+    int _lastDx=0,_lastDy=0,_lastQuality=100;
     bool _touch=false,_blockedGesture=false,_exit=false;
 };
 } // namespace gundam_museum

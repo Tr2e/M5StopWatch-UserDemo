@@ -30,16 +30,11 @@ void controls(){
     f.preview.dy=299;c.update(f,1290);assert(c.view().pitch<.70f);
     f.input.valid=false;c.update(f,1300);const auto interrupted=c.view();
     f.input.valid=true;f.preview.dx=100;c.update(f,1310);assert(c.view().yaw==interrupted.yaw);
-    f.preview={};f.navigation=1;
-    for(ModelId expected:{ModelId::NuGundam,ModelId::Rx78}){
-        c.update(f,1320);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
-    }
-    f.navigation=-1;
-    for(ModelId expected:{ModelId::NuGundam,ModelId::Rx78}){
-        c.update(f,1330);assert(c.view().model==expected && c.view().equipment && !c.view().detail);
-    }
-    f.navigation=1;c.update(f,1340);f.navigation=0;f.input.confirmPressed=true;c.update(f,1346);
-    assert(c.view().model==ModelId::NuGundam && c.view().equipment && !c.view().detail);
+    f.preview={};const auto fixedRx78=c.view();f.navigation=1;c.update(f,1320);
+    f.navigation=-1;c.update(f,1330);f.navigation=0;
+    assert(c.view().yaw==fixedRx78.yaw && c.view().pitch==fixedRx78.pitch &&
+           c.view().equipment==fixedRx78.equipment && c.view().detail==fixedRx78.detail);
+    f.input.confirmPressed=true;c.update(f,1346);
     f.input.confirmPressed=false;
     f.navigation=0;f.autoToggle=true;c.update(f,1350);f.autoToggle=false;
     const float start=c.view().yaw;c.update(f,2350);assert(!c.view().automatic && c.view().yaw==start);
@@ -55,16 +50,15 @@ void controls(){
     c.reset();assert(c.update(logic.consume(true),400));const auto moved=c.view();
     c.update(logic.consume(true),410);assert(c.view().yaw==moved.yaw);
     using lets_and_go::GameScreen;using lets_and_go::TouchAction;
-    assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,32,233)==TouchAction::Previous);
-    assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,436,233)==TouchAction::Next);
+    assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,32,233)==TouchAction::None);
+    assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,436,233)==TouchAction::None);
     for(auto p:{std::pair<int,int>{170,414},{298,414},{116,69},{123,350}})
         assert(lets_and_go::menuTouchTarget(GameScreen::MuseumInspect,p.first,p.second)==TouchAction::None);
     // Racer's original touch actions remain intact.
     assert(lets_and_go::menuTouchTarget(GameScreen::CarInspect,170,414)==TouchAction::Auto);
     assert(lets_and_go::menuTouchTarget(GameScreen::CarInspect,298,414)==TouchAction::Confirm);
     logic.touch(true,436,233);logic.touch(false,436,233);
-    auto click=logic.consume(true);assert(click.navigation==1);c.update(click,500);
-    assert(c.view().model==ModelId::NuGundam);
+    auto click=logic.consume(true);assert(click.navigation==0);c.update(click,500);
     assert(logic.consume(true).navigation==0);
     logic.touch(true,32,233);logic.touch(true,100,233);logic.touch(false,100,233);
     assert(logic.consume(true).navigation==0);
@@ -80,20 +74,10 @@ int main(int argc,char** argv){
     const std::string out=argc>1?argv[1]:"/tmp/gundam-museum";
     MuseumRenderer renderer;assert(renderer.open());
     LGFX_Sprite canvas;canvas.createSprite(468,466);
-    const bool strike=argc>2 && std::string(argv[2])=="strike";
-    const bool nu=argc>2 && std::string(argv[2])=="nu";
-    const bool zaku=argc>2 && std::string(argv[2])=="zaku";
-    const bool sazabi=argc>2 && std::string(argv[2])=="sazabi";
-    const bool destiny=argc>2 && std::string(argv[2])=="destiny";
-    const ModelId model=destiny?ModelId::DestinyGundam:strike?ModelId::StrikeGundam:nu?ModelId::NuGundam:zaku?ModelId::CharZaku:sazabi?ModelId::Sazabi:ModelId::Rx78;
-    View view;view.model=model;
-    const std::string prefix=destiny?"destiny":strike?"strike":nu?"nu":zaku?"zaku":sazabi?"sazabi":"rx78";
+    View view;
+    const std::string prefix="rx78";
     const auto save=[&](const std::string& name){canvas.save(out+"/"+(name.rfind("rx78-",0)==0?prefix+name.substr(4):name)+".ppm");};
     renderer.render(canvas,view);save("rx78-equipped");
-    if(nu){
-        unsigned ink=0;for(auto pixel:canvas.frame())ink+=pixel==hiddenLineInk;
-        assert(ink>800);
-    }
     std::cout<<"working_bytes="<<renderer.workingBytes()<<" panels="<<renderer.mesh().count
              <<" omitted="<<renderer.mesh().buriedOmitted<<" submitted="<<renderer.stats().submitted
              <<" culled="<<renderer.stats().culled<<'\n';
@@ -108,15 +92,10 @@ int main(int argc,char** argv){
         for(auto p:mesh.panels[i].point)assert(std::isfinite(p.x)&&std::isfinite(p.y)&&std::isfinite(p.z));
     }
     for(unsigned i=0;i<static_cast<unsigned>(Part::Bazooka);++i)assert(parts[i]>0);
-    assert((nu||destiny)?parts[static_cast<unsigned>(Part::Bazooka)]>0:parts[static_cast<unsigned>(Part::Bazooka)]==0);
-    assert((strike||destiny)?parts[static_cast<unsigned>(Part::Aile)]>0:parts[static_cast<unsigned>(Part::Aile)]==0);
-    assert((nu||sazabi)?parts[static_cast<unsigned>(Part::Funnels)]>0:parts[static_cast<unsigned>(Part::Funnels)]==0);
-    if(!nu && !strike && !zaku && !sazabi && !destiny){checkSdRx78Geometry(renderer.mesh());sd_equipment_check::check(renderer.mesh());}
-    if(nu)sd_nu_check::check(renderer.mesh());
-    if(strike)sd_strike_check::check(renderer.mesh());
-    if(zaku)sd_zaku_check::check(renderer.mesh());
-    if(sazabi)sd_sazabi_check::check(renderer.mesh());
-    if(destiny)sd_destiny_check::check(renderer.mesh());
+    assert(parts[static_cast<unsigned>(Part::Bazooka)]==0);
+    assert(parts[static_cast<unsigned>(Part::Aile)]==0);
+    assert(parts[static_cast<unsigned>(Part::Funnels)]==0);
+    checkSdRx78Geometry(renderer.mesh());sd_equipment_check::check(renderer.mesh());
     view.equipment=false;view.yaw=0;view.pitch=.04f;renderer.render(canvas,view);save("rx78-front");
     view.yaw=3.14159265f;renderer.render(canvas,view);save("rx78-rear");
     view.yaw=1.5707963f;renderer.render(canvas,view);save("rx78-side");
@@ -134,7 +113,7 @@ int main(int argc,char** argv){
     unsigned cases=0;std::size_t cullDiff=0,buriedDiff=0,totalCull=0,totalFaces=0,coverageDiff=0,interiorDiff=0,maxDiff=0;
     std::size_t partialDiff=0,frameEdge=0,circleEdge=0;
     for(Pose pose:{Pose::Display})for(int percent:{65,90,100})for(bool equipment:{false,true})for(bool detail:{false,true})for(float pitch:{-.20f,.10f,.70f})for(int i=0;i<24;++i){
-        view={float(i)*6.2831853f/24,pitch,equipment,detail,false,pose,model};
+        view={float(i)*6.2831853f/24,pitch,equipment,detail,false,pose};
         renderer.render(canvas,view,percent,false,false,false);const auto reference=canvas.frame();
         renderer.render(canvas,view,percent);totalCull+=renderer.stats().culled;totalFaces+=renderer.stats().total;
         const auto optimized=canvas.frame();
@@ -172,7 +151,7 @@ int main(int argc,char** argv){
         cullDiff+=cd;
         const auto optimizedCount=renderer.mesh().count,omitted=renderer.mesh().buriedOmitted;
         renderer.render(canvas,view,percent,true,false,true);assert(!renderer.mesh().overflowed);
-        assert(omitted==(nu?8u:strike?10u:(zaku||sazabi||destiny)?0u:12u));assert(renderer.mesh().count==optimizedCount+omitted);
+        assert(omitted==12u);assert(renderer.mesh().count==optimizedCount+omitted);
         std::size_t bd=0;for(size_t p=0;p<reference.size();++p)bd+=optimized[p]!=canvas.frame()[p];
         if(bd && !buriedDiff){std::cout<<"first_buried_case "<<equipment<<' '<<detail<<' '<<pitch<<' '<<i<<" pixels="<<bd<<'\n';save("debug-buried");}
         buriedDiff+=bd;
@@ -188,30 +167,21 @@ int main(int argc,char** argv){
     if(interiorDiff || maxDiff>8 || buriedDiff || partialDiff)return 2;
     std::cout<<"full_exhibit circle_edge="<<circleEdge<<" viewport_edge="<<frameEdge<<'\n';
     assert(circleEdge==0 && frameEdge==0);
-    // A cached exhibit must be replaced even when all camera/equipment fields match.
-    View original;original.model=model;renderer.render(canvas,original);const auto identity=canvas.frame();
-    for(ModelId id:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::DestinyGundam}){
-        if(id==model)continue;
-        View other=original;other.model=id;
-        renderer.render(canvas,other);assert(canvas.frame()!=identity);
-        renderer.render(canvas,original);assert(canvas.frame()==identity);
-    }
+    View original;renderer.render(canvas,original);const auto identity=canvas.frame();
     View moved=original;moved.yaw+=1.2f;moved.pitch=.6f;
     renderer.render(canvas,moved);const auto movedFull=canvas.frame();
     renderer.render(canvas,original);renderer.render(canvas,moved,100,true,false,false,true);
     assert(canvas.frame()==movedFull);
     for(int i=0;i<10;++i){renderer.close();assert(!renderer.ready());assert(renderer.open());renderer.render(canvas,original);assert(canvas.frame()==identity);}
-    if(!strike && !zaku && !sazabi && !destiny){
-        for(int percent:{65,100})for(float pitch:{-.2f,.1f,.7f}){
-            View sample;sample.model=model;sample.pitch=pitch;sample.yaw=-.4f;
-            renderer.setOptimizations(false);renderer.render(canvas,sample,percent);const auto reference=canvas.frame();
-            renderer.setOptimizations(true);renderer.render(canvas,sample,percent);
-            assert(canvas.frame()==reference);
-        }
-        renderer.setOptimizations(true);
+    for(int percent:{65,100})for(float pitch:{-.2f,.1f,.7f}){
+        View sample;sample.pitch=pitch;sample.yaw=-.4f;
+        renderer.setOptimizations(false);renderer.render(canvas,sample,percent);const auto reference=canvas.frame();
+        renderer.setOptimizations(true);renderer.render(canvas,sample,percent);
+        assert(canvas.frame()==reference);
     }
+    renderer.setOptimizations(true);
     LGFX_Sprite room;room.createSprite(468,466);room.fillScreen(space::background);
-    View roomView;roomView.model=model;
+    View roomView;
     space::draw(room,roomView);room.save(out+"/space-empty.ppm");
     const auto defaultRoom=room.frame();
     View turnedRoom=roomView;turnedRoom.yaw+=.35f;
@@ -234,7 +204,7 @@ int main(int argc,char** argv){
     assert(lx0>=0 && lx0<=467 && lx1>=0 && lx1<=467);
     std::size_t sceneCases=0,coveredGrid=0,visibleGrid=0,inkColoredModel=0,gutterChanges=0;
     for(int percent:{65,100})for(float pitch:{-.2f,.1f,.7f})for(int i=0;i<6;++i){
-        View scene;scene.model=model;scene.pitch=pitch;scene.yaw=-.4f+i*6.2831853f/6;
+        View scene;scene.pitch=pitch;scene.yaw=-.4f+i*6.2831853f/6;
         renderer.setSpaceEnabled(false);renderer.render(canvas,scene,percent);const auto flat=canvas.frame();
         renderer.setSpaceEnabled(true);renderer.render(canvas,scene,percent);const auto complete=canvas.frame();
         for(size_t i=0;i<renderer.mesh().count;++i)for(auto p:renderer.mesh().panels[i].point)assert(space::contains(p));
@@ -253,7 +223,6 @@ int main(int argc,char** argv){
             visibleGrid+=!modelPixel && backdrop[p]!=space::background;
         }
         View previous=scene;previous.yaw+=.8f;previous.pitch=.6f;
-        previous.model=model==ModelId::Rx78?ModelId::NuGundam:ModelId::Rx78;
         renderer.render(canvas,previous,percent==65?100:65);
         const auto beforePartial=canvas.frame();
         renderer.render(canvas,scene,percent,true,false,false,true);
@@ -274,7 +243,7 @@ int main(int argc,char** argv){
              <<" gutter_changes="<<gutterChanges
              <<" cube_contains_model=1 model_pixels_unchanged=1 mixed_partial_exact=1 clip_restored=1\n";
     // Offline orbit evidence samples manual camera poses; no product auto mode.
-    for(int i=0;i<48;++i){View tourView;tourView.model=model;
+    for(int i=0;i<48;++i){View tourView;
         tourView.yaw=-.4f-float(i)*6.2831853f/48;renderer.render(canvas,tourView,100);save("tour-"+std::to_string(i));}
     std::cout<<"Geometry, bounded silhouette comparison, exact buried/partial equality, controls and reentry passed\n";
 }

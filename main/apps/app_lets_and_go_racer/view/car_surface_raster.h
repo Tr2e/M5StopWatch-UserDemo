@@ -150,6 +150,10 @@ template<int Width,int Height,bool Measure=false>
 class CarSurfaceRaster : private SurfaceRasterMetricsStorage<Measure> {
 public:
     static constexpr int kWidth=Width,kHeight=Height;
+    int viewportX() const{return _x;}
+    int viewportY() const{return _y;}
+    int viewportWidth() const{return _width;}
+    int viewportHeight() const{return _height;}
     void resetMetrics(){if constexpr(Measure)static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value={};}
     SurfaceRasterMetrics metrics() const{
         if constexpr(Measure)return static_cast<const SurfaceRasterMetricsStorage<true>&>(*this).value;

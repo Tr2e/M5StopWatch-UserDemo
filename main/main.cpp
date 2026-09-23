@@ -31,7 +31,28 @@ extern "C" void app_main(void)
     ui_hal::on_get_tick([]() { return GetHAL().millis(); });
 
     // Install apps
-    const int museumApp=GetMooncake().installApp(std::make_unique<AppGundamMuseum>());GetMooncake().openApp(museumApp);
+#if !STOPWATCH_BENCHMARK_AUTORUN
+    GetMooncake().installApp(std::make_unique<AppLauncher>());
+#endif
+    GetMooncake().installApp(std::make_unique<AppTyphoon>());
+    GetMooncake().installApp(std::make_unique<AppGrokBotLab>());
+    GetMooncake().installApp(std::make_unique<AppGlowField>());
+    GetMooncake().installApp(std::make_unique<AppVectorCanyonFighter>());
+    GetMooncake().installApp(std::make_unique<AppLetsAndGoRacer>());
+    GetMooncake().installApp(std::make_unique<AppGundamMuseum>());
+    GetMooncake().installApp(std::make_unique<AppGundamArena>());
+    const int benchmarkAppId=GetMooncake().installApp(std::make_unique<App3DBenchmark>());
+    GetMooncake().installApp(std::make_unique<AppRuView>());
+    GetMooncake().installApp(std::make_unique<AppLuckyWheel>());
+    GetMooncake().installApp(std::make_unique<AppSetup>());
+
+#if STOPWATCH_BENCHMARK_AUTORUN
+    mclog::tagInfo("3DBenchAudit","boot autorun app_id={} topology_stats={}",
+                   benchmarkAppId,STOPWATCH_COLLECT_TOPOLOGY_STATS);
+    GetMooncake().openApp(benchmarkAppId);
+#else
+    (void)benchmarkAppId;
+#endif
 
     // Main loop
     while (1) {

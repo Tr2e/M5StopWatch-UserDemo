@@ -3,7 +3,6 @@
 #include "../model/museum_model_asset.h"
 #include "../../common/soft3d/raster/surface_raster.h"
 #include "museum_projection_cache.h"
-#include "museum_wireframe.h"
 #include <memory>
 
 namespace gundam_museum {
@@ -14,10 +13,11 @@ struct View {
     float yaw=-.40f,pitch=.10f;
     bool equipment=true,detail=false,automatic=false;
     Pose pose=Pose::Display;
-    ModelId model=ModelId::Rx78;
 };
 struct RenderStats {
     std::size_t total=0,culled=0,submitted=0,offscreen=0,vertices=0,transformed=0;
+    std::size_t totalTriangles=0,submittedTriangles=0;
+    std::size_t totalQuads=0,submittedQuads=0;
     uint32_t clearUs=0,prepareUs=0,rasterUs=0,blitUs=0,overlayUs=0;
     uint32_t backgroundUs=0,spaceUs=0,depthClearUs=0;
     uint32_t panelPrepareUs=0,spaceWaitUs=0,mainRasterUs=0,workerRasterUs=0;
@@ -63,6 +63,7 @@ public:
     void setSparseDepthSpanClearFastPath(bool enabled){_sparseDepthSpanClearFastPath=enabled;}
     // Diagnostic isolation of model coverage; the product keeps the room on.
     void setSpaceEnabled(bool enabled){_spaceEnabled=enabled;}
+    void setBackgroundColor(uint16_t color){_backgroundColor=color;_backgroundColorOverride=true;}
     // Diagnostic coverage of the last render, in active raster coordinates.
     // Callers must keep x/y inside that render's internal sampling dimensions.
     bool modelSampleCovered(int x,int y) const{return _surface && _surface->raster.depthAt(x,y)!=0;}
@@ -81,13 +82,14 @@ private:
         soft3d::ModelInstance instance;
         soft3d::SurfaceRaster<424,424> raster;
         MuseumProjectionCache projection;
-        EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
         lets_and_go::RenderScratch<std::array<uint8_t,(424*424+7)/8>> fastOccupiedDepth;
         PreparedCommands preparedPanels;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerColor;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerDepth;
         lets_and_go::RenderScratchBuffer<lets_and_go::PreparedIndexedSolidRasterPanel> fastIndexedPanels;
+        std::size_t topologyTriangles=0,topologyQuads=0;
+        std::array<uint8_t,(Mesh::capacity+7)/8> topologyQuadBits{};
     };
     std::unique_ptr<Surface> _surface;
 #ifdef ESP_PLATFORM
@@ -98,7 +100,6 @@ private:
     soft3d::RenderCapabilities _capabilities{};
     bool _cached=false,_equipment=false,_gray=false,_buried=false;
     Pose _pose=Pose::Display;
-    ModelId _model=ModelId::Rx78;
     bool _optimizations=true;
     bool _solidSpanFastPath=true;
     bool _trustedSolidDepthFastPath=true;
@@ -119,5 +120,7 @@ private:
     bool _splitDepthFastPath=true;
     bool _sparseDepthSpanClearFastPath=true;
     bool _spaceEnabled=true;
+    bool _backgroundColorOverride=false;
+    uint16_t _backgroundColor=0;
 };
 } // namespace gundam_museum

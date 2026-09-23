@@ -60,11 +60,10 @@ int main(){
     assert(renderer.asset()->positions.size==2670 && renderer.asset()->primitives.size==2736);
     LGFX_Sprite canvas;canvas.createSprite(468,466);
     std::size_t cases=0,oldTransforms=0,newTransforms=0;
-    for(auto model:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::DestinyGundam}) {
-        for(int percent:{65,90,100}) {
+    for(int percent:{65,90,100}) {
             std::vector<double> times[2];
             std::size_t oldCount=0,newCount=0;
-            View view;view.model=model;
+            View view;
             for(bool equipment:{false,true})for(bool detail:{false,true})
             for(float pitch:{-.2f,.1f,.7f})for(int yaw=0;yaw<24;++yaw){
                 view.equipment=equipment;view.detail=detail;view.pitch=pitch;
@@ -89,7 +88,7 @@ int main(){
                     const auto first=std::distance(frames[0].begin(),different.first);
                     const auto pixels=std::inner_product(frames[0].begin(),frames[0].end(),frames[1].begin(),
                         std::size_t{},std::plus<>(),std::not_equal_to<>());
-                    std::cerr<<"grid mismatch model="<<int(model)<<" percent="<<percent
+                    std::cerr<<"grid mismatch model=rx78 percent="<<percent
                              <<" equipment="<<equipment<<" detail="<<detail
                              <<" pitch="<<pitch<<" yaw_index="<<yaw
                              <<" first_pixel="<<first<<" differing_pixels="<<pixels<<'\n';
@@ -102,7 +101,7 @@ int main(){
                 }
                 assert(frames[0]==frames[1]);++cases;
             }
-            std::cout<<"model="<<int(model)<<" percent="<<percent<<" samples="<<times[0].size();
+            std::cout<<"model=rx78 percent="<<percent<<" samples="<<times[0].size();
             for(int mode=0;mode<2;++mode){
                 double sum=0;for(auto value:times[mode])sum+=value;
                 std::sort(times[mode].begin(),times[mode].end());
@@ -111,21 +110,20 @@ int main(){
             }
             std::cout<<" unique_vertices="<<renderer.stats().vertices<<" transforms_before="<<oldCount<<" transforms_after="<<newCount<<'\n';
             oldTransforms+=oldCount;newTransforms+=newCount;
-        }
     }
     // Continuous drag angles catch errors hidden by a fixed 15-degree grid.
     std::mt19937 random(78);std::uniform_real_distribution<float> yaw(-3.141593f,3.141593f),pitch(-.2f,.7f);
-    for(auto model:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::DestinyGundam})for(int i=0;i<256;++i){
-        View v;v.model=model;v.yaw=yaw(random);v.pitch=pitch(random);
+    for(int i=0;i<256;++i){
+        View v;v.yaw=yaw(random);v.pitch=pitch(random);
         renderer.setOptimizations(false);renderer.render(canvas,v,65);const auto before=canvas.frame();
         renderer.setOptimizations(true);renderer.render(canvas,v,65);
-        if(before!=canvas.frame())std::cerr<<"continuous angle mismatch model="<<int(model)<<" yaw="<<v.yaw<<" pitch="<<v.pitch<<'\n';
+        if(before!=canvas.frame())std::cerr<<"continuous angle mismatch model=rx78 yaw="<<v.yaw<<" pitch="<<v.pitch<<'\n';
         assert(before==canvas.frame());++cases;
     }
     // Isolate the prepared-solid quad specialization from the other accepted
     // optimizations; alternate order to reduce host cache bias.
     std::vector<double> quadTimes[2];
-    View quadView;quadView.model=ModelId::Rx78;
+    View quadView;
     renderer.setOptimizations(true);
     for(int sample=0;sample<288;++sample) {
         quadView.yaw=-3.141593f+6.2831853f*sample/288.f;

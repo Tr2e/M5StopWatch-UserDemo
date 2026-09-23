@@ -1,12 +1,6 @@
 #include "museum_renderer.h"
-#include "../model/char_zaku.h"
-#include "../model/nu_gundam.h"
-#include "../model/sazabi.h"
-#include "../model/strike_gundam.h"
-#include "../model/destiny_gundam.h"
 #include "museum_layout.h"
 #include "museum_space.h"
-#include "museum_wireframe.h"
 #include <algorithm>
 #include <cmath>
 #include <new>
@@ -120,7 +114,6 @@ struct MuseumParallelWorker {
     }
 };
 #endif
-static_assert(hiddenLinePaper==space::background && hiddenLineInk==space::navigation);
 namespace {
 uint64_t micros(){
 #ifdef ESP_PLATFORM
@@ -143,6 +136,35 @@ uint32_t classifyPlaneFacePasses(const Mesh& mesh,lets_and_go::CarPoint eye,bool
     }
     return culled;
 }
+#if STOPWATCH_COLLECT_TOPOLOGY_STATS
+uint8_t panelTriangleCount(const lets_and_go::CarPanel& panel) {
+    const auto& a=panel.point[2];const auto& b=panel.point[3];
+    return a.x==b.x && a.y==b.y && a.z==b.z ? 1u : 2u;
+}
+#endif
+template<class SurfaceType>
+void recordSubmittedTopology(RenderStats& stats,const SurfaceType& surface,std::size_t panelIndex) {
+#if STOPWATCH_COLLECT_TOPOLOGY_STATS
+    const uint8_t quad=(surface.topologyQuadBits[panelIndex>>3]>>(panelIndex&7u))&1u;
+    stats.submittedTriangles+=1u+quad;
+    stats.submittedQuads+=quad;
+#endif
+    ++stats.submitted;
+}
+template<class SurfaceType>
+void cacheTopology(SurfaceType& surface) {
+    surface.topologyTriangles=0;surface.topologyQuads=0;
+    surface.topologyQuadBits.fill(0);
+#if STOPWATCH_COLLECT_TOPOLOGY_STATS
+    for(std::size_t i=0;i<surface.mesh.count;++i) {
+        const auto triangles=panelTriangleCount(surface.mesh.panels[i]);
+        surface.topologyTriangles+=triangles;
+        const uint8_t quad=uint8_t(triangles==2u);
+        surface.topologyQuads+=quad;
+        surface.topologyQuadBits[i>>3]|=uint8_t(quad<<(i&7u));
+    }
+#endif
+}
 constexpr uint16_t background=space::background,white=space::navigation;
 void label(lgfx::LGFXBase& c,const char* text,int x,int y,int size,uint16_t color=white){
     c.setTextDatum(textdatum_t::middle_center);c.setTextColor(color,background);c.setTextSize(size);c.drawString(text,x,y);
@@ -158,7 +180,8 @@ bool MuseumRenderer::open(){
         // active projected-point prefix can claim a compact internal block.
         // Smaller ready/task allocations can then use the remaining fragments.
         buildRx78(_surface->mesh,{true,false,false,Pose::Display});
-        const auto registration=museumAssetRegistration(ModelId::Rx78);
+        cacheTopology(*_surface);
+        const auto registration=museumAssetRegistration();
         const auto assetError=buildMuseumModelAsset(_surface->assetStorage,_surface->mesh,
             registration.name,registration.flags,registration.profile);
         if(assetError==soft3d::AssetError::None) {
@@ -173,7 +196,7 @@ bool MuseumRenderer::open(){
         auto* occupied=_surface->fastOccupiedDepth.get();
         _surface->raster.setSparseDepthStorage(
             occupied?occupied->data():_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
-        _model=ModelId::Rx78;_pose=Pose::Display;_equipment=true;
+        _pose=Pose::Display;_equipment=true;
         _gray=false;_buried=false;_cached=true;
     }
 #ifdef ESP_PLATFORM
@@ -196,8 +219,9 @@ __attribute__((optimize("O3")))
 #endif
 void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,bool cull,bool gray,bool keepBuried,bool partial){
     const auto startUs=micros();
-    const uint16_t clearColor=_spaceEnabled?space::background:space::diagnosticBackground;
-    const auto requestedAsset=museumAssetRegistration(view.model);
+    const uint16_t clearColor=_backgroundColorOverride?_backgroundColor:
+                              (_spaceEnabled?space::background:space::diagnosticBackground);
+    const auto requestedAsset=museumAssetRegistration();
     const bool fastIndexedAsset=requestedAsset.flags&soft3d::AssetFastIndexedCommands;
     soft3d::FrameWorkload routeWork{};
     if(_surface && _surface->instance.asset) {
@@ -261,16 +285,10 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         spaceUs=micros();
     }
     if(!_surface){label(canvas,"MODEL MEMORY UNAVAILABLE",canvas.width()/2,220,1);return;}
-    const bool nu=view.model==ModelId::NuGundam,strike=view.model==ModelId::StrikeGundam,destiny=view.model==ModelId::DestinyGundam,zaku=view.model==ModelId::CharZaku,sazabi=view.model==ModelId::Sazabi;
-    const bool hiddenLine=view.model==ModelId::NuGundam;
-    if(!_cached || _model!=view.model || _equipment!=view.equipment || _gray!=gray || _buried!=keepBuried || _pose!=view.pose){
-        if(destiny)buildDestinyGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
-        else if(strike)buildStrikeGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
-        else if(sazabi)buildSazabi(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
-        else if(nu)buildNuGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
-        else if(zaku)buildCharZaku(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
-        else buildRx78(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
-        const auto registration=museumAssetRegistration(view.model);
+    if(!_cached || _equipment!=view.equipment || _gray!=gray || _buried!=keepBuried || _pose!=view.pose){
+        buildRx78(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
+        cacheTopology(*_surface);
+        const auto registration=museumAssetRegistration();
         const auto assetError=buildMuseumModelAsset(_surface->assetStorage,_surface->mesh,
             registration.name,registration.flags,registration.profile);
         if(assetError==soft3d::AssetError::None) {
@@ -282,15 +300,11 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         }
         if(registration.flags&soft3d::AssetFastIndexedCommands)
             _surface->projection.preferInternalProjected();
-        _model=view.model;
         _pose=view.pose;
         _equipment=view.equipment;_gray=gray;_buried=keepBuried;_cached=true;
     }
     // One fixed envelope per exhibit, no angle-dependent auto-fit breathing.
     const MuseumCamera transform(view);const auto eye=transform.eye();
-    // Hidden-line keeps the Z-buffer while orbiting. Drag fills a cheaper
-    // paper pass, then nearest-expands so ink is still 1px native.
-    const bool drag=hiddenLine && percent<100;
     const int p=std::clamp(percent,50,100),w=(424*p+50)/100,h=(424*p+50)/100;
     auto& raster=_surface->raster;
     constexpr int fastColorWidth=276,fastColorSplit=138;
@@ -312,10 +326,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     raster.setDirectSpanFastPath(_optimizations && _directSpanFastPath);
     raster.setNativeFrameBufferFastPath(_optimizations && _nativeFrameBufferFastPath);
     raster.setSparseCompositeFastPath(_optimizations && _sparseCompositeFastPath);
-    // Nu's drag path expands the compact depth plane in place after fill, so
-    // its next clear cannot use the source-resolution occupancy map.
-    raster.setSparseDepthClearFastPath(_optimizations && _sparseDepthClearFastPath && !hiddenLine);
-    raster.setSparseDepthSpanClearFastPath(_optimizations && _sparseDepthSpanClearFastPath && !hiddenLine);
+    raster.setSparseDepthClearFastPath(_optimizations && _sparseDepthClearFastPath);
+    raster.setSparseDepthSpanClearFastPath(_optimizations && _sparseDepthSpanClearFastPath);
     // At native size the composite already visits every visible source pixel,
     // so build next frame's occupancy map there and remove the write from the
     // raster hot loop. Scaled composite revisits source samples; recording in
@@ -331,7 +343,6 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     constexpr bool parallelDepthClear=false;
     raster.begin(0,0,w,h);
 #endif
-    if(hiddenLine)_surface->edges.begin();
     const auto clearUs=micros();
     lets_and_go::TrackCamera camera{};
     camera.principalX=w*.5f;camera.principalY=h*.5f;
@@ -340,6 +351,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const float correction=float(w)/h;
     const auto project=[&](Point point,uint8_t tag){auto v=transform(point,tag);v.x*=correction;return v;};
     _stats={};_stats.total=_surface->mesh.count;
+    _stats.totalTriangles=_surface->topologyTriangles;
+    _stats.totalQuads=_surface->topologyQuads;
     if(useSplitDepth)_stats.internalDepthBytes=uint32_t(fastColorWidth*fastColorSplit*sizeof(uint16_t));
     auto& projection=_surface->projection;
     const bool trustedNearPlane=(assetFlags&soft3d::AssetNearPlaneEnvelope) &&
@@ -358,14 +371,11 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         const float facing=(assetFlags&soft3d::AssetPrecomputedCullPlanes) ?
             dot(_surface->mesh.normals[i],eye)-_surface->mesh.planeOffsets[i] :
             dot(_surface->mesh.normals[i],subtract(eye,_surface->mesh.anchors[i]));
-        // Keep the accepted grazing band and Nu backpack mounting rims;
-        // performance work must not silently remove these coverage repairs.
-        const bool retainMountRim=nu && _surface->mesh.parts[i]==Part::Backpack;
-        if(cull && !_surface->mesh.twoSided[i] && !retainMountRim && facing<-.035f){++_stats.culled;continue;}
+        if(cull && !_surface->mesh.twoSided[i] && facing<-.035f){++_stats.culled;continue;}
         facePasses[i]=facing<=0?0:1;
     }
     const auto prepareUs=micros();
-    const bool splitRaster=parallelFrame && !hiddenLine;
+    const bool splitRaster=parallelFrame;
     bool splitCompatible=splitRaster;
     int split=h/2;
     while(split<h && (std::size_t(w)*split&7))++split;
@@ -399,6 +409,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         const auto capacity=_surface->fastIndexedPanels.capacity();
         bool overflow=false;
         const auto submittedBefore=_stats.submitted,offscreenBefore=_stats.offscreen;
+        const auto submittedTrianglesBefore=_stats.submittedTriangles;
+        const auto submittedQuadsBefore=_stats.submittedQuads;
         for(int pass=0;pass<2 && !overflow;++pass)
           for(std::size_t i=0;i<_surface->mesh.count;++i) {
             if(facePasses[i]!=pass)continue;
@@ -415,7 +427,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
                 lets_and_go::PreparedIndexedSolidRasterPanel(prepared);
             if(lower)new (&indexedPanels[capacity-1-lowerCount++])
                 lets_and_go::PreparedIndexedSolidRasterPanel(prepared);
-            ++_stats.submitted;
+            recordSubmittedTopology(_stats,*_surface,i);
           }
         if(!overflow) {
             // The lower stream already has draw order when walked backward;
@@ -428,6 +440,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             // points are recomputed so fallback accounting stays coherent.
             projection.begin();upperCount=lowerCount=preparedCount=0;
             _stats.submitted=submittedBefore;_stats.offscreen=offscreenBefore;
+            _stats.submittedTriangles=submittedTrianglesBefore;
+            _stats.submittedQuads=submittedQuadsBefore;
         }
     }
     if(indexedCompactPrepare) {
@@ -448,7 +462,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             }
             new (&indexedPanels[preparedCount])
                 lets_and_go::PreparedIndexedSolidRasterPanel(prepared);
-            recordBands(preparedCount,top,bottom);++preparedCount;++_stats.submitted;continue;
+            recordBands(preparedCount,top,bottom);++preparedCount;
+            recordSubmittedTopology(_stats,*_surface,i);continue;
         }
         lets_and_go::PreparedSolidRasterPanel prepared{};float left=0,right=0,top=0,bottom=0;
         projection.solidPanel<true>(prepared,left,right,top,bottom,camera,face,i,project);
@@ -458,7 +473,8 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         if(bandIndices)prepared.visibility|=lets_and_go::kPreparedSolidBandSelected;
         new (&_surface->preparedPanels.solid[preparedCount])
             lets_and_go::PreparedSolidRasterPanel(prepared);
-        recordBands(preparedCount,top,bottom);++preparedCount;++_stats.submitted;
+        recordBands(preparedCount,top,bottom);++preparedCount;
+        recordSubmittedTopology(_stats,*_surface,i);
       }
       }
     } else for(int pass=0;pass<2;++pass)for(std::size_t i=0;i<_surface->mesh.count;++i){
@@ -468,8 +484,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
           if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
           const float facing=dot(_surface->mesh.normals[i],subtract(eye,_surface->mesh.anchors[i]));
           if((facing<=0?0:1)!=pass)continue;
-          const bool retainMountRim=nu && _surface->mesh.parts[i]==Part::Backpack;
-          if(cull && !_surface->mesh.twoSided[i] && !retainMountRim && facing<-.035f){++_stats.culled;continue;}
+          if(cull && !_surface->mesh.twoSided[i] && facing<-.035f){++_stats.culled;continue;}
         }
         if(_optimizations && _compactPanelPrepareFastPath && splitCompatible &&
            face.paint==lets_and_go::CarPaint::Solid) {
@@ -482,13 +497,13 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             if(bandIndices)prepared.visibility|=lets_and_go::kPreparedSolidBandSelected;
             new (&_surface->preparedPanels.solid[preparedCount])
                 lets_and_go::PreparedSolidRasterPanel(prepared);
-            recordBands(preparedCount,top,bottom);++preparedCount;++_stats.submitted;continue;
+            recordBands(preparedCount,top,bottom);++preparedCount;
+            recordSubmittedTopology(_stats,*_surface,i);continue;
         }
         lets_and_go::PreparedCarPanel prepared{};
         if(_optimizations)projection.panel(prepared,camera,face,i,project);
         else {lets_and_go::prepareCarPanel(prepared,camera,face,project);_stats.transformed+=4;}
         if(!prepared.visibility || prepared.right<0 || prepared.left>=w || prepared.bottom<0 || prepared.top>=h){++_stats.offscreen;continue;}
-        if(hiddenLine)prepareHiddenLineFill(prepared);
         if(splitCompatible && prepared.paint==lets_and_go::CarPaint::Solid) {
             auto solid=lets_and_go::compactSolidPanel(prepared);
             if(bandIndices)solid.visibility|=lets_and_go::kPreparedSolidBandSelected;
@@ -508,7 +523,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             }
             raster.preparedPanel(camera,prepared);
         }
-        ++_stats.submitted;
+        recordSubmittedTopology(_stats,*_surface,i);
     }
     if(useIndexedPanels && !directIndexedBands)
         upperIndexedPanels=lowerIndexedPanels=indexedPanels;
@@ -595,36 +610,6 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         _stats.mainRasterUs=uint32_t(micros()-mainStart);
 #endif
     }
-    if(hiddenLine && drag){
-        raster.upsampleNearestToFull();
-        // Reproject strokes at native resolution. Scaling cached low-resolution
-        // coordinates changes floating-point rounding at depth-test boundaries
-        // and can erase isolated ink pixels on grazing Nu edges.
-        std::fill_n(projection.ready.begin(),projection.count,false);
-        camera.principalX=raster.width()*.5f;camera.principalY=raster.height()*.5f;
-        camera.focalLength=scale*7.f;
-    }
-    const int strokeW=raster.width(),strokeH=raster.height();
-    if(hiddenLine)for(std::size_t i=0;i<_surface->mesh.count;++i){
-        const auto& face=_surface->mesh.panels[i];
-        float facing=0;
-        if(_optimizations){
-            if(facePasses[i]<0)continue;
-            facing=facePasses[i]==1?1.f:-1.f;
-        }else{
-            if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
-            facing=dot(_surface->mesh.normals[i],subtract(eye,_surface->mesh.anchors[i]));
-            if(cull && !_surface->mesh.twoSided[i] && facing<-.035f)continue;
-        }
-        // Far-side panels still fill depth when culling is off; stroking them
-        // would draw the reverse mesh. Keep two-sided lips that were filled.
-        if(facing<=0 && !_surface->mesh.twoSided[i])continue;
-        lets_and_go::PreparedCarPanel prepared{};
-        if(_optimizations)projection.panel(prepared,camera,face,i,project);
-        else lets_and_go::prepareCarPanel(prepared,camera,face,project);
-        if(!prepared.visibility || prepared.right<0 || prepared.left>=strokeW || prepared.bottom<0 || prepared.top>=strokeH)continue;
-        strokeHiddenLinePanel(raster,camera,prepared,&_surface->edges,&projection.indices[i*4]);
-    }
     const auto rasterUs=micros();
     const int outputX=(canvas.width()-layout::side)/2;
 #ifdef ESP_PLATFORM
@@ -659,15 +644,6 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
 #endif
     _stats.depthClearUs=parallelDepthClear?parallelDepthClearUs:uint32_t(clearUs-depthClearStartUs);
     _stats.panelPrepareUs=uint32_t(panelPrepareUs-prepareUs);
-    // Keep navigation above both the room and the exhibit.
-    for(const auto& button:{layout::previous,layout::next}){
-        const int x=button.x+button.width/2,y=button.y+button.height/2;
-        const int sign=button.x<canvas.width()/2?-1:1;
-        for(int d=0;d<2;++d){
-            canvas.drawLine(x-sign*4+d,y-9,x+sign*4+d,y,white);
-            canvas.drawLine(x+sign*4+d,y,x-sign*4+d,y+9,white);
-        }
-    }
     _stats.overlayUs=uint32_t(micros()-blitUs);
 }
 } // namespace gundam_museum

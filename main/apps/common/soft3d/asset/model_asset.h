@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -109,15 +110,52 @@ struct SceneView {Span<ModelInstance> instances{};};
 
 enum class AssetError : uint8_t {
     None,MissingData,NonFinitePosition,IndexOutOfRange,MaterialOutOfRange,
-    InvalidTopology,InvalidLod,InvalidSkeleton,BoundsMismatch
+    InvalidTopology,InvalidLod,InvalidSkeleton,BoundsMismatch,InvalidOrder,InvalidMetadata
 };
 
 inline AssetError validate(const ModelAsset& asset) {
     if(!asset.name || asset.positions.empty() || asset.primitives.empty() ||
        asset.materials.empty() || asset.lods.empty())return AssetError::MissingData;
+    if(asset.normals.size!=asset.primitives.size || asset.anchors.size!=asset.primitives.size)
+        return AssetError::InvalidMetadata;
+    if(!asset.orderedPrimitiveIndices.empty()) {
+        if(asset.orderedPrimitiveIndices.size!=asset.primitives.size)return AssetError::InvalidOrder;
+        for(const auto index:asset.orderedPrimitiveIndices)
+            if(index>=asset.primitives.size)return AssetError::InvalidOrder;
+    }
     for(const auto& point:asset.positions)
         if(!std::isfinite(point.x)||!std::isfinite(point.y)||!std::isfinite(point.z))
             return AssetError::NonFinitePosition;
+    for(std::size_t i=0;i<asset.primitives.size;++i) {
+        const auto normal=asset.normals[i],anchor=asset.anchors[i];
+        if(!std::isfinite(normal.x)||!std::isfinite(normal.y)||!std::isfinite(normal.z)||
+           !std::isfinite(anchor.x)||!std::isfinite(anchor.y)||!std::isfinite(anchor.z))
+            return AssetError::InvalidMetadata;
+    }
+    for(const auto& material:asset.materials) {
+        if(material.kind!=MaterialKind::Solid && material.kind!=MaterialKind::Program)
+            return AssetError::InvalidMetadata;
+        if((asset.flags&AssetAllSolid) && material.kind!=MaterialKind::Solid)
+            return AssetError::InvalidMetadata;
+    }
+    if(bool(asset.flags&AssetRigidSkeleton)!=!asset.skeleton.empty())
+        return AssetError::InvalidSkeleton;
+    for(std::size_t i=0;i<asset.skeleton.size;++i) {
+        const auto parent=asset.skeleton[i].parent;
+        const auto pivot=asset.skeleton[i].pivot;
+        if(parent<-1 || parent>=int(asset.skeleton.size) || parent==int(i))
+            return AssetError::InvalidSkeleton;
+        if(!std::isfinite(pivot.x)||!std::isfinite(pivot.y)||!std::isfinite(pivot.z))
+            return AssetError::InvalidSkeleton;
+    }
+    for(std::size_t i=0;i<asset.skeleton.size;++i) {
+        const auto parent=asset.skeleton[i].parent;
+        int cursor=parent;
+        for(std::size_t depth=0;cursor>=0 && depth<=asset.skeleton.size;++depth) {
+            if(depth==asset.skeleton.size)return AssetError::InvalidSkeleton;
+            cursor=asset.skeleton[std::size_t(cursor)].parent;
+        }
+    }
     for(const auto& primitive:asset.primitives) {
         const unsigned count=unsigned(primitive.topology);
         if(count!=3 && count!=4)return AssetError::InvalidTopology;
@@ -128,15 +166,31 @@ inline AssetError validate(const ModelAsset& asset) {
             return AssetError::IndexOutOfRange;
         if(count==3 && primitive.index[3]!=primitive.index[2])return AssetError::InvalidTopology;
     }
+    const auto orderedCount=asset.orderedPrimitiveIndices.empty()
+        ?asset.primitives.size:asset.orderedPrimitiveIndices.size;
     for(const auto& lod:asset.lods)
-        if(lod.firstPrimitive>asset.primitives.size ||
-           lod.primitiveCount>asset.primitives.size-lod.firstPrimitive)
+        if(lod.firstPrimitive>orderedCount ||
+           lod.primitiveCount>orderedCount-lod.firstPrimitive ||
+           !lod.primitiveCount ||
+           !std::isfinite(lod.maximumScreenRadius) || lod.maximumScreenRadius<0)
             return AssetError::InvalidLod;
     const auto& b=asset.bounds;
+    if(!std::isfinite(b.minimum.x)||!std::isfinite(b.minimum.y)||!std::isfinite(b.minimum.z)||
+       !std::isfinite(b.maximum.x)||!std::isfinite(b.maximum.y)||!std::isfinite(b.maximum.z)||
+       !std::isfinite(b.center.x)||!std::isfinite(b.center.y)||!std::isfinite(b.center.z)||
+       !std::isfinite(b.radius)||!std::isfinite(b.groundY)||b.radius<0 ||
+       b.minimum.x>b.maximum.x||b.minimum.y>b.maximum.y||b.minimum.z>b.maximum.z)
+        return AssetError::InvalidMetadata;
     for(const auto& p:asset.positions)
         if(p.x<b.minimum.x||p.y<b.minimum.y||p.z<b.minimum.z||
            p.x>b.maximum.x||p.y>b.maximum.y||p.z>b.maximum.z)
             return AssetError::BoundsMismatch;
+    const float radiusSquared=b.radius*b.radius;
+    const float radiusTolerance=std::max(1.f,radiusSquared)*.0001f;
+    for(const auto& p:asset.positions) {
+        const float x=p.x-b.center.x,y=p.y-b.center.y,z=p.z-b.center.z;
+        if(x*x+y*y+z*z>radiusSquared+radiusTolerance)return AssetError::BoundsMismatch;
+    }
     return AssetError::None;
 }
 

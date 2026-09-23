@@ -15,3 +15,4 @@
 #include "app_lets_and_go_racer/app_lets_and_go_racer.h"
 #include "app_gundam_museum/app_gundam_museum.h"
 #include "app_gundam_arena/app_gundam_arena.h"
+#include "app_3d_benchmark/app_3d_benchmark.h"

@@ -36,7 +36,8 @@ inline TouchAction menuTouchTargetPass(GameScreen screen,int x,int y,bool expand
     }
     if(screen==GameScreen::Paused)
         return hit(Rect{100,185,266,81}) ? TouchAction::Resume : TouchAction::None;
-    if(screen==GameScreen::MuseumInspect || screen==GameScreen::ArenaPlay) {
+    if(screen==GameScreen::MuseumInspect)return TouchAction::None;
+    if(screen==GameScreen::ArenaPlay) {
         if(hit(gundam_museum::layout::previous))return TouchAction::Previous;
         if(hit(gundam_museum::layout::next))return TouchAction::Next;
         return TouchAction::None;

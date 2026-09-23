@@ -489,6 +489,12 @@ def write_report(asset: dict[str, Any], path: pathlib.Path) -> None:
     material_switches = sum(asset["primitives"][i]["material"] != asset["primitives"][i-1]["material"]
                             for i in range(1, primitive_count))
     resident = position_count*12 + primitive_count*(14+24+2) + len(asset["materials"])*6 + len(asset["lods"])*12 + len(asset["bones"])*16
+    # RigidRenderScratch keeps camera + projected Vec3 arrays, rigid-part keys,
+    # two validity arrays, one 3x4 matrix and one flag per bone, then counters.
+    # Recommend at least one bone slot for static assets because std::array<T,0>
+    # has implementation-specific non-zero object size.
+    scratch_bones = max(1, len(asset["bones"]))
+    rigid_scratch_bytes = (position_count*28 + scratch_bones*49 + 12 + 3) & ~3
     report = {
         "schema": 1, "name": asset["name"], "target_profile": asset["target_profile"],
         "counts": {"unique_vertices": position_count, "source_triangles": asset["source_triangles"],
@@ -496,7 +502,10 @@ def write_report(asset: dict[str, Any], path: pathlib.Path) -> None:
                    "materials": len(asset["materials"]), "material_switches": material_switches,
                    "bones": len(asset["bones"]), "lods": len(asset["lods"])},
         "memory": {"resident_bytes": resident, "maximum_projection_bytes": position_count*12,
-                   "maximum_command_bytes": primitive_count*12},
+                   "maximum_command_bytes": primitive_count*12,
+                   "rigid_scratch": {"vertex_capacity": position_count,
+                                     "bone_capacity": scratch_bones,
+                                     "estimated_bytes": rigid_scratch_bytes}},
         "materials": {"solid_primitives": primitive_count, "general_primitives": 0,
                       "solid_fast_path_ratio": 1.0},
         "bounds": asset["bounds"],

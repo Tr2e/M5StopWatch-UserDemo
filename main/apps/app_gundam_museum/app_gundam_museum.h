@@ -2,22 +2,15 @@
 #include "controller/museum_controller.h"
 #include "../app_lets_and_go_racer/input/device_control_source.h"
 #include <mooncake.h>
-#include <array>
-#include <memory>
-
-struct Soft3DSampleBenchmark;
 
 class AppGundamMuseum : public mooncake::AppAbility {
 public:
     AppGundamMuseum();
-    ~AppGundamMuseum() override;
     void onOpen() override;
     void onRunning() override;
     void onClose() override;
 private:
     void draw(uint32_t now);
-    void benchmarkFrame();
-    void benchmarkMuseumFrame();
     void resetPerformanceWindow(uint32_t now);
     gundam_museum::MuseumRenderer _renderer;
     gundam_museum::MuseumController _controller;
@@ -29,15 +22,4 @@ private:
     uint64_t _perfClearUs=0,_perfCullUs=0,_perfRasterUs=0,_perfBlitUs=0,_perfOverlayUs=0;
     uint64_t _perfBackgroundUs=0,_perfSpaceUs=0,_perfDepthClearUs=0;
     uint64_t _perfPanelPrepareUs=0,_perfSpaceWaitUs=0,_perfMainRasterUs=0,_perfWorkerRasterUs=0;
-    uint32_t _benchmarkFrame=0,_benchmarkBatch=0,_benchmarkHashA=2166136261u,_benchmarkHashB=0;
-    uint64_t _benchmarkDrawUs=0,_benchmarkPresentUs=0,_benchmarkCullUs=0,_benchmarkPanelUs=0;
-    uint64_t _benchmarkRasterUs=0,_benchmarkMainUs=0,_benchmarkWorkerUs=0,_benchmarkBlitUs=0,_benchmarkBackgroundUs=0;
-    uint64_t _benchmarkAsyncPresentUs=0;
-    std::array<uint32_t,96> _benchmarkDrawSamples{},_benchmarkPresentSamples{},_benchmarkCycleSamples{};
-    uint64_t _benchmarkCoveredPixels=0;
-    uint64_t _benchmarkTestedPixels=0,_benchmarkWrittenPixels=0,_benchmarkDepthRejectedPixels=0;
-    soft3d::FrameWorkload _benchmarkWork{};
-    uint8_t _benchmarkScene=0;
-    bool _benchmarkLifecycleChecked=false;
-    std::unique_ptr<Soft3DSampleBenchmark> _sampleBenchmark;
 };

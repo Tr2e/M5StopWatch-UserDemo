@@ -1,6 +1,6 @@
 # ESP32-S3 高性能 3D 渲染框架提炼与模型接入规范
 
-> 状态：F0–F4 首轮实现与同机真机标定完成；透明/PBR/加权蒙皮仍为显式非目标
+> 状态：F0–F4 的 S0/S1 纯色静态/刚性范围已完成首轮实现与同机标定；通用材质、自动 LOD、通用双核 scheduler、动画导入、透明/PBR/加权蒙皮仍未形成通用稳定 API
 > 更新：2026-09-23  
 > 压力样本：Gundam Museum RX-78，65% 内部采样，2,736 面板  
 > 当前真机基线：draw `66.572 ms / 15.021 FPS`，含 present 完整周期 `66.673 ms / 14.998 FPS`
@@ -20,6 +20,15 @@ RX-78 是一个合适的上界压力样本：面数高、细小结构多、双�
 
 这个判断不等于承诺“低面数必然 30/60 FPS”。ESP32-S3 的帧时还受清屏、像素覆盖、PSRAM 带宽、合成和面板传输影响；面数只是其中一个维度。框架应以实际工作量和端到端帧时选路，不以模型名称或单一面数做推断。
 
+### 1.1 当前实现边界（接入前必读）
+
+- 公共 `ModelAsset + renderSceneCachedIndexed` 已验证的产品范围是 S0/S1 纯色静态与单骨刚性分件，当前是单核即时提交。
+- 12 B indexed command、双核行带、split color/depth 已在 RX-78 专用后端实测，但还不是任意 `ModelAsset` 自动获得的公共 scheduler 能力。
+- `RenderProfile` 当前提供纯函数选路政策，不是一个会自动配置、渲染和送显的完整 renderer。调用者必须真实接通所选路径。
+- `LodRange.maximumScreenRadius` 是资产元数据；当前 runtime 只消费业务层显式设定的 `ModelInstance.lod`，尚无公共自动 LOD 选择器。
+- `visibilityMask==0` 在标准入口表示不渲染；非零位的 camera/layer 匹配尚未抽象，不得把它宣称为完整分层可见性系统。
+- Racer 保留的程序 UV 材质是已验证的旧后端能力，但当前通用 `ModelAsset` 没有 UV 数据 ABI，GLB 编译器也会拒绝纹理/PBR；新 App 不能把 M0/M1 当成已接入能力。
+
 ## 2. 已经被真机证明的框架能力
 
 下列能力可以从 Museum / Racer 中抽出，不依赖高达题材。
@@ -27,7 +36,7 @@ RX-78 是一个合适的上界压力样本：面数高、细小结构多、双�
 ### 2.1 图元与命令流
 
 - 三角形和共面四边形都作为一等图元；不在光栅热路径重复猜测拓扑。
-- 共享顶点只投影一次，被剔除的面不触发无效投影。
+- 共享顶点在每实例中最多变换、投影一次。RX-78 专用前端先分类面再惰性投影，可避免纯被剔除面的投影；公共即时入口按图元遍历，可能在背面判断前投影其首次出现的顶点，但不会重复投影。
 - 纯色材质使用 12 B 索引命令，顶点投影结果与图元命令分离。
 - 已知不变量（三角/四边形、近裁剪安全、行带已选、稀疏记录必开）编码进命令或在批次边界选择模板内核，不留在每像素分支中。
 - 法线、anchor、投影顶点和命令流按访问频率拆分，避免每个阶段读取完整大对象。
@@ -160,8 +169,8 @@ struct ModelInstance {
 | --- | --- | --- | --- |
 | S0 | RGB565 纯色，烘焙或面级光照 | 12 B indexed solid command | 高帧率游戏角色、场景道具、机械模型 |
 | S1 | 纯色 + 双面/透视近裁剪/骨架分件 | solid fast path + guarded fallback | 动画角色、展示模型 |
-| M0 | 程序 UV/小图集 | general material path | 赛车涂装、低分辨率细节 |
-| M1 | 多材质、高频透视纹理 | 仅经专项预算后启用 | 少量英雄物件 |
+| M0 | 程序 UV/小图集 | Racer 旧后端已验证；通用 `ModelAsset` ABI 未接入 | 不得由新 App 直接宣称支持 |
+| M1 | 多材质、高频透视纹理 | 未实现，仅作后续预算级别 | 当前禁止接入产品路径 |
 
 对一般快节奏游戏，S0/S1 应是默认；细节优先用颜色分块、剪影和几何层次表达。只有确实产生屏幕价值的区域才进入通用 UV 内核。
 
@@ -189,11 +198,70 @@ RX-78 当前样本为 2,736 面板，65% 时平均约 41,468 次像素覆盖，�
 
 上表是框架调度预算，不是尚未实测的模型数量承诺。资产编译器只报静态风险；主机固定场景和真机运行才能签署帧率等级。
 
+### 7.1 刚性分件的标准优化：共享顶点缓存 + `world × pose` 预合成
+
+刚性分件不能只因为使用了共享索引，就假设运行时已经减少了顶点计算。旧的参考入口按图元遍历，每个面角都会重新读取索引并执行 `bone`、`world` 两级仿射变换；共享索引只减少资产存储，没有自动减少 CPU 计算。对于一个 64 共享顶点、48 四边形、8 骨骼的 rigid chain：
+
+```text
+旧路径：48 × 4 = 192 次面角访问 × 2 次矩阵应用 = 384 次点矩阵应用
+新路径：64 个唯一顶点 × 1 次合成矩阵应用 + 最多 8 次矩阵合成
+```
+
+三角形数、图元顺序、材质和像素光栅工作量都不变；优化只消除前端重复计算。当前公共实现位于 `soft3d::RigidRenderScratch`、`renderIndexedModelAssetCached` 和 `renderSceneCachedIndexed`；旧的 `renderRigidModelAssetCached` / `renderSceneCachedRigid` 仅作为兼容别名。标准路径采用以下固定流程：
+
+1. 每个刚性实例开始时，仅清理有效位和计数器，不分配堆内存。
+2. 对本帧实际使用的刚性分件，按 `world × pose[rigidPart]` 的实际变换顺序惰性合成 3×4 仿射矩阵，每分件最多一次。`pose` 必须由业务层提供最终的模型空间矩阵；当前 runtime 不会沿 `Bone.parent` 自动求层级世界矩阵。
+3. 以 `position index + rigidPart` 为缓存身份；唯一顶点首次出现时执行一次合成矩阵变换和一次投影，后续相邻面直接复用 camera-space 与 screen-space 结果。无 pose 的静态实例也走同一 indexed cache。
+4. 如果同一 position index 被不同 rigidPart 非法或低效地复用，冲突面角回退参考变换，不允许缓存改变画面语义。
+5. 无 pose 的静态实例仍使用同一 indexed cache，只跳过 pose 合成；只有顶点容量不足或 pose 容量超过骨骼容量时才自动回退 `renderModelAsset`。容量错误只能损失性能，不能造成越界或错误画面。
+
+业务 App 不手写缓存算法，只在长期场景工作区中放置一次 scratch，并调用标准场景入口：
+
+```cpp
+struct SceneWorkspace {
+    // 容量取本场景“最大单个刚性资产”，不是所有实例之和；实例间串行复用。
+    soft3d::RigidRenderScratch<MaxRigidVertices, MaxRigidBones> rigidScratch;
+};
+
+soft3d::renderSceneCachedIndexed(raster, camera, scene, workspace.rigidScratch);
+```
+
+scratch 不得放在帧循环任务栈中，也不得逐帧构造。当前 `RigidRenderScratch<64,8>` 的主机 ABI 实测为 2,196 B（约 2.15 KiB），包含 camera/projected 两组顶点、刚性分件键、有效位、8 个 3×4 合成矩阵和计数器；`maximum_projection_bytes` 只表示单组投影点，不是整个 rigid scratch。多渲染线程必须各自持有 scratch，不能并发共享。离线资产编译器以 `(position, rigidPart)` 为刚性顶点去重键，并在资产报告的 `memory.rigid_scratch` 中写出最大顶点/骨骼容量和估算字节数。该字节数由 ABI 测试约束；类布局变化时必须同步公式和文档。
+
+这项优化不能替代像素预算。模型放大后，tested pixels、overdraw 和深度拒绝仍可能主导帧时；因此真机结论必须同时记录顶点变换、图元和像素指标，不能把最终 FPS 的全部变化归因于骨骼计算。
+
+### 7.2 `TOTAL/DRAW TRI` 与 `TOTAL/DRAW QUAD` 的统一语义
+
+所有 App 必须使用同一组统计定义，不能由结果页自行推算：
+
+- `TOTAL TRI`：当前实例和当前 LOD 包含的全部三角形；四边形计为 2，三角形计为 1。
+- `DRAW TRI`：通过 CPU 侧单面背面判断、近裁剪可见性和屏幕边界检查后，实际提交给光栅器的三角形。
+- `TOTAL QUAD`：当前实例和 LOD 中保持为原生 quad 拓扑的四边形数；已离线拆成两个 triangle 的面不计入。
+- `DRAW QUAD`：通过同一组提交前检查后，以 quad 拓扑实际提交给光栅器的四边形数。
+- `DRAW TRI` 不是最终肉眼可见三角形。被其他表面通过 Z-buffer 遮住的三角形已经提交，仍计入 DRAW；最终可见性应另看 written pixels、depth rejected pixels 和 overdraw。
+
+TRI 是跨拓扑可比的主负载指标，QUAD 只是辅助指标，用于观察离线四边形打包和 solid-quad 快速路径的可利用规模。QUAD 多不等于像素成本低，不能代替 TRI、tested pixels 或 overdraw 做性能结论。
+
+禁止把 `DRAW TRI/QUAD` 直接赋值为 TOTAL，也禁止在结果页用 `visiblePrimitives × 2` 或“三角形等价数 - 图元数”反推，因为 LOD 可以混合 triangle/quad，且后续路径可能引入其他拓扑。公共 `FrameWorkload` 必须直接累计 `totalTriangles`、`submittedTriangles`、`totalQuads`、`submittedQuads`、`culledPrimitives` 和 `offscreenPrimitives`，业务层只读取这些统计。
+
+标准前端按以下顺序处理每个图元：
+
+1. 根据拓扑先累计 TOTAL。
+2. 取得或缓存 camera-space 顶点。
+3. 对完全位于近裁剪面前方的单面图元，用变换后的顶点绕序计算 facing；明确背向才剔除。双面图元禁止做背面剔除。
+4. 与近裁剪面相交的图元不做激进背面剔除，继续沿用参考裁剪，避免相机穿越时破面。
+5. 以近裁剪后的投影边界判断是否完全在 viewport 外；只有完整屏外才能剔除。
+6. 通过后复用同一份 prepared panel 进入光栅器，并按原始 topology 累计 DRAW。
+
+背面判断必须基于 camera-space 顶点重新计算，不可直接使用模型空间 normal；这样才能正确覆盖实例旋转、刚性骨骼姿态和统一缩放。prepared panel 的投影与边界结果必须直接供光栅阶段复用，不能为了统计再额外投影一遍。
+
+这一规则已经接入 `renderModelAsset`、`renderIndexedModelAssetCached`、`renderScene` 和 `renderSceneCachedIndexed`。容量不足的刚性回退与缓存路径必须产生相同的 TOTAL/DRAW；简单封闭模型通常应满足 `0 < DRAW < TOTAL`。若两者长期相等，应优先检查业务层是否硬编码、模型是否误标双面、绕序是否错误或前端是否绕过标准入口。
+
 ## 8. 新模型如何做到“开箱即用”
 
 ### 8.1 作者交付物
 
-静态模型只需：
+静态模型的当前编译器输入为：
 
 ```text
 models/<name>/
@@ -201,7 +269,7 @@ models/<name>/
 └── model.toml
 ```
 
-有骨架模型另加 `animations/*.glb`。`model.toml` 最小字段：
+刚性分件不从 `animations/*.glb` 导入动画。它使用同一 GLB 中的节点几何，由 `model.toml` 的 `rigid_nodes` 标出分件；运行时 pose 由 App 生成并且必须是最终模型空间矩阵。当前没有动画曲线导入、层级 pose 求值或加权 skinning。`model.toml` 最小字段：
 
 ```toml
 name = "crate_bot"
@@ -215,12 +283,11 @@ target_profile = "30fps"
 
 [lod0]
 max_screen_radius = 9999
-
-[lod1]
-max_screen_radius = 80
 ```
 
-首个资产编译器建议支持 glTF 2.0/GLB 子集：静态网格、顶点色/纯色材质、单层 UV、索引三角形、节点变换和刚性骨骼绑定。不在 MVP 中承诺 PBR、透明排序、morph target、四权重蒙皮或任意 shader。
+这是单 LOD 最小示例。若要多 LOD，必须先在输入图元序列中准备好各级几何，再为每个 `[lodN]` 显式写 `first_primitive / primitive_count / max_screen_radius`。只增加一个阈值表不会创造减面结果，而且 runtime 仍需业务层设置 `ModelInstance.lod`。
+
+当前编译器支持 glTF 2.0/GLB 的受限子集：索引三角网格、节点静态变换、baseColor 纯色和由 manifest 列出的刚性节点。它明确拒绝透明、纹理/PBR 程序、sparse accessor、morph target 和加权 skinning。“拒绝”不得在对外说明中写成“已支持但较慢”。
 
 ### 8.2 离线编译
 
@@ -236,9 +303,9 @@ python3 tools/soft3d_asset_compiler/compile_model.py \
 1. 统一坐标、单位、原点和三角形绕序。
 2. 顶点去重，建立紧凑共享索引。
 3. 计算法线/anchor/包围体，标记双面件和近裁剪风险。
-4. 在不改变原对角线和顺序的前提下，合并符合条件的共面三角形为四边形。
-5. 按材质能力拆分 solid/general 命令范围，但保留显式渲染顺序。
-6. 生成 LOD 范围、容量报告、预计常驻/临时内存和风险警告。
+4. 只在对角线、材质、刚性分件、双面语义与共面条件全部相容时，把 `ABC + ACD` 合并为四边形。
+5. 当前只输出 solid 材质，保留确定性图元顺序；不会生成 general material 命令。
+6. 按 manifest 写出 LOD 范围和阈值元数据，但不生成、简化或自动选择 LOD 几何；同时生成容量、常驻内存、rigid scratch 估算和风险警告。
 7. 输出可直接链接的 `model_asset.h/.cpp` 或只读二进制 blob + descriptor。
 8. 生成标准测试场景和资产报告，不要求业务 App 手写测试视角。
 
@@ -260,25 +327,35 @@ python3 tools/soft3d_asset_compiler/compile_model.py \
 
 ### 8.4 接入 App
 
-资产编译后，业务代码只做三件事：
+当前没有 `renderer.render(scene, profile)` 这样的一体化公共 API。资产编译后，业务代码必须显式持有光栅器与工作区，并调用已验证的入口：
 
 ```cpp
-auto model = soft3d::assets::crateBot();
-scene.add({.asset=&model, .world=spawnTransform});
-renderer.render(scene, camera, RenderProfile::Game30);
+soft3d::SurfaceRaster<MaxWidth, MaxHeight> raster;
+SceneWorkspace workspace; // 长期常驻，不在帧栈上
+soft3d::ModelInstance instance;
+instance.asset = &soft3d::assets::crate_bot::model();
+instance.world = spawnTransform;
+instance.lod = selectedLod; // 业务层显式选择
+std::array<soft3d::ModelInstance, 1> instances{{instance}};
+soft3d::renderSceneCachedIndexed(
+    raster, camera, {{instances.data(), instances.size()}}, workspace.rigidScratch);
 ```
 
-静态模型不应复制 renderer，不应新建一份光栅器，不应手写共享顶点 cache。动画模型只额外提供 `pose`/骨架变换。游戏逻辑、物理、输入和 HUD 不进入模型资产 API。
+静态模型不应复制 renderer，不应新建一份光栅器，不应手写共享顶点 cache。动画模型只额外提供 `pose`/骨架变换；场景工作区按资产报告配置 `RigidRenderScratch`，静态与刚性实例统一调用 `renderSceneCachedIndexed`，容量不足时由框架正确回退。游戏逻辑、物理、输入和 HUD 不进入模型资产 API。
 
 ### 8.5 自动验证
 
-每个新模型自动获得：
+下列是模型发布所需的完整门禁，不等于当前单次 `compile_model.py` 命令会自动执行全部项目。当前 `tools/test_soft3d.sh` 覆盖资产 ABI、编译器正/反例、quad 打包、缓存/回退哈希和 ASan/UBSan；多视角、单/双核、内存失败注入、真机 P95 和人眼验收需由对应的集成/真机流程另行出具证据：
 
 - 标准正/斜/侧/背、近裁剪、屏外、大小屏幕占比渲染。
 - 固定种子连续相机姿态的 framebuffer hash。
 - 单/双核、内部 RAM 成功/失败回退、原生/缩放合成对照。
 - 顶点数、图元数、剔除数、tested/written pixels、overdraw、快路径命中率和峰值 scratch。
 - 真机 30/24/20/15 FPS 预算签署：平均、P95、最大帧、内部 RAM/栈水位和退出回收。
+
+刚性模型另有强制门禁：优化路径与参考路径 framebuffer hash 必须一致；统计值必须证明每实例变换次数等于实际使用的唯一 `(position, rigidPart)` 数，矩阵合成次数不超过实际使用骨骼数；TOTAL/DRAW 在参考、缓存和容量不足回退路径必须一致；AddressSanitizer/UndefinedBehaviorSanitizer 必须覆盖正常容量和容量不足回退。
+
+所有封闭单面测试模型还必须断言 `0 < submittedTriangles < totalTriangles`，并保存启用提交前剔除后的 framebuffer hash。性能优化若改变 hash，只能先证明原结果违反单/双面资产契约，不能以“肉眼接近”为由更新基线。
 
 “开箱即用”的定义是：模型通过离线编译和主机门禁后，可不修改光栅器地进入标准 viewer/游戏场景；真机性能等级仍必须实测签署。
 
@@ -291,10 +368,14 @@ renderer.render(scene, camera, RenderProfile::Game30);
 5. 快速游戏默认使用纯色或面级烘焙光照。微小表面纹样不要用大量几何实现，也不要让整个模型为少量 UV 细节进入通用内核。
 6. 为不同屏幕尺寸手工或离线生成 LOD，不依赖运行时临时减面。
 7. 场景同样需要预算：全屏网格、大面积地面、粒子和多层透明可能比模型本身更贵。
+8. 刚性资产必须按 `(position, rigidPart)` 去重；不要让一个 position index 跨骨骼复用，否则正确性回退会失去共享顶点缓存收益。
+9. 静态与刚性实例优先走公共 `renderSceneCachedIndexed`，scratch 容量来自资产报告并常驻场景工作区；禁止在业务渲染循环中另写顶点/骨骼缓存或逐帧分配。
+10. 封闭模型保持一致且朝外的绕序；确需从背面观察的薄片必须显式标记双面。错误绕序不得依靠关闭公共背面剔除来掩盖。
+11. 刚性 pose 的默认构造值不是单位矩阵；App 必须显式填写对角线。`Bone.parent` 当前只是资产元数据，业务层先完成层级求值，再把最终模型空间 `pose[rigidPart]` 交给 runtime。
 
 ## 10. 运行时自动选路
 
-框架不应无条件开启 RX-78 的全部机制。建议 `RenderProfile` 只提供稳定的决策：
+框架不应无条件开启 RX-78 的全部机制。当前 `RenderProfile` 只提供稳定的决策函数，调用者仍需将结果连接到真实后端；不得仅调用 `select...()` 或打开 bool 就记录为“已命中快路径”。选路应满足：
 
 - 可见图元/像素工作量低于实测阈值：单核 solid 路径，避免事件和 worker 同步成本。
 - 工作量较大且行带平衡：常驻双核 worker + 两条有序行带命令流。
@@ -305,7 +386,41 @@ renderer.render(scene, camera, RenderProfile::Game30);
 
 阈值必须由一组小/中/大基准场景在同一台设备上标定，不把 RX-78 的分带参数写死为通用答案。
 
-## 11. 框架化实施顺序
+### 10.1 新 App 必须执行的高性能接入清单
+
+下表是发布门禁，不是建议项。标为“条件必做”的步骤必须先检查条件并留下选路依据；不能因为没有开启 RX-78 的某个开关就判定遗漏，也不能跳过测量后凭感觉关闭。
+
+| 环节 | 要求 | 执行级别 |
+| --- | --- | --- |
+| 资产 | 不可变 `ModelAsset`、共享索引、确定性顺序、triangle/quad 显式拓扑、正确朝外绕序 | 无条件必做 |
+| 材质 | S0/S1 纯色资产必须进入 solid 路径，不得因少量装饰误走 general material | 无条件必做 |
+| 帧生命周期 | 禁止逐帧建模、堆分配和大任务栈对象；实例、pose、cache、命令容量常驻工作区 | 无条件必做 |
+| 顶点前端 | 每实例唯一 `(position, rigidPart)` 只做一次 camera transform；完全位于近平面前方的唯一顶点只投影一次 | 无条件必做 |
+| 刚性前端 | `world × pose[rigidPart]` 每使用分件每帧最多合成一次；容量不足正确回退 | 有刚性 pose 时必做 |
+| 可见性 | 单面背面、近裁剪可见性和完整屏外检查必须在提交前完成；输出真实 TOTAL/DRAW | 无条件必做 |
+| 纯色图元 | prepared panel 必须 compact 到 solid triangle/quad 路径，使 span、trusted depth 和 quad 快路径真实命中 | 无条件必做 |
+| 统计 | TRI/QUAD 在已解析 topology 上顺手累计，禁止重复拓扑判定或为结果页再遍历资产；产品 FPS 禁止开逐像素计数 | 无条件必做 |
+| 深度清理 | 有 occupancy 时优先测试稀疏深度清理；当前后端已实测的默认是原生 1:1 合成延迟记录、缩放稀疏合成在光栅期记录。更换后端/分辨率必须 A/B，不把这个顺序当永久定律 | 条件必做 |
+| 合成 | 原生大小不做缩放；低内部采样使用占用像素驱动的稀疏最近邻放大 | 条件必做 |
+| framebuffer | RGB565、rotation=0、完整 clip、stride、行指针及 32-bit 对齐 guard 全部成立才直写；全屏纯色清理使用成对 32-bit native fill，任一 guard 失败回退显示 API | 条件必做 |
+| 送显 | 直接渲染使用外层事务和异步双 framebuffer；退出时恢复全局显示状态 | 设备支持时必做 |
+| 内存 | occupancy、实例、pose、投影/cache 等小型高频随机状态优先申请内部 RAM，失败保留 PSRAM/普通路径；按“每像素随机访问 > 每顶点/实例”排序申请，并记录实际成功项 | 条件必做 |
+| FPS 计量 | 签署产品 FPS 使用无逐像素计数的生产 raster；`MeasuredSurfaceRaster` 只用于独立诊断，不能混入对外 FPS | 无条件必做 |
+| 正确性 | 参考/优化/容量回退 framebuffer hash 一致，ASan/UBSan、构建、真机烧录和人眼面板检查分别通过 | 无条件必做 |
+
+以下三项是重负载选路，不得无条件复制 RX-78：
+
+- **双核行带：** 可见图元或诊断像素量达到同机阈值，并且真机端到端 A/B（含同步和 present）确认更快时启用；worker 必须常驻。
+- **12 B indexed command stream：** 需要缓存/跨核重放大量命令时启用；少量图元立即提交不应先构建整帧命令流。
+- **split color/depth 内部行带：** 只有内部 RAM 预算、行带并行和 PSRAM 争用数据同时支持时启用；申请失败必须回退。
+
+代码评审必须逐项记录“已命中 / 条件不成立 / 真机 A/B 拒绝”，不允许只写“沿用高性能规范”。其中任何无条件必做项缺失，都视为性能或正确性缺陷。
+
+小型演示页的平均 `1 / mean(frame time)` 只适合展示。性能签署必须另外保存连续帧样本并报告 P95/最大帧时、物理面板传输、内存和栈水位。3 秒演示阶段不能代替真机签署。
+
+## 11. 框架化实施顺序（历史路线与未完成抽取）
+
+下列 F0–F4 是实施路线，不代表每个目标已经全部变成 common API。当前已公共化资产契约、单核静态/刚性前端、光栅桥接、scratch 与选路函数；Museum 的共享投影、双核 worker、indexed command builder 和 split 存储仍带专用类型。这些项目在真正抽入 common 且通过 Museum/Racer/通用场景三方回归前，不得标记为“通用框架已完成”。
 
 ### F0：冻结正确性和压力基线
 

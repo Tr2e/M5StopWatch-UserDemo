@@ -41,6 +41,20 @@ endforeach()
 list(FILTER MY_SRCS EXCLUDE REGEX "/assets/images/watch_face/")
 list(FILTER MY_SRCS EXCLUDE REGEX "/assets/fonts/CommissionerMedium64.c$")
 
+# Gundam Museum is an RX-78-only product experience. Keep the other authored
+# models in the repository for archival/host-side geometry checks, but do not
+# compile or link their mesh builders into device firmware.
+set(ARCHIVED_GUNDAM_MODEL_SRCS
+    char_zaku.cpp
+    destiny_gundam.cpp
+    nu_gundam.cpp
+    sazabi.cpp
+    strike_gundam.cpp
+)
+foreach(ARCHIVED_GUNDAM_MODEL IN LISTS ARCHIVED_GUNDAM_MODEL_SRCS)
+    list(FILTER MY_SRCS EXCLUDE REGEX "/apps/app_gundam_museum/model/${ARCHIVED_GUNDAM_MODEL}$")
+endforeach()
+
 set(MY_INCS
     "."
 )
@@ -56,6 +70,22 @@ idf_component_register(
     EMBED_TXTFILES
         "hal/utils/config_ap/assets/badge_config_ap.html"
 )
+
+# Device-only benchmark controls. Product builds keep the interactive app and
+# topology counters enabled; CI/device audits may opt into a self-running app
+# or compile the TRI/QUAD accounting out for an A/B measurement.
+set(STOPWATCH_BENCHMARK_AUTORUN OFF CACHE BOOL "Run the 3D benchmark automatically at boot")
+set(STOPWATCH_COLLECT_TOPOLOGY_STATS ON CACHE BOOL "Collect TRI/QUAD benchmark statistics")
+if(STOPWATCH_BENCHMARK_AUTORUN)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_BENCHMARK_AUTORUN=1)
+else()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_BENCHMARK_AUTORUN=0)
+endif()
+if(STOPWATCH_COLLECT_TOPOLOGY_STATS)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_COLLECT_TOPOLOGY_STATS=1)
+else()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_COLLECT_TOPOLOGY_STATS=0)
+endif()
 
 # Software rasterization is a release hot path even in a debug firmware.
 # Keep debug symbols/assertions. Use the platform memset instead of the
