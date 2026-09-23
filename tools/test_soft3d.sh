@@ -8,3 +8,7 @@ if [[ "${SANITIZE:-0}" == 1 ]]; then flags+=(-fsanitize=address,undefined -fno-o
 "${CXX:-c++}" "${flags[@]}" -I"$repo_dir/tools/lets_and_go_host" \
   "$repo_dir/tools/soft3d_model_asset_test.cpp" -o "$out_dir/model_asset_test"
 "$out_dir/model_asset_test"
+python3 "$repo_dir/tools/soft3d_asset_compiler/test_compiler.py" --out "$out_dir/compiled_fixture"
+"${CXX:-c++}" "${flags[@]}" -I"$repo_dir" -I"$out_dir/compiled_fixture" \
+  "$repo_dir/tools/soft3d_compiled_asset_test.cpp" -o "$out_dir/compiled_asset_test"
+"$out_dir/compiled_asset_test"
