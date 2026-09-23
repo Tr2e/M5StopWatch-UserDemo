@@ -2,10 +2,10 @@
 
 ## Candidate identity
 
-- Commit: `6a57107c73ede5a878f69f1030d0db607b7fbcc6`
-- Firmware: `V0.5-304-g6a57107`
-- App binary SHA-256: `37eb2b91af6f3a56a38b5fb1fd3d556dc6f64aa17aa37ccd636b8dbaf5014a18`
-- App binary: `0x20acb0`; app partition remains 59% free.
+- Runtime candidate commit: `5bc6114`
+- Firmware: `V0.5-305-g5bc6114`
+- App binary SHA-256: `4a59726773d96b9025d4eec010b20418c98c8d706ba93fce20252b5ee0ff6b6e`
+- App binary: `0x20aef0`; app partition remains 59% free.
 - Device: ESP32-S3 revision 0.2, 8 MiB octal PSRAM at 80 MHz, USB serial
   `/dev/cu.usbmodem83301`, MAC `44:1b:f6:c1:8a:00`.
 
@@ -52,9 +52,9 @@ time and overlaps CPU work. Grades use P95 complete cycle, not the mean.
 
 | Scene | Unique vertices | Primitives | Tested / written / depth-rejected / final pixels | Cycle mean | P95 | Max | Route | Grade |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | --- | --- |
-| crate | 8 | 6 | 4,486 / 3,134 / 1,352 / 2,243 | 32.285 ms | 32.831 ms | 33.219 ms | single | 30 FPS |
-| rigid chain | 64 | 48 | 5,859 / 3,579 / 2,279 / 1,995 | 36.085 ms | 37.074 ms | 37.327 ms | single | 24 FPS |
-| RX-78 stress | 2,670 | 2,736 total; 1,965 submitted | established 41,468 / ~30,595 / ~10,900 / 13,566 | 66.800 ms | 69.860 ms | 70.246 ms | dual bands | below 15 FPS at strict P95 |
+| crate | 8 | 6 | 4,486 / 3,134 / 1,352 / 2,243 | 32.268 ms | 32.715 ms | 33.161 ms | single | 30 FPS |
+| rigid chain | 64 | 48 | 5,859 / 3,579 / 2,279 / 1,995 | 36.047 ms | 37.203 ms | 37.543 ms | single | 24 FPS |
+| RX-78 stress | 2,670 | 2,736 total; 1,965 submitted | established 41,468 / ~30,595 / ~10,900 / 13,566 | 66.782 ms | 69.666 ms | 70.184 ms | dual bands | below 15 FPS at strict P95 |
 
 The RX mean is effectively the frozen 15 FPS pressure point (14.97 FPS), while
 strict P95 does not meet the 66.667 ms 15 FPS deadline. This is reported as
@@ -62,17 +62,19 @@ strict P95 does not meet the 66.667 ms 15 FPS deadline. This is reported as
 96-frame RX hash remained `1794963570:3828763871`; crate and rigid-chain hashes
 were respectively `2887265117:4233499028` and `4251764397:2656961028`.
 
-RX stage averages were `background=13.866 ms`, `cull=1.638 ms`,
-`panel=8.050 ms`, `raster=59.387 ms`, `main=31.873 ms`, `worker=34.113 ms`,
-`blit=5.196 ms`; physical panel transfer averaged 12.103 ms.
+RX stage averages were `background=13.852 ms`, `cull=1.629 ms`,
+`panel=7.987 ms`, `raster=59.371 ms`, `main=31.920 ms`, `worker=34.146 ms`,
+`blit=5.191 ms`; physical panel transfer averaged 12.108 ms. Both main and
+worker raster timings are non-zero, confirming that the automatic workload
+gate selected dual bands for RX rather than merely reporting that choice.
 
 ## Memory, fallback and lifecycle
 
 - During sample residency: internal free/minimum/largest
-  `24,923 / 23,959 / 7,680 B`; PSRAM free/minimum/largest
+  `24,875 / 23,911 / 7,680 B`; PSRAM free/minimum/largest
   `4,927,644 / 4,927,644 / 4,849,664 B`.
 - Releasing the sample workspace returned PSRAM free to `5,083,296 B`.
-- RX main-task and worker-task stack high-water reserves were 1,052 B and
+- RX main-task and worker-task stack high-water reserves were 1,036 B and
   1,940 B. No overflow, watchdog reset or heap failure occurred; the main-task
   value is a benchmark/logging-path floor and must not be treated as spare
   budget for new stack arrays.
