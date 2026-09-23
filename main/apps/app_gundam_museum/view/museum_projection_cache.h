@@ -1,6 +1,7 @@
 #pragma once
 #include "../model/rx78.h"
 #include "../../app_lets_and_go_racer/view/car_surface_raster.h"
+#include "../../common/soft3d/frontend/shared_vertex_index.h"
 #include <cstring>
 #include <memory>
 #include <new>
@@ -21,33 +22,30 @@ struct MuseumProjectionCache {
     float maximumHorizontalRadiusSquared=0,minY=0,maxY=0;
 
     void index(const Mesh& mesh) {
-        // At most 50% occupied, including a mesh with no shared vertices.
-        auto slots=std::unique_ptr<std::array<uint16_t,corners*2>>(
-            new(std::nothrow) std::array<uint16_t,corners*2>{});
         count=0;maximumHorizontalRadiusSquared=0;
         minY=1e20f;maxY=-1e20f;
         for(std::size_t corner=0;corner<mesh.count*4;++corner) {
-            if(!slots){indices[corner]=uint16_t(count++);continue;}
             const auto p=mesh.panels[corner/4].point[corner%4];
             maximumHorizontalRadiusSquared=std::max(maximumHorizontalRadiusSquared,p.x*p.x+p.z*p.z);
             minY=std::min(minY,p.y);maxY=std::max(maxY,p.y);
-            uint32_t hash=2166136261u;
-            for(float value:{p.x,p.y,p.z}) {
-                uint32_t bits=0;if(value!=0)std::memcpy(&bits,&value,sizeof(bits));
-                hash=(hash^bits)*16777619u;
-            }
-            hash=(hash^mesh.panels[corner/4].wheel)*16777619u;
-            std::size_t slot=hash&(slots->size()-1);
-            while((*slots)[slot]) {
-                const auto key=(*slots)[slot]-1;
-                const auto q=mesh.panels[key/4].point[key%4];
-                if(p.x==q.x && p.y==q.y && p.z==q.z &&
-                   mesh.panels[corner/4].wheel==mesh.panels[key/4].wheel)break;
-                slot=(slot+1)&(slots->size()-1);
-            }
-            if(!(*slots)[slot]) {(*slots)[slot]=uint16_t(corner+1);indices[corner]=uint16_t(count++);}
-            else indices[corner]=indices[(*slots)[slot]-1];
         }
+        const auto indexed=soft3d::indexSharedVertices<corners*2>(mesh.count*4,[&](std::size_t corner) {
+            const auto& face=mesh.panels[corner/4];const auto p=face.point[corner%4];
+            return soft3d::VertexKey{{p.x,p.y,p.z},face.rigidPart};
+        },indices.data());
+        count=indexed.count;
+    }
+    void index(const soft3d::ModelAsset& asset) {
+        count=asset.positions.size;maximumHorizontalRadiusSquared=0;
+        minY=1e20f;maxY=-1e20f;
+        for(std::size_t i=0;i<asset.positions.size;++i) {
+            const auto p=asset.positions[i];
+            maximumHorizontalRadiusSquared=std::max(maximumHorizontalRadiusSquared,p.x*p.x+p.z*p.z);
+            minY=std::min(minY,p.y);maxY=std::max(maxY,p.y);
+        }
+        for(std::size_t face=0;face<asset.primitives.size;++face)
+            for(unsigned corner=0;corner<4;++corner)
+                indices[face*4+corner]=asset.primitives[face].index[corner];
     }
     bool nearPlaneSafe(float pivot) const {
         const float vertical=std::max(std::abs(minY-pivot),std::abs(maxY-pivot));
@@ -87,7 +85,7 @@ struct MuseumProjectionCache {
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
             if(!status[key]) {
-                const auto p=transform(face.point[i],face.wheel);++transformed;
+                const auto p=transform(face.point[i],face.rigidPart);++transformed;
                 if(p.z<lets_and_go::kTrackNearPlane)points[key]={0,0,0};
                 else {
                     const float inverse=1/p.z;
@@ -122,7 +120,7 @@ struct MuseumProjectionCache {
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
             if(!status[key]) {
-                const auto p=transform(face.point[i],face.wheel);++transformed;
+                const auto p=transform(face.point[i],face.rigidPart);++transformed;
                 if constexpr(!TrustedNearPlane) {
                     if(p.z<lets_and_go::kTrackNearPlane)points[key]={0,0,0};
                     else {
@@ -171,7 +169,7 @@ struct MuseumProjectionCache {
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
             if(!status[key]) {
-                const auto p=transform(face.point[i],face.wheel);++transformed;
+                const auto p=transform(face.point[i],face.rigidPart);++transformed;
                 const float inverse=1/p.z;
                 points[key]={camera.principalX+camera.focalLength*p.x*inverse,
                              camera.principalY-camera.focalLength*p.y*inverse,inverse};

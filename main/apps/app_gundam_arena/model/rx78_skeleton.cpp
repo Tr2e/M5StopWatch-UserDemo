@@ -68,7 +68,7 @@ void evaluateSkeleton(Skeleton& sk,const SkeletonPose& pose){
 
 void localizeMesh(Mesh& mesh,const Skeleton& bind){
     for(std::size_t i=0;i<mesh.count;++i){
-        const int bone=int(mesh.panels[i].wheel?mesh.panels[i].wheel-1:0);
+        const int bone=int(mesh.panels[i].rigidPart?mesh.panels[i].rigidPart-1:0);
         const int id=std::clamp(bone,0,kBoneCount-1);
         const Affine inv=bind.restWorld[id].inverse();
         for(auto& p:mesh.panels[i].point)p=inv.apply(p);

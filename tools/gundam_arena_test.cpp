@@ -160,7 +160,7 @@ int main(int argc,char** argv){
     assert(!mesh.overflowed && mesh.count>400 && mesh.count<Mesh::capacity);
     std::array<unsigned,kBoneCount> bones{};
     for(size_t i=0;i<mesh.count;++i){
-        const int bone=int(mesh.panels[i].wheel?mesh.panels[i].wheel-1:0);
+        const int bone=int(mesh.panels[i].rigidPart?mesh.panels[i].rigidPart-1:0);
         assert(bone>=0 && bone<kBoneCount);
         ++bones[bone];
         for(auto p:mesh.panels[i].point)assert(finitePoint(p));

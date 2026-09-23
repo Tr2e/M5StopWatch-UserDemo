@@ -43,9 +43,10 @@ public:
               uint8_t wheel=0) {
         if(mesh.count==mesh.panels.size()) {mesh.overflowed=true;return;}
         auto& p=mesh.panels[mesh.count++];
-        p={{{a,b,c,d}},color,part,wheel,0xffffu,paint,
-           uint8_t(std::clamp(u0,0.f,1.f)*255),uint8_t(std::clamp(u1,0.f,1.f)*255),
-           uint8_t(std::clamp(v0,0.f,1.f)*255),uint8_t(std::clamp(v1,0.f,1.f)*255)};
+        p={};p.point={{a,b,c,d}};p.color=color;p.part=part;p.rigidPart=wheel;
+        p.parent=0xffffu;p.paint=paint;
+        p.u0=uint8_t(std::clamp(u0,0.f,1.f)*255);p.u1=uint8_t(std::clamp(u1,0.f,1.f)*255);
+        p.v0=uint8_t(std::clamp(v0,0.f,1.f)*255);p.v1=uint8_t(std::clamp(v1,0.f,1.f)*255);
     }
     void box(float x0,float x1,float y0,float y1,float z0,float z1,uint16_t color,
              CarPaint paint=CarPaint::Solid) {

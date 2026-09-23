@@ -2,7 +2,7 @@
 #include "../model/character_model.h"
 #include "arena_space.h"
 #include "../../app_gundam_museum/view/museum_projection_cache.h"
-#include "../../app_lets_and_go_racer/view/car_surface_raster.h"
+#include "../../common/soft3d/raster/surface_raster.h"
 #include <memory>
 
 namespace gundam_arena {
@@ -27,7 +27,7 @@ public:
 private:
     struct Surface {
         Mesh mesh;
-        lets_and_go::CarSurfaceRaster<424,424> raster;
+        soft3d::SurfaceRaster<424,424> raster;
         gundam_museum::MuseumProjectionCache projection;
     };
     std::unique_ptr<Surface> _surface;

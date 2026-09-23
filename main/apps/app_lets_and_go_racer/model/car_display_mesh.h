@@ -26,7 +26,14 @@ struct CarPanel {
     std::array<CarPoint, 4> point{};
     uint16_t color = 0;
     CarPart part = CarPart::Unspecified; // Structural QA tag; no additional storage.
-    uint8_t wheel = 0; // 1..4: only hub spokes rotate; tire envelopes stay round.
+    union {
+        // Generic rigid-part binding. Zero is the root; non-zero values are
+        // interpreted by the owning asset/instance skeleton.
+        uint8_t rigidPart = 0;
+        // Racer compatibility name. Museum/Arena code must use rigidPart so a
+        // wheel-specific field is never used as a skeleton ABI.
+        uint8_t wheel;
+    };
     uint16_t parent = 0xffffu; // Reserved legacy attachment metadata (not depth order).
     CarPaint paint = CarPaint::Solid;
     uint8_t u0=0,u1=255,v0=0,v1=255;

@@ -55,7 +55,7 @@ public:
         m.twoSided[m.count]=insert || part==Part::Hands || (part==Part::Torso && color==gold);
         m.count=writer.count;
         for(std::size_t i=begin;i<m.count;++i){
-            m.panels[i].wheel=uint8_t(bone)+1;
+            m.panels[i].rigidPart=uint8_t(bone)+1;
             m.normals[i]=n;m.parts[i]=part;
             m.twoSided[i]=insert || part==Part::Hands || (part==Part::Torso && color==gold);
         }

@@ -8,6 +8,7 @@
 #include "pencil_scene.h"
 #include "car_surface_raster.h"
 #include "track_minimap.h"
+#include "../../common/soft3d/frontend/shared_vertex_index.h"
 
 #include <array>
 #include <cstddef>
@@ -26,28 +27,10 @@ struct RaceSurfaceMesh {
     std::size_t count=0;
     CarSurfaceDetail detail=CarSurfaceDetail::Medium;
     void indexVertices(std::array<uint16_t,8192>& slots) {
-        slots.fill(0);vertexCount=0;
-        for(std::size_t corner=0;corner<count*4;++corner) {
+        vertexCount=soft3d::indexSharedVertices<8192>(count*4,[&](std::size_t corner) {
             const auto& face=panels[corner/4];const auto p=face.point[corner%4];
-            uint32_t hash=2166136261u;
-            for(float value:{p.x,p.y,p.z}) {
-                uint32_t bits=0;if(value!=0)std::memcpy(&bits,&value,sizeof(bits));
-                hash=(hash^bits)*16777619u;
-            }
-            hash=(hash^face.wheel)*16777619u;
-            std::size_t slot=hash&(slots.size()-1);
-            while(slots[slot]) {
-                const auto key=vertexCorner[slots[slot]-1];
-                const auto& candidate=panels[key/4];const auto q=candidate.point[key%4];
-                if(p.x==q.x && p.y==q.y && p.z==q.z && face.wheel==candidate.wheel)break;
-                slot=(slot+1)&(slots.size()-1);
-            }
-            if(!slots[slot]) {
-                vertexCorner[vertexCount]=uint16_t(corner);
-                slots[slot]=uint16_t(++vertexCount);
-            }
-            cornerIndex[corner]=slots[slot]-1;
-        }
+            return soft3d::VertexKey{{p.x,p.y,p.z},face.rigidPart};
+        },cornerIndex.data(),vertexCorner.data(),&slots).count;
     }
 };
 struct RaceProjectedVertex {

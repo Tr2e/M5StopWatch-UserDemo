@@ -18,7 +18,7 @@ void checkProjectionBoundaries(){
     // Signed zero shares a vertex; transform tags do not.
     *mesh=Mesh{};mesh->count=2;mesh->panels[1].point[0].x=-0.f;
     cache->index(*mesh);assert(cache->count==1);
-    mesh->panels[1].wheel=1;cache->index(*mesh);assert(cache->count==2);
+    mesh->panels[1].rigidPart=1;cache->index(*mesh);assert(cache->count==2);
     // A triangle crossing the near plane retains the production clip path.
     mesh->count=1;mesh->panels[0].point={{{-.2f,-.2f,.1f},{.2f,-.2f,1},{.2f,.2f,1},{-.2f,.2f,.1f}}};
     cache->index(*mesh);cache->begin();

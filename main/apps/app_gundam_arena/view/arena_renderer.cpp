@@ -70,7 +70,7 @@ void ArenaRenderer::render(lgfx::LGFXBase& canvas,const CharacterModel& characte
     for(std::size_t i=0;i<_surface->mesh.count;++i){
         projection.passes[i]=-1;
         const auto& face=_surface->mesh.panels[i];
-        const int bone=std::clamp(int(face.wheel?face.wheel-1:0),0,kBoneCount-1);
+        const int bone=std::clamp(int(face.rigidPart?face.rigidPart-1:0),0,kBoneCount-1);
         const Point n=_skeleton.world[bone].rotate(_surface->mesh.normals[i]);
         const Point p0=_skeleton.world[bone].apply(face.point[0]);
         const float facing=dot(n,subtract(eye,p0));

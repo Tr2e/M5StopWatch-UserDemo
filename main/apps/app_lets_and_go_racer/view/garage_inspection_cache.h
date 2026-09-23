@@ -1,5 +1,6 @@
 #pragma once
 #include "garage_car_transform.h"
+#include "../../common/soft3d/frontend/shared_vertex_index.h"
 
 namespace lets_and_go {
 
@@ -14,30 +15,10 @@ struct GarageInspectionCache {
     bool indexed=false;
 
     void index(const CarDisplayMesh& mesh) {
-        auto slots=std::unique_ptr<std::array<uint16_t,16384>>(
-            new(std::nothrow) std::array<uint16_t,16384>{});
-        count=0;
-        for(std::size_t corner=0;corner<mesh.count*4;++corner) {
-            if(!slots) {cornerIndex[corner]=vertexCorner[corner]=uint16_t(corner);++count;continue;}
+        count=soft3d::indexSharedVertices<16384>(mesh.count*4,[&](std::size_t corner) {
             const auto& face=mesh.panels[corner/4];const auto p=face.point[corner%4];
-            uint32_t hash=2166136261u;
-            for(float value:{p.x,p.y,p.z}) {
-                uint32_t bits=0;if(value!=0)std::memcpy(&bits,&value,sizeof(bits));
-                hash=(hash^bits)*16777619u;
-            }
-            hash=(hash^face.wheel)*16777619u;
-            std::size_t slot=hash&(slots->size()-1);
-            while((*slots)[slot]) {
-                const auto key=vertexCorner[(*slots)[slot]-1];
-                const auto& candidate=mesh.panels[key/4];const auto q=candidate.point[key%4];
-                if(p.x==q.x && p.y==q.y && p.z==q.z && face.wheel==candidate.wheel)break;
-                slot=(slot+1)&(slots->size()-1);
-            }
-            if(!(*slots)[slot]) {
-                vertexCorner[count]=uint16_t(corner);(*slots)[slot]=uint16_t(++count);
-            }
-            cornerIndex[corner]=(*slots)[slot]-1;
-        }
+            return soft3d::VertexKey{{p.x,p.y,p.z},face.rigidPart};
+        },cornerIndex.data(),vertexCorner.data()).count;
         indexed=true;
     }
 
