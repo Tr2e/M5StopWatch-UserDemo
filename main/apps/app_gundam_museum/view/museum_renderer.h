@@ -37,6 +37,10 @@ public:
     const Mesh& mesh() const{return _surface->mesh;}
     const soft3d::ModelAsset* asset() const{return _surface?_surface->instance.asset:nullptr;}
     static std::size_t workingBytes();
+    void configure(const soft3d::RenderProfile& profile,
+                   const soft3d::RenderCapabilities& capabilities={}) {
+        _profile=profile;_capabilities=capabilities;
+    }
     // Diagnostic A/B switch; production always uses the optimized path.
     void setOptimizations(bool enabled){_optimizations=enabled;}
     void setSolidSpanFastPath(bool enabled){_solidSpanFastPath=enabled;}
@@ -90,6 +94,8 @@ private:
     std::unique_ptr<MuseumParallelWorker> _parallelWorker;
 #endif
     RenderStats _stats{};
+    soft3d::RenderProfile _profile=soft3d::game30Profile();
+    soft3d::RenderCapabilities _capabilities{};
     bool _cached=false,_equipment=false,_gray=false,_buried=false;
     Pose _pose=Pose::Display;
     ModelId _model=ModelId::Rx78;

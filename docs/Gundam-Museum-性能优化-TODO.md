@@ -272,3 +272,4 @@
 - 有界原型门槛：首版完整周期必须进入 62 ms 以内，panel/bin 新增不超过 0.3 ms，主核光栅至少改善 4 ms，composite 至少改善 1 ms；否则停止完整工程化。
 
 通用框架提炼和新模型接入规划见 [`ESP32-S3-高性能3D渲染框架提炼与模型接入规范.md`](ESP32-S3-高性能3D渲染框架提炼与模型接入规范.md)。
+F0–F4 首轮实现的 GLB 编译器、主机回归、三场景真机 P95、内存/栈和退出重建证据见 [`assets/soft3d-framework-20260923/F4-validation.md`](assets/soft3d-framework-20260923/F4-validation.md)。该工作没有重开微带或 PSRAM 直连 DMA。

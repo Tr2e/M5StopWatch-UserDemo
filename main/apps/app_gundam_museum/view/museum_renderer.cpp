@@ -199,8 +199,19 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const uint16_t clearColor=_spaceEnabled?space::background:space::diagnosticBackground;
     const auto requestedAsset=museumAssetRegistration(view.model);
     const bool fastIndexedAsset=requestedAsset.flags&soft3d::AssetFastIndexedCommands;
+    soft3d::FrameWorkload routeWork{};
+    if(_surface && _surface->instance.asset) {
+        routeWork.uniqueVertices=uint32_t(_surface->instance.asset->positions.size);
+        routeWork.visiblePrimitives=uint32_t(_stats.submitted?_stats.submitted:
+            _surface->instance.asset->primitives.size);
+        routeWork.solidPrimitives=(_surface->instance.asset->flags&soft3d::AssetAllSolid)
+            ? routeWork.visiblePrimitives:0;
+        routeWork.generalPrimitives=routeWork.visiblePrimitives-routeWork.solidPrimitives;
+    }
+    const bool workloadRequestsDual=soft3d::selectCoreMode(_profile,_capabilities,routeWork)==
+                                    soft3d::CoreMode::DualBands;
     const bool parallelFrame=_optimizations && _parallelRasterFastPath &&
-                             fastIndexedAsset && _surface;
+                             workloadRequestsDual && fastIndexedAsset && _surface;
 #ifdef ESP_PLATFORM
     uint8_t* nativeFrameBuffer=nullptr;std::size_t nativeStride=0;
     if(_optimizations && _nativeFrameBufferFastPath && &canvas==&GetHAL().getDisplay() &&
