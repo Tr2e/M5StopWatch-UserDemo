@@ -14,6 +14,11 @@ namespace lets_and_go {
 struct CarBlitWork {
     uint32_t tileCandidates=0,rowCandidates=0,unfilteredRowCandidates=0,rows=0;
 };
+struct SurfaceRasterMetrics {
+    uint32_t testedPixels=0,writtenPixels=0,depthRejectedPixels=0;
+};
+template<bool Enabled> struct SurfaceRasterMetricsStorage {};
+template<> struct SurfaceRasterMetricsStorage<true> {SurfaceRasterMetrics value{};};
 
 struct CarSurfaceVertex {float x,y,z,u,v;};
 struct CarScreenVertex {float x,y,depth,uDepth,vDepth;};
@@ -141,9 +146,15 @@ template<class Transform> void prepareCarPanel(PreparedCarPanel& result,
 
 // A bounded car-sized RGB565/depth tile, not a second full-screen framebuffer.
 // Depth is inverse-camera-z in Q13 (near plane .2 => 40960, within uint16_t).
-template<int Width,int Height> class CarSurfaceRaster {
+template<int Width,int Height,bool Measure=false>
+class CarSurfaceRaster : private SurfaceRasterMetricsStorage<Measure> {
 public:
     static constexpr int kWidth=Width,kHeight=Height;
+    void resetMetrics(){if constexpr(Measure)static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value={};}
+    SurfaceRasterMetrics metrics() const{
+        if constexpr(Measure)return static_cast<const SurfaceRasterMetricsStorage<true>&>(*this).value;
+        return {};
+    }
     void setPaintAtlas(const RacePaintAtlas* atlas) { _paintAtlas=atlas; }
     void setIncrementalInterpolation(bool enabled) { _incrementalInterpolation=enabled; }
     void setSolidFastPath(bool enabled) { _solidFastPath=enabled; }
@@ -428,11 +439,13 @@ private:
             const float depth=a.depth+s*(b.depth-a.depth)+t*(c.depth-a.depth);
             if constexpr(!TrustedDepth)
                 if(!(depth>0) || !std::isfinite(depth))continue;
+            if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.testedPixels;
             const auto d=uint16_t(TrustedDepth ? depth*8192.f :
                                   std::clamp(depth*8192.f,1.f,65535.f));
             const auto index=std::size_t(y-_y)*_width+(x-_x);
             const auto oldDepth=depthBuffer[index-depthIndexOffset];
-            if(d<oldDepth)continue;
+            if(d<oldDepth){if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.depthRejectedPixels;continue;}
+            if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.writtenPixels;
             if constexpr(PreparedSparseRecord) {
                 _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
             } else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
@@ -539,7 +552,9 @@ private:
                 const auto value=uint16_t(depth*8192.f);
                 const auto index=std::size_t(y-_y)*_width+(x-_x);
                 const auto oldDepth=target.depth[index-target.depthIndexOffset];
-                if(value<oldDepth)continue;
+                if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.testedPixels;
+                if(value<oldDepth){if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.depthRejectedPixels;continue;}
+                if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.writtenPixels;
                 if constexpr(PreparedSparseRecord)
                     _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
                 else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)

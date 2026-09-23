@@ -12,6 +12,9 @@ namespace soft3d {
 
 template<int Width,int Height>
 using SurfaceRaster=lets_and_go::CarSurfaceRaster<Width,Height>;
+template<int Width,int Height>
+using MeasuredSurfaceRaster=lets_and_go::CarSurfaceRaster<Width,Height,true>;
+using RasterMetrics=lets_and_go::SurfaceRasterMetrics;
 using Camera=lets_and_go::TrackCamera;
 using CameraPoint=lets_and_go::TrackCameraPoint;
 using SurfaceVertex=lets_and_go::CarSurfaceVertex;
@@ -26,6 +29,19 @@ static_assert(sizeof(IndexedSolidCommand)==12,"indexed solid ABI must remain 12 
 struct SolidMaterialAdapter {
     lets_and_go::CarPaint operator()(const Material&) const{return lets_and_go::CarPaint::Solid;}
 };
+
+inline Vec3 transformPoint(const std::array<float,12>& transform,Vec3 point) {
+    return {transform[0]*point.x+transform[1]*point.y+transform[2]*point.z+transform[3],
+            transform[4]*point.x+transform[5]*point.y+transform[6]*point.z+transform[7],
+            transform[8]*point.x+transform[9]*point.y+transform[10]*point.z+transform[11]};
+}
+
+inline CameraPoint transformInstancePoint(const ModelInstance& instance,Vec3 point,uint16_t rigidPart) {
+    if(!instance.pose.empty() && rigidPart<instance.pose.size)
+        point=transformPoint(instance.pose[rigidPart].value,point);
+    point=transformPoint(instance.world.value,point);
+    return {point.x,point.y,point.z};
+}
 
 template<class Raster,class CameraType,class TransformPoint,
          class MaterialAdapter=SolidMaterialAdapter>
@@ -57,6 +73,28 @@ FrameWorkload renderModelAsset(Raster& raster,const CameraType& camera,
         else ++work.generalPrimitives;
     }
     return work;
+}
+
+template<class Raster,class CameraType>
+FrameWorkload renderModelAsset(Raster& raster,const CameraType& camera,
+                               const ModelInstance& instance) {
+    return renderModelAsset(raster,camera,instance,[&](Vec3 point,uint16_t rigidPart) {
+        return transformInstancePoint(instance,point,rigidPart);
+    });
+}
+
+template<class Raster,class CameraType>
+FrameWorkload renderScene(Raster& raster,const CameraType& camera,const SceneView& scene) {
+    FrameWorkload total{};
+    for(const auto& instance:scene.instances) {
+        const auto work=renderModelAsset(raster,camera,instance);
+        total.uniqueVertices+=work.uniqueVertices;
+        total.visiblePrimitives+=work.visiblePrimitives;
+        total.testedPixels+=work.testedPixels;total.writtenPixels+=work.writtenPixels;
+        total.depthRejectedPixels+=work.depthRejectedPixels;
+        total.solidPrimitives+=work.solidPrimitives;total.generalPrimitives+=work.generalPrimitives;
+    }
+    return total;
 }
 
 } // namespace soft3d

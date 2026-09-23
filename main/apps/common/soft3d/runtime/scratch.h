@@ -21,6 +21,10 @@ template<class T> class Scratch {
     };
     std::unique_ptr<T,Release> _value;
 public:
+    bool allocateIfBudget(std::size_t availableBytes,std::size_t reserveBytes=32u*1024u) {
+        if(availableBytes<sizeof(T)+reserveBytes)return false;
+        return allocate();
+    }
     bool allocate() {
         if(_value)return true;
 #ifdef ESP_PLATFORM
@@ -55,6 +59,11 @@ template<class T> class ScratchBuffer {
     std::unique_ptr<T[],Release> _value;
     std::size_t _capacity=0;
 public:
+    bool allocateIfBudget(std::size_t count,std::size_t availableBytes,
+                          std::size_t reserveBytes=32u*1024u) {
+        if(count>(availableBytes>reserveBytes?(availableBytes-reserveBytes)/sizeof(T):0))return false;
+        return allocate(count);
+    }
     bool allocate(std::size_t count) {
         if(_value)return _capacity>=count;
         if(!count)return true;

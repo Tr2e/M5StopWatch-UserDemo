@@ -105,6 +105,8 @@ struct ModelInstance {
     Span<BoneTransform> pose{};
 };
 
+struct SceneView {Span<ModelInstance> instances{};};
+
 enum class AssetError : uint8_t {
     None,MissingData,NonFinitePosition,IndexOutOfRange,MaterialOutOfRange,
     InvalidTopology,InvalidLod,InvalidSkeleton,BoundsMismatch

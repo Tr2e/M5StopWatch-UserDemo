@@ -2,10 +2,15 @@
 #include "controller/museum_controller.h"
 #include "../app_lets_and_go_racer/input/device_control_source.h"
 #include <mooncake.h>
+#include <array>
+#include <memory>
+
+struct Soft3DSampleBenchmark;
 
 class AppGundamMuseum : public mooncake::AppAbility {
 public:
     AppGundamMuseum();
+    ~AppGundamMuseum() override;
     void onOpen() override;
     void onRunning() override;
     void onClose() override;
@@ -27,4 +32,11 @@ private:
     uint64_t _benchmarkDrawUs=0,_benchmarkPresentUs=0,_benchmarkCullUs=0,_benchmarkPanelUs=0;
     uint64_t _benchmarkRasterUs=0,_benchmarkMainUs=0,_benchmarkWorkerUs=0,_benchmarkBlitUs=0,_benchmarkBackgroundUs=0;
     uint64_t _benchmarkAsyncPresentUs=0;
+    std::array<uint32_t,96> _benchmarkDrawSamples{},_benchmarkPresentSamples{},_benchmarkCycleSamples{};
+    uint64_t _benchmarkCoveredPixels=0;
+    uint64_t _benchmarkTestedPixels=0,_benchmarkWrittenPixels=0,_benchmarkDepthRejectedPixels=0;
+    soft3d::FrameWorkload _benchmarkWork{};
+    uint8_t _benchmarkScene=0;
+    bool _benchmarkLifecycleChecked=false;
+    std::unique_ptr<Soft3DSampleBenchmark> _sampleBenchmark;
 };
