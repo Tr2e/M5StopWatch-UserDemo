@@ -133,7 +133,7 @@ uint64_t micros(){
 #ifdef ESP_PLATFORM
 __attribute__((noinline,optimize("O3")))
 #endif
-uint32_t classifyRxFacePasses(const Mesh& mesh,lets_and_go::CarPoint eye,bool cull,int8_t* passes) {
+uint32_t classifyPlaneFacePasses(const Mesh& mesh,lets_and_go::CarPoint eye,bool cull,int8_t* passes) {
     uint32_t culled=0;
     for(std::size_t i=0;i<mesh.count;++i) {
         passes[i]=-1;
@@ -158,7 +158,13 @@ bool MuseumRenderer::open(){
         // active projected-point prefix can claim a compact internal block.
         // Smaller ready/task allocations can then use the remaining fragments.
         buildRx78(_surface->mesh,{true,false,false,Pose::Display});
-        _surface->projection.index(_surface->mesh);
+        const auto registration=museumAssetRegistration(ModelId::Rx78);
+        const auto assetError=buildMuseumModelAsset(_surface->assetStorage,_surface->mesh,
+            registration.name,registration.flags,registration.profile);
+        if(assetError==soft3d::AssetError::None) {
+            _surface->instance.asset=&_surface->assetStorage.asset;
+            _surface->projection.index(*_surface->instance.asset);
+        } else _surface->projection.index(_surface->mesh);
         _surface->projection.preferInternalProjected();
         _surface->fastLowerDepth.allocate();
         _surface->projection.preferInternalReady();
@@ -191,8 +197,10 @@ __attribute__((optimize("O3")))
 void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,bool cull,bool gray,bool keepBuried,bool partial){
     const auto startUs=micros();
     const uint16_t clearColor=_spaceEnabled?space::background:space::diagnosticBackground;
+    const auto requestedAsset=museumAssetRegistration(view.model);
+    const bool fastIndexedAsset=requestedAsset.flags&soft3d::AssetFastIndexedCommands;
     const bool parallelFrame=_optimizations && _parallelRasterFastPath &&
-                             view.model==ModelId::Rx78 && _surface;
+                             fastIndexedAsset && _surface;
 #ifdef ESP_PLATFORM
     uint8_t* nativeFrameBuffer=nullptr;std::size_t nativeStride=0;
     if(_optimizations && _nativeFrameBufferFastPath && &canvas==&GetHAL().getDisplay() &&
@@ -251,8 +259,18 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         else if(nu)buildNuGundam(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         else if(zaku)buildCharZaku(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
         else buildRx78(_surface->mesh,{view.equipment,keepBuried,gray,view.pose});
-        _surface->projection.index(_surface->mesh);
-        if(view.model==ModelId::Rx78)_surface->projection.preferInternalProjected();
+        const auto registration=museumAssetRegistration(view.model);
+        const auto assetError=buildMuseumModelAsset(_surface->assetStorage,_surface->mesh,
+            registration.name,registration.flags,registration.profile);
+        if(assetError==soft3d::AssetError::None) {
+            _surface->instance.asset=&_surface->assetStorage.asset;
+            _surface->projection.index(*_surface->instance.asset);
+        } else {
+            _surface->instance.asset=nullptr;
+            _surface->projection.index(_surface->mesh);
+        }
+        if(registration.flags&soft3d::AssetFastIndexedCommands)
+            _surface->projection.preferInternalProjected();
         _model=view.model;
         _pose=view.pose;
         _equipment=view.equipment;_gray=gray;_buried=keepBuried;_cached=true;
@@ -265,7 +283,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const int p=std::clamp(percent,50,100),w=(424*p+50)/100,h=(424*p+50)/100;
     auto& raster=_surface->raster;
     constexpr int fastColorWidth=276,fastColorSplit=138;
-    const bool useSplitColor=_optimizations && _splitColorFastPath && view.model==ModelId::Rx78 &&
+    const uint32_t assetFlags=_surface->instance.asset?_surface->instance.asset->flags:0;
+    const bool fastAsset=assetFlags&soft3d::AssetFastIndexedCommands;
+    const bool useSplitColor=_optimizations && _splitColorFastPath && fastAsset &&
         w==fastColorWidth && h==fastColorWidth && _surface->fastLowerColor.get();
     raster.setSplitColorStorage(useSplitColor?_surface->fastLowerColor.get()->data():nullptr,
                                 fastColorWidth,fastColorSplit);
@@ -311,19 +331,20 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     _stats={};_stats.total=_surface->mesh.count;
     if(useSplitDepth)_stats.internalDepthBytes=uint32_t(fastColorWidth*fastColorSplit*sizeof(uint16_t));
     auto& projection=_surface->projection;
-    const bool trustedNearPlane=view.model==ModelId::Rx78 && projection.nearPlaneSafe(transform.pivot);
-    projection.setInternalReadyFastPath(_optimizations && _internalProjectionReadyFastPath && view.model==ModelId::Rx78);
-    projection.setInternalProjectedFastPath(_optimizations && _internalProjectedPointFastPath && view.model==ModelId::Rx78);
+    const bool trustedNearPlane=(assetFlags&soft3d::AssetNearPlaneEnvelope) &&
+                                projection.nearPlaneSafe(transform.pivot);
+    projection.setInternalReadyFastPath(_optimizations && _internalProjectionReadyFastPath && fastAsset);
+    projection.setInternalProjectedFastPath(_optimizations && _internalProjectedPointFastPath && fastAsset);
     if(projection.usingInternalProjected())_stats.internalProjectedBytes=uint32_t(projection.count*sizeof(lets_and_go::TrackCameraPoint));
     projection.begin();
     auto* facePasses=projection.passesData(_surface->mesh.count,
-        _optimizations && _internalFacePassFastPath && view.model==ModelId::Rx78);
-    const bool rxEntityFastPath=_optimizations && view.model==ModelId::Rx78 && !view.detail;
-    if(rxEntityFastPath)_stats.culled=classifyRxFacePasses(_surface->mesh,eye,cull,facePasses);
+        _optimizations && _internalFacePassFastPath && fastAsset);
+    const bool indexedEntityFastPath=_optimizations && fastAsset && !view.detail;
+    if(indexedEntityFastPath)_stats.culled=classifyPlaneFacePasses(_surface->mesh,eye,cull,facePasses);
     else if(_optimizations)for(std::size_t i=0;i<_surface->mesh.count;++i){
         facePasses[i]=-1;
         if(view.detail && _surface->mesh.parts[i]!=Part::Head)continue;
-        const float facing=view.model==ModelId::Rx78 ?
+        const float facing=(assetFlags&soft3d::AssetPrecomputedCullPlanes) ?
             dot(_surface->mesh.normals[i],eye)-_surface->mesh.planeOffsets[i] :
             dot(_surface->mesh.normals[i],subtract(eye,_surface->mesh.anchors[i]));
         // Keep the accepted grazing band and Nu backpack mounting rims;
@@ -338,7 +359,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     int split=h/2;
     while(split<h && (std::size_t(w)*split&7))++split;
     auto* bandIndices=projection.bandIndicesData(_surface->mesh.count,
-        splitCompatible && _optimizations && _internalBandIndexFastPath && view.model==ModelId::Rx78);
+        splitCompatible && _optimizations && _internalBandIndexFastPath && fastAsset);
     auto* upperIndices=bandIndices;
     auto* lowerIndices=bandIndices?bandIndices+_surface->mesh.count:nullptr;
     std::size_t upperCount=0,lowerCount=0;
@@ -350,9 +371,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     std::size_t preparedCount=0;
     // The diagnostic path draws backfaces first. Quantized equal depth must
     // not let an invisible reverse face overwrite a visible front face.
-    const bool rxCompactPrepare=rxEntityFastPath && _compactPanelPrepareFastPath &&
+    const bool indexedCompactPrepare=indexedEntityFastPath && _compactPanelPrepareFastPath &&
         splitCompatible && trustedNearPlane;
-    const bool useIndexedPanels=rxCompactPrepare && _indexedPanelFastPath &&
+    const bool useIndexedPanels=indexedCompactPrepare && _indexedPanelFastPath &&
         projection.usingInternalProjected();
     auto* indexedPanels=_surface->preparedPanels.indexed;
     if(useIndexedPanels && _surface->fastIndexedPanels.get()) {
@@ -398,7 +419,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             _stats.submitted=submittedBefore;_stats.offscreen=offscreenBefore;
         }
     }
-    if(rxCompactPrepare) {
+    if(indexedCompactPrepare) {
       if(!directIndexedBands) {
       for(int pass=0;pass<2;++pass)for(std::size_t i=0;i<_surface->mesh.count;++i){
         if(facePasses[i]!=pass)continue;

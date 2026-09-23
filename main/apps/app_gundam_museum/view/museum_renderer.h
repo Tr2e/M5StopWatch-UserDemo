@@ -1,6 +1,7 @@
 #pragma once
 #include "../model/rx78.h"
-#include "../../app_lets_and_go_racer/view/car_surface_raster.h"
+#include "../model/museum_model_asset.h"
+#include "../../common/soft3d/raster/surface_raster.h"
 #include "museum_projection_cache.h"
 #include "museum_wireframe.h"
 #include <memory>
@@ -34,6 +35,7 @@ public:
     void render(lgfx::LGFXBase& canvas,const View& view,int percent=100,bool cull=true,bool gray=false,bool keepBuried=false,bool partial=false);
     const RenderStats& stats() const{return _stats;}
     const Mesh& mesh() const{return _surface->mesh;}
+    const soft3d::ModelAsset* asset() const{return _surface?_surface->instance.asset:nullptr;}
     static std::size_t workingBytes();
     // Diagnostic A/B switch; production always uses the optimized path.
     void setOptimizations(bool enabled){_optimizations=enabled;}
@@ -71,7 +73,9 @@ private:
             ~PreparedCommands() {}
         };
         Mesh mesh;
-        lets_and_go::CarSurfaceRaster<424,424> raster;
+        MuseumModelAssetStorage assetStorage;
+        soft3d::ModelInstance instance;
+        soft3d::SurfaceRaster<424,424> raster;
         MuseumProjectionCache projection;
         EdgeFilter edges;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};

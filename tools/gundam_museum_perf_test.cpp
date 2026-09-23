@@ -5,6 +5,7 @@
 #include <numeric>
 #include <vector>
 #include <random>
+#include <string>
 using namespace gundam_museum;
 using Clock=std::chrono::steady_clock;
 void checkProjectionBoundaries(){
@@ -54,6 +55,9 @@ void checkSolidRaster(){
 int main(){
     checkProjectionBoundaries();checkSolidRaster();
     MuseumRenderer renderer;assert(renderer.open());
+    assert(renderer.asset() && soft3d::validate(*renderer.asset())==soft3d::AssetError::None);
+    assert(std::string(renderer.asset()->name)=="rx78");
+    assert(renderer.asset()->positions.size==2670 && renderer.asset()->primitives.size==2736);
     LGFX_Sprite canvas;canvas.createSprite(468,466);
     std::size_t cases=0,oldTransforms=0,newTransforms=0;
     for(auto model:{ModelId::Rx78,ModelId::CharZaku,ModelId::NuGundam,ModelId::Sazabi,ModelId::StrikeGundam,ModelId::DestinyGundam}) {
@@ -68,6 +72,7 @@ int main(){
                 // Warm model creation separately; alternate A/B order to avoid
                 // charging cold builds or a consistently first pass to A.
                 renderer.render(canvas,view,percent);
+                assert(renderer.asset() && soft3d::validate(*renderer.asset())==soft3d::AssetError::None);
                 std::vector<uint16_t> frames[2];
                 for(int i=0;i<2;++i){
                     const int mode=(i+yaw)%2;renderer.setOptimizations(mode==1);
