@@ -17,6 +17,7 @@ public:
 private:
     void draw(uint32_t now);
     void benchmarkFrame();
+    void benchmarkMuseumFrame();
     void resetPerformanceWindow(uint32_t now);
     gundam_museum::MuseumRenderer _renderer;
     gundam_museum::MuseumController _controller;

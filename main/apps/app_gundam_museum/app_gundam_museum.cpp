@@ -129,6 +129,10 @@ void AppGundamMuseum::benchmarkFrame(){
         }
         GetHAL().feedTheDog();GetHAL().delay(1);return;
     }
+    benchmarkMuseumFrame();
+}
+void AppGundamMuseum::benchmarkMuseumFrame(){
+    constexpr uint32_t frames=kBenchmarkFrames;auto& display=GetHAL().getDisplay();
     gundam_museum::View view;view.model=gundam_museum::ModelId::Rx78;view.equipment=true;view.pitch=.10f;view.yaw=float(_benchmarkFrame)*6.28318530718f/float(frames);
     const app_performance::DisplayRegion region{0,0,display.width(),display.height()};const uint64_t started=esp_timer_get_time();app_performance::DisplayFrameScope frame(display,region);_renderer.render(display,view,65,true,false,false,true);const uint64_t rendered=esp_timer_get_time();
     uint32_t frameHash=2166136261u;for(int y=0;y<display.height();++y){const auto* row=reinterpret_cast<const uint16_t*>(GetHAL().getDisplayFrameBufferLine(y));for(int x=0;x<display.width();++x)frameHash=(frameHash^row[x])*16777619u;}_benchmarkHashA=(_benchmarkHashA^frameHash)*16777619u;_benchmarkHashB+=frameHash;
