@@ -16,7 +16,7 @@ struct MuseumProjectionCache {
     std::array<lets_and_go::TrackCameraPoint,corners> projected{};
     std::array<uint8_t,corners> ready{};
     lets_and_go::RenderScratch<std::array<uint8_t,corners>> fastReady;
-    lets_and_go::RenderScratchBuffer<lets_and_go::TrackCameraPoint> fastProjected;
+    std::array<lets_and_go::RenderScratchBuffer<float>,3> fastProjected;
     std::array<int8_t,Mesh::capacity> passes{};
     std::size_t count=0,transformed=0;
     float maximumHorizontalRadiusSquared=0,minY=0,maxY=0;
@@ -53,13 +53,35 @@ struct MuseumProjectionCache {
         return maximumHorizontalRadiusSquared+vertical*vertical<available*available;
     }
     bool preferInternalReady(){return fastReady.allocate();}
-    bool preferInternalProjected(){return fastProjected.allocate(count);}
+    bool preferInternalProjected(){
+        bool allocated=true;
+        for(auto& coordinate:fastProjected)allocated=coordinate.allocate(count) && allocated;
+        if(allocated)return true;
+        for(auto& coordinate:fastProjected)coordinate.reset();
+        return false;
+    }
     void setInternalReadyFastPath(bool enabled){useFastReady=enabled && fastReady.get();}
     void setInternalProjectedFastPath(bool enabled){
-        useFastProjected=enabled && fastProjected.get() && fastProjected.capacity()>=count;
+        useFastProjected=enabled && hasInternalProjectedStorage();
     }
     uint8_t* readyData(){return useFastReady?fastReady.get()->data():ready.data();}
-    lets_and_go::TrackCameraPoint* projectedData(){return useFastProjected?fastProjected.get():projected.data();}
+    void storeProjected(uint16_t index,lets_and_go::TrackCameraPoint point) {
+        if(!useFastProjected){projected[index]=point;return;}
+        fastProjected[0].get()[index]=point.x;
+        fastProjected[1].get()[index]=point.y;
+        fastProjected[2].get()[index]=point.z;
+    }
+    lets_and_go::TrackCameraPoint loadProjected(uint16_t index) const {
+        if(!useFastProjected)return projected[index];
+        return {fastProjected[0].get()[index],fastProjected[1].get()[index],
+                fastProjected[2].get()[index]};
+    }
+    float projectedY(uint16_t index) const {
+        return useFastProjected?fastProjected[1].get()[index]:projected[index].y;
+    }
+    lets_and_go::TrackCameraPointView projectedView() const {
+        return {fastProjected[0].get(),fastProjected[1].get(),fastProjected[2].get()};
+    }
     int8_t* passesData(std::size_t faceCount,bool useReadyTail) {
         // The internal ready allocation retains the 16K capacity ceiling, but
         // RX-78 uses only its active unique-vertex prefix. Face-pass state has
@@ -76,25 +98,33 @@ struct MuseumProjectionCache {
         return reinterpret_cast<uint16_t*>(fastReady.get()->data()+offset);
     }
     bool usingInternalProjected() const{return useFastProjected;}
+    bool hasInternalProjectedStorage() const {
+        for(const auto& coordinate:fastProjected)
+            if(!coordinate.get() || coordinate.capacity()<count)return false;
+        return true;
+    }
+    bool usingInternalReady() const{return useFastReady;}
     void begin(){std::fill_n(readyData(),count,uint8_t(0));transformed=0;}
 
     template<class Transform> void panel(lets_and_go::PreparedCarPanel& result,
         const lets_and_go::TrackCamera& camera,const lets_and_go::CarPanel& face,
         std::size_t index,Transform transform) {
-        auto* status=readyData();auto* points=projectedData();
+        auto* status=readyData();
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
             if(!status[key]) {
                 const auto p=transform(face.point[i],face.rigidPart);++transformed;
-                if(p.z<lets_and_go::kTrackNearPlane)points[key]={0,0,0};
+                lets_and_go::TrackCameraPoint point{};
+                if(p.z<lets_and_go::kTrackNearPlane)point={0,0,0};
                 else {
                     const float inverse=1/p.z;
-                    points[key]={camera.principalX+camera.focalLength*p.x*inverse,
-                                 camera.principalY-camera.focalLength*p.y*inverse,inverse};
+                    point={camera.principalX+camera.focalLength*p.x*inverse,
+                           camera.principalY-camera.focalLength*p.y*inverse,inverse};
                 }
+                storeProjected(key,point);
                 status[key]=1;
             }
-            if(points[key].z==0) {
+            if(loadProjected(key).z==0) {
                 lets_and_go::prepareCarPanel(result,camera,face,transform);return;
             }
         }
@@ -102,7 +132,7 @@ struct MuseumProjectionCache {
         result.left=result.top=1e20f;result.right=result.bottom=-1e20f;
         new (&result.screen) decltype(result.screen);
         for(unsigned i=0;i<4;++i) {
-            const auto p=points[indices[index*4+i]];
+            const auto p=loadProjected(indices[index*4+i]);
             result.screen[i]={p.x,p.y,p.z,((i==0 || i==3 ? face.u0 : face.u1)/255.f)*p.z,
                                          ((i<2 ? face.v0 : face.v1)/255.f)*p.z};
             result.left=std::min(result.left,p.x);result.right=std::max(result.right,p.x);
@@ -116,26 +146,28 @@ struct MuseumProjectionCache {
     template<bool TrustedNearPlane=false,class Transform> void solidPanel(lets_and_go::PreparedSolidRasterPanel& result,
         float& left,float& right,float& top,float& bottom,const lets_and_go::TrackCamera& camera,
         const lets_and_go::CarPanel& face,std::size_t index,Transform transform) {
-        auto* status=readyData();auto* points=projectedData();
+        auto* status=readyData();
         for(unsigned i=0;i<4;++i) {
             const auto key=indices[index*4+i];
             if(!status[key]) {
                 const auto p=transform(face.point[i],face.rigidPart);++transformed;
+                lets_and_go::TrackCameraPoint point{};
                 if constexpr(!TrustedNearPlane) {
-                    if(p.z<lets_and_go::kTrackNearPlane)points[key]={0,0,0};
+                    if(p.z<lets_and_go::kTrackNearPlane)point={0,0,0};
                     else {
                         const float inverse=1/p.z;
-                        points[key]={camera.principalX+camera.focalLength*p.x*inverse,
-                                     camera.principalY-camera.focalLength*p.y*inverse,inverse};
+                        point={camera.principalX+camera.focalLength*p.x*inverse,
+                               camera.principalY-camera.focalLength*p.y*inverse,inverse};
                     }
                 } else {
                     const float inverse=1/p.z;
-                    points[key]={camera.principalX+camera.focalLength*p.x*inverse,
-                                 camera.principalY-camera.focalLength*p.y*inverse,inverse};
+                    point={camera.principalX+camera.focalLength*p.x*inverse,
+                           camera.principalY-camera.focalLength*p.y*inverse,inverse};
                 }
+                storeProjected(key,point);
                 status[key]=1;
             }
-            if constexpr(!TrustedNearPlane)if(points[key].z==0) {
+            if constexpr(!TrustedNearPlane)if(loadProjected(key).z==0) {
                 lets_and_go::PreparedCarPanel generic{};
                 lets_and_go::prepareCarPanel(generic,camera,face,transform);
                 const auto selected=lets_and_go::compactSolidPanel(generic);
@@ -150,7 +182,7 @@ struct MuseumProjectionCache {
             lets_and_go::kPreparedSolidTriangle:0));result.color=face.color;result.light=face.light;
         left=top=1e20f;right=bottom=-1e20f;
         for(unsigned i=0;i<4;++i) {
-            const auto p=points[indices[index*4+i]];
+            const auto p=loadProjected(indices[index*4+i]);
             result.vertex[i]={p.x,p.y,p.z};
             left=std::min(left,p.x);right=std::max(right,p.x);
             top=std::min(top,p.y);bottom=std::max(bottom,p.y);
@@ -161,7 +193,7 @@ struct MuseumProjectionCache {
     template<class Transform> void solidIndexedPanel(lets_and_go::PreparedIndexedSolidRasterPanel& result,
         float& top,float& bottom,const lets_and_go::TrackCamera& camera,
         const lets_and_go::CarPanel& face,std::size_t index,Transform transform) {
-        auto* status=readyData();auto* points=projectedData();
+        auto* status=readyData();
         result.visibility=uint8_t(1|lets_and_go::kPreparedSolidTrustedDepth|
             (indices[index*4+2]==indices[index*4+3] ? lets_and_go::kPreparedSolidTriangle:0));
         result.color=face.color;result.light=face.light;
@@ -171,12 +203,12 @@ struct MuseumProjectionCache {
             if(!status[key]) {
                 const auto p=transform(face.point[i],face.rigidPart);++transformed;
                 const float inverse=1/p.z;
-                points[key]={camera.principalX+camera.focalLength*p.x*inverse,
-                             camera.principalY-camera.focalLength*p.y*inverse,inverse};
+                storeProjected(key,{camera.principalX+camera.focalLength*p.x*inverse,
+                                    camera.principalY-camera.focalLength*p.y*inverse,inverse});
                 status[key]=1;
             }
             result.vertex[i]=key;
-            const float y=points[key].y;
+            const float y=projectedY(key);
             top=std::min(top,y);bottom=std::max(bottom,y);
         }
     }

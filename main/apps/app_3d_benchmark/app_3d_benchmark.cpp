@@ -247,6 +247,11 @@ void App3DBenchmark::finishStage() {
         uint32_t(result.clearSumUs/result.frames),uint32_t(result.beginSumUs/result.frames),
         uint32_t(result.renderSumUs/result.frames),uint32_t(result.blitSumUs/result.frames),
         uint32_t(result.presentSumUs/result.frames));
+    if(_stage==3 && result.frames)mclog::tagInfo("3DBenchRxPhase",
+        "pass={} render_percent={} panel_prepare_us={} main_raster_us={} worker_raster_us={} internal_depth_frames={} fast_path_all={} fast_path_any={} frames={}",
+        _auditPass,_renderPercent,uint32_t(result.panelPrepareSumUs/result.frames),
+        uint32_t(result.mainRasterSumUs/result.frames),uint32_t(result.workerRasterSumUs/result.frames),
+        result.internalDepthFrames,result.fastPathAll,result.fastPathAny,result.frames);
 #endif
 }
 
@@ -293,6 +298,9 @@ void App3DBenchmark::onRunning() {
 void App3DBenchmark::drawFrame(uint32_t now) {
 #if STOPWATCH_BENCHMARK_AUTORUN
     _lastClearUs=_lastBeginUs=_lastRenderUs=_lastBlitUs=_lastPresentUs=0;
+    _lastPanelPrepareUs=_lastMainRasterUs=_lastWorkerRasterUs=0;
+    _lastInternalDepth=false;
+    _lastFastPathFlags=0;
 #endif
     auto& display=_direct?static_cast<lgfx::LGFXBase&>(GetHAL().getDisplay()):
                           static_cast<lgfx::LGFXBase&>(GetHAL().getCanvas());
@@ -490,6 +498,11 @@ void App3DBenchmark::drawRx78(lgfx::LGFXBase& display,uint32_t now) {
     _lastBeginUs=stats.depthClearUs;
     _lastRenderUs=stats.prepareUs+stats.rasterUs;
     _lastBlitUs=stats.blitUs;
+    _lastPanelPrepareUs=stats.panelPrepareUs;
+    _lastMainRasterUs=stats.mainRasterUs;
+    _lastWorkerRasterUs=stats.workerRasterUs;
+    _lastInternalDepth=stats.internalDepthBytes!=0;
+    _lastFastPathFlags=stats.fastPathFlags;
 #endif
 }
 
@@ -505,6 +518,12 @@ void App3DBenchmark::recordFrame(uint64_t completedUs,uint32_t now) {
     result.clearSumUs+=_lastClearUs;result.beginSumUs+=_lastBeginUs;
     result.renderSumUs+=_lastRenderUs;result.blitSumUs+=_lastBlitUs;
     result.presentSumUs+=_lastPresentUs;
+    result.panelPrepareSumUs+=_lastPanelPrepareUs;
+    result.mainRasterSumUs+=_lastMainRasterUs;
+    result.workerRasterSumUs+=_lastWorkerRasterUs;
+    result.internalDepthFrames+=uint32_t(_lastInternalDepth);
+    result.fastPathAll&=_lastFastPathFlags;
+    result.fastPathAny|=_lastFastPathFlags;
 #endif
 #if STOPWATCH_COLLECT_TOPOLOGY_STATS
     result.totalTriangles=_lastTotalTriangles;

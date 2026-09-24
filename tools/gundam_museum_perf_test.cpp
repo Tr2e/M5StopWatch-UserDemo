@@ -98,7 +98,7 @@ int main(){
     assert(renderer.asset()->positions.size==2670 && renderer.asset()->primitives.size==2736);
     LGFX_Sprite canvas;canvas.createSprite(468,466);
     std::size_t cases=0,oldTransforms=0,newTransforms=0;
-    for(int percent:{65,90,100}) {
+    for(int percent:{60,65,90,100}) {
             std::vector<double> times[2];
             std::size_t oldCount=0,newCount=0;
             View view;

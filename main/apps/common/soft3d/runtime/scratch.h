@@ -80,5 +80,6 @@ public:
     }
     T* get() const{return _value.get();}
     std::size_t capacity() const{return _capacity;}
+    void reset(){_value.reset();_capacity=0;}
 };
 } // namespace soft3d

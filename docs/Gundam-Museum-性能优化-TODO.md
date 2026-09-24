@@ -1,6 +1,6 @@
 # Gundam Museum 性能优化 TODO
 
-更新日期：2026-09-23
+更新日期：2026-09-24
 适用分支：`feat/gundam-arena`  
 记录基线：`c0ba8ce` (`fix(gundam-arena): trim dance loops at the last hop`)
 
@@ -9,6 +9,8 @@
 本轮目标是将 Gundam Museum 的 RX-78 拖动旋转无限接近 15 FPS，同时降低渲染工作集对 PSRAM 的依赖。在穷尽并实测完所有无损方向前，不把差距归因于 CPU 上限。
 
 2026-09-22 决策：本计划只包含 RX-78 实体渲染，其他模型不在本轮范围内。
+
+2026-09-24 已恢复 RX-78 优化，但短期执行面切换到纯黑 `3D Benchmark` 的 60% 路径，以稳定超过 22 FPS 为门槛；Museum 65% 的历史基线和已否决实验仍保留，不将不同背景、采样率和提交策略的数据混算。当前队列、实验停损与最新 E3 证据见 [`RX78-60-percent-performance-plan.md`](RX78-60-percent-performance-plan.md)。E3 已用精确 float SoA 片内投影缓存消除连续块碎片导致的会话级随机回退，60% 稳定由约 18.03 提至 19.22 FPS；尚未达到门槛，继续推进。
 
 默认不以下列方式换取性能：
 

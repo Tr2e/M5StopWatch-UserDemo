@@ -79,6 +79,17 @@ struct PreparedIndexedSolidRasterPanel {
     uint8_t visibility=0;
 };
 static_assert(sizeof(PreparedIndexedSolidRasterPanel)==12);
+// The fast projected cache uses structure-of-arrays storage so each exact
+// float coordinate fits in a modest internal-RAM block even when the heap is
+// fragmented. Indexed replay never uses this view for the fallback AoS cache.
+struct TrackCameraPointView {
+    const float* x=nullptr;
+    const float* y=nullptr;
+    const float* z=nullptr;
+    TrackCameraPoint operator[](uint16_t index) const {
+        return {x[index],y[index],z[index]};
+    }
+};
 constexpr uint8_t kPreparedSolidTriangle=0x80u;
 constexpr uint8_t kPreparedSolidTrustedDepth=0x40u;
 constexpr uint8_t kPreparedSolidBandSelected=0x20u;
@@ -796,7 +807,7 @@ public:
     __attribute__((optimize("O3"),section(".iram1")))
 #endif
     void preparedIndexedSolidPanelBatchRowsTrusted(const PreparedIndexedSolidRasterPanel* panels,
-                                                    const TrackCameraPoint* projected,
+                                                    TrackCameraPointView projected,
                                                     const uint16_t* panelIndices,std::size_t count,
                                                     int clipTop,int clipBottom,bool reverseDirect=false) {
         SolidRasterTarget target{depthData(),colorData(),0,0};

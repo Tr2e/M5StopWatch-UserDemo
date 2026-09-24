@@ -23,6 +23,7 @@ struct RenderStats {
     uint32_t panelPrepareUs=0,spaceWaitUs=0,mainRasterUs=0,workerRasterUs=0;
     uint32_t workerStackFree=0;
     uint32_t internalProjectedBytes=0,internalDepthBytes=0,internalCommandBytes=0;
+    uint32_t fastPathFlags=0;
 };
 class MuseumRenderer {
 public:
