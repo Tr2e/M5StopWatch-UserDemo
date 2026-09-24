@@ -1,10 +1,12 @@
 # RX-78 纯黑 Demo：60% 性能短期计划
 
+> 2026-09-24 状态：E3–E9 为已签署历史；当前已进入 ThunderRaster P3。继续任务先读 [`ThunderRaster-RX78-P3-交接与执行清单.md`](ThunderRaster-RX78-P3-交接与执行清单.md)，不要从本文件早期队列重新执行 E1/E2，也不要恢复已否决的 E7 或 E9 同轮负结果。
+
 更新：2026-09-24。范围是 3D Benchmark 第四段，254×254 内部渲染、中央 424×424 最近邻输出、RGB565 纯黑背景、同一 RX-78 资产和转台轨迹。短期验收是稳定超过 22 FPS（平均帧间隔 `<45.455 ms`），争取接近 24 FPS（`≤41.667 ms`）。100% 只检查正确性与明显性能回归，不设量化 FPS 目标。长期方向是可复用、高性能、高可用的 ESP32-S3 3D 框架/范式，成熟后再界定 SDK 边界；不把 RX-78 专用容量和相机假设直接升级为公共 API。
 
 ## 基线与测量口径
 
-使用同一台 ESP32-S3、同一串口、`STOPWATCH_BENCHMARK_AUTORUN=ON`、`STOPWATCH_COLLECT_TOPOLOGY_STATS=ON`，每次重启自动跑三轮 100%→60%。每段先预热 300 ms；以相邻 framebuffer 提交完成的平均间隔算 FPS，包括渲染、提交调用与调度开销；异步 DMA 可以与下一帧重叠。测试期间不显示 HUD，阶段末的日志不进入采样窗口。记录原始串口日志、固件哈希、每轮结果、clear/depth/prepare/CPU0/CPU1 raster/blit/present wait、内存路径标志，以及前三段和 100% 守门结果。不要只引用屏幕四舍五入的 FPS。
+E1–E9 历史使用同一台 ESP32-S3、同一串口、`STOPWATCH_BENCHMARK_AUTORUN=ON`、`STOPWATCH_COLLECT_TOPOLOGY_STATS=ON`，每次重启自动跑三轮 100%→60%。P3 调试已改为 `STOPWATCH_BENCHMARK_RX60_ONLY=ON`，直接运行三轮 RX-78 60%，避免阶段 1–3 和 100% 拉长实验；合并前仍必须恢复完整主机门禁。每段先预热 300 ms；以相邻 framebuffer 提交完成的平均间隔算 FPS，包括渲染、提交调用与调度开销；异步 DMA 可以与下一帧重叠。测试期间不显示 HUD，阶段末的日志不进入采样窗口。记录原始串口日志、固件哈希、每轮结果、clear/depth/prepare/CPU0/CPU1 raster/blit/present wait、内存路径标志。不要只引用屏幕四舍五入的 FPS。
 
 2026-09-24 诊断基线：60% 三轮 `51.930 / 55.465 / 55.448 ms`，即约 `19.26 / 18.03 / 18.03 FPS`。第一轮内部投影点缓存有效，后两轮失效并回退 PSRAM，导致 panel prepare 从 `6.711` 升到约 `9.37 ms`；所以验收要看三轮以及路径是否稳定，不把第一轮与后两轮混为单一噪声。目标相对稳定的后两轮需要至少约 `10 ms` 帧时收益。
 
