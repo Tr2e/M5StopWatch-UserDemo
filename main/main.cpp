@@ -47,8 +47,8 @@ extern "C" void app_main(void)
     GetMooncake().installApp(std::make_unique<AppSetup>());
 
 #if STOPWATCH_BENCHMARK_AUTORUN
-    mclog::tagInfo("3DBenchAudit","boot autorun app_id={} topology_stats={}",
-                   benchmarkAppId,STOPWATCH_COLLECT_TOPOLOGY_STATS);
+    mclog::tagInfo("3DBenchAudit","boot renderer=ThunderRaster autorun app_id={} rx60_only={} topology_stats={}",
+                   benchmarkAppId,STOPWATCH_BENCHMARK_RX60_ONLY,STOPWATCH_COLLECT_TOPOLOGY_STATS);
     GetMooncake().openApp(benchmarkAppId);
 #else
     (void)benchmarkAppId;

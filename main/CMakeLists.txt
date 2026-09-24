@@ -75,11 +75,17 @@ idf_component_register(
 # topology counters enabled; CI/device audits may opt into a self-running app
 # or compile the TRI/QUAD accounting out for an A/B measurement.
 set(STOPWATCH_BENCHMARK_AUTORUN OFF CACHE BOOL "Run the 3D benchmark automatically at boot")
+set(STOPWATCH_BENCHMARK_RX60_ONLY OFF CACHE BOOL "Run only the RX-78 60% benchmark stage")
 set(STOPWATCH_COLLECT_TOPOLOGY_STATS ON CACHE BOOL "Collect TRI/QUAD benchmark statistics")
 if(STOPWATCH_BENCHMARK_AUTORUN)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_BENCHMARK_AUTORUN=1)
 else()
     target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_BENCHMARK_AUTORUN=0)
+endif()
+if(STOPWATCH_BENCHMARK_RX60_ONLY)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_BENCHMARK_RX60_ONLY=1)
+else()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_BENCHMARK_RX60_ONLY=0)
 endif()
 if(STOPWATCH_COLLECT_TOPOLOGY_STATS)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE STOPWATCH_COLLECT_TOPOLOGY_STATS=1)

@@ -1,0 +1,8 @@
+# Filtered serial record, 2026-09-24
+# pass interval_us clear_us begin_us render_us blit_us present_us panel_prepare_us main_raster_us worker_raster_us fast_path_all
+boot renderer=ThunderRaster autorun app_id=7 rx60_only=1 topology_stats=1
+stage=3 name="04 RX-78 FINAL" render_percent=60
+0 50277 4419 2047 41823 5298 99 6398 28829 28538 31
+1 50309 4430 2050 41837 5297 99 6412 28815 28550 31
+2 50316 4431 2054 41832 5303 98 6396 28809 28552 31
+all_complete renderer=ThunderRaster passes=3 rx60_only=1 topology_stats=1

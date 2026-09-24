@@ -19,6 +19,10 @@
 #include <cstdio>
 #include <new>
 
+#if STOPWATCH_BENCHMARK_RX60_ONLY && !STOPWATCH_BENCHMARK_AUTORUN
+#error "STOPWATCH_BENCHMARK_RX60_ONLY requires STOPWATCH_BENCHMARK_AUTORUN"
+#endif
+
 namespace {
 constexpr int kSampleSide=424;
 constexpr uint32_t kWarmupMs=300;
@@ -200,7 +204,12 @@ void App3DBenchmark::onOpen() {
 
 void App3DBenchmark::resetRun() {
     _results={};_resultsScreen=false;_resultsDrawn=false;
+#if STOPWATCH_BENCHMARK_RX60_ONLY
+    _renderPercent=60;
+    enterStage(3);
+#else
     enterStage(0);
+#endif
 }
 
 void App3DBenchmark::enterStage(uint8_t stage) {
@@ -261,7 +270,11 @@ void App3DBenchmark::onRunning() {
     const uint32_t now=GetHAL().millis();
     if(event==input::KeyEvent::GoPrevious){resetRun();return;}
     if(event==input::KeyEvent::GoNext) {
+#if STOPWATCH_BENCHMARK_RX60_ONLY
+        _renderPercent=60;
+#else
         _renderPercent=_renderPercent==100?60:100;
+#endif
         resetRun();return;
     }
     if(_resultsScreen) {
@@ -280,14 +293,20 @@ void App3DBenchmark::onRunning() {
 #if STOPWATCH_BENCHMARK_AUTORUN
         mclog::tagInfo("3DBenchAudit","run_complete pass={} render_percent={} topology_stats={}",
                        _auditPass,_renderPercent,STOPWATCH_COLLECT_TOPOLOGY_STATS);
+#if !STOPWATCH_BENCHMARK_RX60_ONLY
         if(_renderPercent==100) {
             _renderPercent=60;resetRun();return;
         }
+#endif
         if(++_auditPass<kAuditPassCount) {
+#if !STOPWATCH_BENCHMARK_RX60_ONLY
             _renderPercent=100;resetRun();return;
+#else
+            resetRun();return;
+#endif
         }
-        mclog::tagInfo("3DBenchAudit","all_complete passes={} topology_stats={}",
-                       kAuditPassCount,STOPWATCH_COLLECT_TOPOLOGY_STATS);
+        mclog::tagInfo("3DBenchAudit","all_complete renderer=ThunderRaster passes={} rx60_only={} topology_stats={}",
+                       kAuditPassCount,STOPWATCH_BENCHMARK_RX60_ONLY,STOPWATCH_COLLECT_TOPOLOGY_STATS);
 #endif
         _museum.reset();_resultsScreen=true;_resultsDrawn=false;
     }
