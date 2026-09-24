@@ -24,6 +24,9 @@ private:
         uint64_t intervalSumUs=0;
         uint64_t renderedTrianglesSum=0;
         uint64_t renderedQuadsSum=0;
+#if STOPWATCH_BENCHMARK_AUTORUN
+        uint64_t clearSumUs=0,beginSumUs=0,renderSumUs=0,blitSumUs=0,presentSumUs=0;
+#endif
         uint32_t frames=0,intervals=0,totalTriangles=0,totalQuads=0;
         uint32_t averageUs=0,averageRenderedTriangles=0,averageRenderedQuads=0;
     };
@@ -48,6 +51,9 @@ private:
     uint8_t _auditPass=0;
     uint32_t _stageStarted=0;
     uint64_t _lastCompletedUs=0;
+#if STOPWATCH_BENCHMARK_AUTORUN
+    uint32_t _lastClearUs=0,_lastBeginUs=0,_lastRenderUs=0,_lastBlitUs=0,_lastPresentUs=0;
+#endif
     uint32_t _lastTotalTriangles=0,_lastRenderedTriangles=0;
     uint32_t _lastTotalQuads=0,_lastRenderedQuads=0;
 };

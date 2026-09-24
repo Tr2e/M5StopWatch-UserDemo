@@ -14,6 +14,19 @@ namespace lets_and_go {
 struct CarBlitWork {
     uint32_t tileCandidates=0,rowCandidates=0,unfilteredRowCandidates=0,rows=0;
 };
+struct CarSparseBlitBounds {
+    int left=0,top=0,right=-1,bottom=-1;
+    bool empty() const{return right<left || bottom<top;}
+    void include(int x0,int y0,int x1,int y1) {
+        if(x1<x0 || y1<y0)return;
+        if(empty()){left=x0;top=y0;right=x1;bottom=y1;return;}
+        left=std::min(left,x0);top=std::min(top,y0);
+        right=std::max(right,x1);bottom=std::max(bottom,y1);
+    }
+    void include(const CarSparseBlitBounds& other) {
+        if(!other.empty())include(other.left,other.top,other.right,other.bottom);
+    }
+};
 struct SurfaceRasterMetrics {
     uint32_t testedPixels=0,writtenPixels=0,depthRejectedPixels=0;
 };
@@ -261,6 +274,8 @@ public:
         _trackedDepthPixels=std::size_t(_width)*_height;
         _trackedDepthWidth=_width;
         _lastSparseDepthClear=_sparseDepthClearFastPath;
+        _sparseDrawLeft=_width;_sparseDrawTop=_height;
+        _sparseDrawRight=-1;_sparseDrawBottom=-1;
     }
     // Nearest-expand the packed active tile to the full template size in
     // place. Source rows are read before dest rows overwrite them.
@@ -315,6 +330,13 @@ private:
         std::size_t depthIndexOffset=0;
         std::size_t colorIndexOffset=0;
     };
+    void includeSparseDrawBounds(int left,int top,int right,int bottom) {
+        if(!_sparseDepthClearFastPath || _deferredSparseDepthRecord)return;
+        _sparseDrawLeft=std::min(_sparseDrawLeft,left-_x);
+        _sparseDrawTop=std::min(_sparseDrawTop,top-_y);
+        _sparseDrawRight=std::max(_sparseDrawRight,right-_x);
+        _sparseDrawBottom=std::max(_sparseDrawBottom,bottom-_y);
+    }
     template<bool Incremental,bool Solid=false,bool SolidSpan=false,bool TrustedDepth=false,
              bool PreparedSolidColor=false,bool PreparedTarget=false,bool PreparedSparseRecord=false,
              class ScreenVertex=CarScreenVertex>
@@ -360,6 +382,7 @@ private:
         const float bottom=std::min(float(std::min(_y+_height-1,clipBottom)),rasterCeil(std::max({a.y,b.y,c.y})));
         if(left>right || top>bottom)return;
         const int x0=int(left),x1=int(right),y0=int(top),y1=int(bottom);
+        includeSparseDrawBounds(x0,y0,x1,y1);
         const float inverse=1/det;
         float sStep=0,tStep=0;
         if constexpr(Incremental) {
@@ -508,6 +531,10 @@ private:
         };
         const TriangleSetup firstTriangle=prepare(a,b,c),secondTriangle=prepare(a,c,d);
         if(!firstTriangle.valid && !secondTriangle.valid)return;
+        if(firstTriangle.valid)includeSparseDrawBounds(firstTriangle.x0,firstTriangle.y0,
+                                                       firstTriangle.x1,firstTriangle.y1);
+        if(secondTriangle.valid)includeSparseDrawBounds(secondTriangle.x0,secondTriangle.y0,
+                                                        secondTriangle.x1,secondTriangle.y1);
         const int firstY=std::min(firstTriangle.valid?firstTriangle.y0:secondTriangle.y0,
                                   secondTriangle.valid?secondTriangle.y0:firstTriangle.y0);
         const int lastY=std::max(firstTriangle.valid?firstTriangle.y1:secondTriangle.y1,
@@ -922,8 +949,8 @@ public:
     bool canBlitScaledNativeSparse(int width,int height,uint8_t* nativeFrameBuffer,
                                    std::size_t nativeStride,int x) const {
         return width>0 && height>0 && width<=Width && height<=Height &&
-            (width!=_width || height!=_height) && _sparseCompositeFastPath &&
-            _sparseDepthClearFastPath && !_deferredSparseDepthRecord && _occupiedDepth &&
+            _sparseCompositeFastPath && _sparseDepthClearFastPath &&
+            !_deferredSparseDepthRecord && _occupiedDepth &&
             nativeFrameBuffer && nativeStride>=std::size_t(x+width)*2;
     }
     void blitScaledNativeSparseRows(uint8_t* nativeFrameBuffer,std::size_t nativeStride,
@@ -933,6 +960,7 @@ public:
         std::array<uint16_t,Width> sourceX{},destinationFirstStorage{},destinationLastStorage{},row{};
         if(!mappedFirst || !mappedLast) {
             destinationFirstStorage.fill(uint16_t(width));
+            destinationLastStorage.fill(0);
             for(int px=0;px<width;++px) {
                 const auto sx=uint16_t((2*px+1)*_width/(2*width));
                 destinationFirstStorage[sx]=std::min(destinationFirstStorage[sx],uint16_t(px));
@@ -973,7 +1001,57 @@ public:
             }
         }
     }
+    void blitScaledNativeSparseRowsMapped(uint8_t* nativeFrameBuffer,std::size_t nativeStride,
+                                          int x,int y,int width,int height,int firstRow,int lastRow,
+                                          const uint16_t* destinationFirst,
+                                          const uint16_t* destinationLast,
+                                          const uint16_t* mappedSourceY,
+                                          uint16_t* sourceXScratch,uint16_t* colorScratch,
+                                          CarSparseBlitBounds* writtenBounds=nullptr) {
+        if(writtenBounds)*writtenBounds={};
+        const auto* color=colorData();
+        int cachedSourceY=-1;std::size_t cachedCount=0;
+        uint16_t cachedFirst=uint16_t(width),cachedLast=0;
+        for(int py=std::max(0,firstRow);py<=std::min(height-1,lastRow);++py) {
+            const int sourceY=mappedSourceY?mappedSourceY[py]:(2*py+1)*_height/(2*height);
+            const std::size_t rowStart=std::size_t(sourceY)*_width,rowEnd=rowStart+_width;
+            auto* destination=reinterpret_cast<uint16_t*>(nativeFrameBuffer+std::size_t(y+py)*nativeStride)+x;
+            if(sourceY!=cachedSourceY) {
+                cachedSourceY=sourceY;cachedCount=0;cachedFirst=uint16_t(width);cachedLast=0;
+                const auto* sourceColor=_splitColor && _width==_splitColorWidth && sourceY>=_splitColorRow
+                    ? _splitColor+std::size_t(sourceY-_splitColorRow)*_width
+                    : color+rowStart;
+                const std::size_t firstByte=rowStart>>3,lastByte=(rowEnd-1)>>3;
+                for(std::size_t byte=firstByte;byte<=lastByte;++byte) {
+                    unsigned bits=_occupiedDepth[byte];
+                    if(byte==firstByte)bits&=0xffu<<unsigned(rowStart&7);
+                    if(byte==lastByte && (rowEnd&7))bits&=(1u<<unsigned(rowEnd&7))-1u;
+                    while(bits) {
+                        const unsigned bit=unsigned(__builtin_ctz(bits));bits&=bits-1;
+                        const auto sx=uint16_t(byte*8+bit-rowStart);
+                        if(!cachedCount)cachedFirst=destinationFirst[sx];
+                        cachedLast=destinationLast[sx];
+                        sourceXScratch[cachedCount]=sx;
+                        const uint16_t value=sourceColor[sx];
+                        colorScratch[cachedCount++]=uint16_t((value<<8)|(value>>8));
+                    }
+                }
+            }
+            for(std::size_t i=0;i<cachedCount;++i) {
+                const auto sx=sourceXScratch[i];
+                for(uint16_t px=destinationFirst[sx];px<destinationLast[sx];++px)
+                    destination[px]=colorScratch[i];
+            }
+            if(writtenBounds && cachedFirst<cachedLast)
+                writtenBounds->include(x+cachedFirst,y+py,x+cachedLast-1,y+py);
+        }
+    }
 #endif
+    bool sparseDrawBounds(int& left,int& top,int& right,int& bottom) const {
+        left=_sparseDrawLeft;top=_sparseDrawTop;
+        right=_sparseDrawRight;bottom=_sparseDrawBottom;
+        return right>=left && bottom>=top;
+    }
 private:
     template<bool Scale> void blitScaledImpl(lgfx::LGFXBase& canvas,int x,int y,int width,int height,
                                              uint8_t* nativeFrameBuffer,std::size_t nativeStride) {
@@ -1007,11 +1085,11 @@ private:
         if(direct)canvas.startWrite();
 #endif
 #ifdef ESP_PLATFORM
-        // During scaled RX-78 rendering the occupancy map is complete before
-        // composite. Scan its set pixels in source-row order instead of
-        // issuing a PSRAM depth read for every expanded destination pixel.
-        if constexpr(Scale)if(native && _sparseCompositeFastPath && _sparseDepthClearFastPath &&
-                             !_deferredSparseDepthRecord && _occupiedDepth) {
+        // When occupancy is already recorded during raster, scan its set
+        // pixels instead of issuing a PSRAM depth read for every destination
+        // pixel. This is useful for sparse native scenes as well as upscaling.
+        if(native && _sparseCompositeFastPath && _sparseDepthClearFastPath &&
+           !_deferredSparseDepthRecord && _occupiedDepth) {
             blitScaledNativeSparseRows(nativeFrameBuffer,nativeStride,x,y,width,height,0,height-1);
             return;
         }
@@ -1102,6 +1180,7 @@ private:
     bool _deferredSparseDepthRecord=false;
     std::size_t _trackedDepthPixels=0;
     int _trackedDepthWidth=0;
+    int _sparseDrawLeft=0,_sparseDrawTop=0,_sparseDrawRight=-1,_sparseDrawBottom=-1;
     uint8_t* _occupiedDepth=nullptr;
     uint16_t* _splitColor=nullptr;
     int _splitColorWidth=0,_splitColorRow=0;

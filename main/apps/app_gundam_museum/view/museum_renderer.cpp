@@ -33,8 +33,11 @@ struct MuseumParallelWorker {
     bool reverseIndexed=false;
     uint32_t lastUs=0;
     uint32_t stackFree=UINT32_MAX;
-    std::array<uint16_t,276> destinationFirst{},destinationLast{};
+    std::array<uint16_t,424> destinationFirst{},destinationLast{};
     std::array<uint16_t,424> sourceY{};
+    std::array<uint16_t,424> mainSourceX{},mainColor{},workerSourceX{},workerColor{};
+    lets_and_go::CarSparseBlitBounds blitBounds{};
+    int mappedSourceWidth=0,mappedSourceHeight=0,mappedOutputWidth=0,mappedOutputHeight=0;
     Work work=Work::Raster;
     SemaphoreHandle_t start=nullptr,done=nullptr;
     TaskHandle_t task=nullptr;
@@ -50,9 +53,11 @@ struct MuseumParallelWorker {
                 worker.raster->begin(worker.outputX,worker.outputY,worker.outputWidth,worker.outputHeight);
             else if(worker.work==Work::Space)space::draw(*worker.canvas,*worker.view);
             else if(worker.work==Work::Blit)
-                worker.raster->blitScaledNativeSparseRows(worker.nativeFrameBuffer,worker.nativeStride,
+                worker.raster->blitScaledNativeSparseRowsMapped(worker.nativeFrameBuffer,worker.nativeStride,
                     worker.outputX,worker.outputY,worker.outputWidth,worker.outputHeight,worker.top,worker.bottom,
-                    worker.destinationFirst.data(),worker.destinationLast.data(),worker.sourceY.data());
+                    worker.destinationFirst.data(),worker.destinationLast.data(),worker.sourceY.data(),
+                    worker.workerSourceX.data(),worker.workerColor.data(),
+                    &worker.blitBounds);
             else if(worker.indexedPanels)
                 worker.raster->preparedIndexedSolidPanelBatchRowsTrusted(worker.indexedPanels,worker.projected,
                     worker.panelIndices,worker.count,worker.top,worker.bottom,worker.reverseIndexed);
@@ -68,13 +73,6 @@ struct MuseumParallelWorker {
     bool open() {
         start=xSemaphoreCreateBinary();done=xSemaphoreCreateBinary();
         if(!start || !done)return false;
-        destinationFirst.fill(424);
-        for(int px=0;px<424;++px) {
-            const auto sx=uint16_t((2*px+1)*276/(2*424));
-            destinationFirst[sx]=std::min(destinationFirst[sx],uint16_t(px));
-            destinationLast[sx]=uint16_t(px+1);
-        }
-        for(int py=0;py<424;++py)sourceY[py]=uint16_t((2*py+1)*276/(2*424));
         return xTaskCreatePinnedToCore(taskMain,"rx_raster",6144,this,tskIDLE_PRIORITY+2,&task,1)==pdPASS;
     }
     void dispatch(lets_and_go::CarSurfaceRaster<424,424>& target,const lets_and_go::TrackCamera& view,
@@ -102,6 +100,21 @@ struct MuseumParallelWorker {
     }
     void dispatchBlit(lets_and_go::CarSurfaceRaster<424,424>& target,uint8_t* frameBuffer,
                       std::size_t stride,int x,int y,int width,int height,int first,int last) {
+        const int sourceWidth=target.width(),sourceHeight=target.height();
+        if(sourceWidth!=mappedSourceWidth || sourceHeight!=mappedSourceHeight ||
+           width!=mappedOutputWidth || height!=mappedOutputHeight) {
+            destinationFirst.fill(uint16_t(width));destinationLast.fill(0);
+            for(int px=0;px<width;++px) {
+                const auto sx=uint16_t((2*px+1)*sourceWidth/(2*width));
+                destinationFirst[sx]=std::min(destinationFirst[sx],uint16_t(px));
+                destinationLast[sx]=uint16_t(px+1);
+            }
+            for(int py=0;py<height;++py)
+                sourceY[py]=uint16_t((2*py+1)*sourceHeight/(2*height));
+            mappedSourceWidth=sourceWidth;mappedSourceHeight=sourceHeight;
+            mappedOutputWidth=width;mappedOutputHeight=height;
+        }
+        blitBounds={};
         raster=&target;nativeFrameBuffer=frameBuffer;nativeStride=stride;
         outputX=x;outputY=y;outputWidth=width;outputHeight=height;top=first;bottom=last;
         work=Work::Blit;xSemaphoreGive(start);
@@ -244,21 +257,49 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
         auto* second=GetHAL().getDisplayFrameBufferLine(1);
         if(first && second && second>first) {nativeFrameBuffer=first;nativeStride=std::size_t(second-first);}
     }
+    const bool nativeClearCompatible=_nativeClearFastPath && nativeFrameBuffer &&
+        !(canvas.width()&1) && !(nativeStride&3) &&
+        !(reinterpret_cast<std::uintptr_t>(nativeFrameBuffer)&3) &&
+        nativeStride>=std::size_t(canvas.width())*2;
+    Surface::FrameBufferState* modelFrameBufferState=nullptr;
+    lets_and_go::CarSparseBlitBounds submitDirty{};
+    if(_optimizations && _sparseCompositeFastPath && partial && !_spaceEnabled &&
+       nativeClearCompatible && _surface) {
+        modelFrameBufferState=&_surface->frameBufferState(nativeFrameBuffer);
+    }
+    const auto clearNativeRect=[&](lets_and_go::CarSparseBlitBounds rect) {
+        if(rect.empty())return;
+        rect.left=std::max(0,rect.left&~1);rect.right=std::min(int(canvas.width())-1,rect.right|1);
+        rect.top=std::max(0,rect.top);rect.bottom=std::min(int(canvas.height())-1,rect.bottom);
+        const uint16_t native=uint16_t((clearColor<<8)|(clearColor>>8));
+        const uint32_t pair=uint32_t(native)|(uint32_t(native)<<16);
+        for(int y=rect.top;y<=rect.bottom;++y)
+            std::fill_n(reinterpret_cast<uint32_t*>(nativeFrameBuffer+std::size_t(y)*nativeStride)+rect.left/2,
+                        (rect.right-rect.left+1)/2,pair);
+    };
 #endif
     const auto clearFrame=[&] {
-        // The rotating room reaches the screen poles, so its dirty area is the
-        // entire screen. Retain the old bounded clear for model-only diagnostics.
-        if(partial && !_spaceEnabled)canvas.fillRect(0,layout::top,canvas.width(),layout::side,clearColor);
 #ifdef ESP_PLATFORM
-        else if(_nativeClearFastPath && nativeFrameBuffer && !(canvas.width()&1) && !(nativeStride&3) &&
-                !(reinterpret_cast<std::uintptr_t>(nativeFrameBuffer)&3) &&
-                nativeStride>=std::size_t(canvas.width())*2) {
+        if(modelFrameBufferState) {
+            if(!modelFrameBufferState->initialized) {
+                submitDirty={0,0,int(canvas.width())-1,int(canvas.height())-1};
+                clearNativeRect(submitDirty);modelFrameBufferState->initialized=true;
+            } else {
+                submitDirty=modelFrameBufferState->dirty;clearNativeRect(submitDirty);
+            }
+        }
+        // The rotating room reaches the screen poles, so its dirty area is the
+        // entire screen. Retain the old bounded clear for non-native diagnostics.
+        else if(partial && !_spaceEnabled)canvas.fillRect(0,layout::top,canvas.width(),layout::side,clearColor);
+        else if(nativeClearCompatible) {
             const uint16_t native=uint16_t((clearColor<<8)|(clearColor>>8));
             const uint32_t pair=uint32_t(native)|(uint32_t(native)<<16);
             for(int y=0;y<canvas.height();++y)
                 std::fill_n(reinterpret_cast<uint32_t*>(nativeFrameBuffer+std::size_t(y)*nativeStride),canvas.width()/2,pair);
             GetHAL().markDisplayFrameBufferModified(0,0,canvas.width(),canvas.height());
         }
+#else
+        if(partial && !_spaceEnabled)canvas.fillRect(0,layout::top,canvas.width(),layout::side,clearColor);
 #endif
         else canvas.fillScreen(clearColor);
     };
@@ -328,11 +369,16 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     raster.setSparseCompositeFastPath(_optimizations && _sparseCompositeFastPath);
     raster.setSparseDepthClearFastPath(_optimizations && _sparseDepthClearFastPath);
     raster.setSparseDepthSpanClearFastPath(_optimizations && _sparseDepthSpanClearFastPath);
-    // At native size the composite already visits every visible source pixel,
-    // so build next frame's occupancy map there and remove the write from the
-    // raster hot loop. Scaled composite revisits source samples; recording in
-    // the raster remains faster for that path on ESP32-S3.
-    raster.setDeferredSparseDepthRecord(w==layout::side && h==layout::side);
+    // Model-only direct rendering consumes occupancy for both sparse composite
+    // and per-buffer dirty clearing, including at native size. The room path
+    // retains deferred recording because it must redraw the full display.
+    const bool nativeSparseModel=
+#ifdef ESP_PLATFORM
+        modelFrameBufferState;
+#else
+        false;
+#endif
+    raster.setDeferredSparseDepthRecord(w==layout::side && h==layout::side && !nativeSparseModel);
     uint32_t parallelDepthClearUs=0;
     const auto depthClearStartUs=micros();
 #ifdef ESP_PLATFORM
@@ -613,20 +659,30 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     const auto rasterUs=micros();
     const int outputX=(canvas.width()-layout::side)/2;
 #ifdef ESP_PLATFORM
-    if(_parallelWorker && raster.canBlitScaledNativeSparse(layout::side,layout::side,
-                                                           nativeFrameBuffer,nativeStride,outputX)) {
+    lets_and_go::CarSparseBlitBounds currentDirty{};
+    const bool sparseNativeBlit=_parallelWorker && raster.canBlitScaledNativeSparse(
+        layout::side,layout::side,nativeFrameBuffer,nativeStride,outputX);
+    if(sparseNativeBlit) {
         const int blitSplit=220;
         _parallelWorker->dispatchBlit(raster,nativeFrameBuffer,nativeStride,outputX,layout::top,
                                       layout::side,layout::side,blitSplit,layout::side-1);
-        raster.blitScaledNativeSparseRows(nativeFrameBuffer,nativeStride,outputX,layout::top,
-                                          layout::side,layout::side,0,blitSplit-1,
-                                          _parallelWorker->destinationFirst.data(),
-                                          _parallelWorker->destinationLast.data(),
-                                          _parallelWorker->sourceY.data());
-        _parallelWorker->wait();
-    } else
+        raster.blitScaledNativeSparseRowsMapped(nativeFrameBuffer,nativeStride,outputX,layout::top,
+            layout::side,layout::side,0,blitSplit-1,
+            _parallelWorker->destinationFirst.data(),_parallelWorker->destinationLast.data(),
+            _parallelWorker->sourceY.data(),_parallelWorker->mainSourceX.data(),
+            _parallelWorker->mainColor.data(),&currentDirty);
+        _parallelWorker->wait();currentDirty.include(_parallelWorker->blitBounds);
+    } else {
         raster.blitScaled(canvas,outputX,layout::top,layout::side,layout::side,nativeFrameBuffer,nativeStride);
-    if(nativeFrameBuffer)GetHAL().markDisplayFrameBufferModified(outputX,layout::top,layout::side,layout::side);
+        currentDirty={outputX,layout::top,outputX+layout::side-1,layout::top+layout::side-1};
+    }
+    if(modelFrameBufferState) {
+        modelFrameBufferState->dirty=currentDirty;submitDirty.include(currentDirty);
+        if(!submitDirty.empty())GetHAL().markDisplayFrameBufferModified(
+            submitDirty.left,submitDirty.top,submitDirty.right-submitDirty.left+1,
+            submitDirty.bottom-submitDirty.top+1);
+    } else if(nativeFrameBuffer)
+        GetHAL().markDisplayFrameBufferModified(outputX,layout::top,layout::side,layout::side);
 #else
     raster.blitScaled(canvas,outputX,layout::top,layout::side,layout::side);
 #endif

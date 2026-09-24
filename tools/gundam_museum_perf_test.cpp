@@ -52,8 +52,46 @@ void checkSolidRaster(){
         assert(std::any_of(depths[0].begin(),depths[0].end(),[](auto d){return d!=0;}));
     }
 }
+void checkSparseDrawBounds(){
+    lets_and_go::CarSurfaceRaster<32,32> raster;
+    std::array<uint8_t,(32*32+7)/8> occupied{};
+    raster.setSparseDepthStorage(occupied.data(),occupied.size());
+    raster.setSparseDepthClearFastPath(true);
+    raster.setSparseDepthSpanClearFastPath(true);
+    raster.setDeferredSparseDepthRecord(false);
+    raster.setSolidFastPath(true);raster.setSolidSpanFastPath(true);
+    raster.setTrustedSolidDepthFastPath(true);
+    raster.begin(4,5,20,18);
+    int left=0,top=0,right=0,bottom=0;
+    assert(!raster.sparseDrawBounds(left,top,right,bottom));
+    raster.triangle({6,7,.15f,0,0},{21,9,.2f,0,0},{11,20,.25f,0,0},
+                    0xffff,lets_and_go::CarPaint::Solid,255);
+    assert(raster.sparseDrawBounds(left,top,right,bottom));
+    int actualLeft=20,actualTop=18,actualRight=-1,actualBottom=-1;
+    for(int y=0;y<18;++y)for(int x=0;x<20;++x)if(raster.depthAt(x,y)) {
+        actualLeft=std::min(actualLeft,x);actualTop=std::min(actualTop,y);
+        actualRight=std::max(actualRight,x);actualBottom=std::max(actualBottom,y);
+    }
+    assert(actualRight>=actualLeft && actualBottom>=actualTop);
+    assert(left<=actualLeft && top<=actualTop && right>=actualRight && bottom>=actualBottom);
+    raster.begin(4,5,20,18);
+    assert(!raster.sparseDrawBounds(left,top,right,bottom));
+}
+void checkTopologyStats(const MuseumRenderer& renderer){
+    const auto& mesh=renderer.mesh();const auto& stats=renderer.stats();
+    std::size_t expectedQuads=0;
+    for(std::size_t i=0;i<mesh.count;++i){
+        const auto& a=mesh.panels[i].point[2];const auto& b=mesh.panels[i].point[3];
+        expectedQuads+=a.x!=b.x || a.y!=b.y || a.z!=b.z;
+    }
+    assert(stats.total==mesh.count);
+    assert(stats.totalQuads==expectedQuads);
+    assert(stats.totalTriangles==mesh.count+expectedQuads);
+    assert(stats.submittedTriangles==stats.submitted+stats.submittedQuads);
+    assert(stats.submittedQuads<=stats.totalQuads);
+}
 int main(){
-    checkProjectionBoundaries();checkSolidRaster();
+    checkProjectionBoundaries();checkSolidRaster();checkSparseDrawBounds();
     MuseumRenderer renderer;assert(renderer.open());
     assert(renderer.asset() && soft3d::validate(*renderer.asset())==soft3d::AssetError::None);
     assert(std::string(renderer.asset()->name)=="rx78");
@@ -71,12 +109,14 @@ int main(){
                 // Warm model creation separately; alternate A/B order to avoid
                 // charging cold builds or a consistently first pass to A.
                 renderer.render(canvas,view,percent);
+                checkTopologyStats(renderer);
                 assert(renderer.asset() && soft3d::validate(*renderer.asset())==soft3d::AssetError::None);
                 std::vector<uint16_t> frames[2];
                 for(int i=0;i<2;++i){
                     const int mode=(i+yaw)%2;renderer.setOptimizations(mode==1);
                     const auto start=Clock::now();
                     renderer.render(canvas,view,percent,true,false,false,true);
+                    checkTopologyStats(renderer);
                     const auto end=Clock::now();
                     times[mode].push_back(std::chrono::duration<double,std::micro>(end-start).count());
                     frames[mode]=canvas.frame();

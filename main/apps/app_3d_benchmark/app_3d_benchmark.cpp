@@ -14,6 +14,7 @@
 #include <wifi_manager.h>
 #include <algorithm>
 #include <array>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <new>
@@ -22,11 +23,12 @@ namespace {
 constexpr int kSampleSide=424;
 constexpr uint32_t kWarmupMs=300;
 constexpr float kPi=3.14159265359f;
-constexpr uint32_t kRxDurationMs=10000;
+constexpr uint32_t kRxRotationPeriodMs=10000;
+constexpr uint32_t kRxStageDurationMs=6800;
 #if STOPWATCH_BENCHMARK_AUTORUN
 constexpr uint8_t kAuditPassCount=3;
 #endif
-constexpr std::array<uint32_t,4> kStageDurationMs{{3000,3000,3000,kRxDurationMs}};
+constexpr std::array<uint32_t,4> kStageDurationMs{{3400,3400,3400,kRxStageDurationMs}};
 constexpr std::array<const char*,4> kStageNames{{
     "01 CUBE PAIR","02 RIGID ASSEMBLY","03 MIXED LOAD","04 RX-78 FINAL"
 }};
@@ -113,6 +115,17 @@ struct BenchmarkHotState {
 };
 
 struct BenchmarkSurface {
+    struct DirtyRect {
+        int left=0,top=0,right=-1,bottom=-1;
+        bool empty() const{return right<left || bottom<top;}
+        void include(const DirtyRect& other) {
+            if(other.empty())return;
+            if(empty()){*this=other;return;}
+            left=std::min(left,other.left);top=std::min(top,other.top);
+            right=std::max(right,other.right);bottom=std::max(bottom,other.bottom);
+        }
+    };
+    struct FrameBufferState {uint8_t* base=nullptr;DirtyRect dirty{};bool initialized=false;};
     decltype(makeColorCubeAsset(kCubePaletteA)) cubeA=makeColorCubeAsset(kCubePaletteA);
     decltype(makeColorCubeAsset(kCubePaletteA)) cubeB=makeColorCubeAsset(kCubePaletteB);
     std::array<decltype(makeColorChainAsset(kChainPalettes[0])),4> chains{{
@@ -124,7 +137,13 @@ struct BenchmarkSurface {
     soft3d::Scratch<BenchmarkOccupancy> fastOccupiedDepth;
     BenchmarkHotState hotStateFallback{};
     soft3d::Scratch<BenchmarkHotState> fastHotState;
+    std::array<FrameBufferState,2> frameBuffers{};
     BenchmarkHotState& hotState(){return fastHotState.get()?*fastHotState.get():hotStateFallback;}
+    FrameBufferState& frameBufferState(uint8_t* base) {
+        for(auto& state:frameBuffers)if(state.base==base)return state;
+        for(auto& state:frameBuffers)if(!state.base){state.base=base;return state;}
+        frameBuffers[0]={base};return frameBuffers[0];
+    }
     BenchmarkSurface() {
         // Occupancy participates in per-pixel clear/composite work, so it gets
         // first claim on scarce internal RAM. Instance/cache state is second.
@@ -221,6 +240,14 @@ void App3DBenchmark::finishStage() {
         result.frames,result.intervals,result.averageUs,
         result.averageUs?10000000u/result.averageUs:0,result.totalTriangles,result.averageRenderedTriangles,
         result.totalQuads,result.averageRenderedQuads);
+#if STOPWATCH_BENCHMARK_AUTORUN
+    if(result.frames)mclog::tagInfo("3DBenchPhase",
+        "pass={} render_percent={} stage={} clear_us={} begin_us={} render_us={} blit_us={} present_wait_us={}",
+        _auditPass,_renderPercent,_stage,
+        uint32_t(result.clearSumUs/result.frames),uint32_t(result.beginSumUs/result.frames),
+        uint32_t(result.renderSumUs/result.frames),uint32_t(result.blitSumUs/result.frames),
+        uint32_t(result.presentSumUs/result.frames));
+#endif
 }
 
 void App3DBenchmark::onRunning() {
@@ -264,6 +291,9 @@ void App3DBenchmark::onRunning() {
 }
 
 void App3DBenchmark::drawFrame(uint32_t now) {
+#if STOPWATCH_BENCHMARK_AUTORUN
+    _lastClearUs=_lastBeginUs=_lastRenderUs=_lastBlitUs=_lastPresentUs=0;
+#endif
     auto& display=_direct?static_cast<lgfx::LGFXBase&>(GetHAL().getDisplay()):
                           static_cast<lgfx::LGFXBase&>(GetHAL().getCanvas());
     if(_direct) {
@@ -272,7 +302,13 @@ void App3DBenchmark::drawFrame(uint32_t now) {
         if(_resultsScreen)drawResults(panel);
         else if(_stage==3)drawRx78(panel,now);
         else drawProcedural(panel,now);
+#if STOPWATCH_BENCHMARK_AUTORUN
+        const auto presentStarted=esp_timer_get_time();
+#endif
         frame.finish();
+#if STOPWATCH_BENCHMARK_AUTORUN
+        _lastPresentUs=uint32_t(esp_timer_get_time()-presentStarted);
+#endif
     } else {
         if(_resultsScreen)drawResults(display);
         else if(_stage==3)drawRx78(display,now);
@@ -285,6 +321,9 @@ void App3DBenchmark::drawFrame(uint32_t now) {
 
 void App3DBenchmark::drawProcedural(lgfx::LGFXBase& display,uint32_t now) {
     if(!_surface){display.setTextColor(0xf800,0x0000);display.drawString("RASTER MEMORY ERROR",118,220);return;}
+#if STOPWATCH_BENCHMARK_AUTORUN
+    const auto clearStarted=esp_timer_get_time();
+#endif
     uint8_t* nativeFrameBuffer=nullptr;std::size_t nativeStride=0;
     int32_t clipX=0,clipY=0,clipW=0,clipH=0;
     display.getClipRect(&clipX,&clipY,&clipW,&clipH);
@@ -298,22 +337,45 @@ void App3DBenchmark::drawProcedural(lgfx::LGFXBase& display,uint32_t now) {
             nativeFrameBuffer=first;nativeStride=std::size_t(second-first);
         }
     }
+    BenchmarkSurface::FrameBufferState* frameBufferState=nullptr;
+    BenchmarkSurface::DirtyRect submitDirty{};
     if(nativeFrameBuffer && !(display.width()&1) && !(nativeStride&3) &&
        !(reinterpret_cast<std::uintptr_t>(nativeFrameBuffer)&3) &&
        nativeStride>=std::size_t(display.width())*2) {
-        for(int y=0;y<display.height();++y)
-            std::fill_n(reinterpret_cast<uint32_t*>(nativeFrameBuffer+std::size_t(y)*nativeStride),
-                        display.width()/2,0u);
-        GetHAL().markDisplayFrameBufferModified(0,0,display.width(),display.height());
+        frameBufferState=&_surface->frameBufferState(nativeFrameBuffer);
+        const auto clearRect=[&](BenchmarkSurface::DirtyRect rect) {
+            if(rect.empty())return;
+            const int displayWidth=int(display.width()),displayHeight=int(display.height());
+            rect.left=std::max(0,rect.left&~1);rect.right=std::min(displayWidth-1,rect.right|1);
+            rect.top=std::max(0,rect.top);rect.bottom=std::min(displayHeight-1,rect.bottom);
+            for(int y=rect.top;y<=rect.bottom;++y)
+                std::fill_n(reinterpret_cast<uint32_t*>(nativeFrameBuffer+
+                                std::size_t(y)*nativeStride)+rect.left/2,
+                            (rect.right-rect.left+1)/2,0u);
+        };
+        if(!frameBufferState->initialized) {
+            submitDirty={0,0,display.width()-1,display.height()-1};
+            clearRect(submitDirty);frameBufferState->initialized=true;
+        } else {
+            submitDirty=frameBufferState->dirty;clearRect(submitDirty);
+        }
     } else display.fillScreen(0x0000);
+#if STOPWATCH_BENCHMARK_AUTORUN
+    const auto clearFinished=esp_timer_get_time();
+#endif
     auto& raster=_surface->raster;
     const int outputX=(display.width()-kSampleSide)/2;
     const int outputY=(display.height()-kSampleSide)/2;
     const int internalSide=(kSampleSide*int(_renderPercent)+50)/100;
     const int internalX=(display.width()-internalSide)/2;
     const int internalY=(display.height()-internalSide)/2;
-    raster.setDeferredSparseDepthRecord(internalSide==kSampleSide);
+    // These sparse scenes are cheaper when raster writes the occupancy bit
+    // once per newly covered pixel. RX-78 keeps its dense/deferred policy.
+    raster.setDeferredSparseDepthRecord(false);
     raster.begin(internalX,internalY,internalSide,internalSide);
+#if STOPWATCH_BENCHMARK_AUTORUN
+    const auto beginFinished=esp_timer_get_time();
+#endif
     soft3d::Camera camera{};camera.principalX=display.width()*.5f;
     camera.principalY=display.height()*.5f;
     camera.focalLength=200.f*float(_renderPercent)/100.f;
@@ -360,20 +422,58 @@ void App3DBenchmark::drawProcedural(lgfx::LGFXBase& display,uint32_t now) {
     }
     const auto work=soft3d::renderSceneCachedIndexed(
         raster,camera,{{instances.data(),count}},hot.renderScratch);
+#if STOPWATCH_BENCHMARK_AUTORUN
+    const auto renderFinished=esp_timer_get_time();
+#endif
     raster.blitScaled(display,outputX,outputY,kSampleSide,kSampleSide,nativeFrameBuffer,nativeStride);
-    if(nativeFrameBuffer)GetHAL().markDisplayFrameBufferModified(outputX,outputY,kSampleSide,kSampleSide);
+#if STOPWATCH_BENCHMARK_AUTORUN
+    const auto blitFinished=esp_timer_get_time();
+#endif
+    if(frameBufferState) {
+        int sourceLeft=0,sourceTop=0,sourceRight=0,sourceBottom=0;
+        BenchmarkSurface::DirtyRect current{};
+        if(raster.sparseDrawBounds(sourceLeft,sourceTop,sourceRight,sourceBottom)) {
+            current.left=current.top=INT_MAX;current.right=current.bottom=-1;
+            for(int x=0;x<kSampleSide;++x) {
+                const int sourceX=(2*x+1)*internalSide/(2*kSampleSide);
+                if(sourceX>=sourceLeft && sourceX<=sourceRight) {
+                    current.left=std::min(current.left,outputX+x);
+                    current.right=std::max(current.right,outputX+x);
+                }
+            }
+            for(int y=0;y<kSampleSide;++y) {
+                const int sourceY=(2*y+1)*internalSide/(2*kSampleSide);
+                if(sourceY>=sourceTop && sourceY<=sourceBottom) {
+                    current.top=std::min(current.top,outputY+y);
+                    current.bottom=std::max(current.bottom,outputY+y);
+                }
+            }
+        }
+        frameBufferState->dirty=current;submitDirty.include(current);
+        if(!submitDirty.empty())GetHAL().markDisplayFrameBufferModified(
+            submitDirty.left,submitDirty.top,submitDirty.right-submitDirty.left+1,
+            submitDirty.bottom-submitDirty.top+1);
+    } else if(nativeFrameBuffer) {
+        GetHAL().markDisplayFrameBufferModified(outputX,outputY,kSampleSide,kSampleSide);
+    }
 #if STOPWATCH_COLLECT_TOPOLOGY_STATS
     _lastTotalTriangles=work.totalTriangles;
     _lastRenderedTriangles=work.submittedTriangles;
     _lastTotalQuads=work.totalQuads;
     _lastRenderedQuads=work.submittedQuads;
 #endif
+#if STOPWATCH_BENCHMARK_AUTORUN
+    _lastClearUs=uint32_t(clearFinished-clearStarted);
+    _lastBeginUs=uint32_t(beginFinished-clearFinished);
+    _lastRenderUs=uint32_t(renderFinished-beginFinished);
+    _lastBlitUs=uint32_t(blitFinished-renderFinished);
+#endif
 }
 
 void App3DBenchmark::drawRx78(lgfx::LGFXBase& display,uint32_t now) {
     if(!_museum){display.fillScreen(0x0842);display.setTextColor(0xf800,0x0842);display.drawString("RX-78 MEMORY ERROR",128,220);return;}
     gundam_museum::View view{};view.equipment=true;
-    const float phase=std::min(1.f,float(now-_stageStarted)/float(kStageDurationMs[3]));
+    const float phase=float(now-_stageStarted)/float(kRxRotationPeriodMs);
     view.yaw=-.75f+phase*2.f*kPi;view.pitch=.1f;
     _museum->render(display,view,_renderPercent,true,false,false,true);
     const auto& stats=_museum->stats();
@@ -382,6 +482,14 @@ void App3DBenchmark::drawRx78(lgfx::LGFXBase& display,uint32_t now) {
     _lastRenderedTriangles=uint32_t(stats.submittedTriangles);
     _lastTotalQuads=uint32_t(stats.totalQuads);
     _lastRenderedQuads=uint32_t(stats.submittedQuads);
+#endif
+#if STOPWATCH_BENCHMARK_AUTORUN
+    // For RX-78, clear/render map to the renderer's background and complete
+    // prepare+raster stages; begin remains the independently timed depth clear.
+    _lastClearUs=stats.backgroundUs;
+    _lastBeginUs=stats.depthClearUs;
+    _lastRenderUs=stats.prepareUs+stats.rasterUs;
+    _lastBlitUs=stats.blitUs;
 #endif
 }
 
@@ -393,6 +501,11 @@ void App3DBenchmark::recordFrame(uint64_t completedUs,uint32_t now) {
         ++result.intervals;
     }
     _lastCompletedUs=completedUs;++result.frames;
+#if STOPWATCH_BENCHMARK_AUTORUN
+    result.clearSumUs+=_lastClearUs;result.beginSumUs+=_lastBeginUs;
+    result.renderSumUs+=_lastRenderUs;result.blitSumUs+=_lastBlitUs;
+    result.presentSumUs+=_lastPresentUs;
+#endif
 #if STOPWATCH_COLLECT_TOPOLOGY_STATS
     result.totalTriangles=_lastTotalTriangles;
     result.renderedTrianglesSum+=_lastRenderedTriangles;

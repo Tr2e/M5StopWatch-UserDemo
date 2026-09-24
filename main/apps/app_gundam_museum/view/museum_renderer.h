@@ -71,6 +71,11 @@ public:
     int sampleHeight() const{return _surface?_surface->raster.height():0;}
 private:
     struct Surface {
+        struct FrameBufferState {
+            uint8_t* base=nullptr;
+            lets_and_go::CarSparseBlitBounds dirty{};
+            bool initialized=false;
+        };
         union PreparedCommands {
             lets_and_go::PreparedSolidRasterPanel solid[Mesh::capacity];
             lets_and_go::PreparedIndexedSolidRasterPanel indexed[Mesh::capacity];
@@ -90,6 +95,12 @@ private:
         lets_and_go::RenderScratchBuffer<lets_and_go::PreparedIndexedSolidRasterPanel> fastIndexedPanels;
         std::size_t topologyTriangles=0,topologyQuads=0;
         std::array<uint8_t,(Mesh::capacity+7)/8> topologyQuadBits{};
+        std::array<FrameBufferState,2> frameBuffers{};
+        FrameBufferState& frameBufferState(uint8_t* base) {
+            for(auto& state:frameBuffers)if(state.base==base)return state;
+            for(auto& state:frameBuffers)if(!state.base){state.base=base;return state;}
+            frameBuffers[0]={base};return frameBuffers[0];
+        }
     };
     std::unique_ptr<Surface> _surface;
 #ifdef ESP_PLATFORM
