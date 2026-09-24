@@ -41,4 +41,4 @@ E9 保持原重心、覆盖与 Q13 depth 表达式，只把 solid-quad 每条扫
 
 ## 正式烧录
 
-提交 `39813fa` 后以 `STOPWATCH_BENCHMARK_AUTORUN=OFF`、`STOPWATCH_COLLECT_TOPOLOGY_STATS=ON` 重建并烧录。正式 BIN 为 `0x4c4bb0`（5,000,112 B），分区余 `0x2b450`，SHA-256 `c0acb93eba3b04b839924a424b2650f2ae0cec1d19b91b7eba102f12299e0e9f`。写入 Hash 校验通过；串口确认 `V0.5-317-g39813fa` 进入 Launcher，12 秒内 0 条 benchmark stage result。
+记录 E10 否定结论的提交 `5c98448` 后，以 `STOPWATCH_BENCHMARK_AUTORUN=OFF`、`STOPWATCH_COLLECT_TOPOLOGY_STATS=ON` 重建并恢复 E9 代码。正式 BIN 为 `0x4c4bb0`（5,000,112 B），分区余 `0x2b450`，SHA-256 `093a1c114508a6a6e28a39260482aa1926b201f5b9f038dde6c1770fa2ded537`。写入 Hash 校验通过；串口确认 `V0.5-319-g5c98448` 进入 Launcher，12 秒内 0 条 benchmark stage result。
