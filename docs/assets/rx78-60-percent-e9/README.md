@@ -37,3 +37,7 @@ E9 保持原重心、覆盖与 Q13 depth 表达式，只把 solid-quad 每条扫
 - 继续预存六个 `q/r` 坐标差和深度差：主机微基准约快 7–9%，但 Xtensa 发生寄存器 spill/IRAM 克隆布局变化，真机 60% 退化到平均 `55.425 ms`、100% 退化到 `93.282 ms`，已撤回。
 
 原始筛选串口记录：[`edge-invariants-serial.log`](edge-invariants-serial.log)。
+
+## 正式烧录
+
+提交 `39813fa` 后以 `STOPWATCH_BENCHMARK_AUTORUN=OFF`、`STOPWATCH_COLLECT_TOPOLOGY_STATS=ON` 重建并烧录。正式 BIN 为 `0x4c4bb0`（5,000,112 B），分区余 `0x2b450`，SHA-256 `c0acb93eba3b04b839924a424b2650f2ae0cec1d19b91b7eba102f12299e0e9f`。写入 Hash 校验通过；串口确认 `V0.5-317-g39813fa` 进入 Launcher，12 秒内 0 条 benchmark stage result。
