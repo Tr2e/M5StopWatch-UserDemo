@@ -486,12 +486,24 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     if(useIndexedPanels && bandIndices && indexedPanels!=_surface->preparedPanels.indexed) {
         const auto capacity=_surface->fastIndexedPanels.capacity();
         bool overflow=false;
+        // Direct band commands do not otherwise consume bandIndices. Reuse
+        // the two face-count halves as stable pass streams so command prepare
+        // visits the mesh once instead of rescanning all faces for each pass.
+        auto* pass0Indices=bandIndices;
+        auto* pass1Indices=bandIndices+_surface->mesh.count;
+        std::size_t pass0Count=0,pass1Count=0;
+        for(std::size_t i=0;i<_surface->mesh.count;++i) {
+            if(facePasses[i]==0)pass0Indices[pass0Count++]=uint16_t(i);
+            else if(facePasses[i]==1)pass1Indices[pass1Count++]=uint16_t(i);
+        }
         const auto submittedBefore=_stats.submitted,offscreenBefore=_stats.offscreen;
         const auto submittedTrianglesBefore=_stats.submittedTriangles;
         const auto submittedQuadsBefore=_stats.submittedQuads;
-        for(int pass=0;pass<2 && !overflow;++pass)
-          for(std::size_t i=0;i<_surface->mesh.count;++i) {
-            if(facePasses[i]!=pass)continue;
+        for(int pass=0;pass<2 && !overflow;++pass) {
+          const auto* passIndices=pass?pass1Indices:pass0Indices;
+          const auto passCount=pass?pass1Count:pass0Count;
+          for(std::size_t passIndex=0;passIndex<passCount;++passIndex) {
+            const std::size_t i=passIndices[passIndex];
             const auto& face=_surface->mesh.panels[i];
             lets_and_go::PreparedIndexedSolidRasterPanel prepared{};float top=0,bottom=0;
             projection.solidIndexedPanel(prepared,top,bottom,camera,face,i,project);
@@ -507,6 +519,7 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
                 lets_and_go::PreparedIndexedSolidRasterPanel(prepared);
             recordSubmittedTopology(_stats,*_surface,i);
           }
+        }
         if(!overflow) {
             // The lower stream already has draw order when walked backward;
             // avoid reversing about 900 compact commands every frame.

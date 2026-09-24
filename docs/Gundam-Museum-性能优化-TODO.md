@@ -10,7 +10,7 @@
 
 2026-09-22 决策：本计划只包含 RX-78 实体渲染，其他模型不在本轮范围内。
 
-2026-09-24 已恢复 RX-78 优化，但短期执行面切换到纯黑 `3D Benchmark` 的 60% 路径，以稳定超过 22 FPS 为门槛；Museum 65% 的历史基线和已否决实验仍保留，不将不同背景、采样率和提交策略的数据混算。当前队列、实验停损与证据见 [`RX78-60-percent-performance-plan.md`](RX78-60-percent-performance-plan.md)。E3 用精确 float SoA 消除投影缓存的会话级随机回退，E4 再按真实采样尺寸配置 occupancy 并恢复片内直接命令流，E5 合并扫描行内的 occupancy byte 写入；60% 稳定由约 18.03 提至 19.63 FPS。尚未达到门槛，继续推进。
+2026-09-24 已恢复 RX-78 优化，但短期执行面切换到纯黑 `3D Benchmark` 的 60% 路径，以稳定超过 22 FPS 为门槛；Museum 65% 的历史基线和已否决实验仍保留，不将不同背景、采样率和提交策略的数据混算。当前队列、实验停损与证据见 [`RX78-60-percent-performance-plan.md`](RX78-60-percent-performance-plan.md)。E3 用精确 float SoA 消除投影缓存的会话级随机回退，E4 再按真实采样尺寸配置 occupancy 并恢复片内直接命令流，E5 合并扫描行内的 occupancy byte 写入，E6 复用 scratch 消除多 pass 全资产重扫；60% 稳定由约 18.03 提至 19.67 FPS。尚未达到门槛，继续推进。
 
 默认不以下列方式换取性能：
 
