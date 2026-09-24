@@ -261,6 +261,27 @@ void App3DBenchmark::finishStage() {
         _auditPass,_renderPercent,uint32_t(result.panelPrepareSumUs/result.frames),
         uint32_t(result.mainRasterSumUs/result.frames),uint32_t(result.workerRasterSumUs/result.frames),
         result.internalDepthFrames,result.fastPathAll,result.fastPathAny,result.frames);
+#if STOPWATCH_RX_BAND_PROBE
+    if(_stage==3 && result.frames) {
+        constexpr std::array<uint32_t,3> kProbeRows{{8,12,16}};
+        for(std::size_t probe=0;probe<kProbeRows.size();++probe) {
+            const auto members=uint32_t(result.bandMembersSum[probe]/result.frames);
+            mclog::tagInfo("3DBenchBandProbe",
+                "pass={} rows={} members={} extra={} crossing={} even_members={} odd_members={} even_rows={} odd_rows={} max_active={} max_carry={} stream_bytes={} carry_command_bytes={}",
+                _auditPass,kProbeRows[probe],members,
+                uint32_t(result.bandExtraSum[probe]/result.frames),
+                uint32_t(result.bandCrossingSum[probe]/result.frames),
+                uint32_t(result.bandEvenMembersSum[probe]/result.frames),
+                uint32_t(result.bandOddMembersSum[probe]/result.frames),
+                uint32_t(result.bandEvenRowsSum[probe]/result.frames),
+                uint32_t(result.bandOddRowsSum[probe]/result.frames),
+                result.bandMaxActive[probe],result.bandMaxBoundaryCarry[probe],
+                members*uint32_t(sizeof(lets_and_go::PreparedIndexedSolidRasterPanel)),
+                uint32_t(result.bandMaxBoundaryCarry[probe])*
+                    uint32_t(sizeof(lets_and_go::PreparedIndexedSolidRasterPanel)));
+        }
+    }
+#endif
 #endif
 }
 
@@ -522,6 +543,14 @@ void App3DBenchmark::drawRx78(lgfx::LGFXBase& display,uint32_t now) {
     _lastWorkerRasterUs=stats.workerRasterUs;
     _lastInternalDepth=stats.internalDepthBytes!=0;
     _lastFastPathFlags=stats.fastPathFlags;
+#if STOPWATCH_RX_BAND_PROBE
+    _lastBandMembers=stats.bandMembers;_lastBandExtra=stats.bandExtraMemberships;
+    _lastBandCrossing=stats.bandCrossingPrimitives;
+    _lastBandEvenMembers=stats.bandEvenMembers;_lastBandOddMembers=stats.bandOddMembers;
+    _lastBandEvenRows=stats.bandEvenRows;_lastBandOddRows=stats.bandOddRows;
+    _lastBandMaxActive=stats.bandMaxActive;
+    _lastBandMaxBoundaryCarry=stats.bandMaxBoundaryCarry;
+#endif
 #endif
 }
 
@@ -543,6 +572,20 @@ void App3DBenchmark::recordFrame(uint64_t completedUs,uint32_t now) {
     result.internalDepthFrames+=uint32_t(_lastInternalDepth);
     result.fastPathAll&=_lastFastPathFlags;
     result.fastPathAny|=_lastFastPathFlags;
+#if STOPWATCH_RX_BAND_PROBE
+    for(std::size_t probe=0;probe<3;++probe) {
+        result.bandMembersSum[probe]+=_lastBandMembers[probe];
+        result.bandExtraSum[probe]+=_lastBandExtra[probe];
+        result.bandCrossingSum[probe]+=_lastBandCrossing[probe];
+        result.bandEvenMembersSum[probe]+=_lastBandEvenMembers[probe];
+        result.bandOddMembersSum[probe]+=_lastBandOddMembers[probe];
+        result.bandEvenRowsSum[probe]+=_lastBandEvenRows[probe];
+        result.bandOddRowsSum[probe]+=_lastBandOddRows[probe];
+        result.bandMaxActive[probe]=std::max(result.bandMaxActive[probe],_lastBandMaxActive[probe]);
+        result.bandMaxBoundaryCarry[probe]=std::max(
+            result.bandMaxBoundaryCarry[probe],_lastBandMaxBoundaryCarry[probe]);
+    }
+#endif
 #endif
 #if STOPWATCH_COLLECT_TOPOLOGY_STATS
     result.totalTriangles=_lastTotalTriangles;

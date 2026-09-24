@@ -29,6 +29,12 @@ private:
         uint64_t panelPrepareSumUs=0,mainRasterSumUs=0,workerRasterSumUs=0;
         uint32_t internalDepthFrames=0;
         uint32_t fastPathAll=0xffffffffu,fastPathAny=0;
+#if STOPWATCH_RX_BAND_PROBE
+        std::array<uint64_t,3> bandMembersSum{},bandExtraSum{},bandCrossingSum{};
+        std::array<uint64_t,3> bandEvenMembersSum{},bandOddMembersSum{};
+        std::array<uint64_t,3> bandEvenRowsSum{},bandOddRowsSum{};
+        std::array<uint16_t,3> bandMaxActive{},bandMaxBoundaryCarry{};
+#endif
 #endif
         uint32_t frames=0,intervals=0,totalTriangles=0,totalQuads=0;
         uint32_t averageUs=0,averageRenderedTriangles=0,averageRenderedQuads=0;
@@ -59,6 +65,12 @@ private:
     uint32_t _lastPanelPrepareUs=0,_lastMainRasterUs=0,_lastWorkerRasterUs=0;
     bool _lastInternalDepth=false;
     uint32_t _lastFastPathFlags=0;
+#if STOPWATCH_RX_BAND_PROBE
+    std::array<uint32_t,3> _lastBandMembers{},_lastBandExtra{},_lastBandCrossing{};
+    std::array<uint32_t,3> _lastBandEvenMembers{},_lastBandOddMembers{};
+    std::array<uint32_t,3> _lastBandEvenRows{},_lastBandOddRows{};
+    std::array<uint16_t,3> _lastBandMaxActive{},_lastBandMaxBoundaryCarry{};
+#endif
 #endif
     uint32_t _lastTotalTriangles=0,_lastRenderedTriangles=0;
     uint32_t _lastTotalQuads=0,_lastRenderedQuads=0;

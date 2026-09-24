@@ -24,6 +24,12 @@ struct RenderStats {
     uint32_t workerStackFree=0;
     uint32_t internalProjectedBytes=0,internalDepthBytes=0,internalCommandBytes=0;
     uint32_t fastPathFlags=0;
+#if STOPWATCH_RX_BAND_PROBE
+    // Diagnostic-only conservative membership for 8/12/16-row bands.
+    std::array<uint32_t,3> bandMembers{},bandExtraMemberships{},bandCrossingPrimitives{};
+    std::array<uint32_t,3> bandEvenMembers{},bandOddMembers{},bandEvenRows{},bandOddRows{};
+    std::array<uint16_t,3> bandMaxActive{},bandMaxBoundaryCarry{};
+#endif
 };
 class MuseumRenderer {
 public:

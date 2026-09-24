@@ -483,6 +483,40 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
     bool directIndexedBands=false;
     const auto* upperIndexedPanels=indexedPanels;
     const auto* lowerIndexedPanels=indexedPanels;
+#if STOPWATCH_RX_BAND_PROBE
+    constexpr std::array<int,3> kProbeBandRows{{8,12,16}};
+    constexpr std::size_t kMaxProbeBands=(424+7)/8;
+    std::array<std::array<uint16_t,kMaxProbeBands>,3> probeActive{};
+    std::array<std::array<uint16_t,kMaxProbeBands>,3> probeBoundaryCarry{};
+    const auto recordBandProbe=[&](float top,float bottom) {
+        const int topRow=std::clamp(int(std::floor(top)),0,h-1);
+        const int bottomRow=std::clamp(int(std::ceil(bottom)),0,h-1);
+        if(bottomRow<topRow)return;
+        for(std::size_t probe=0;probe<kProbeBandRows.size();++probe) {
+            const int rows=kProbeBandRows[probe];
+            const int first=topRow/rows,last=bottomRow/rows;
+            const auto memberships=uint32_t(last-first+1);
+            _stats.bandMembers[probe]+=memberships;
+            _stats.bandExtraMemberships[probe]+=uint32_t(last-first);
+            _stats.bandCrossingPrimitives[probe]+=uint32_t(last>first);
+            for(int band=first;band<=last;++band) {
+                ++probeActive[probe][band];
+                const int firstRow=std::max(topRow,band*rows);
+                const int lastRow=std::min(bottomRow,std::min(h,(band+1)*rows)-1);
+                const auto coveredRows=uint32_t(lastRow-firstRow+1);
+                if(band&1) {
+                    ++_stats.bandOddMembers[probe];
+                    _stats.bandOddRows[probe]+=coveredRows;
+                } else {
+                    ++_stats.bandEvenMembers[probe];
+                    _stats.bandEvenRows[probe]+=coveredRows;
+                }
+            }
+            for(int boundary=first;boundary<last;++boundary)
+                ++probeBoundaryCarry[probe][boundary];
+        }
+    };
+#endif
     if(useIndexedPanels && bandIndices && indexedPanels!=_surface->preparedPanels.indexed) {
         const auto capacity=_surface->fastIndexedPanels.capacity();
         bool overflow=false;
@@ -508,6 +542,9 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             lets_and_go::PreparedIndexedSolidRasterPanel prepared{};float top=0,bottom=0;
             projection.solidIndexedPanel(prepared,top,bottom,camera,face,i,project);
             if(bottom<0 || top>=h) {++_stats.offscreen;continue;}
+#if STOPWATCH_RX_BAND_PROBE
+            recordBandProbe(top,bottom);
+#endif
             prepared.visibility|=lets_and_go::kPreparedSolidBandSelected;
             const bool upper=top<=split,lower=bottom>=split-1;
             if(upperCount+lowerCount+std::size_t(upper)+std::size_t(lower)>capacity) {
@@ -525,6 +562,17 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             // avoid reversing about 900 compact commands every frame.
             upperIndexedPanels=indexedPanels;lowerIndexedPanels=indexedPanels+capacity-1;
             directIndexedBands=true;preparedCount=_stats.submitted-submittedBefore;
+#if STOPWATCH_RX_BAND_PROBE
+            for(std::size_t probe=0;probe<kProbeBandRows.size();++probe) {
+                const int bandCount=(h+kProbeBandRows[probe]-1)/kProbeBandRows[probe];
+                for(int band=0;band<bandCount;++band)
+                    _stats.bandMaxActive[probe]=std::max(
+                        _stats.bandMaxActive[probe],probeActive[probe][band]);
+                for(int boundary=0;boundary+1<bandCount;++boundary)
+                    _stats.bandMaxBoundaryCarry[probe]=std::max(
+                        _stats.bandMaxBoundaryCarry[probe],probeBoundaryCarry[probe][boundary]);
+            }
+#endif
         } else {
             // An unusual pose can exceed the bounded direct-stream workspace.
             // Rebuild the ordinary shared command + index streams; projected
@@ -533,6 +581,12 @@ void MuseumRenderer::render(lgfx::LGFXBase& canvas,const View& view,int percent,
             _stats.submitted=submittedBefore;_stats.offscreen=offscreenBefore;
             _stats.submittedTriangles=submittedTrianglesBefore;
             _stats.submittedQuads=submittedQuadsBefore;
+#if STOPWATCH_RX_BAND_PROBE
+            _stats.bandMembers={};_stats.bandExtraMemberships={};
+            _stats.bandCrossingPrimitives={};_stats.bandEvenMembers={};
+            _stats.bandOddMembers={};_stats.bandEvenRows={};_stats.bandOddRows={};
+            _stats.bandMaxActive={};_stats.bandMaxBoundaryCarry={};
+#endif
         }
     }
     if(indexedCompactPrepare) {
