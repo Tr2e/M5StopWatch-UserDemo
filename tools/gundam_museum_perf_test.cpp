@@ -52,6 +52,38 @@ void checkSolidRaster(){
         assert(std::any_of(depths[0].begin(),depths[0].end(),[](auto d){return d!=0;}));
     }
 }
+void checkSolidQuadDepthExact(){
+    lets_and_go::TrackCamera camera{};
+    std::mt19937 random(7807);
+    std::uniform_real_distribution<float> position(1.f,7.f),depth(.12f,.7f);
+    for(int sample=0;sample<256;++sample) {
+        const float x0=position(random),y0=position(random);
+        const float x1=24.f+position(random),y1=24.f+position(random);
+        lets_and_go::PreparedSolidRasterPanel face{};
+        face.vertex={{{x0,y0,depth(random)},{x1,y0+position(random)*.35f,depth(random)},
+                      {x1-position(random)*.35f,y1,depth(random)},
+                      {x0+position(random)*.35f,y1-position(random)*.2f,depth(random)}}};
+        face.color=0xd69a;face.light=173;
+        face.visibility=uint8_t(1|lets_and_go::kPreparedSolidTrustedDepth);
+        std::vector<uint16_t> frames[2],depths[2];
+        std::array<uint8_t,(32*32+7)/8> occupancy[2]{};
+        for(int mode=0;mode<2;++mode) {
+            lets_and_go::CarSurfaceRaster<32,32> raster;
+            std::array<uint8_t,(32*32+7)/8> occupied{};
+            raster.setSolidFastPath(true);raster.setSolidSpanFastPath(true);
+            raster.setTrustedSolidDepthFastPath(true);raster.setSolidQuadFastPath(mode==1);
+            raster.setSparseDepthStorage(occupied.data(),occupied.size());
+            raster.setSparseDepthClearFastPath(true);raster.setDeferredSparseDepthRecord(false);
+            raster.begin(0,0,32,32);
+            raster.preparedSolidPanelBatchRowsTrusted(camera,&face,nullptr,1,0,31);
+            LGFX_Sprite canvas;canvas.createSprite(32,32);canvas.fillScreen(0x0863);
+            raster.blitScaled(canvas,0,0,32,32);frames[mode]=canvas.frame();
+            for(int y=0;y<32;++y)for(int x=0;x<32;++x)depths[mode].push_back(raster.depthAt(x,y));
+            occupancy[mode]=occupied;
+        }
+        assert(frames[0]==frames[1] && depths[0]==depths[1] && occupancy[0]==occupancy[1]);
+    }
+}
 void checkSparseDrawBounds(){
     lets_and_go::CarSurfaceRaster<32,32> raster;
     std::array<uint8_t,(32*32+7)/8> occupied{};
@@ -91,7 +123,7 @@ void checkTopologyStats(const MuseumRenderer& renderer){
     assert(stats.submittedQuads<=stats.totalQuads);
 }
 int main(){
-    checkProjectionBoundaries();checkSolidRaster();checkSparseDrawBounds();
+    checkProjectionBoundaries();checkSolidRaster();checkSolidQuadDepthExact();checkSparseDrawBounds();
     MuseumRenderer renderer;assert(renderer.open());
     assert(renderer.asset() && soft3d::validate(*renderer.asset())==soft3d::AssetError::None);
     assert(std::string(renderer.asset()->name)=="rx78");

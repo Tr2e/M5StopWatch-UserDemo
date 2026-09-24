@@ -1,0 +1,76 @@
+[1790223851155] [info] [3DBenchAudit] boot autorun app_id=7 topology_stats=1
+[1790223851203] [info] [3DBenchAudit] timer_calls=20000 elapsed_us=18985 ns_per_call=949 sink=true
+[1790223851230] [info] [3DBenchMemory] occupancy_internal=true hot_state_internal=true
+[1790223854640] [info] [3DBenchResult] pass=0 render_percent=100 topology_stats=1 stage=0 name=01 CUBE PAIR frames=139 intervals=138 avg_interval_us=22281 fps_x10=448 total_tri=24 rendered_tri=11 total_quad=12 rendered_quad=6
+[1790223854651] [info] [3DBenchPhase] pass=0 render_percent=100 stage=0 clear_us=1663 begin_us=2822 render_us=8280 blit_us=6564 present_wait_us=81
+[1790223858077] [info] [3DBenchResult] pass=0 render_percent=100 topology_stats=1 stage=1 name=02 RIGID ASSEMBLY frames=88 intervals=87 avg_interval_us=34958 fps_x10=286 total_tri=384 rendered_tri=174 total_quad=192 rendered_quad=87
+[1790223858089] [info] [3DBenchPhase] pass=0 render_percent=100 stage=1 clear_us=2957 begin_us=2706 render_us=21130 blit_us=5179 present_wait_us=82
+[1790223861510] [info] [3DBenchResult] pass=0 render_percent=100 topology_stats=1 stage=2 name=03 MIXED LOAD frames=113 intervals=112 avg_interval_us=27351 fps_x10=365 total_tri=240 rendered_tri=101 total_quad=120 rendered_quad=50
+[1790223861521] [info] [3DBenchPhase] pass=0 render_percent=100 stage=2 clear_us=2717 begin_us=2986 render_us=12928 blit_us=5699 present_wait_us=82
+[1790223861747] [info] [MuseumAlloc] color=false projected=true depth=false ready=true occupied=true commands=false vertices=2674 surface_free=118119 surface_largest=31744 pre_project_free=118119 pre_project_largest=31744 post_project_free=85851 post_project_largest=31744 cache_free=46931 cache_largest=15360 final_free=34103 final_largest=9216
+[1790223868717] [info] [3DBenchResult] pass=0 render_percent=100 topology_stats=1 stage=3 name=04 RX-78 FINAL frames=79 intervals=78 avg_interval_us=83853 fps_x10=119 total_tri=4650 rendered_tri=3202 total_quad=1914 rendered_quad=1282
+[1790223868729] [info] [3DBenchPhase] pass=0 render_percent=100 stage=3 clear_us=4515 begin_us=5872 render_us=71192 blit_us=9533 present_wait_us=95
+[1790223868742] [info] [3DBenchRxPhase] pass=0 render_percent=100 panel_prepare_us=8338 main_raster_us=55764 worker_raster_us=54509 internal_depth_frames=0 fast_path_all=7 fast_path_any=7 frames=79
+[1790223868761] [info] [3DBenchAudit] run_complete pass=0 render_percent=100 topology_stats=1
+[1790223868795] [info] [3DBenchMemory] occupancy_internal=true hot_state_internal=true
+[1790223872199] [info] [3DBenchResult] pass=0 render_percent=60 topology_stats=1 stage=0 name=01 CUBE PAIR frames=226 intervals=225 avg_interval_us=13701 fps_x10=729 total_tri=24 rendered_tri=11 total_quad=12 rendered_quad=6
+[1790223872210] [info] [3DBenchPhase] pass=0 render_percent=60 stage=0 clear_us=1696 begin_us=1100 render_us=3980 blit_us=3764 present_wait_us=82
+[1790223875642] [info] [3DBenchResult] pass=0 render_percent=60 topology_stats=1 stage=1 name=02 RIGID ASSEMBLY frames=160 intervals=159 avg_interval_us=19394 fps_x10=515 total_tri=384 rendered_tri=174 total_quad=192 rendered_quad=87
+[1790223875654] [info] [3DBenchPhase] pass=0 render_percent=60 stage=1 clear_us=3008 begin_us=1071 render_us=9311 blit_us=2922 present_wait_us=81
+[1790223879071] [info] [3DBenchResult] pass=0 render_percent=60 topology_stats=1 stage=2 name=03 MIXED LOAD frames=189 intervals=188 avg_interval_us=16418 fps_x10=609 total_tri=240 rendered_tri=101 total_quad=120 rendered_quad=50
+[1790223879082] [info] [3DBenchPhase] pass=0 render_percent=60 stage=2 clear_us=2819 begin_us=1168 render_us=6230 blit_us=3212 present_wait_us=82
+[1790223879309] [info] [MuseumAlloc] color=false projected=true depth=false ready=true occupied=true commands=true vertices=2674 surface_free=118119 surface_largest=38912 pre_project_free=118119 pre_project_largest=38912 post_project_free=85851 post_project_largest=31744 cache_free=35663 cache_largest=15360 final_free=22835 final_largest=9216
+[1790223886208] [info] [3DBenchResult] pass=0 render_percent=60 topology_stats=1 stage=3 name=04 RX-78 FINAL frames=131 intervals=130 avg_interval_us=50122 fps_x10=199 total_tri=4650 rendered_tri=3203 total_quad=1914 rendered_quad=1283
+[1790223886220] [info] [3DBenchPhase] pass=0 render_percent=60 stage=3 clear_us=4421 begin_us=2049 render_us=41641 blit_us=5306 present_wait_us=96
+[1790223886233] [info] [3DBenchRxPhase] pass=0 render_percent=60 panel_prepare_us=6421 main_raster_us=28660 worker_raster_us=28196 internal_depth_frames=0 fast_path_all=31 fast_path_any=31 frames=131
+[1790223886252] [info] [3DBenchAudit] run_complete pass=0 render_percent=60 topology_stats=1
+[1790223886287] [info] [3DBenchMemory] occupancy_internal=true hot_state_internal=true
+[1790223889704] [info] [3DBenchResult] pass=1 render_percent=100 topology_stats=1 stage=0 name=01 CUBE PAIR frames=139 intervals=138 avg_interval_us=22267 fps_x10=449 total_tri=24 rendered_tri=11 total_quad=12 rendered_quad=6
+[1790223889715] [info] [3DBenchPhase] pass=1 render_percent=100 stage=0 clear_us=1663 begin_us=2809 render_us=8279 blit_us=6558 present_wait_us=79
+[1790223893144] [info] [3DBenchResult] pass=1 render_percent=100 topology_stats=1 stage=1 name=02 RIGID ASSEMBLY frames=88 intervals=87 avg_interval_us=34990 fps_x10=285 total_tri=384 rendered_tri=174 total_quad=192 rendered_quad=87
+[1790223893156] [info] [3DBenchPhase] pass=1 render_percent=100 stage=1 clear_us=2924 begin_us=2710 render_us=21129 blit_us=5179 present_wait_us=82
+[1790223896575] [info] [3DBenchResult] pass=1 render_percent=100 topology_stats=1 stage=2 name=03 MIXED LOAD frames=113 intervals=112 avg_interval_us=27316 fps_x10=366 total_tri=240 rendered_tri=101 total_quad=120 rendered_quad=50
+[1790223896586] [info] [3DBenchPhase] pass=1 render_percent=100 stage=2 clear_us=2731 begin_us=2977 render_us=12928 blit_us=5699 present_wait_us=83
+[1790223896812] [info] [MuseumAlloc] color=false projected=true depth=false ready=true occupied=true commands=false vertices=2674 surface_free=118119 surface_largest=31744 pre_project_free=118119 pre_project_largest=31744 post_project_free=85851 post_project_largest=31744 cache_free=46931 cache_largest=15360 final_free=34103 final_largest=9216
+[1790223903783] [info] [3DBenchResult] pass=1 render_percent=100 topology_stats=1 stage=3 name=04 RX-78 FINAL frames=79 intervals=78 avg_interval_us=83853 fps_x10=119 total_tri=4650 rendered_tri=3202 total_quad=1914 rendered_quad=1282
+[1790223903794] [info] [3DBenchPhase] pass=1 render_percent=100 stage=3 clear_us=4516 begin_us=5875 render_us=71182 blit_us=9532 present_wait_us=94
+[1790223903807] [info] [3DBenchRxPhase] pass=1 render_percent=100 panel_prepare_us=8325 main_raster_us=55768 worker_raster_us=54511 internal_depth_frames=0 fast_path_all=7 fast_path_any=7 frames=79
+[1790223903826] [info] [3DBenchAudit] run_complete pass=1 render_percent=100 topology_stats=1
+[1790223903861] [info] [3DBenchMemory] occupancy_internal=true hot_state_internal=true
+[1790223907266] [info] [3DBenchResult] pass=1 render_percent=60 topology_stats=1 stage=0 name=01 CUBE PAIR frames=226 intervals=225 avg_interval_us=13705 fps_x10=729 total_tri=24 rendered_tri=11 total_quad=12 rendered_quad=6
+[1790223907277] [info] [3DBenchPhase] pass=1 render_percent=60 stage=0 clear_us=1696 begin_us=1096 render_us=3974 blit_us=3764 present_wait_us=81
+[1790223910707] [info] [3DBenchResult] pass=1 render_percent=60 topology_stats=1 stage=1 name=02 RIGID ASSEMBLY frames=160 intervals=159 avg_interval_us=19382 fps_x10=515 total_tri=384 rendered_tri=174 total_quad=192 rendered_quad=87
+[1790223910719] [info] [3DBenchPhase] pass=1 render_percent=60 stage=1 clear_us=3012 begin_us=1068 render_us=9317 blit_us=2918 present_wait_us=80
+[1790223914137] [info] [3DBenchResult] pass=1 render_percent=60 topology_stats=1 stage=2 name=03 MIXED LOAD frames=189 intervals=188 avg_interval_us=16421 fps_x10=608 total_tri=240 rendered_tri=101 total_quad=120 rendered_quad=50
+[1790223914148] [info] [3DBenchPhase] pass=1 render_percent=60 stage=2 clear_us=2810 begin_us=1162 render_us=6231 blit_us=3213 present_wait_us=82
+[1790223914375] [info] [MuseumAlloc] color=false projected=true depth=false ready=true occupied=true commands=true vertices=2674 surface_free=118119 surface_largest=31744 pre_project_free=118119 pre_project_largest=31744 post_project_free=85851 post_project_largest=31744 cache_free=35663 cache_largest=7680 final_free=22835 final_largest=7680
+[1790223921271] [info] [3DBenchResult] pass=1 render_percent=60 topology_stats=1 stage=3 name=04 RX-78 FINAL frames=131 intervals=130 avg_interval_us=50099 fps_x10=199 total_tri=4650 rendered_tri=3203 total_quad=1914 rendered_quad=1283
+[1790223921283] [info] [3DBenchPhase] pass=1 render_percent=60 stage=3 clear_us=4423 begin_us=2051 render_us=41627 blit_us=5306 present_wait_us=95
+[1790223921296] [info] [3DBenchRxPhase] pass=1 render_percent=60 panel_prepare_us=6425 main_raster_us=28638 worker_raster_us=28171 internal_depth_frames=0 fast_path_all=31 fast_path_any=31 frames=131
+[1790223921315] [info] [3DBenchAudit] run_complete pass=1 render_percent=60 topology_stats=1
+[1790223921350] [info] [3DBenchMemory] occupancy_internal=true hot_state_internal=true
+[1790223924770] [info] [3DBenchResult] pass=2 render_percent=100 topology_stats=1 stage=0 name=01 CUBE PAIR frames=139 intervals=138 avg_interval_us=22289 fps_x10=448 total_tri=24 rendered_tri=11 total_quad=12 rendered_quad=6
+[1790223924781] [info] [3DBenchPhase] pass=2 render_percent=100 stage=0 clear_us=1661 begin_us=2812 render_us=8278 blit_us=6555 present_wait_us=79
+[1790223928209] [info] [3DBenchResult] pass=2 render_percent=100 topology_stats=1 stage=1 name=02 RIGID ASSEMBLY frames=88 intervals=87 avg_interval_us=34979 fps_x10=285 total_tri=384 rendered_tri=174 total_quad=192 rendered_quad=87
+[1790223928221] [info] [3DBenchPhase] pass=2 render_percent=100 stage=1 clear_us=2921 begin_us=2713 render_us=21127 blit_us=5179 present_wait_us=83
+[1790223931642] [info] [3DBenchResult] pass=2 render_percent=100 topology_stats=1 stage=2 name=03 MIXED LOAD frames=113 intervals=112 avg_interval_us=27335 fps_x10=365 total_tri=240 rendered_tri=101 total_quad=120 rendered_quad=50
+[1790223931653] [info] [3DBenchPhase] pass=2 render_percent=100 stage=2 clear_us=2708 begin_us=2982 render_us=12920 blit_us=5706 present_wait_us=83
+[1790223931879] [info] [MuseumAlloc] color=false projected=true depth=false ready=true occupied=true commands=false vertices=2674 surface_free=118119 surface_largest=31744 pre_project_free=118119 pre_project_largest=31744 post_project_free=85851 post_project_largest=31744 cache_free=46931 cache_largest=15360 final_free=34103 final_largest=9216
+[1790223938846] [info] [3DBenchResult] pass=2 render_percent=100 topology_stats=1 stage=3 name=04 RX-78 FINAL frames=79 intervals=78 avg_interval_us=83826 fps_x10=119 total_tri=4650 rendered_tri=3202 total_quad=1914 rendered_quad=1282
+[1790223938858] [info] [3DBenchPhase] pass=2 render_percent=100 stage=3 clear_us=4514 begin_us=5871 render_us=71227 blit_us=9536 present_wait_us=95
+[1790223938871] [info] [3DBenchRxPhase] pass=2 render_percent=100 panel_prepare_us=8356 main_raster_us=55774 worker_raster_us=54511 internal_depth_frames=0 fast_path_all=7 fast_path_any=7 frames=79
+[1790223938889] [info] [3DBenchAudit] run_complete pass=2 render_percent=100 topology_stats=1
+[1790223938924] [info] [3DBenchMemory] occupancy_internal=true hot_state_internal=true
+[1790223942328] [info] [3DBenchResult] pass=2 render_percent=60 topology_stats=1 stage=0 name=01 CUBE PAIR frames=226 intervals=225 avg_interval_us=13701 fps_x10=729 total_tri=24 rendered_tri=11 total_quad=12 rendered_quad=6
+[1790223942339] [info] [3DBenchPhase] pass=2 render_percent=60 stage=0 clear_us=1694 begin_us=1100 render_us=3981 blit_us=3767 present_wait_us=84
+[1790223945753] [info] [3DBenchResult] pass=2 render_percent=60 topology_stats=1 stage=1 name=02 RIGID ASSEMBLY frames=159 intervals=158 avg_interval_us=19398 fps_x10=515 total_tri=384 rendered_tri=174 total_quad=192 rendered_quad=87
+[1790223945765] [info] [3DBenchPhase] pass=2 render_percent=60 stage=1 clear_us=2999 begin_us=1078 render_us=9317 blit_us=2919 present_wait_us=82
+[1790223949182] [info] [3DBenchResult] pass=2 render_percent=60 topology_stats=1 stage=2 name=03 MIXED LOAD frames=189 intervals=188 avg_interval_us=16416 fps_x10=609 total_tri=240 rendered_tri=101 total_quad=120 rendered_quad=50
+[1790223949193] [info] [3DBenchPhase] pass=2 render_percent=60 stage=2 clear_us=2812 begin_us=1168 render_us=6232 blit_us=3208 present_wait_us=82
+[1790223949420] [info] [MuseumAlloc] color=false projected=true depth=false ready=true occupied=true commands=true vertices=2674 surface_free=118119 surface_largest=38912 pre_project_free=118119 pre_project_largest=38912 post_project_free=85851 post_project_largest=31744 cache_free=35663 cache_largest=15360 final_free=22835 final_largest=9216
+[1790223956319] [info] [3DBenchResult] pass=2 render_percent=60 topology_stats=1 stage=3 name=04 RX-78 FINAL frames=131 intervals=130 avg_interval_us=50130 fps_x10=199 total_tri=4650 rendered_tri=3203 total_quad=1914 rendered_quad=1283
+[1790223956331] [info] [3DBenchPhase] pass=2 render_percent=60 stage=3 clear_us=4421 begin_us=2051 render_us=41634 blit_us=5306 present_wait_us=96
+[1790223956344] [info] [3DBenchRxPhase] pass=2 render_percent=60 panel_prepare_us=6403 main_raster_us=28667 worker_raster_us=28201 internal_depth_frames=0 fast_path_all=31 fast_path_any=31 frames=131
+[1790223956363] [info] [3DBenchAudit] run_complete pass=2 render_percent=60 topology_stats=1
+[1790223956372] [info] [3DBenchAudit] all_complete passes=3 topology_stats=1
+

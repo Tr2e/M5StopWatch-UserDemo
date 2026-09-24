@@ -70,3 +70,7 @@ prepared sparse solid quad 原先让两个子三角形对每个通过深度测�
 直接命令路径在完成面分类后，原先仍为背面/正面 pass 把 2,736 个面完整扫描两遍。E6 复用该路径本帧不再使用的片内 band-index 工作区，单次扫描写出两个稳定索引流，随后只访问实际可见面；顺序仍严格是 pass 0 原索引升序、pass 1 原索引升序，回退路径会重新覆盖 scratch，不增加常驻内存。
 
 三轮 60% 为 `50.832 / 50.830 / 50.860 ms`，均值 `50.841 ms / 19.67 FPS`，相对 E5 再降低 `0.108 ms / 0.21%`；panel prepare 由 E5 平均约 `6.493 ms` 降至 `6.413 ms`。三轮 100% 均值 `85.682 ms`，与 E5 的 `85.672 ms` 等价。诊断 BIN 反而减少 16 B，片内余量等价，路径标志和阶段 1–3 均稳定。主机 sanitizer 与 1,408 组逐像素门禁通过，证据见 [`assets/rx78-60-percent-e6/README.md`](assets/rx78-60-percent-e6/README.md)。通用经验是仅在 scratch 生命周期互斥且稳定排序键已存在时，用索引流替代多 pass 全资产重扫；不能为这点收益新增常驻缓冲。距 22 FPS 仍差约 `5.39 ms`。
+
+### E7：quad 扫描行递增重心插值——否定
+
+候选只在每条扫描行首像素按原式计算 `s/t`，随后逐像素递增。既有 1,408 组最终 framebuffer 对比通过，真机三轮 60% 表面达到 `50.122 / 50.099 / 50.130 ms`，100% 为 `83.853 / 83.853 / 83.826 ms`。但新增 256 组确定性 skew-quad 门禁同时比较旧三角路径与 quad 特化的 RGB565、Q13 depth 和 occupancy，发现内部 depth 不再逐点一致；这可能在未覆盖的遮挡组合中改变后续深度胜负，不能以当前颜色相同代替语义一致。候选已撤回，严格深度门禁保留；撤回后 sanitizer 和完整 framebuffer 回归重新通过。证据见 [`assets/rx78-60-percent-e7-rejected/README.md`](assets/rx78-60-percent-e7-rejected/README.md)。

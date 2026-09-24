@@ -86,6 +86,7 @@ RX-78 是一个合适的上界压力样本：面数高、细小结构多、双�
 ### 2.6 正确性与性能方法
 
 - 固定姿态序列比较完整 framebuffer hash，不只看一张截图或局部包围盒。
+- 改动重心/深度插值顺序时，除最终 framebuffer 外还必须逐像素比较量化 depth；当前画面颜色一致不能证明后续遮挡语义一致。随机或确定性 skew-quad 应覆盖长扫描行和非共面顶点。
 - 分段记录 draw、present、clear、cull、prepare、CPU0/CPU1 raster、composite 和 panel DMA。
 - 主机回归、ASan/UBSan、真机交错 A/B、多次独立重启和人眼面板验收是不同门禁，不互相替代。
 - 不保留“代码看起来更快”但整帧无可重复收益的候选。寄存器压力、指令 cache、PSRAM 争用和编译器特化都可能反转源码层面的直觉。
