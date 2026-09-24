@@ -583,7 +583,8 @@ private:
             while(last>first && !covered(last))--last;
             return first<=last;
         };
-        const auto draw=[&](const TriangleSetup& setup,int y,int first,int last) {
+        const auto draw=[&](const TriangleSetup& setup,int y,int first,int last,
+                            std::size_t& occupancyByte,uint8_t& occupancyBits) {
             const auto& p=setup.point[0];const auto& q=setup.point[1];const auto& r=setup.point[2];
             const float py=y+.5f-p.y;
             for(int x=first;x<=last;++x) {
@@ -597,9 +598,14 @@ private:
                 if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.testedPixels;
                 if(value<oldDepth){if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.depthRejectedPixels;continue;}
                 if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.writtenPixels;
-                if constexpr(PreparedSparseRecord)
-                    _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
-                else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
+                if constexpr(PreparedSparseRecord) {
+                    const auto byte=index>>3;
+                    if(byte!=occupancyByte) {
+                        if(occupancyByte!=std::size_t(-1))_occupiedDepth[occupancyByte]=occupancyBits;
+                        occupancyByte=byte;occupancyBits=_occupiedDepth[byte];
+                    }
+                    occupancyBits|=uint8_t(1u<<(index&7));
+                } else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
                     _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
                 target.depth[index-target.depthIndexOffset]=value;
                 target.color[index-target.colorIndexOffset]=solidColor;
@@ -607,8 +613,13 @@ private:
         };
         for(int y=firstY;y<=lastY;++y) {
             int first=0,last=-1;
-            if(interval(firstTriangle,y,first,last))draw(firstTriangle,y,first,last);
-            if(interval(secondTriangle,y,first,last))draw(secondTriangle,y,first,last);
+            std::size_t occupancyByte=std::size_t(-1);uint8_t occupancyBits=0;
+            if(interval(firstTriangle,y,first,last))
+                draw(firstTriangle,y,first,last,occupancyByte,occupancyBits);
+            if(interval(secondTriangle,y,first,last))
+                draw(secondTriangle,y,first,last,occupancyByte,occupancyBits);
+            if constexpr(PreparedSparseRecord)
+                if(occupancyByte!=std::size_t(-1))_occupiedDepth[occupancyByte]=occupancyBits;
         }
     }
 public:

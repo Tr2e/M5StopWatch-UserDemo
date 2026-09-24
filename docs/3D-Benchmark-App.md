@@ -96,6 +96,8 @@
 
 随后按 60% 的真实 `254×254` 尺寸把片内 occupancy 从 22.5 KiB 缩到约 8.1 KiB，完整 424 位图仍作为 PSRAM 回退。释放的预算使 25.3 KiB 索引命令块和直接上下带流稳定命中；三轮 60% 进一步降到 `51.157 / 51.149 / 51.141 ms`（`19.5 FPS`），100% 保持约 `86.61 ms / 11.5 FPS`。相对稳定失配基线累计降低 `7.77%`，阶段 1–3 不受影响；证据见 [`assets/rx78-60-percent-e4/README.md`](assets/rx78-60-percent-e4/README.md)。
 
+E5 在 prepared sparse solid-quad 光栅中按扫描行缓存当前 occupancy byte，把连续像素及两个子三角形的 bit 合并写回；不改变颜色、深度、覆盖或提交顺序。三轮 60% 为 `50.947 / 50.933 / 50.965 ms`（均值 `19.63 FPS`），100% 为 `85.654 / 85.693 / 85.670 ms`（均值 `11.67 FPS`），主机 1,408 组 framebuffer 逐像素一致。该特化增加约 1.5 KiB 片内代码，60% 最终 internal free 约 23.1 KiB，因此只作为高覆盖且必须记录 occupancy 的实测选路，不升级为所有图元的默认成本；证据见 [`assets/rx78-60-percent-e5/README.md`](assets/rx78-60-percent-e5/README.md)。
+
 ## 当前验证
 
 - ESP-IDF 5.5.4 / ESP32-S3 目标构建、链接及分区检查通过。

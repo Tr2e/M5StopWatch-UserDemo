@@ -56,3 +56,11 @@ MuseumRenderer 原先无论 60% 还是 100% 都为 occupancy 申请 `424×424` �
 三轮 60% 为 `51.157 / 51.149 / 51.141 ms`（均 `19.5 FPS`），相对 E3 均值 `52.027 ms` 再降低 `0.878 ms / 1.69%`；相对稳定失配基线 `55.456 ms` 累计降低 `4.307 ms / 7.77%`。panel prepare 约 `7.10→6.50 ms`，main/worker raster 分别约 `29.59/29.61→29.33/29.42 ms`。三轮 100% 为 `86.601 / 86.601 / 86.639 ms`，与 E3 等价；阶段 1–3 无有意义回退。worker 创建后的 internal free 约 24.6 KiB、最大连续块 7.5 KiB，与历史已签署的 RX-78 片内命令路径区间一致。
 
 Soft3D 与 Gundam sanitizer/逐像素门禁再次通过，共 1,408 组 60/65/90/100 framebuffer 一致。证据见 [`assets/rx78-60-percent-e4/README.md`](assets/rx78-60-percent-e4/README.md)。距 22 FPS 仍差约 `5.69 ms`；下一轮继续从约 `29.4 ms` 的双核光栅和 `6.5 ms` 命令准备中寻找端到端收益，不用单纯扩大内部缓存破坏余量。
+
+### E5：扫描行内合并 occupancy byte 写入——接受
+
+prepared sparse solid quad 原先让两个子三角形对每个通过深度测试的像素分别执行 occupancy byte 读改写。E5 在每条扫描行中缓存当前 byte，将连续像素及两个子三角形落入同一 byte 的 bit 合并后写回；颜色、深度、覆盖规则、图元顺序与 framebuffer 均不变。这是辅助元数据写入合并，不是改变采样或丢弃覆盖。
+
+三轮 60% 为 `50.947 / 50.933 / 50.965 ms`，均值 `50.948 ms / 19.63 FPS`；相对 E4 的 `51.149 ms` 降低 `0.201 ms / 0.39%`。三轮 100% 为 `85.654 / 85.693 / 85.670 ms`，均值 `85.672 ms / 11.67 FPS`；相对 E4 降低 `0.941 ms / 1.09%`。60% main/worker raster 约为 `29.21–29.23 / 29.12–29.15 ms`，六次 RX 会话保持稳定分配与 `fast_path_all=31/7`，阶段 1–3 无有意义回退。
+
+该模板特化增加约 1.5 KiB 片内代码占用，60% worker 创建后的 internal free 从约 24.6 KiB 降到 23.1 KiB，最小观测最大连续块 7.5 KiB。因收益稳定且 100% 随像素工作量增加而放大，当前保留；通用经验是只在高覆盖、必须同步记录 occupancy 的 prepared 路径中批处理相邻元数据写入，并把代码体积、堆余量和端到端收益一起签署。主机 sanitizer 和 1,408 组逐像素门禁通过，证据见 [`assets/rx78-60-percent-e5/README.md`](assets/rx78-60-percent-e5/README.md)。距 22 FPS 仍差约 `5.49 ms`。
