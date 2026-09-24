@@ -102,6 +102,8 @@ E6 复用直接命令路径中闲置的片内 band scratch，单次扫描生成�
 
 E8 将 solid-quad 中不随 x 变化的 depth/color 行寻址和 split-band offset 提升到扫描行入口，并在已证明存储平面独立的边界使用不别名指针；不改变任何浮点求值。60% 三轮为 `50.730 / 50.677 / 50.707 ms`（均值 `19.72 FPS`），100% 均值 `85.326 ms / 11.72 FPS`。除完整 framebuffer 外，256 组 skew-quad 的 RGB565、Q13 depth 与 occupancy 也逐点一致；证据见 [`assets/rx78-60-percent-e8/README.md`](assets/rx78-60-percent-e8/README.md)。
 
+E9 再把 solid-quad 每条扫描行重复计算的三条边纵向范围与水平边分类提升到图元 setup，并明确 occupancy 与 color/depth 不别名；原重心和 depth 表达式保持原样。60% 三轮为 `50.276 / 50.261 / 50.260 ms`（均值 `19.89 FPS`），100% 均值 `84.305 ms / 11.86 FPS`；60% main/worker raster 降至约 `28.80 / 28.51 ms`。主机 framebuffer、Q13 depth 和 occupancy 门禁均通过。普通三角行指针、递增 `px` 和扩大 setup 的 delta 缓存分别因真机退化、depth 不一致和 Xtensa spill 被拒绝；证据见 [`assets/rx78-60-percent-e9/README.md`](assets/rx78-60-percent-e9/README.md)。
+
 ## 当前验证
 
 - ESP-IDF 5.5.4 / ESP32-S3 目标构建、链接及分区检查通过。

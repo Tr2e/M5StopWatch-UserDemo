@@ -80,3 +80,11 @@ prepared sparse solid quad 原先让两个子三角形对每个通过深度测�
 solid-quad 旧循环每个像素都从 target 结构解析 depth/color 基址，并重复组合行与 split-band offset。E8 在扫描行入口一次生成不别名的 depth/color 行指针，像素循环只保留局部 x 和全局 occupancy index；所有浮点求值、覆盖、深度比较和写入顺序不变。
 
 三轮 60% 为 `50.730 / 50.677 / 50.707 ms`，均值 `50.705 ms / 19.72 FPS`，相对 E6 降低 `0.136 ms / 0.27%`；三轮 100% 均值 `85.326 ms`，相对 E6 降低 `0.356 ms / 0.42%`。60% main/worker raster 各约减少 `0.08 / 0.17 ms`，诊断 BIN 减少 96 B，片内余量等价。除 1,408 组 framebuffer 门禁外，新增 256 组 skew-quad 的 RGB565、Q13 depth 与 occupancy 逐点一致检查也通过。证据见 [`assets/rx78-60-percent-e8/README.md`](assets/rx78-60-percent-e8/README.md)。通用经验是把不随 x 变化的存储寻址提升到扫描行边界，并只在能证明平面不别名时向编译器表达该约束。距 22 FPS 仍差约 `5.25 ms`。
+
+### E9：quad 扫描边不变量与 occupancy 不别名——接受
+
+solid-quad 原先在每条扫描行、每个子三角形上重复求三条边的 `minY/maxY`、近水平分类和相交判断。E9 在图元 setup 一次缓存边的纵向范围与水平边 bitmask，并把 occupancy 指针明确为与 color/depth 独立的存储；重心、覆盖、Q13 depth、图元顺序和像素结果不变。
+
+三轮 60% 为 `50.276 / 50.261 / 50.260 ms`，均值 `50.266 ms / 19.89 FPS`，相对 E8 降低 `0.439 ms / 0.87%`；三轮 100% 为 `84.298 / 84.307 / 84.309 ms`，均值 `84.305 ms / 11.86 FPS`，相对 E8 降低 `1.021 ms / 1.20%`。60% main/worker raster 分别降至约 `28.80 / 28.51 ms`。诊断 BIN 增加 624 B，60% 最终 internal free 减少 496 B 至 22,595 B，仍保持稳定缓存/命令路径。主机 sanitizer、1,408 组 framebuffer 和 256 组 RGB565/Q13 depth/occupancy 严格门禁通过；证据见 [`assets/rx78-60-percent-e9/README.md`](assets/rx78-60-percent-e9/README.md)。距 22 FPS 仍差约 `4.81 ms`。
+
+同轮三个负结果也作为停损依据保留：把行指针提升机械复制到普通三角使 60% 退化到 `50.925 ms`；逐像素递增 `px` 未通过严格 depth 门禁；把六个坐标/深度差继续塞入 setup 虽令主机微基准快约 7–9%，却因 Xtensa 寄存器压力/IRAM 克隆布局变化使真机 60% 退化到 `55.425 ms`、100% 退化到 `93.282 ms`。结论是只预计算能显著减少每扫描行控制工作的紧凑边元数据；任何扩大热 setup 状态的候选都必须看目标机反汇编/IRAM 和端到端数据，不能依据主机结果接受。

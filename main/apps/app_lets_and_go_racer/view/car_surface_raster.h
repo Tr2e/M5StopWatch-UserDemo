@@ -517,9 +517,10 @@ private:
                             const SolidRasterTarget& target) {
         struct TriangleSetup {
             std::array<SolidScreenVertex,3> point{};
-            std::array<float,3> slope{};
+            std::array<float,3> slope{},edgeMinY{},edgeMaxY{};
             float inverse=0,left=0,right=-1;
             int x0=0,x1=-1,y0=0,y1=-1;
+            uint8_t horizontalEdges=0;
             bool scanRows=false,valid=false;
         };
         const auto prepare=[&](SolidScreenVertex p,SolidScreenVertex q,SolidScreenVertex r) {
@@ -536,12 +537,16 @@ private:
             setup.scanRows=(setup.x1-setup.x0)*(setup.y1-setup.y0)>256;
             if(setup.scanRows)for(int edge=0;edge<3;++edge) {
                 const auto& u=setup.point[edge];const auto& v=setup.point[(edge+1)%3];
+                setup.edgeMinY[edge]=std::min(u.y,v.y);
+                setup.edgeMaxY[edge]=std::max(u.y,v.y);
                 if(std::abs(v.y-u.y)>=.00001f)setup.slope[edge]=(v.x-u.x)/(v.y-u.y);
+                else setup.horizontalEdges|=uint8_t(1u<<edge);
             }
             setup.valid=true;return setup;
         };
         const TriangleSetup firstTriangle=prepare(a,b,c),secondTriangle=prepare(a,c,d);
         if(!firstTriangle.valid && !secondTriangle.valid)return;
+        auto* __restrict occupiedDepth=_occupiedDepth;
         if(firstTriangle.valid)includeSparseDrawBounds(firstTriangle.x0,firstTriangle.y0,
                                                        firstTriangle.x1,firstTriangle.y1);
         if(secondTriangle.valid)includeSparseDrawBounds(secondTriangle.x0,secondTriangle.y0,
@@ -556,8 +561,8 @@ private:
             const float rowY=y+.5f;
             if(setup.scanRows)for(int edge=0;edge<3;++edge) {
                 const auto& p=setup.point[edge];const auto& q=setup.point[(edge+1)%3];
-                if(rowY<std::min(p.y,q.y)-.001f || rowY>std::max(p.y,q.y)+.001f)continue;
-                if(std::abs(q.y-p.y)<.00001f) {
+                if(rowY<setup.edgeMinY[edge]-.001f || rowY>setup.edgeMaxY[edge]+.001f)continue;
+                if(setup.horizontalEdges&uint8_t(1u<<edge)) {
                     rowLeft=std::min(rowLeft,std::min(p.x,q.x));
                     rowRight=std::max(rowRight,std::max(p.x,q.x));
                 } else {
@@ -605,12 +610,12 @@ private:
                 if constexpr(PreparedSparseRecord) {
                     const auto byte=index>>3;
                     if(byte!=occupancyByte) {
-                        if(occupancyByte!=std::size_t(-1))_occupiedDepth[occupancyByte]=occupancyBits;
-                        occupancyByte=byte;occupancyBits=_occupiedDepth[byte];
+                        if(occupancyByte!=std::size_t(-1))occupiedDepth[occupancyByte]=occupancyBits;
+                        occupancyByte=byte;occupancyBits=occupiedDepth[byte];
                     }
                     occupancyBits|=uint8_t(1u<<(index&7));
                 } else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
-                    _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
+                    occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
                 depthRow[localX]=value;colorRow[localX]=solidColor;
             }
         };
@@ -622,7 +627,7 @@ private:
             if(interval(secondTriangle,y,first,last))
                 draw(secondTriangle,y,first,last,occupancyByte,occupancyBits);
             if constexpr(PreparedSparseRecord)
-                if(occupancyByte!=std::size_t(-1))_occupiedDepth[occupancyByte]=occupancyBits;
+                if(occupancyByte!=std::size_t(-1))occupiedDepth[occupancyByte]=occupancyBits;
         }
     }
 public:
