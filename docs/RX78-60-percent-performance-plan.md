@@ -74,3 +74,9 @@ prepared sparse solid quad 原先让两个子三角形对每个通过深度测�
 ### E7：quad 扫描行递增重心插值——否定
 
 候选只在每条扫描行首像素按原式计算 `s/t`，随后逐像素递增。既有 1,408 组最终 framebuffer 对比通过，真机三轮 60% 表面达到 `50.122 / 50.099 / 50.130 ms`，100% 为 `83.853 / 83.853 / 83.826 ms`。但新增 256 组确定性 skew-quad 门禁同时比较旧三角路径与 quad 特化的 RGB565、Q13 depth 和 occupancy，发现内部 depth 不再逐点一致；这可能在未覆盖的遮挡组合中改变后续深度胜负，不能以当前颜色相同代替语义一致。候选已撤回，严格深度门禁保留；撤回后 sanitizer 和完整 framebuffer 回归重新通过。证据见 [`assets/rx78-60-percent-e7-rejected/README.md`](assets/rx78-60-percent-e7-rejected/README.md)。
+
+### E8：扫描行目标指针与不别名特化——接受
+
+solid-quad 旧循环每个像素都从 target 结构解析 depth/color 基址，并重复组合行与 split-band offset。E8 在扫描行入口一次生成不别名的 depth/color 行指针，像素循环只保留局部 x 和全局 occupancy index；所有浮点求值、覆盖、深度比较和写入顺序不变。
+
+三轮 60% 为 `50.730 / 50.677 / 50.707 ms`，均值 `50.705 ms / 19.72 FPS`，相对 E6 降低 `0.136 ms / 0.27%`；三轮 100% 均值 `85.326 ms`，相对 E6 降低 `0.356 ms / 0.42%`。60% main/worker raster 各约减少 `0.08 / 0.17 ms`，诊断 BIN 减少 96 B，片内余量等价。除 1,408 组 framebuffer 门禁外，新增 256 组 skew-quad 的 RGB565、Q13 depth 与 occupancy 逐点一致检查也通过。证据见 [`assets/rx78-60-percent-e8/README.md`](assets/rx78-60-percent-e8/README.md)。通用经验是把不随 x 变化的存储寻址提升到扫描行边界，并只在能证明平面不别名时向编译器表达该约束。距 22 FPS 仍差约 `5.25 ms`。

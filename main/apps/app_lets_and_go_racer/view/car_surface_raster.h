@@ -587,14 +587,18 @@ private:
                             std::size_t& occupancyByte,uint8_t& occupancyBits) {
             const auto& p=setup.point[0];const auto& q=setup.point[1];const auto& r=setup.point[2];
             const float py=y+.5f-p.y;
+            const std::size_t rowIndex=std::size_t(y-_y)*_width;
+            auto* __restrict depthRow=target.depth+(rowIndex-target.depthIndexOffset);
+            auto* __restrict colorRow=target.color+(rowIndex-target.colorIndexOffset);
             for(int x=first;x<=last;++x) {
                 const float px=x+.5f-p.x;
                 const float s=(px*(r.y-p.y)-py*(r.x-p.x))*setup.inverse;
                 const float t=((q.x-p.x)*py-(q.y-p.y)*px)*setup.inverse;
                 const float depth=p.depth+s*(q.depth-p.depth)+t*(r.depth-p.depth);
                 const auto value=uint16_t(depth*8192.f);
-                const auto index=std::size_t(y-_y)*_width+(x-_x);
-                const auto oldDepth=target.depth[index-target.depthIndexOffset];
+                const auto localX=std::size_t(x-_x);
+                const auto index=rowIndex+localX;
+                const auto oldDepth=depthRow[localX];
                 if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.testedPixels;
                 if(value<oldDepth){if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.depthRejectedPixels;continue;}
                 if constexpr(Measure)++static_cast<SurfaceRasterMetricsStorage<true>&>(*this).value.writtenPixels;
@@ -607,8 +611,7 @@ private:
                     occupancyBits|=uint8_t(1u<<(index&7));
                 } else if(_sparseDepthClearFastPath && !_deferredSparseDepthRecord && !oldDepth)
                     _occupiedDepth[index>>3]|=uint8_t(1u<<(index&7));
-                target.depth[index-target.depthIndexOffset]=value;
-                target.color[index-target.colorIndexOffset]=solidColor;
+                depthRow[localX]=value;colorRow[localX]=solidColor;
             }
         };
         for(int y=firstY;y<=lastY;++y) {

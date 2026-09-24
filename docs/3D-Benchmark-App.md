@@ -100,6 +100,8 @@ E5 在 prepared sparse solid-quad 光栅中按扫描行缓存当前 occupancy by
 
 E6 复用直接命令路径中闲置的片内 band scratch，单次扫描生成保持原顺序的背/正面索引流，替代两次全资产重扫。60% 三轮为 `50.832 / 50.830 / 50.860 ms`（均值 `19.67 FPS`），panel prepare 平均减少约 `0.080 ms`；100% 与 E5 等价，未新增常驻内存或固件体积。证据见 [`assets/rx78-60-percent-e6/README.md`](assets/rx78-60-percent-e6/README.md)。
 
+E8 将 solid-quad 中不随 x 变化的 depth/color 行寻址和 split-band offset 提升到扫描行入口，并在已证明存储平面独立的边界使用不别名指针；不改变任何浮点求值。60% 三轮为 `50.730 / 50.677 / 50.707 ms`（均值 `19.72 FPS`），100% 均值 `85.326 ms / 11.72 FPS`。除完整 framebuffer 外，256 组 skew-quad 的 RGB565、Q13 depth 与 occupancy 也逐点一致；证据见 [`assets/rx78-60-percent-e8/README.md`](assets/rx78-60-percent-e8/README.md)。
+
 ## 当前验证
 
 - ESP-IDF 5.5.4 / ESP32-S3 目标构建、链接及分区检查通过。
