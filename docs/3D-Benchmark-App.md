@@ -106,7 +106,7 @@ E8 将 solid-quad 中不随 x 变化的 depth/color 行寻址和 split-band offs
 
 - ESP-IDF 5.5.4 / ESP32-S3 目标构建、链接及分区检查通过。
 - 当前四阶段、100%/60% 双模式、全程纯黑背景已完成统计开启/关闭各 3 轮自动真机 A/B；正式固件保持统计开启、自动入口关闭。
-- 正式交互固件大小 `0x4c32a0`（4,993,696 B），最小应用分区剩余 `0x2cd60`（约 4%），BIN SHA-256 为 `5f0e7e4c6638c122d22c056cba4b96cc521efbe5a29e915f324ffe504cbb5a0d`；`STOPWATCH_BENCHMARK_AUTORUN=OFF`、`STOPWATCH_COLLECT_TOPOLOGY_STATS=ON`，分段诊断计时在正式构建中编译移除。
-- Soft3D 资产 ABI / GLB 编译器门禁与 Gundam Museum 渲染回归均通过；静态/刚性缓存路径与原始参考路径的主机像素哈希一致，并验证刚性实例只变换、投影 64 个唯一顶点且只合成 8 组矩阵。实例数组、pose 和 indexed scratch 常驻场景工作区并优先申请内部 RAM，程序资产构建不占用帧循环任务栈；前三段实例数依次为 2、4、6。
+- 正式交互固件大小 `0x4c4960`（4,999,520 B），最小应用分区剩余 `0x2b6a0`（约 3%），BIN SHA-256 为 `a70d0bfd455cca8fca3f01ee83166430275e5bf73547fa87948008685c934bc5`；`STOPWATCH_BENCHMARK_AUTORUN=OFF`、`STOPWATCH_COLLECT_TOPOLOGY_STATS=ON`，分段诊断计时在正式构建中编译移除。
+- Soft3D 资产 ABI / GLB 编译器门禁与 Gundam Museum 渲染回归均通过；静态/刚性缓存路径与原始参考路径的主机像素哈希一致。RX-78 另有 1,408 组 60/65/90/100 framebuffer 对比，以及 256 组 skew-quad 的 RGB565、Q13 depth、occupancy 逐点门禁。刚性实例只变换、投影 64 个唯一顶点且只合成 8 组矩阵；实例数组、pose 和 indexed scratch 常驻场景工作区并优先申请内部 RAM，程序资产构建不占用帧循环任务栈；前三段实例数依次为 2、4、6。
 - 已烧录至 StopWatch `/dev/cu.usbmodem83301`，应用写入 Hash 校验通过并完成硬复位；串口确认进入 Launcher，未触发诊断自动入口。
 - 历史 crate / rigid-chain 单实例 192×192 数据不再作为本场景的目标帧率；本轮阶段 1–3 的最终真机结果见上表。
