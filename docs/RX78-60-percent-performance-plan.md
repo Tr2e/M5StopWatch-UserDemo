@@ -48,3 +48,11 @@
 最终将相同的 32-bit `x/y/z` 浮点值拆为三个各约 `10.7 KiB` 的 SoA 片内块；三块必须全部成功才启用，否则整体释放并走既有 PSRAM/非索引回退。它不量化坐标、不改变浮点运算顺序，索引光栅直接读取三条连续坐标流，没有逐顶点分段判断；命令准备选择上下行带时只读取所需的 y 分量。三轮 60% 为 `52.031 / 52.001 / 52.049 ms`（均 `19.2 FPS`），相对失配稳定基线均值 `55.456 ms / 18.03 FPS` 降低 `3.429 ms / 6.18%`；三轮 100% 为 `86.601 / 86.628 / 86.613 ms`（均 `11.5 FPS`），相对约 `91.0 ms / 11.0 FPS` 降低约 `4.8%`。6 次 RX 会话全部 `projected=true`、`fast_path_all=7`，阶段 1–3 保持原区间。
 
 `SANITIZE=1 bash tools/test_soft3d.sh` 与 `SANITIZE=1 bash tools/test_gundam_museum_perf.sh` 通过；后者覆盖 60/65/90/100，共 `1,408` 组 framebuffer 逐像素一致。原始阶段日志和 A/B 摘要见 [`assets/rx78-60-percent-e3/README.md`](assets/rx78-60-percent-e3/README.md)。结论：这项改动消除了约 1.2 FPS 的会话级随机退化并留下稳定净收益，但距 22 FPS 仍差约 `6.57 ms`，下一轮继续针对约 `7.10 ms` panel prepare 与约 `29.6 ms` 的较慢光栅核。
+
+### E4：按采样尺寸配置 occupancy，释放片内命令预算——接受
+
+MuseumRenderer 原先无论 60% 还是 100% 都为 occupancy 申请 `424×424` 位图（约 22.5 KiB）；60% 的 `254×254` 实际只需约 8.1 KiB。Renderer 打开时新增首选采样比例，只缩短可选片内 occupancy 容量，常驻 PSRAM 回退仍保持完整 424 容量；普通 Museum 默认仍按 100% 打开。释放的约 14 KiB 让 60% 的 2,112 条 12 B 索引命令块稳定分配成功，并恢复直接上下带命令流，6 次 RX 会话均为 `commands=true`、`fast_path_all=31`。100% 仍按原容量，路径标志保持 7。
+
+三轮 60% 为 `51.157 / 51.149 / 51.141 ms`（均 `19.5 FPS`），相对 E3 均值 `52.027 ms` 再降低 `0.878 ms / 1.69%`；相对稳定失配基线 `55.456 ms` 累计降低 `4.307 ms / 7.77%`。panel prepare 约 `7.10→6.50 ms`，main/worker raster 分别约 `29.59/29.61→29.33/29.42 ms`。三轮 100% 为 `86.601 / 86.601 / 86.639 ms`，与 E3 等价；阶段 1–3 无有意义回退。worker 创建后的 internal free 约 24.6 KiB、最大连续块 7.5 KiB，与历史已签署的 RX-78 片内命令路径区间一致。
+
+Soft3D 与 Gundam sanitizer/逐像素门禁再次通过，共 1,408 组 60/65/90/100 framebuffer 一致。证据见 [`assets/rx78-60-percent-e4/README.md`](assets/rx78-60-percent-e4/README.md)。距 22 FPS 仍差约 `5.69 ms`；下一轮继续从约 `29.4 ms` 的双核光栅和 `6.5 ms` 命令准备中寻找端到端收益，不用单纯扩大内部缓存破坏余量。

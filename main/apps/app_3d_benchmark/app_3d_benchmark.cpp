@@ -213,7 +213,7 @@ void App3DBenchmark::enterStage(uint8_t stage) {
         _surface.reset();
         _museum=std::unique_ptr<gundam_museum::MuseumRenderer>(new(std::nothrow) gundam_museum::MuseumRenderer{});
         if(_museum) {
-            if(!_museum->open())_museum.reset();
+            if(!_museum->open(_renderPercent))_museum.reset();
             else {
                 _museum->setSpaceEnabled(false);
                 _museum->setBackgroundColor(0x0000);

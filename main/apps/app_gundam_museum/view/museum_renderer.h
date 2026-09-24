@@ -29,7 +29,7 @@ class MuseumRenderer {
 public:
     MuseumRenderer();
     ~MuseumRenderer();
-    bool open();
+    bool open(int preferredPercent=100);
     void close();
     bool ready() const{return bool(_surface);}
     // CPU culling is optional for regression against the same production raster.
@@ -89,7 +89,7 @@ private:
         soft3d::SurfaceRaster<424,424> raster;
         MuseumProjectionCache projection;
         std::array<uint8_t,(424*424+7)/8> occupiedDepth{};
-        lets_and_go::RenderScratch<std::array<uint8_t,(424*424+7)/8>> fastOccupiedDepth;
+        lets_and_go::RenderScratchBuffer<uint8_t> fastOccupiedDepth;
         PreparedCommands preparedPanels;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerColor;
         lets_and_go::RenderScratch<std::array<uint16_t,276*138>> fastLowerDepth;

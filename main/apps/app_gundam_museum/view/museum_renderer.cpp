@@ -188,7 +188,7 @@ void label(lgfx::LGFXBase& c,const char* text,int x,int y,int size,uint16_t colo
 }
 MuseumRenderer::MuseumRenderer()=default;
 MuseumRenderer::~MuseumRenderer(){close();}
-bool MuseumRenderer::open(){
+bool MuseumRenderer::open(int preferredPercent){
     close();_surface.reset(new(std::nothrow) Surface{});
 #if defined(ESP_PLATFORM) && STOPWATCH_BENCHMARK_AUTORUN
     struct HeapSnapshot {uint32_t free=0,largest=0;};
@@ -221,14 +221,16 @@ bool MuseumRenderer::open(){
 #endif
         _surface->fastLowerDepth.allocate();
         _surface->projection.preferInternalReady();
-        _surface->fastOccupiedDepth.allocate();
+        const int preferredSide=(layout::side*std::clamp(preferredPercent,50,100)+50)/100;
+        _surface->fastOccupiedDepth.allocate((std::size_t(preferredSide)*preferredSide+7)/8);
         _surface->fastIndexedPanels.allocate(2112);
 #if defined(ESP_PLATFORM) && STOPWATCH_BENCHMARK_AUTORUN
         cacheAfter=heapSnapshot();
 #endif
         auto* occupied=_surface->fastOccupiedDepth.get();
         _surface->raster.setSparseDepthStorage(
-            occupied?occupied->data():_surface->occupiedDepth.data(),_surface->occupiedDepth.size());
+            occupied?occupied:_surface->occupiedDepth.data(),
+            occupied?_surface->fastOccupiedDepth.capacity():_surface->occupiedDepth.size());
         _pose=Pose::Display;_equipment=true;
         _gray=false;_buried=false;_cached=true;
     }
